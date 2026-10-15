@@ -1,0 +1,42 @@
+package editor
+
+import java.awt.Component
+import java.awt.Container
+import java.awt.event.InputMethodEvent
+import java.awt.event.KeyEvent
+import java.awt.font.TextHitInfo
+import java.text.AttributedCharacterIterator
+import java.text.AttributedString
+import java.io.File
+
+fun findSurface(component: Component): EditorSurface? = if (component is EditorSurface) component else (component as? Container)?.components?.firstNotNullOfOrNull(::findSurface)
+private fun string(iterator: AttributedCharacterIterator): String = buildString { var c=iterator.first();while(c!=AttributedCharacterIterator.DONE){append(c);c=iterator.next()} }
+/** Actual attached host + real Compose layout, but injected AWT IME events, not an OS IME. */
+fun runHostChecks(surface: EditorSurface) {
+    val e=surface.engine
+    check((surface.parent as javax.swing.JLayeredPane).getLayer(surface)==100)
+    check(surface.parent.findComponentAt(200,100)===surface) { "Pointer events must reach the input host, not the render layer" }
+    fun event(text:String,count:Int,caret:Int?){surface.dispatchEvent(InputMethodEvent(surface,InputMethodEvent.INPUT_METHOD_TEXT_CHANGED,AttributedString(text).iterator,count,caret?.let(TextHitInfo::leading),null))}
+    e.replace("Hello","Fixture");e.move(Selection(1,2));event("ni",0,2)
+    check(e.snapshot().visible.text=="Hnillo");check(e.snapshot().committed.text=="Hello")
+    var queries=0
+    val context="Hllo"
+    for(a in 0..context.length)for(b in a..context.length){check(string(surface.getCommittedText(a,b,null))==context.substring(a,b));queries++}
+    check(surface.committedTextLength==4);check(surface.insertPositionOffset==1)
+    val start=surface.getTextLocation(TextHitInfo.leading(0));val alias=surface.getTextLocation(TextHitInfo.beforeOffset(0))
+    check(start.width==0&&start.height>0);check(start.x==alias.x&&start.y==alias.y)
+    event("你hao",1,1);check(e.snapshot().committed.text=="H你llo");check(e.snapshot().selection.focus==3)
+    check(string(surface.getCommittedText(0,surface.committedTextLength,null))=="H你llo")
+    event("好",1,null);check(e.snapshot().visible.text=="H你好llo");check(e.snapshot().marked==null)
+    e.perform(EditAction.Undo);check(e.snapshot().visible.text=="Hello");check(e.snapshot().selection==Selection(1,2))
+    e.perform(EditAction.Undo);check(e.snapshot().visible.text.isEmpty())
+    e.replace("abc😀z","Fixture");e.move(Selection(3,5));event("😀",0,1)
+    check(e.snapshot().selection.focus==4) // Raw native caret inside a valid surrogate pair.
+    surface.dispatchEvent(KeyEvent(surface,KeyEvent.KEY_PRESSED,System.currentTimeMillis(),0,KeyEvent.VK_LEFT,KeyEvent.CHAR_UNDEFINED))
+    event("😀",2,null);check(e.snapshot().selection.focus==3) { "User Left should snap to the emoji start, not the document start" }
+    e.perform(EditAction.Undo);check(e.snapshot().visible.text.isEmpty())
+    val report="{\"status\":\"PASS\",\"committedSliceQueries\":$queries,\"imeEvents\":5,\"scope\":\"Attached AWT host and real Compose layout; synthetic IME event stream, not a physical OS IME\"}"
+    File("desktop-prototype/target/host-checks.json").apply {parentFile.mkdirs();writeText(report)}
+    println(report)
+    surface.writeDiagnostics()
+}

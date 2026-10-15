@@ -1,0 +1,45 @@
+local.editor:desktop-prototype:jar:0.1.0
++- org.jetbrains.kotlin:kotlin-stdlib:jar:2.2.20:compile
+|  \- org.jetbrains:annotations:jar:13.0:compile
++- org.jetbrains.compose.foundation:foundation-desktop:jar:1.12.1:compile
+|  +- androidx.collection:collection-jvm:jar:1.5.0:compile
+|  +- org.jetbrains.compose.animation:animation-desktop:jar:1.12.1:compile
+|  |  \- org.jetbrains.compose.animation:animation-core-desktop:jar:1.12.1:compile
+|  +- org.jetbrains.compose.foundation:foundation-layout-desktop:jar:1.12.1:compile
+|  +- org.jetbrains.compose.runtime:runtime-desktop:jar:1.12.1:compile
+|  |  \- androidx.compose.runtime:runtime-desktop:jar:1.12.1:compile
+|  |     \- androidx.compose.runtime:runtime-annotation-jvm:jar:1.12.1:compile
+|  +- org.jetbrains.compose.ui:ui-text-desktop:jar:1.12.1:compile
+|  +- org.jetbrains.compose.ui:ui-util-desktop:jar:1.12.1:compile
+|  +- org.jetbrains.kotlinx:atomicfu-jvm:jar:0.28.0:runtime
+|  +- org.jetbrains.runtime:jbr-api:jar:1.9.0:runtime
+|  \- org.jetbrains.skiko:skiko-awt:jar:0.150.1:compile
+|     \- org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:jar:1.8.0:compile
++- org.jetbrains.compose.ui:ui-desktop:jar:1.12.1:compile
+|  +- androidx.annotation:annotation-jvm:jar:1.9.1:compile
+|  +- androidx.compose.runtime:runtime-retain-desktop:jar:1.12.1:compile
+|  +- androidx.lifecycle:lifecycle-viewmodel-compose-desktop:jar:2.11.0:runtime
+|  |  +- androidx.compose.runtime:runtime-saveable-desktop:jar:1.12.1:compile
+|  |  +- org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:jar:1.7.3:compile
+|  |  +- androidx.lifecycle:lifecycle-common-jvm:jar:2.11.0:compile
+|  |  |  \- org.jspecify:jspecify:jar:1.0.0:compile
+|  |  +- androidx.lifecycle:lifecycle-viewmodel-desktop:jar:2.11.0:runtime
+|  |  \- androidx.lifecycle:lifecycle-runtime-compose-desktop:jar:2.11.0:compile
+|  |     \- androidx.lifecycle:lifecycle-runtime-desktop:jar:2.11.0:compile
+|  |        \- androidx.arch.core:core-common:jar:2.2.0:compile
+|  |           \- androidx.annotation:annotation:jar:1.1.0:compile
+|  +- androidx.lifecycle:lifecycle-viewmodel-savedstate-desktop:jar:2.11.0:runtime
+|  |  \- androidx.savedstate:savedstate-desktop:jar:1.4.0:compile
+|  +- androidx.savedstate:savedstate-compose-desktop:jar:1.4.0:compile
+|  +- org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose-desktop:jar:2.9.6:compile
+|  +- org.jetbrains.androidx.navigationevent:navigationevent-compose-desktop:jar:1.1.0:runtime
+|  |  \- androidx.navigationevent:navigationevent-compose-desktop:jar:1.1.1:runtime
+|  |     \- androidx.navigationevent:navigationevent-desktop:jar:1.1.1:runtime
+|  +- org.jetbrains.compose.runtime:runtime-saveable-desktop:jar:1.12.1:compile
+|  |  \- org.jetbrains.androidx.savedstate:savedstate-compose-desktop:jar:1.3.6:compile
+|  +- org.jetbrains.compose.ui:ui-geometry-desktop:jar:1.12.1:compile
+|  +- org.jetbrains.compose.ui:ui-graphics-desktop:jar:1.12.1:compile
+|  +- org.jetbrains.compose.ui:ui-unit-desktop:jar:1.12.1:compile
+|  \- org.jetbrains.kotlinx:kotlinx-coroutines-core:jar:1.9.0:compile
++- org.jetbrains.skiko:skiko-awt-runtime-windows-x64:jar:0.150.1:runtime
+\- org.jetbrains.kotlin:kotlin-compose-compiler-plugin-embeddable:jar:2.2.20:provided

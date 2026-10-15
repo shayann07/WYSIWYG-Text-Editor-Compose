@@ -48,3 +48,7 @@ npm ci --prefix research/runtime --ignore-scripts --no-audit --no-fund
 ```
 
 The Compose probe requires a compatible JDK/Maven setup; local Windows paths in old scripts/logs are historical environment records. Native Skia experiments are rejected/unvalidated research, not prerequisites of the chosen architecture. Do not silently treat their failed build as a successful optimization. Retained upstream files keep their original copyright/license notices; this upload does not grant a new license over third-party material.
+
+## Runnable desktop prototype
+
+The first plain-text desktop slice is now in [desktop-prototype](desktop-prototype/README.md). On Windows, double-click [run.cmd](desktop-prototype/run.cmd) to build and open it. Typing, cursor/selection and engine-owned Undo/Redo are implemented. Text remains in memory; real OS IME and full v5 production qualification remain open. The frozen specification is unchanged.

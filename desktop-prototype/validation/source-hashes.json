@@ -1,0 +1,23 @@
+{
+  "desktop-prototype/pom.xml": "75d5ba7d8a380bbfaad8e10de7cc85527a6a9a7b942bdfe9baad18ea2acc90e4",
+  "desktop-prototype/README.md": "8d6224ed929b9f6da9d6c229ad4530cad8d477c259f8d7ae7c144740f727ba8e",
+  "desktop-prototype/run.cmd": "e89f8567c0e8c2c02af903dd3f4ee629029fda7ccadd53ec1b56b6b4767795bd",
+  "desktop-prototype/run.ps1": "dc25eb3dd4eac8f6164df6f8f2885e934b2c31c364a3596ce019f4715a5576ab",
+  "desktop-prototype/validation/dependencies.txt": "733082083232ef236ca8d68dd732cb6543e2f55d5218291a27fa72234ed62e1c",
+  "desktop-prototype/validation/host-checks.json": "40b1ade2d2ee75402b0a3c60e4127a84ea5e8f45abccf2c343e407611afe85e5",
+  "desktop-prototype/validation/kernel-checks.txt": "e52a4f34ad5ebc726f9f689f445ba9fd59a7f5137bbcd3c33a04c674244bb5ca",
+  "desktop-prototype/validation/report.md": "7781e406e2dff197b8bdff1e9892ccbd9a8665060e0c9c2d4d71053d49ced48a",
+  "desktop-prototype/validation/ui-checks.json": "087d8391acc5c7a1ac1e68470a18d756020de7bd2458fcd1571ac31d8141ad8e",
+  "desktop-prototype/src/main/kotlin/editor/Checks.kt": "73b65fac6545d584bff321282346102067435636db837d9d9b8cb1b2a2fbd30c",
+  "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt": "31bcf0da24d064a9840f2aa3920b66e18bcb6dd9dd67c28221cd668e0cc9331d",
+  "desktop-prototype/src/main/kotlin/editor/EditorEngine.kt": "6fa2c9b10be9bb0e4f5c89ddce9157f121551e50272b5ef0efda4cf042e8dba7",
+  "desktop-prototype/src/main/kotlin/editor/Graphemes.kt": "7c7231f09b815159bd72b3408ed7c364cdeab0c83948d82204a137add8e23ae8",
+  "desktop-prototype/src/main/kotlin/editor/HostChecks.kt": "37f30f069cc049cbef70518a9a38ce68b7193c787593dc195d40ad38c5891a4a",
+  "desktop-prototype/src/main/kotlin/editor/Main.kt": "af0249e349a5eec5db323bdeb662098694ad9775910bd5420996aeed3653a27f",
+  "desktop-prototype/src/main/resources/unicode/DerivedCoreProperties.txt": "39d35161f2954497f69e08bdb9e701493f476a3d30222de20028feda36c1dabd",
+  "desktop-prototype/src/main/resources/unicode/emoji-data.txt": "f1365a5173eee18e1f98b240cdc492e84a25f1ce7e0c9d1094eb29c41a22696a",
+  "desktop-prototype/src/main/resources/unicode/GraphemeBreakProperty.txt": "c29360bd6f7132811d701d29069541e827eb44bfc4c8fbde8c370d6982689dc1",
+  "desktop-prototype/src/main/resources/unicode/GraphemeBreakTest-16.0.0.txt": "ee2b9354d270ac061b29f09662cafea06341d77e704b8cc6bd72aaeeda363cb5",
+  "desktop-prototype/src/main/resources/unicode/hashes.properties": "e8bae0b4854ccaac7fc1fa185a815cf84f15be49dbc1fc953e0506b08fc3ea81",
+  "desktop-prototype/src/main/resources/unicode/LICENSE.txt": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96"
+}

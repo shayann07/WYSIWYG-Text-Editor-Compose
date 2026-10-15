@@ -1,0 +1,167 @@
+{
+  "scope": "Windows application window controlled with real keyboard/mouse injection; type_text used clipboard insertion; OS CJK IME not tested",
+  "checks": [
+    {
+      "name": "real key typing and clipboard insertion",
+      "state": {
+        "text": "abc def",
+        "anchor": 7,
+        "focus": 7,
+        "undo": 2,
+        "redo": 0,
+        "documentRevision": 8,
+        "sessionRevision": 10,
+        "composing": false,
+        "waiting": false,
+        "focused": true,
+        "keyTypedEvents": 1,
+        "imeTextEvents": 3,
+        "notice": "Ready"
+      }
+    },
+    {
+      "name": "keyboard backward selection",
+      "state": {
+        "text": "abc def",
+        "anchor": 7,
+        "focus": 6,
+        "undo": 2,
+        "redo": 0,
+        "documentRevision": 8,
+        "sessionRevision": 11,
+        "composing": false,
+        "waiting": false,
+        "focused": true,
+        "keyTypedEvents": 1,
+        "imeTextEvents": 3,
+        "notice": "Ready"
+      }
+    },
+    {
+      "name": "typing replaces selection",
+      "state": {
+        "text": "abc dex",
+        "anchor": 7,
+        "focus": 7,
+        "undo": 3,
+        "redo": 0,
+        "documentRevision": 9,
+        "sessionRevision": 12,
+        "composing": false,
+        "waiting": false,
+        "focused": true,
+        "keyTypedEvents": 2,
+        "imeTextEvents": 3,
+        "notice": "Ready"
+      }
+    },
+    {
+      "name": "Undo restores text and selection direction",
+      "state": {
+        "text": "abc def",
+        "anchor": 7,
+        "focus": 6,
+        "undo": 2,
+        "redo": 1,
+        "documentRevision": 10,
+        "sessionRevision": 13,
+        "composing": false,
+        "waiting": false,
+        "focused": true,
+        "keyTypedEvents": 2,
+        "imeTextEvents": 3,
+        "notice": "Undone"
+      }
+    },
+    {
+      "name": "mouse drag selects abc",
+      "state": {
+        "text": "abc def",
+        "anchor": 0,
+        "focus": 3,
+        "undo": 2,
+        "redo": 1,
+        "documentRevision": 10,
+        "sessionRevision": 15,
+        "composing": false,
+        "waiting": false,
+        "focused": true,
+        "keyTypedEvents": 2,
+        "imeTextEvents": 3,
+        "notice": "Undone"
+      }
+    },
+    {
+      "name": "Redo restores replacement after selection movement",
+      "state": {
+        "text": "abc dex",
+        "anchor": 7,
+        "focus": 7,
+        "undo": 3,
+        "redo": 0,
+        "documentRevision": 11,
+        "sessionRevision": 16,
+        "composing": false,
+        "waiting": false,
+        "focused": true,
+        "keyTypedEvents": 2,
+        "imeTextEvents": 3,
+        "notice": "Redone"
+      }
+    },
+    {
+      "name": "Backspace removes entire emoji ZWJ grapheme",
+      "state": {
+        "text": "abc dex\nEmoji: ",
+        "anchor": 15,
+        "focus": 15,
+        "undo": 6,
+        "redo": 0,
+        "documentRevision": 14,
+        "sessionRevision": 19,
+        "composing": false,
+        "waiting": false,
+        "focused": true,
+        "keyTypedEvents": 2,
+        "imeTextEvents": 3,
+        "notice": "Ready"
+      }
+    },
+    {
+      "name": "Undo restores intact emoji",
+      "state": {
+        "text": "abc dex\nEmoji: \ud83d\udc69\u200d\ud83d\udcbb",
+        "anchor": 20,
+        "focus": 20,
+        "undo": 5,
+        "redo": 1,
+        "documentRevision": 15,
+        "sessionRevision": 20,
+        "composing": false,
+        "waiting": false,
+        "focused": true,
+        "keyTypedEvents": 2,
+        "imeTextEvents": 3,
+        "notice": "Undone"
+      }
+    },
+    {
+      "name": "visual Up navigation across paragraphs",
+      "state": {
+        "text": "abc dex\nEmoji: \ud83d\udc69\u200d\ud83d\udcbb",
+        "anchor": 7,
+        "focus": 7,
+        "undo": 5,
+        "redo": 1,
+        "documentRevision": 15,
+        "sessionRevision": 21,
+        "composing": false,
+        "waiting": false,
+        "focused": true,
+        "keyTypedEvents": 2,
+        "imeTextEvents": 3,
+        "notice": "Undone"
+      }
+    }
+  ]
+}

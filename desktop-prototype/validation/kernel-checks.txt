@@ -1,0 +1,15 @@
+PASS typing, replacement, exact selection restoration and redo
+PASS typing coalesces, relocation breaks the group
+PASS composition remains provisional and ends in one undo group
+PASS partial acceptance survives explicit suffix abort
+PASS candidate detour is path independent, no-op commit does not bump document revision
+PASS Undo waits for real terminal input; no timeout settlement
+PASS cancelled queued edit consumes its own undo credit
+PASS accepted prefix plus new composed suffix stays on the native caret
+PASS paragraph tags survive IME no-op and history; native LF is a soft break
+PASS grapheme deletion handles emoji ZWJ and isolated UTF-16
+PASS snapshot immutability and reentrant requests
+PASS invalid IME range rejects before mutation
+PASS 1000 deterministic edits match a flat oracle and unwind exactly
+PASS official Unicode 16 GraphemeBreakTest: 1093 fixtures
+ALL 14 kernel checks passed. No real OS IME claim is made by these tests.
