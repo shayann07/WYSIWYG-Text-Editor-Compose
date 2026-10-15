@@ -1,0 +1,39 @@
+{
+  "timestamp": "2026-10-14T05:23:41.388Z",
+  "target": "validation/antigravity/run-20261014-06/candidate-b-coordinator.mjs",
+  "totalTested": 6,
+  "failuresCount": 6,
+  "allFailuresConfirmed": true,
+  "failures": [
+    {
+      "test": "A",
+      "description": "Connection replacement discards accepted text",
+      "error": "Connection replacement discarded accepted text! \"Hello\" !== \"HXllo\"\n\n'Hello' !== 'HXllo'\n"
+    },
+    {
+      "test": "B",
+      "description": "Connection replacement loses undo after a partial commit",
+      "error": "Visible text changed on connection replacement!\n\n'HXllo' !== 'HXYllo'\n"
+    },
+    {
+      "test": "C",
+      "description": "Full partial commit converts range formatting into typing intent",
+      "error": "Committed unit 'X' was NOT formatted bold; remained plain!\n\nfalse !== true\n"
+    },
+    {
+      "test": "D",
+      "description": "Selection validation uses the wrong document version",
+      "error": "Valid growth selection [3,3] rejected as InvalidSelection against pre-edit length!\n+ actual - expected\n\n+ 'Rejected'\n- 'Accepted'\n"
+    },
+    {
+      "test": "E",
+      "description": "Unrelated commands remain stranded after cancellation",
+      "error": "Unrelated command was left stranded in pendingCommands!\n\n1 !== 0\n"
+    },
+    {
+      "test": "F",
+      "description": "Old-epoch preedit is accepted",
+      "error": "Stale epoch 0 callback was Accepted into epoch 1!\n+ actual - expected\n\n+ 'Accepted'\n- 'Rejected'\n"
+    }
+  ]
+}

@@ -1,0 +1,139 @@
+{
+  "checks": 111796,
+  "summaryChecks": 43758,
+  "adversaries": [
+    {
+      "n": 64,
+      "buildMs": 0.055000000000063665,
+      "allocatedBytes": 18196,
+      "queryProbes": 4,
+      "queryJumps": 1,
+      "baselineCharacters": 64,
+      "editRows": [
+        {
+          "at": 0,
+          "rebuiltRows": 1
+        },
+        {
+          "at": 32,
+          "rebuiltRows": 33
+        },
+        {
+          "at": 63,
+          "rebuiltRows": 64
+        }
+      ]
+    },
+    {
+      "n": 256,
+      "buildMs": 0.0765999999999849,
+      "allocatedBytes": 71956,
+      "queryProbes": 4,
+      "queryJumps": 1,
+      "baselineCharacters": 256,
+      "editRows": [
+        {
+          "at": 0,
+          "rebuiltRows": 1
+        },
+        {
+          "at": 128,
+          "rebuiltRows": 129
+        },
+        {
+          "at": 255,
+          "rebuiltRows": 256
+        }
+      ]
+    },
+    {
+      "n": 1024,
+      "buildMs": 0.20270000000004984,
+      "allocatedBytes": 286996,
+      "queryProbes": 4,
+      "queryJumps": 1,
+      "baselineCharacters": 1024,
+      "editRows": [
+        {
+          "at": 0,
+          "rebuiltRows": 1
+        },
+        {
+          "at": 512,
+          "rebuiltRows": 513
+        },
+        {
+          "at": 1023,
+          "rebuiltRows": 1024
+        }
+      ]
+    },
+    {
+      "n": 4096,
+      "buildMs": 1.050799999999981,
+      "allocatedBytes": 1147156,
+      "queryProbes": 4,
+      "queryJumps": 1,
+      "baselineCharacters": 4096,
+      "editRows": [
+        {
+          "at": 0,
+          "rebuiltRows": 1
+        },
+        {
+          "at": 2048,
+          "rebuiltRows": 2049
+        },
+        {
+          "at": 4095,
+          "rebuiltRows": 4096
+        }
+      ]
+    },
+    {
+      "n": 16384,
+      "buildMs": 3.856999999999971,
+      "allocatedBytes": 4587796,
+      "queryProbes": 4,
+      "queryJumps": 1,
+      "baselineCharacters": 16384,
+      "editRows": [
+        {
+          "at": 0,
+          "rebuiltRows": 1
+        },
+        {
+          "at": 8192,
+          "rebuiltRows": 8193
+        },
+        {
+          "at": 16383,
+          "rebuiltRows": 16384
+        }
+      ]
+    },
+    {
+      "n": 65536,
+      "buildMs": 13.824599999999919,
+      "allocatedBytes": 18350356,
+      "queryProbes": 4,
+      "queryJumps": 1,
+      "baselineCharacters": 65536,
+      "editRows": [
+        {
+          "at": 0,
+          "rebuiltRows": 1
+        },
+        {
+          "at": 32768,
+          "rebuiltRows": 32769
+        },
+        {
+          "at": 65535,
+          "rebuiltRows": 65536
+        }
+      ]
+    }
+  ],
+  "scope": "Typed bracket transfer, ASCII paired brackets, final stack/external pairs/overflow only. Not full UBA, N0, shaping, layout or editor integration. Fixed-length substitution maintenance can be linear."
+}

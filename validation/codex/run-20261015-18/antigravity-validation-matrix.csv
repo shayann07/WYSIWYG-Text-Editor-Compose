@@ -1,0 +1,28 @@
+Claim,Scope,Evidence,Status,Remaining requirement
+reproduceBaseline,Executed reference contract,run-20261015-18/results.json: reproduceBaseline,PASS (SCOPED),Only the recorded cases/bounds
+regressionTests,Executed reference contract,run-20261015-18/results.json: regressionTests,PASS (SCOPED),Only the recorded cases/bounds
+structuralChains,Executed reference contract,run-20261015-18/results.json: structuralChains,PASS (SCOPED),Only the recorded cases/bounds
+awtTests,Executed reference contract,run-20261015-18/results.json: awtTests,PASS (SCOPED),Only the recorded cases/bounds
+retentionTests,Executed reference contract,run-20261015-18/results.json: retentionTests,PASS (SCOPED),Only the recorded cases/bounds
+retentionSoak,Executed reference contract,run-20261015-18/results.json: retentionSoak,PASS (SCOPED),Only the recorded cases/bounds
+midStageBasis,Executed reference contract,run-20261015-18/results.json: midStageBasis,PASS (SCOPED),Only the recorded cases/bounds
+repairMutations,Executed reference contract,run-20261015-18/results.json: repairMutations,PASS (SCOPED),Only the recorded cases/bounds
+namedTests,Executed reference contract,run-20261015-18/results.json: namedTests,PASS (SCOPED),Only the recorded cases/bounds
+generatedIntegration,Executed reference contract,run-20261015-18/results.json: generatedIntegration,PASS (SCOPED),Only the recorded cases/bounds
+ledgerExploration,Executed reference contract,run-20261015-18/results.json: ledgerExploration,PASS (SCOPED),Only the recorded cases/bounds
+repeatedSessions,Executed reference contract,run-20261015-18/results.json: repeatedSessions,PASS (SCOPED),Only the recorded cases/bounds
+integratedMutations,Executed reference contract,run-20261015-18/results.json: integratedMutations,PASS (SCOPED),Only the recorded cases/bounds
+scheduling,Executed reference contract,run-20261015-18/results.json: scheduling,PASS (SCOPED),Only the recorded cases/bounds
+G0,Production qualification,plan-v4.md §8,NOT RUN,No production implementation authorized
+G1,Production qualification,plan-v4.md §8,NOT RUN,No production implementation authorized
+G2,Production qualification,plan-v4.md §8,NOT RUN,No production implementation authorized
+G3,Production qualification,plan-v4.md §8,NOT RUN,No production implementation authorized
+G4,Production qualification,plan-v4.md §8,NOT RUN,No production implementation authorized
+G5,Production qualification,plan-v4.md §8,NOT RUN,No production implementation authorized
+G6,Production qualification,plan-v4.md §8,NOT RUN,No production implementation authorized
+G7,Production qualification,plan-v4.md §8,NOT RUN,No production implementation authorized
+G8,Production qualification,plan-v4.md §8,NOT RUN,No production implementation authorized
+Physical memory/GC,Actual production allocator,plan-v4.md §4.10,NOT RUN,Serialized charges/counts are not a heap measurement
+AWT host,"Real input, geometry and accessibility",plan-v4.md §6.3,NOT RUN,Synthetic geometry is a contract test
+Native provenance,OS/browser lifecycle,plan-v4.md §4.2,NOT RUN,Ordinal is not host provenance
+Full product semantic catalog,Commands/anchors/cells/typing intent,plan-v4.md §9.6,NOT QUALIFIED,Current model is scoped

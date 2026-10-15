@@ -1,0 +1,1973 @@
+Astra’s review of v5.2 caught a subtle structural flaw in how partialCommit interacted with absorbed original text, along with four precision gaps in the oracle and invariants:
+
+Critique 1 (Partial Commit Deleting Absorbed Unchanged Text):
+
+In v5.2, provisionalOverlay stored a single flat footprint 
+r 
+c
+​
+ =[s 
+c
+​
+ ,e 
+c
+​
+ ) in 
+D 
+c
+​
+  ([1, 3) covering "bc") and a flat unit buffer ("XYZc"). When partialCommit(1) committed "XY", it replaced the entire footprint 
+r 
+c
+​
+ =[1,3) ("bc") with "XY" and left "Zc" over an empty footprint 
+r 
+c
+′
+​
+ =[3,3) in 
+D 
+c
+′
+​
+ ="aXYd". Cancelling "Zc" then dropped "c" along with "Z".
+
+Fix in v5.3 (Piecewise Segment-Mapped Overlay): provisionalOverlay is partitioned into an ordered list of OverlaySegment(dcStart, dcEnd, units) entries that map each piece of the overlay to the specific sub-slice of 
+D 
+c
+​
+ [s 
+c
+​
+ ..e 
+c
+​
+ ) it actually replaced. Every original unit absorbed from 
+D 
+c
+​
+ [i] enters as an atomic 1-unit segment ([i, i+1), [D_c[i]]). Unless a preedit splice actually overwrites that unit, its segment remains separate (g_1 = ([1,2), "XYZ"), g_2 = ([2,3), "c")). When partialCommit cuts at 
+p 
+cut
+​
+ =2 (after "XY"), it consumes only 
+g 
+1
+​
+ ’s footprint 
+[1,2) ("b"), leaving 
+g 
+2
+​
+ ’s footprint ("c") untouched in 
+D 
+c
+′
+​
+ ="aXYcd" at 
+g 
+2
+′
+​
+ =([3,4),"c"). Cancelling the remaining overlay then reveals 
+D 
+c
+′
+​
+ ="aXYcd", preserving "c".
+
+Critique 2 (Independent Oracle for Committed State & Cancellation):
+
+Asserting that cancelUncommitted() returns S.committedDoc is tautological if an earlier partialCommit corrupted S.committedDoc.
+
+Fix in v5.3 (Annotated Token-Tape Oracle): The independent reference oracle maintains a flat visible token tape where untouched characters like "c" never become provisional merely because markedRange expanded over them; a token becomes 'Provisional' (storing the exact 'Committed' tokens it replaced) only when overwritten by the changed middle of a preedit splice. INV-04 verifies on every transition (including immediately after partialCommit) that S'.committedDoc equals the oracle’s committed projection (oracleCancelProjection(oracleTape)).
+
+Critique 3 (Provenance Assigned Only on Synthesis, Never on Flush):
+
+Blanket-tagging provisionalOverlay.units with originSessionId = sessionId on flush or partialCommit wrongly marked absorbed unchanged text ("c") as session-produced.
+
+Fix in v5.3: originSessionId = sessionId is assigned only when a unit is newly synthesized in the changed middle of Reconcile(B_epoch, C_raw, seed) (or by a direct commit replacement). Units absorbed from 
+D 
+c
+​
+  or retained via the unchanged prefix/suffix of 
+B 
+epoch
+​
+  retain their existing originSessionId (null for pre-existing text), and terminal flush / partialCommit never overwrites originSessionId.
+
+Critique 4 (Narrower INV-03 and INV-07 Wording):
+
+Fix in v5.3: INV-03 specifies markedRange separately for preedit (
+[u 
+v
+​
+ ,u 
+v
+​
+ +∣T∣)), retarget/startComposition (
+[u 
+v
+​
+ ,v 
+v
+​
+ )), and commit (null). INV-07 verifies that every unit inside the grapheme-cluster closure 
+I 
+grapheme
+​
+  has post-command attributes equal to ApplyPatch(beforeAttrs, patch) (allowing no-op units already having that attribute) and every unit outside 
+I 
+grapheme
+​
+  is completely unchanged.
+
+Critique 5 (Deterministic Per-Unit tokenId Allocation & Retention Contract):
+
+Fix in v5.3: Prefix (
+p) and suffix (
+s) units in Reconcile(B_epoch, C_raw, seed) retain their exact B_epoch[i].tokenId. Newly synthesized units at offset 
+j∈[0,m 
+mid
+​
+ ) of the changed middle receive the deterministic coordinate identity tokenId = "prov:" + sessionId + ":e" + epochId + ":m" + j. Thus, a candidate detour ("ab" -> "x" -> "ab") restores the exact baseline tokenIds, and divergent detour paths ending at the same candidate within an epoch produce bit-for-bit identical tokenIds.
+
+WYSIWYG Text Editor Compose — Specification v5.3 (Segment-Mapped Overlay & Provenance Architecture)
+Status: Proposed Specification Repair for plan-v4.md (Rev 4.6); Pending Executable Verification in run-20261013-04 (Phase 0/1 Gated; Production Implementation Prohibited)   
+MD
+
+Target Workspace: D:\Work\WYSIWYG-Text-Editor-Compose
+
+   
+MD
+
+1. Six-Component Authoritative State & Segment-Mapped Overlay
+The engine is a single semantic authority whose state is factored into six orthogonal components:   
+MD
+
+Plaintext
+AttributedUnit {
+  tokenId: String,                // Deterministic unit identity (§1.2)
+  char: Utf16Unit,
+  attrs: AttrMap,
+  originSessionId: String | null  // Assigned ONLY when synthesized by a session replacement (§1.2)
+}
+
+OverlaySegment {
+  dcStart: Int,                   // Start offset in committedDoc (D_c)
+  dcEnd: Int,                     // End offset in committedDoc (D_c)
+  units: List<AttributedUnit>     // Units replacing D_c[dcStart .. dcEnd)
+}
+
+ProvisionalOverlay {
+  blockId: NodeId,
+  segments: List<OverlaySegment>  // Contiguous partition of r_c = [s_c, e_c) in D_c:
+                                  // s_c = seg[0].dcStart <= seg[0].dcEnd = seg[1].dcStart ... <= seg[n-1].dcEnd = e_c
+}
+
+MarkedWindow {
+  relStart: Int,                  // 0 <= relStart <= relEnd <= flatten(provisionalOverlay.segments).length
+  relEnd: Int
+}
+
+AttributionEpoch {
+  epochId: Long,
+  baseSegments: List<OverlaySegment>, // Immutable snapshot of provisionalOverlay.segments at epoch start
+  baseWindow: MarkedWindow,           // Immutable [relStart_0, relEnd_0) inside flatten(baseSegments)
+  B_epoch: List<AttributedUnit>,      // Exact slice flatten(baseSegments)[relStart_0 .. relEnd_0)
+  C_raw: String,                      // Current candidate string of length (relEnd - relStart)
+  seed: AttrMap                       // Frozen insertion attributes
+}
+
+HistorySession {
+  sessionId: String,
+  preSessionDocSnapshot: CanonicalDocSnapshot
+}
+
+SettlementObligation {
+  activeFence: null | { fenceId: Long, epoch: Long, sessionId: String, coveredSeq: Long },
+  pendingCommands: List<QueuedCommand>
+}
+1.1 Derived Overlay Properties and Visible Projection (
+D 
+v
+​
+ )
+For an active provisionalOverlay with segments 
+[g 
+1
+​
+ ,…,g 
+n
+​
+ ]:
+
+Overlay Committed Footprint (
+r 
+c
+​
+ ): 
+s 
+c
+​
+ =g 
+1
+​
+ .dcStart, 
+e 
+c
+​
+ =g 
+n
+​
+ .dcEnd, 
+r 
+c
+​
+ =[s 
+c
+​
+ ,e 
+c
+​
+ ).
+
+Flattened Overlay Units (
+U 
+overlay
+​
+ ): 
+U 
+overlay
+​
+ =g 
+1
+​
+ .units∥g 
+2
+​
+ .units∥⋯∥g 
+n
+​
+ .units (length 
+L=∣U 
+overlay
+​
+ ∣).
+
+Visible Document (
+D 
+v
+​
+ ):
+
+D 
+v
+​
+ (blockId)={ 
+D 
+c
+​
+ (blockId)
+D 
+c
+​
+ [0..s 
+c
+​
+ )∥U 
+overlay
+​
+ ∥D 
+c
+​
+ [e 
+c
+​
+ ..∣D 
+c
+​
+ ∣)
+​
+  
+if provisionalOverlay=null
+if provisionalOverlay
+
+=null
+​
+ 
+Visible Native Marked Range (
+markedRange(D 
+v
+​
+ )):
+
+markedRange(D 
+v
+​
+ )={ 
+[s 
+c
+​
+ +relStart,s 
+c
+​
+ +relEnd)
+null
+​
+  
+if provisionalOverlay
+
+=null∧markedWindow
+
+=null
+otherwise
+​
+ 
+1.2 Deterministic Unit Identity (tokenId) & Provenance (originSessionId) Contract (Resolves Critiques 3 & 5)
+Initial Document Units: Each unit at initial offset 
+i has tokenId = "init:" + i and originSessionId = null.
+
+Idle Edits: Each unit inserted at relative index 
+j by an idle edit at SessionRevision = r receives tokenId = "idle:" + r + ":" + j and originSessionId = null (or sessionId for a direct idle commit(text)).
+
+Absorption into Overlay: When a committed unit 
+D 
+c
+​
+ [i] is absorbed into provisionalOverlay (via startComposition or retarget expansion), it forms a 1-unit atomic segment OverlaySegment(dcStart = i, dcEnd = i + 1, units = [D_c[i]]) preserving its exact tokenId, attrs, and originSessionId from 
+D 
+c
+​
+ .
+
+Reconciliation (Reconcile(B_epoch, C_raw, seed, sessionId, epochId)):
+
+Given baseline 
+B 
+epoch
+​
+  (length 
+M 
+0
+​
+ ) and candidate 
+C 
+raw
+​
+  (length 
+M 
+1
+​
+ ), compute the maximal common prefix length 
+p and maximal common suffix length 
+s subject to 
+p+s≤min(M 
+0
+​
+ ,M 
+1
+​
+ ) and surrogate-pair alignment:   
+MD
+
+Retained Prefix (
+0≤i<p): Returns 
+B 
+epoch
+​
+ [i] verbatim (preserving its exact tokenId, attrs, and originSessionId).
+
+Retained Suffix (
+0≤i<s): Returns 
+B 
+epoch
+​
+ [M 
+0
+​
+ −s+i] verbatim (preserving its exact tokenId, attrs, and originSessionId).
+
+Synthesized Changed Middle (
+0≤j<M 
+1
+​
+ −p−s): Allocates a new AttributedUnit:
+
+AttributedUnit(tokenId="prov:"+sessionId+":e"+epochId+":m"+j,char=C 
+raw
+​
+ [p+j],attrs=seed,originSessionId=sessionId)
+Flush & Partial-Commit Preservation: Splicing units from provisionalOverlay into 
+D 
+c
+​
+  (during partialCommit, unmark(settled:true), completeSettlement, commit, or connection turnover) never modifies tokenId or originSessionId. Consequently, a unit in 
+D 
+c
+​
+  bears originSessionId == sessionId if and only if it was synthesized in the changed middle of a candidate replacement during sessionId and survived into 
+D 
+c
+​
+ .
+
+2. Segment-Level Overlay Algorithms
+2.1 Pure Epoch Reconciliation on OverlaySegments
+Within an active attributionEpoch = (epochId, baseSegments, baseWindow = [relStart_0, relEnd_0), B_epoch, C_raw, seed), updating the candidate to 
+C 
+raw
+′
+​
+  (length 
+M 
+1
+​
+ ) computes the new provisionalOverlay.segments as a pure function of baseSegments and 
+C 
+raw
+′
+​
+ :
+
+Compute prefix 
+p, suffix 
+s, and synthesized middle units 
+U 
+mid
+​
+  (of length 
+m 
+mid
+​
+ =M 
+1
+​
+ −p−s) via §1.2(4).
+
+In flatten(baseSegments), the unchanged prefix ends at flattened offset 
+a 
+mid
+​
+ =relStart 
+0
+​
+ +p, and the unchanged suffix begins at flattened offset 
+b 
+mid
+​
+ =relEnd 
+0
+​
+ −s.
+
+If 
+a 
+mid
+​
+ ==b 
+mid
+​
+  and 
+m 
+mid
+​
+ ==0 (
+C 
+raw
+′
+​
+ ==B 
+epoch
+​
+ .text):
+
+provisionalOverlay.segments = baseSegments (restoring all baseline segments, tokenIds, and originSessionIds verbatim).
+
+markedWindow = [relStart_0, relEnd_0).
+
+Otherwise (
+a 
+mid
+​
+ <b 
+mid
+​
+  or 
+m 
+mid
+​
+ >0):
+
+Locate the segments in baseSegments touched by flattened unit range 
+[a 
+mid
+​
+ ,b 
+mid
+​
+ ):
+
+Pure Insertion at a Segment Boundary (
+a 
+mid
+​
+ ==b 
+mid
+​
+  at boundary between 
+g 
+k−1
+​
+  and 
+g 
+k
+​
+ , with 
+d 
+ins
+​
+ =g 
+k
+​
+ .dcStart):
+
+Insert OverlaySegment(dcStart = d_ins, dcEnd = d_ins, units = U_mid) between 
+g 
+k−1
+​
+  and 
+g 
+k
+​
+ . All existing segments in baseSegments remain intact!
+
+Interior Insertion or Replacement Spanning 
+g 
+first
+​
+ ..g 
+last
+​
+ :
+
+Let 
+U 
+left
+​
+  be the units of 
+g 
+first
+​
+  preceding 
+a 
+mid
+​
+  and 
+U 
+right
+​
+  be the units of 
+g 
+last
+​
+  following 
+b 
+mid
+​
+ . Replace 
+g 
+first
+​
+ ..g 
+last
+​
+  with a single merged segment:
+
+g 
+merged
+​
+ =OverlaySegment(dcStart=g 
+first
+​
+ .dcStart,dcEnd=g 
+last
+​
+ .dcEnd,units=U 
+left
+​
+ ∥U 
+mid
+​
+ ∥U 
+right
+​
+ )
+All segments in baseSegments strictly before 
+g 
+first
+​
+  or strictly after 
+g 
+last
+​
+  remain completely untouched!
+
+Update markedWindow = [relStart_0, relStart_0 + M_1).
+
+2.2 Explicit Retargeting / Expansion (retarget([u_v, v_v)))
+Given an explicit range 
+[u 
+v
+​
+ ,v 
+v
+​
+ ) in 
+D 
+v
+​
+  while provisionalOverlay covers 
+r 
+c
+​
+ =[s 
+c
+​
+ ,e 
+c
+​
+ ) with flattened length 
+L=∣U 
+overlay
+​
+ ∣:
+
+Absorb Newly Covered Left/Right Committed Units as 1-Unit Segments:
+
+If 
+u 
+v
+​
+ <s 
+c
+​
+ , prepend [ OverlaySegment(i, i + 1, [D_c[i]]) for i in u_v .. s_c - 1 ] to provisionalOverlay.segments.
+
+If 
+v 
+v
+​
+ >s 
+c
+​
+ +L, let 
+e 
+c
+′
+​
+ =e 
+c
+​
+ +(v 
+v
+​
+ −(s 
+c
+​
+ +L)) and append [ OverlaySegment(i, i + 1, [D_c[i]]) for i in e_c .. e'_c - 1 ] to provisionalOverlay.segments.
+
+Let 
+G 
+exp
+​
+  be the resulting segment list and 
+s 
+c
+′
+​
+ =min(u 
+v
+​
+ ,s 
+c
+​
+ ).
+
+Update markedWindow and Start New attributionEpoch:
+
+relStart 
+′
+ =u 
+v
+​
+ −s 
+c
+′
+​
+ ,relEnd 
+′
+ =v 
+v
+​
+ −s 
+c
+′
+​
+ 
+
+markedWindow 
+′
+ =[relStart 
+′
+ ,relEnd 
+′
+ )
+
+baseSegments 
+′
+ =G 
+exp
+​
+ ,baseWindow 
+′
+ =markedWindow 
+′
+ 
+
+B 
+epoch
+′
+​
+ =flatten(G 
+exp
+​
+ )[relStart 
+′
+ ..relEnd 
+′
+ )
+
+C 
+raw
+′
+​
+ =B 
+epoch
+′
+​
+ .text,epochId 
+′
+ =epochId+1
+
+2.3 Segment-Aware Partial Commit (Resolves Astra Critique 1)
+Given partialCommit(k) in Composing with markedWindow = [relStart, relEnd) and 
+1≤k≤relEnd−relStart:
+
+Let 
+p 
+cut
+​
+ =relStart+k be the cut offset in 
+U 
+overlay
+​
+ =flatten(segments), and let 
+m 
+rem
+​
+ =(relEnd−relStart)−k.
+
+Partition provisionalOverlay.segments 
+[g 
+1
+​
+ ,…,g 
+n
+​
+ ] at flattened unit offset 
+p 
+cut
+​
+  by tracking cumulative unit offsets 
+[u 
+start
+​
+ (g 
+i
+​
+ ),u 
+end
+​
+ (g 
+i
+​
+ )):
+
+Committed Prefix Units (
+P 
+commit
+​
+ ): 
+U 
+overlay
+​
+ [0..p 
+cut
+​
+ ).
+
+Consumed 
+D 
+c
+​
+  End Offset (
+d 
+cut
+​
+ ) & Remaining Segments (
+G 
+rem
+​
+ ):
+
+Case 1 (
+p 
+cut
+​
+  falls on an exact segment boundary after 
+g 
+m
+​
+ ):
+
+d 
+cut
+​
+ =g 
+m
+​
+ .dcEnd. The segments consumed by the commit are 
+g 
+1
+​
+ ..g 
+m
+​
+  (covering 
+D 
+c
+​
+ [s 
+c
+​
+ ..d 
+cut
+​
+ )), and the unconsumed segments are 
+G 
+after
+​
+ =[g 
+m+1
+​
+ ,…,g 
+n
+​
+ ] (covering 
+D 
+c
+​
+ [d 
+cut
+​
+ ..e 
+c
+​
+ )). 
+U 
+tail
+​
+ =∅.
+
+Case 2 (
+p 
+cut
+​
+  splits strictly inside multi-unit segment 
+g 
+m
+​
+  at local offset 
+q=p 
+cut
+​
+ −u 
+start
+​
+ (g 
+m
+​
+ )):
+
+d 
+cut
+​
+ =g 
+m
+​
+ .dcEnd. The consumed 
+D 
+c
+​
+  range is 
+D 
+c
+​
+ [s 
+c
+​
+ ..d 
+cut
+​
+ ). The uncommitted tail of 
+g 
+m
+​
+  is 
+U 
+tail
+​
+ =g 
+m
+​
+ .units[q..∣g 
+m
+​
+ .units∣), and the untouched subsequent segments are 
+G 
+after
+​
+ =[g 
+m+1
+​
+ ,…,g 
+n
+​
+ ] (covering 
+D 
+c
+​
+ [d 
+cut
+​
+ ..e 
+c
+​
+ )).
+
+Splice 
+P 
+commit
+​
+  into 
+D 
+c
+​
+  Replacing Only 
+D 
+c
+​
+ [s 
+c
+​
+ ..d 
+cut
+​
+ ):
+
+D 
+c
+′
+​
+ =D 
+c
+​
+ [0..s 
+c
+​
+ )∥P 
+commit
+​
+ ∥D 
+c
+​
+ [d 
+cut
+​
+ ..∣D 
+c
+​
+ ∣)
+(Note: Every unit in 
+D 
+c
+​
+ [d 
+cut
+​
+ ..e 
+c
+​
+ ) remains in 
+D 
+c
+′
+​
+ , shifted by 
+Δ=∣P 
+commit
+​
+ ∣−(d 
+cut
+​
+ −s 
+c
+​
+ )!)
+
+Construct Remaining Overlay Segments (
+G 
+rem
+′
+​
+ ) in 
+D 
+c
+′
+​
+  Coordinates:
+
+Let 
+s 
+c
+′
+​
+ =s 
+c
+​
+ +∣P 
+commit
+​
+ ∣.
+
+If 
+U 
+tail
+​
+ 
+
+=∅, prepend 
+g 
+tail
+′
+​
+ =OverlaySegment(dcStart=s 
+c
+′
+​
+ ,dcEnd=s 
+c
+′
+​
+ ,units=U 
+tail
+​
+ ).
+
+For each segment 
+g 
+j
+​
+ ∈G 
+after
+​
+ , shift its 
+D 
+c
+​
+  bounds by 
+Δ:
+
+g 
+j
+′
+​
+ =OverlaySegment(dcStart=g 
+j
+​
+ .dcStart+Δ,dcEnd=g 
+j
+​
+ .dcEnd+Δ,units=g 
+j
+​
+ .units)
+Update markedWindow and attributionEpoch:
+
+provisionalOverlay 
+′
+ =(blockId,G 
+rem
+′
+​
+ )
+
+markedWindow 
+′
+ =[0,m 
+rem
+​
+ )
+
+baseSegments 
+′
+ =G 
+rem
+′
+​
+ ,baseWindow 
+′
+ =[0,m 
+rem
+​
+ )
+
+B 
+epoch
+′
+​
+ =flatten(G 
+rem
+′
+​
+ )[0..m 
+rem
+​
+ ),C 
+raw
+′
+​
+ =B 
+epoch
+′
+​
+ .text,epochId 
+′
+ =epochId+1
+
+Step-by-Step Verification of Astra’s Critique 1 Trace:
+Start with 
+D 
+c
+​
+ ="abcd"; replace b ([1, 2)) provisionally with "XYZ":
+
+segments: 
+[g 
+1
+​
+ =([1,2),["X" 
+s1
+​
+ ,"Y" 
+s1
+​
+ ,"Z" 
+s1
+​
+ ])], markedWindow = [0, 3).
+
+D 
+v
+​
+ ="aXYZcd".
+
+Expand overlay to include unchanged "c" (retarget([1, 5))):
+
+"c" (
+D 
+c
+​
+ [2]) is appended as 
+g 
+2
+​
+ =([2,3),["c" 
+null
+​
+ ]).
+
+segments: 
+[g 
+1
+​
+ =([1,2),"XYZ"),g 
+2
+​
+ =([2,3),"c")], markedWindow = [0, 4).
+
+Retarget markedWindow to only "Y" (retarget([2, 3)) in 
+D 
+v
+​
+ ):
+
+segments unchanged: 
+[g 
+1
+​
+ =([1,2),"XYZ"),g 
+2
+​
+ =([2,3),"c")].
+
+markedWindow = [1, 2) ("Y"), 
+B 
+epoch
+​
+ =["Y" 
+s1
+​
+ ].
+
+Partially commit that one marked character (partialCommit(1)):
+
+p 
+cut
+​
+ =1+1=2 (cuts inside 
+g 
+1
+​
+  after "XY"), 
+m 
+rem
+​
+ =0.
+
+P 
+commit
+​
+ ="XY", 
+d 
+cut
+​
+ =g 
+1
+​
+ .dcEnd=2, 
+U 
+tail
+​
+ =["Z" 
+s1
+​
+ ], 
+G 
+after
+​
+ =[g 
+2
+​
+ =([2,3),"c")].
+
+D 
+c
+′
+​
+  replaces only 
+D 
+c
+​
+ [1..2) ("b") with "XY":
+
+D 
+c
+′
+​
+ =D 
+c
+​
+ [0..1)("a")∥"XY"∥D 
+c
+​
+ [2..4)("cd")="aXYcd"
+Shift 
+Δ=2−(2−1)=+1, 
+s 
+c
+′
+​
+ =1+2=3.
+
+Remaining overlay segments 
+G 
+rem
+′
+​
+ :
+
+g 
+tail
+′
+​
+ =([3,3),["Z" 
+s1
+​
+ ]),g 
+2
+′
+​
+ =([3,4),["c" 
+null
+​
+ ])
+Visible projection 
+D 
+v
+′
+​
+ =D 
+c
+′
+​
+ [0..3)("aXY")∥"Zc"∥D 
+c
+′
+​
+ [4..5)("d")="aXYZcd" (DocumentRevision unchanged!).
+
+Now execute cancelUncommitted():
+
+provisionalOverlay is discarded, revealing 
+D 
+c
+′
+​
+ ="aXYcd"!
+
+Committed "XY" survives, uncommitted "Z" is removed, and original unchanged "c" is preserved intact!
+
+3. Independent Reference Oracle & Strengthened Invariants (Resolves Critiques 2, 4, 5)
+3.1 The Independent Annotated Token-Tape Oracle (Resolves Critique 2)
+To guarantee that the verification suite does not share the coordinator's segment algebra or blindly trust S.committedDoc, independent-model-checker.mjs maintains a separate Token-Tape Oracle:
+
+State (OracleState):
+
+tape: List<OracleEntry> representing the visible document unit-by-unit, where each entry is either:
+
+CommittedUnit(unit: AttributedUnit) — a settled character in the tape.
+
+ProvisionalRun(runId, units: List<AttributedUnit>, replacedCommitted: List<AttributedUnit>) — a run of uncommitted provisional characters created by a preedit splice, carrying the exact list of CommittedUnits it overwrote.
+
+markedSpan: [Int, Int] | null — current native marked range in flatten(tape).
+
+epochSnapshot: { tapeClone, markedSpan, B_epoch, epochId, seed } | null.
+
+Oracle Operations:
+
+startComposition([u, v)) / retarget([u, v)):
+
+Does not modify tape entries at all! Untouched CommittedUnits (such as "c" in abcd) remain CommittedUnits in tape. Only markedSpan = [u, v) and epochSnapshot are updated.
+
+preedit(C_raw):
+
+Restores tape = clone(epochSnapshot.tapeClone), computes 
+p,s,U 
+mid
+​
+  against epochSnapshot.B_epoch, and replaces the changed middle slice [relStart_0 + p, relEnd_0 - s) of tape with 
+U 
+mid
+​
+ , gathering all CommittedUnits (and any replacedCommitted from overwritten ProvisionalRuns) in that middle slice into the new/merged ProvisionalRun.replacedCommitted.
+
+partialCommit(k) (cutting at visible offset 
+v 
+cut
+​
+ =markedSpan[0]+k):
+
+Every ProvisionalRun in tape lying wholly or partially before 
+v 
+cut
+​
+  converts its prefix units before 
+v 
+cut
+​
+  into permanent CommittedUnits and clears replacedCommitted = [] on any suffix of that run remaining after 
+v 
+cut
+​
+ . Any CommittedUnit or ProvisionalRun lying strictly after 
+v 
+cut
+​
+  is completely untouched.
+
+oracleCommittedProjection(oracle) (Expected Committed Document / Cancel Result):
+
+Replaces every remaining ProvisionalRun in oracle.tape with its replacedCommitted list, leaving all CommittedUnits in place.
+
+3.2 Ten Exhaustive Transition Invariants for run-20261013-04
+Evaluated on every BFS transition 
+S 
+e
+
+​
+ (S 
+′
+ ,R):   
+MD
+
+INV-01 (Visible Projection & Deterministic tokenId Equivalence):
+
+D_v(S') equals flatten(oracle.tape) unit-for-unit across char, tokenId (§1.2), attrs, and originSessionId.
+
+INV-02 (Exact DocumentRevision Biconditional):
+
+(S 
+′
+ .docRev==S.docRev+1)⟺¬SemanticEquals(D 
+v
+​
+ (S 
+′
+ ),D 
+v
+​
+ (S))
+(S 
+′
+ .docRev==S.docRev)⟺SemanticEquals(D 
+v
+​
+ (S 
+′
+ ),D 
+v
+​
+ (S))
+INV-03 (Mode-Specific Native-Range & Marked-Range Fidelity — Resolves Critique 4a):
+
+For any Accepted input event with target 
+[u 
+v
+​
+ ,v 
+v
+​
+ ) in 
+D 
+v
+​
+ (S) (defaulting to 
+markedRange(D 
+v
+​
+ (S)) or active selection when omitted):
+
+preedit(T, range?): 
+D 
+v
+​
+ (S 
+′
+ ).text==D 
+v
+​
+ (S).text[0..u 
+v
+​
+ )+T+D 
+v
+​
+ (S).text[v 
+v
+​
+ ..) and 
+markedRange(D 
+v
+​
+ (S 
+′
+ ))==[u 
+v
+​
+ ,u 
+v
+​
+ +∣T∣).
+
+startComposition([u_v, v_v)) / retarget([u_v, v_v)): 
+D 
+v
+​
+ (S 
+′
+ )==D 
+v
+​
+ (S) and 
+markedRange(D 
+v
+​
+ (S 
+′
+ ))==[u 
+v
+​
+ ,v 
+v
+​
+ ).
+
+commit(T, range?): 
+D 
+v
+​
+ (S 
+′
+ ).text==D 
+v
+​
+ (S).text[0..u 
+v
+​
+ )+T+D 
+v
+​
+ (S).text[v 
+v
+​
+ ..) (prior to drained formatting commands) and 
+markedRange(D 
+v
+​
+ (S 
+′
+ ))==null.
+
+INV-04 (Independent Oracle Committed-Document & Cancellation Equivalence — Resolves Critique 2):
+
+After every transition (including partialCommit, retarget, preedit, and cancelUncommitted):
+
+S 
+′
+ .committedDoc==oracleCommittedProjection(oracle 
+′
+ )
+comparing char, tokenId, attrs, and originSessionId unit-for-unit. Any partialCommit that deletes or alters an untouched surrounding character (like "c") fails INV-04 immediately upon partialCommit.
+
+INV-05 (Undo Completeness Within History Budget):
+
+Whenever S'.provisionalOverlay == null, popping undoStack step-by-step restores the exact historical sequence of committedDoc snapshots back to the initial document 
+D 
+0
+​
+  (or to oldestEntry.beforeSnapshot when bounded-history eviction has occurred). Every closed historySession with 
+D 
+c
+​
+ 
+
+=preSessionDocSnapshot produces exactly 1 Composition undo group.   
+MD
++ 1
+
+INV-06 (Settlement Fence & FIFO Command Ordering):
+
+No command targeting ActiveComposition executes while S'.provisionalOverlay != null; completeSettlement(fenceId) rejects any fenceId != activeFence.fenceId (StaleSettlementFence); settled commands execute in strict FIFO ticket order.   
+MD
+
+INV-07 (Grapheme-Closed CompositionTarget Attribute & Frame Invariant — Resolves Critique 4b):
+
+When a command Format(patch, ActiveComposition(sessionId)) executes on settlement between pre-command committed state 
+D 
+before
+​
+  and post-command committed state 
+D 
+after
+​
+ , let 
+I 
+raw
+​
+  be the indices of units in 
+D 
+before
+​
+  with originSessionId == sessionId, and let 
+I 
+grapheme
+​
+  be the outward grapheme-cluster closure of 
+I 
+raw
+​
+  within each block (§5.3):   
+MD
+
+If 
+I 
+raw
+​
+ =∅: 
+D 
+after
+​
+ ==D 
+before
+​
+ , typingIntent is updated with patch, docRev does not increment, and no Formatting undo group is created.   
+MD
+
+If 
+I 
+raw
+​
+ 
+
+=∅:
+
+For every index 
+i∈I 
+grapheme
+​
+ : 
+D 
+after
+​
+ [i].attrs==ApplyPatch(D 
+before
+​
+ [i].attrs,patch), with char, tokenId, and originSessionId unchanged.
+
+For every index 
+i∈
+/
+I 
+grapheme
+​
+ : 
+D 
+after
+​
+ [i]==D 
+before
+​
+ [i] (100% unchanged).
+
+A Formatting undo group is recorded and docRev increments if and only if 
+∃i∈I 
+grapheme
+​
+  such that 
+D 
+after
+​
+ [i].attrs
+
+=D 
+before
+​
+ [i].attrs.   
+MD
+
+INV-08 (Ticket Conservation):
+
+Every issued command ticketId exists in pendingCommands 
+⊕ commandOutcomes.
+
+INV-09 (Exact Raw Selection Preservation):
+
+Every accepted input event supplying selection = [a, b] sets S'.rawSelectionInDv = [a, b].
+
+INV-10 (Atomic Rollback on Rejection/Fault):
+
+Every Rejected (AlreadyUnmarked, StaleSettlementFence, TargetSessionMismatch), StaleEpoch, Duplicate, or simulated exception leaves all six state components, revisions, and queues bit-for-bit identical to 
+S.   
+MD
+
+4. Normative Event Transition Table (v5.3)
+Event	Guard / Pre-State	Post-State	Effect on Six State Components	DocRev / SessRev	History & Pending Commands
+startComposition([u, v))	Idle	Composing	Opens provisionalOverlay with 1-unit segments for 
+D 
+c
+​
+ [u..v) (or ([u,u), []) if 
+u=v), markedWindow=
+[0,v−u), attributionEpoch (epochId=1), historySession (preSessionDocSnapshot=
+D 
+c
+​
+ ).	
+Doc: same
+
+
+Sess: +1
+
+None.
+preedit(text, range?, sel?)	Idle, Composing, or Settling	Composing	If Idle, initializes session at selection. If range differs from current markedRange (or Settling), applies §2.2 retarget first. Applies §2.1 pure segment reconciliation against baseSegments and 
+B 
+epoch
+​
+ .	
+Doc: +1 iff 
+D 
+v
+​
+  changed
+
+
+Sess: +1
+
+Remains queued in FIFO order; refreshes activeFence if Settling -> Composing.
+partialCommit(k)	Composing (markedWindow != null)	Composing	Applies §2.3: splices 
+P 
+commit
+​
+ =U 
+overlay
+​
+ [0..relStart+k) into 
+D 
+c
+​
+ [s 
+c
+​
+ ..d 
+cut
+​
+ ) only; shifts remaining segments 
+G 
+rem
+′
+​
+  by 
+Δ; sets markedWindow=
+[0,m 
+rem
+​
+ ), epochId++.	
+Doc: same (
+D 
+v
+​
+  identical)
+
+
+Sess: +1
+
+Deferred until session termination.
+retarget([u_v, v_v))	Composing (markedWindow != null)	Composing	Applies §2.2: absorbs newly covered 
+D 
+c
+​
+  units on left/right as 1-unit segments; sets markedWindow=
+[u 
+v
+​
+ −s 
+c
+′
+​
+ ,v 
+v
+​
+ −s 
+c
+′
+​
+ ), baseSegments, 
+B 
+epoch
+​
+ , epochId++.	
+Doc: same (
+D 
+v
+​
+  identical)
+
+
+Sess: +1
+
+Remains queued in FIFO order.
+unmark(settled: false)	Composing (markedWindow != null)	Settling	Clears markedWindow = null and attributionEpoch = null; retains provisionalOverlay.segments and historySession; allocates activeFence.	
+Doc: same
+
+
+Sess: +1
+
+Awaits completeSettlement(fenceId).
+unmark(settled: true)	Composing (markedWindow != null)	Idle	Splices flatten(segments) into 
+D 
+c
+​
+ [s 
+c
+​
+ ..e 
+c
+​
+ ) preserving each unit's tokenId and originSessionId; clears session state.	
+Doc: +1 iff drained cmd edits 
+D 
+c
+​
+ 
+
+
+Sess: +1
+
+Pushes 1 Composition group iff 
+D 
+c
+​
+ 
+
+=preSessionDocSnapshot; drains FIFO commands via INV-07.
+unmark(settled: *)	Settling (markedWindow == null)	Settling	
+Rejected (AlreadyUnmarked); zero state mutation. 
+MD
+
+Doc: same
+
+
+Sess: same
+
+Unaffected.
+completeSettlement(fenceId)	Settling (markedWindow == null)	Idle	Requires fenceId == activeFence.fenceId (else Rejected(StaleSettlementFence)). Splices flatten(segments) into 
+D 
+c
+​
+ [s 
+c
+​
+ ..e 
+c
+​
+ ) preserving tokenId and originSessionId; clears session state.	
+Doc: +1 iff drained cmd edits 
+D 
+c
+​
+ 
+
+
+Sess: +1
+
+Pushes 1 Composition group iff 
+D 
+c
+​
+ 
+
+=preSessionDocSnapshot; drains FIFO commands via INV-07.
+commit(text, range?)	Idle, Composing, or Settling	Idle	Reconciles text via §2.1 (opening session at selection/range if Idle or Settling), flushes flatten(segments) into 
+D 
+c
+​
+ [s 
+c
+​
+ ..e 
+c
+​
+ ) preserving tokenId and originSessionId, clears session state.	
+Doc: +1 iff 
+D 
+v
+​
+  changed (or drained cmd edits 
+D 
+c
+​
+ )
+
+
+Sess: +1
+
+Pushes 1 Composition group iff 
+D 
+c
+​
+ 
+
+=preSessionDocSnapshot; drains FIFO commands via INV-07.
+cancelUncommitted()	Composing or Settling	Idle	Discards provisionalOverlay, markedWindow, attributionEpoch. 
+D 
+c
+​
+  is untouched (
+D 
+v
+′
+​
+ =D 
+c
+​
+ ).	
+Doc: +1 iff 
+D 
+v
+​
+  changed (or unrelated cmd edits 
+D 
+c
+​
+ )
+
+
+Sess: +1
+
+Pushes 1 Composition group iff 
+D 
+c
+​
+ 
+
+=preSessionDocSnapshot; cancels ActiveComposition cmds; drains TrackedRange cmds. 
+MD
+
+openNewConnection() / dispose()	Any	Idle (Active / Closed)	If provisionalOverlay != null, flushes flatten(segments) into 
+D 
+c
+​
+ [s 
+c
+​
+ ..e 
+c
+​
+ ) preserving tokenId and originSessionId, clears session state, increments connectionEpoch++.	
+Doc: same
+
+
+Sess: +1
+
+Pushes 1 Composition group iff 
+D 
+c
+​
+ 
+
+=preSessionDocSnapshot; cancels pending cmds (StaleEpoch / Disposed). 
+MD
+
+Would you like me to generate the executable protocol-coordinator.mjs and independent-model-checker.mjs files implementing this v5.3 Segment-Mapped Overlay and Annotated Token-Tape Oracle so we can run the actual run-20261013-04 verification suite next?

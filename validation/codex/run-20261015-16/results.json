@@ -1,0 +1,88 @@
+{
+  "run": "run-20261015-16",
+  "timestamp": "2026-10-15T15:32:18.703Z",
+  "environment": {
+    "node": "v24.20.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "passed": true,
+  "elapsedMs": 419.71909999999997,
+  "results": [
+    {
+      "name": "structuralTests",
+      "status": "PASS",
+      "detail": {
+        "named": 20
+      },
+      "elapsedMs": 32.035700000000006
+    },
+    {
+      "name": "overlayTests",
+      "status": "PASS",
+      "detail": {
+        "cases": 6
+      },
+      "elapsedMs": 8.533800000000014
+    },
+    {
+      "name": "generatedStructuralTests",
+      "status": "PASS",
+      "detail": {
+        "cases": 324,
+        "oracle": "independent raw splice, exact fixture-root restoration, schema checks"
+      },
+      "elapsedMs": 357.78819999999996
+    },
+    {
+      "name": "admissionTests",
+      "status": "PASS",
+      "detail": {
+        "cases": 6,
+        "limits": "synthetic stamps; alternate basis identity mapping remains in prior model; no host provenance claim"
+      },
+      "elapsedMs": 0.8674000000000319
+    },
+    {
+      "name": "historyTests",
+      "status": "PASS",
+      "detail": {
+        "cases": 8
+      },
+      "elapsedMs": 0.9560999999999922
+    },
+    {
+      "name": "historyExploration",
+      "status": "PASS",
+      "detail": {
+        "cases": 726,
+        "maxQueuedCommands": 4,
+        "assertions": "history root/chain, redo chain, ticket outcomes; not a complete state-space proof"
+      },
+      "elapsedMs": 5.817900000000009
+    },
+    {
+      "name": "mutations",
+      "status": "PASS",
+      "detail": {
+        "passingControls": 6,
+        "killed": 6
+      },
+      "elapsedMs": 10.163700000000006
+    }
+  ],
+  "sourceHashes": {
+    "candidate-b-coordinator.mjs": "2ad62940f6c21b0fa00e2cbea9fa39ae4671cfc4e9f1a2e0738d79fa2e405898",
+    "protocol-model.mjs": "0c650307efe5dcc63ee54a4cb0ca148d6b84adf17c87c785c2c49b08d299b746",
+    "request-contract.mjs": "205ea355e0e9f78095a9ca643bf109894c6f80a8d7c123bb207443d170f2adae",
+    "structural-model.mjs": "8a3bce63c046898337acc84d1f37f12ce8b933b54e2d5346bbcc7954b1bac822",
+    "test-contracts.mjs": "5a2d610a5cf465c16fc403aaebf192f9fff1d1a208017796ac5a57e5924e14cf",
+    "verify.mjs": "3b858d18f02529411da27e78f8c11eca307901af8f72915f8521b2d18e240b12"
+  },
+  "limits": [
+    "Array/tree-copy reference model only",
+    "Admission and history models are separately tested contracts, not integrated OS adapters",
+    "Not exhaustive model checking",
+    "No production or platform qualification"
+  ]
+}

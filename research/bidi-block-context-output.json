@@ -1,0 +1,6 @@
+{
+  "checks": 131820,
+  "windowChecks": 12584,
+  "edits": 3000,
+  "scope": "Classified L/R/neutral plus ASCII brackets, single isolating run, N0-N2 directions only. Direct model oracle."
+}

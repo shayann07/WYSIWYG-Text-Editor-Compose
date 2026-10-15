@@ -1,0 +1,361 @@
+{
+  "run": "run-20261015-14",
+  "timestamp": "2026-10-15T13:10:48.607Z",
+  "environment": {
+    "node": "v24.20.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "elapsedMs": 120870.00399999999,
+  "passed": true,
+  "results": [
+    {
+      "name": "Preserved baseline counterexamples",
+      "status": "PASS",
+      "elapsedMs": 17.0828,
+      "detail": [
+        {
+          "name": "invalidSelection",
+          "reproduced": true,
+          "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'InvalidSelection'\n"
+        },
+        {
+          "name": "publishedBasis",
+          "reproduced": true,
+          "message": "Expected values to be strictly equal:\n\n'XQbc' !== 'XaQc'\n"
+        },
+        {
+          "name": "capturedCommand",
+          "reproduced": true,
+          "message": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n+   {},\n+   {},\n    {\n+     bold: false\n-     bold: true\n    },\n-   {},\n-   {}\n  ]\n"
+        },
+        {
+          "name": "immutablePublication",
+          "reproduced": true,
+          "message": "Expected values to be strictly equal:\n\n'BAD' !== 'Xabc'\n"
+        }
+      ]
+    },
+    {
+      "name": "test-repaired-regressions.mjs",
+      "status": "PASS",
+      "elapsedMs": 65.2447,
+      "detail": {
+        "passed": 22,
+        "total": 22
+      }
+    },
+    {
+      "name": "test-fixtures.mjs",
+      "status": "PASS",
+      "elapsedMs": 20.667100000000005,
+      "detail": {
+        "IndependentOracle": {
+          "passed": 18,
+          "failed": 0,
+          "errors": []
+        },
+        "CandidateA": {
+          "passed": 10,
+          "failed": 8,
+          "errors": [
+            {
+              "fixture": "gap43_partial_commit_absorbed_content",
+              "error": "Text mismatch on Gap 4.3: partial commit commits preceding prefix and preserves absorbed original c: actual \"aYcd\" vs expected \"aXYcd\"\n\n'aYcd' !== 'aXYcd'\n"
+            },
+            {
+              "fixture": "gap44_deletion_at_commit_boundary_cancelled",
+              "error": "Text mismatch on Gap 4.4: deletion at commitment cut boundary belongs to remaining effect and is cancelled: actual \"ab\" vs expected \"abc\"\n\n'ab' !== 'abc'\n"
+            },
+            {
+              "fixture": "gap44_deletion_after_retargeted_cut_boundary",
+              "error": "Text mismatch on Gap 4.4: deletion after retargeted cut boundary belongs to remaining effect and is cancelled: actual \"abce\" vs expected \"abcde\"\n\n'abce' !== 'abcde'\n"
+            },
+            {
+              "fixture": "gap45_replacement_rollback_ownership",
+              "error": "Text mismatch on Gap 4.5: replacement rollback obligation has exactly one owner when split: actual \"aUc\" vs expected \"aXUc\"\n\n'aUc' !== 'aXUc'\n"
+            },
+            {
+              "fixture": "finding_a_repeated_undo_redo_empty_preimage",
+              "error": "Text mismatch on Finding A: repeated undo/redo preserves empty document preimage: actual \"x\" vs expected \"\"\n\n'x' !== ''\n"
+            },
+            {
+              "fixture": "finding_b_native_removal_history",
+              "error": "Text mismatch on Finding B: native removal creates tracked undo history: actual \"ac\" vs expected \"abc\"\n\n'ac' !== 'abc'\n"
+            },
+            {
+              "fixture": "finding_c_disposal_preserves_provisional",
+              "error": "Undo stack length mismatch on Finding C: disposal preserves accepted provisional content: actual 0 vs expected 1\n\n0 !== 1\n"
+            },
+            {
+              "fixture": "finding_d_resumed_preedit_omitted_range_selection",
+              "error": "Text mismatch on Finding D: resumed preedit with omitted range targets selection: actual \"HYllo\" vs expected \"HXYllo\"\n\n'HYllo' !== 'HXYllo'\n"
+            }
+          ]
+        },
+        "CandidateB": {
+          "passed": 18,
+          "failed": 0,
+          "errors": []
+        }
+      }
+    },
+    {
+      "name": "test-settlement-lifecycle.mjs",
+      "status": "PASS",
+      "elapsedMs": 7.153599999999983,
+      "detail": {
+        "passed": 21,
+        "failed": 0
+      }
+    },
+    {
+      "name": "test-semantic-gaps.mjs",
+      "status": "PASS",
+      "elapsedMs": 8.5317,
+      "detail": {
+        "passed": 17
+      }
+    },
+    {
+      "name": "test-named-longer-sequences.mjs",
+      "status": "PASS",
+      "elapsedMs": 19.280200000000008,
+      "detail": {
+        "passed": 10,
+        "total": 10
+      }
+    },
+    {
+      "name": "test-contract-coverage-sweep.mjs",
+      "status": "PASS",
+      "elapsedMs": 26.41629999999998,
+      "detail": {
+        "passed": 85,
+        "total": 85,
+        "scope": "85 selected state/event cells, not exhaustive protocol coverage"
+      }
+    },
+    {
+      "name": "test-transaction-reentrancy-contract.mjs",
+      "status": "PASS",
+      "elapsedMs": 7.611099999999993,
+      "detail": {
+        "passed": 22,
+        "total": 22
+      }
+    },
+    {
+      "name": "test-mutations.mjs",
+      "status": "PASS",
+      "elapsedMs": 44.43120000000002,
+      "detail": {
+        "positivePassed": 56,
+        "mutantsCaught": 56,
+        "cleanKills": 56,
+        "unrelatedCrashes": 0,
+        "total": 56
+      }
+    },
+    {
+      "name": "Public request boundary",
+      "status": "PASS",
+      "elapsedMs": 70.40199999999999,
+      "detail": {
+        "named": 11,
+        "scheduledRequests": 41,
+        "generated": 36
+      }
+    },
+    {
+      "name": "Boundary behavior mutants",
+      "status": "PASS",
+      "elapsedMs": 3.433899999999994,
+      "detail": {
+        "controls": 4,
+        "assertionKills": 4
+      }
+    },
+    {
+      "name": "Versioned identity index",
+      "status": "PASS",
+      "elapsedMs": 55.34230000000002,
+      "detail": {
+        "randomEdits": 1200,
+        "historicalVersions": 30,
+        "scaling": [
+          {
+            "pieces": 65,
+            "nodes": 6,
+            "height": 2,
+            "tokenEntries": 65,
+            "parentEntries": 5,
+            "edit": {
+              "mapVisits": 240,
+              "mapAlloc": 242,
+              "docVisits": 2,
+              "docAlloc": 3,
+              "locatorWrites": 17,
+              "parentWrites": 5
+            },
+            "lookup": {
+              "mapVisits": 9,
+              "mapAlloc": 0,
+              "docVisits": 2,
+              "docAlloc": 0,
+              "locatorWrites": 0,
+              "parentWrites": 0
+            }
+          },
+          {
+            "pieces": 1025,
+            "nodes": 71,
+            "height": 3,
+            "tokenEntries": 1025,
+            "parentEntries": 70,
+            "edit": {
+              "mapVisits": 492,
+              "mapAlloc": 489,
+              "docVisits": 3,
+              "docAlloc": 5,
+              "locatorWrites": 17,
+              "parentWrites": 22
+            },
+            "lookup": {
+              "mapVisits": 22,
+              "mapAlloc": 0,
+              "docVisits": 3,
+              "docAlloc": 0,
+              "locatorWrites": 0,
+              "parentWrites": 0
+            }
+          },
+          {
+            "pieces": 16385,
+            "nodes": 1096,
+            "height": 4,
+            "tokenEntries": 16385,
+            "parentEntries": 1095,
+            "edit": {
+              "mapVisits": 898,
+              "mapAlloc": 892,
+              "docVisits": 4,
+              "docAlloc": 7,
+              "locatorWrites": 17,
+              "parentWrites": 39
+            },
+            "lookup": {
+              "mapVisits": 36,
+              "mapAlloc": 0,
+              "docVisits": 4,
+              "docAlloc": 0,
+              "locatorWrites": 0,
+              "parentWrites": 0
+            }
+          }
+        ],
+        "memoryEstimate": {
+          "assumptions": "24B assumed packed piece record (20B scalar fields + padding); 256B document node; 64B AVL entry. Object headers/occupancy/platform layout require measurement.",
+          "parts": {
+            "textBytes": 2000000,
+            "pieceScalars": 24000,
+            "docNodeAssumption": 25600,
+            "tokenMapAssumption": 64000,
+            "parentMapAssumption": 6336,
+            "historyBytes": 0,
+            "pendingBytes": 0,
+            "tempBytes": 0
+          },
+          "total": 2119936
+        },
+        "scope": "validation data structure, no Kotlin allocator measurements"
+      }
+    },
+    {
+      "name": "Five final contracts",
+      "status": "PASS",
+      "elapsedMs": 8.081900000000019,
+      "detail": {
+        "contracts": 5,
+        "evidenceCases": 8,
+        "structural": {
+          "projectionCases": 9,
+          "preparationPolicyExamples": 2,
+          "scope": "classifier and declared fixture; not a hierarchical reducer implementation"
+        }
+      }
+    },
+    {
+      "name": "Final-contract behavior mutants",
+      "status": "PASS",
+      "elapsedMs": 4.350900000000024,
+      "detail": {
+        "controls": 4,
+        "assertionKills": 4
+      }
+    },
+    {
+      "name": "Previous session revision counterexample",
+      "status": "PASS",
+      "elapsedMs": 3.1622999999999593,
+      "detail": {
+        "before": 0,
+        "after": 0,
+        "selection": [
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "name": "Retained bounded model exploration",
+      "status": "PASS",
+      "elapsedMs": 120463.6671,
+      "detail": {
+        "states": 146594,
+        "transitions": 203280,
+        "rejections": 56687,
+        "elapsedMs": 120461
+      }
+    },
+    {
+      "name": "Earlier run preservation",
+      "status": "PASS",
+      "elapsedMs": 8.584099999992759,
+      "detail": {
+        "files": 35
+      }
+    }
+  ],
+  "sourceHashes": {
+    "candidate-a-coordinator.mjs": "273f5354c90d3e55bc5fc44539ff888a5f736fc40ba250a6d5ab8b06a0861634",
+    "candidate-b-coordinator.mjs": "5f284c8c5ee6b800ba0665d4f1976625c4a9a6a78efab3017f1f6162b6957552",
+    "composition-admission.mjs": "03196695ccd4a5754cea81ae8d293ac7f0590ec604c019457c3caa29f0f9cceb",
+    "fixtures.mjs": "9df3925b93d6b51f6014e99bdb8b777f44c92bc54706617918598ae5e65d118f",
+    "independent-model-checker.mjs": "a903d58797ce698b0ce6947ec4c118db23254c0d88ad4057fcd5d9eff69c4db8",
+    "independent-oracle.mjs": "cd8d2f8f679dfa8d15cd6c4d829ca1571bed9b3d69c3e9a4b3a6c60d54aeb9ea",
+    "persistent-identity-index-prototype.mjs": "caecd4e91464d82401c4400b3740f44e21eac72ef081cdecf52fe2f44d3e94ef",
+    "reproduce-failures.mjs": "f2a0f3ef631e02c464a65bf6f773b39dd7c38ce8a2b8d3cbd355a253ba09fcbb",
+    "request-contract.mjs": "205ea355e0e9f78095a9ca643bf109894c6f80a8d7c123bb207443d170f2adae",
+    "runner.mjs": "ac633c12d8fb68aeb4dcbdaebaef2b6770434fa4af853bec3f30819a4dda0f29",
+    "test-contract-coverage-sweep.mjs": "3439446e00282e89711be62f04bbb22b44684037d503846ff65c4f1272d6b2ee",
+    "test-final-contracts.mjs": "403497a53c312a4bd8f541aebf17a5e6fa30c3e1a72291a28988dc161100123f",
+    "test-fixtures.mjs": "15f35a631bcba9ba837f8026a51746c699714776d170428720a18dc67223fead",
+    "test-mutations.mjs": "c3f6d8069735c16feff30ed94fa341c5c09e9e3d456a6720d6f27566539a0aef",
+    "test-named-longer-sequences.mjs": "84373c724c9d040eaa35dbc8907d7ace6616626e14af949eb6461b1752ae949d",
+    "test-public-boundary.mjs": "041676b3d2aec850cddbb57237c34d22c0467040f35674764d48f109a62e379b",
+    "test-repaired-regressions.mjs": "339ae07d8a47d30f8d4d5642ae7b0872b1b7440678e07dcfeb63e139ade682ef",
+    "test-semantic-gaps.mjs": "00a1192a28fc9c71e266517c02a415fa3cc512e45f22ce5488ba2a0279db9188",
+    "test-settlement-lifecycle.mjs": "9345381c80af08dd14aebb9bb4917250611ef87873a04e2b2d7761fed14a3d57",
+    "test-transaction-reentrancy-contract.mjs": "663bc8696856080ebb0379789aadae9213162a33abf08b0af2049fc5771ad992",
+    "test-versioned-index.mjs": "b478264dee35933e69be83615e2ba4a14847d09254feea7e284ce65de58a7fca",
+    "verify.mjs": "284b5703d5e1a55e1da50f5092e0424847e2dae2e838be1159118153701bd54f",
+    "versioned-piece-index.mjs": "dcc70c1012f120970356eee4fe3c8bcb300537d3b0bce11f47cf8c71d59e80a1"
+  },
+  "limits": [
+    "No native IME or accessibility qualification",
+    "No Kotlin implementation or allocator measurement",
+    "BFS is retained bounded sampling; new reentrant scheduling tests are a separate suite",
+    "No production performance gate passed"
+  ]
+}

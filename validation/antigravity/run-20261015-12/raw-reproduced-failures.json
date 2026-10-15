@@ -1,0 +1,26 @@
+[
+  {
+    "test": "1",
+    "name": "Deferred callbacks bypass connection-epoch validation",
+    "description": "applyInput validates admission before queueing, but the queue stores a closure that executes the already-resolved mutation without repeating admission checks against the execution state, allowing an epoch-0 callback to execute against epoch-1 connection",
+    "error": "Old epoch-0 callback must not mutate epoch-1 connection!\n\n'Xabc' !== 'abc'\n"
+  },
+  {
+    "test": "2",
+    "name": "Public reads expose unpublished state",
+    "description": "Public getters (docText, selection, documentRevision) query in-progress working state directly rather than maintaining a coherent published snapshot boundary, exposing intermediate state before rollback",
+    "error": "Public docText query during transaction must observe published snapshot \"abc\", not staged \"aXc\"!\n\n'aXc' !== 'abc'\n"
+  },
+  {
+    "test": "3",
+    "name": "Ordinary settlement incorrectly cancels reentrant commands as Disposed",
+    "description": "_completeSettlement explicitly clears _reentrantMutationQueue and labels tickets Disposed even when connection remains Active, discarding eligible reentrant commands",
+    "error": "Normal settlement must not cancel reentrant commands as Disposed!"
+  },
+  {
+    "test": "4",
+    "name": "Identity-index specification and memory accounting discrepancies",
+    "description": "The claimed ~16 MiB total for 1M pieces is mathematically unsupported: Piece contains 24 bytes of scalar fields and consumes >= 40 bytes per object on 64-bit JVM (~38.15 MiB for objects alone before tree nodes, array references, or secondary TokenIndex), and conflates the 64 MiB history budget with total engine heap",
+    "error": "Claimed ~16 MiB total for 1M pieces is unsupported: Piece objects alone require 38.15 MiB before tree nodes or secondary TokenIndex!"
+  }
+]

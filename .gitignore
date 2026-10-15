@@ -1,0 +1,32 @@
+# Downloaded tools and reinstallable dependencies
+/research/tools/
+**/node_modules/
+**/target/
+**/.gradle/
+**/__pycache__/
+# Generated native build artifacts
+/research/native-layout-source/skia-release/out/
+**/classes/
+*.class
+*.exe
+*.obj
+*.o
+*.lib
+*.dll
+*.pdb
+*.exp
+*.jar
+*.zip
+*.pyc
+# Local editor/OS state and credentials
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+.env
+.env.*
+!.env.example
+*.p12
+*.pfx
+*.keystore
+*.jks

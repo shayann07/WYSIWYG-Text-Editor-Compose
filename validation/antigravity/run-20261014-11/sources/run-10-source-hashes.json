@@ -1,0 +1,112 @@
+{
+  "antigravity-plan-diff.md": {
+    "originalPath": "antigravity-plan-diff.md",
+    "sha256": "159881cfd69c33a88c1624db657d9bd4853cf1aff3e8764fd86b3ba016132efc",
+    "sizeBytes": 77531
+  },
+  "antigravity-validation-matrix.csv": {
+    "originalPath": "antigravity-validation-matrix.csv",
+    "sha256": "b074f43be5e64b33c7fae6b2fffca1207b67f88d9877755d89cd6e013a3c2e86",
+    "sizeBytes": 37951
+  },
+  "antigravity-validation-report.md": {
+    "originalPath": "antigravity-validation-report.md",
+    "sha256": "4c0e91f4aefba68f62f2e9c3c06789b302ff68051ff8c3475cc9f753418125a2",
+    "sizeBytes": 25539
+  },
+  "plan-v4.md": {
+    "originalPath": "plan-v4.md",
+    "sha256": "c1a92b4b21e3418bc2e61d96503927321271b74c2ab12f69671350447952bbbe",
+    "sizeBytes": 143785
+  },
+  "run-09-candidate-a-coordinator.mjs": {
+    "originalPath": "validation\\antigravity\\run-20261014-09\\candidate-a-coordinator.mjs",
+    "sha256": "5ca804b1c7b500998c24f729e8c9733406efcbc62e236aae0c3ffebb9fdd39c3",
+    "sizeBytes": 23889
+  },
+  "run-09-candidate-b-coordinator.mjs": {
+    "originalPath": "validation\\antigravity\\run-20261014-09\\candidate-b-coordinator.mjs",
+    "sha256": "9f90709fd694c40746548aec572096a6ac32320d1b741c9a3b62ab2487908a47",
+    "sizeBytes": 87286
+  },
+  "run-09-fixtures.mjs": {
+    "originalPath": "validation\\antigravity\\run-20261014-09\\fixtures.mjs",
+    "sha256": "9df3925b93d6b51f6014e99bdb8b777f44c92bc54706617918598ae5e65d118f",
+    "sizeBytes": 15285
+  },
+  "run-09-independent-model-checker.mjs": {
+    "originalPath": "validation\\antigravity\\run-20261014-09\\independent-model-checker.mjs",
+    "sha256": "0027b1da08a3fc4b66115384e3fc748d931ed2e587529efba9062d24adf594f0",
+    "sizeBytes": 24902
+  },
+  "run-09-independent-oracle.mjs": {
+    "originalPath": "validation\\antigravity\\run-20261014-09\\independent-oracle.mjs",
+    "sha256": "c669321b0defbbf49c97cf27b55dcd26feb2db2312a30889c849e0dfd37a1d5f",
+    "sizeBytes": 72497
+  },
+  "run-09-observable-editing-contract.md": {
+    "originalPath": "validation\\antigravity\\run-20261014-09\\observable-editing-contract.md",
+    "sha256": "623d28e4607f08760db0e61d8e04e51e073743a3596e758220749ab84b554e26",
+    "sizeBytes": 42620
+  },
+  "run-09-raw-reproduced-failures.json": {
+    "originalPath": "validation\\antigravity\\run-20261014-09\\raw-reproduced-failures.json",
+    "sha256": "f4769d7f8086e5170930522b0f35a29da4f452cf08b3291a35833fe2ff0bd0be",
+    "sizeBytes": 1311
+  },
+  "run-09-reproduce-failures.mjs": {
+    "originalPath": "validation\\antigravity\\run-20261014-09\\reproduce-failures.mjs",
+    "sha256": "416cfd2a5032fadffb9d9d80f2624e46df8fee1581dacd14f0a1fb2c20243166",
+    "sizeBytes": 7496
+  },
+  "run-09-results.json": {
+    "originalPath": "validation\\antigravity\\run-20261014-09\\results.json",
+    "sha256": "5927a8575ba3c6025c7533231ab097c238c8e0fdc693a153ee9a557c22d93a4b",
+    "sizeBytes": 6062
+  },
+  "run-09-runner.mjs": {
+    "originalPath": "validation\\antigravity\\run-20261014-09\\runner.mjs",
+    "sha256": "593dae69911e3d8ca72e53656a6a22a1155b66dfd6dea7967e6092f6847c81c7",
+    "sizeBytes": 11261
+  },
+  "run-09-source-hashes.json": {
+    "originalPath": "validation\\antigravity\\run-20261014-09\\source-hashes.json",
+    "sha256": "a72d21262851876a4e37b5dd398dff95a5dc875746487857541e21e1dcf72acd",
+    "sizeBytes": 4879
+  },
+  "run-09-test-contract-coverage-sweep.mjs": {
+    "originalPath": "validation\\antigravity\\run-20261014-09\\test-contract-coverage-sweep.mjs",
+    "sha256": "50b6ab5f749f6b0b13a26ee589b0ec35c50b3110d635bfae6d4265e25eebea0e",
+    "sizeBytes": 9471
+  },
+  "run-09-test-fixtures.mjs": {
+    "originalPath": "validation\\antigravity\\run-20261014-09\\test-fixtures.mjs",
+    "sha256": "15f35a631bcba9ba837f8026a51746c699714776d170428720a18dc67223fead",
+    "sizeBytes": 6610
+  },
+  "run-09-test-mutations.mjs": {
+    "originalPath": "validation\\antigravity\\run-20261014-09\\test-mutations.mjs",
+    "sha256": "af02a83cb1505dbfbfdcbaeffb3dd9638ad3406c81b628159e476f655590de37",
+    "sizeBytes": 48861
+  },
+  "run-09-test-named-longer-sequences.mjs": {
+    "originalPath": "validation\\antigravity\\run-20261014-09\\test-named-longer-sequences.mjs",
+    "sha256": "177e11441b7586b924a5335f963c436ebef252ae627769a64b5174d98bb1c5c7",
+    "sizeBytes": 20263
+  },
+  "run-09-test-repaired-regressions.mjs": {
+    "originalPath": "validation\\antigravity\\run-20261014-09\\test-repaired-regressions.mjs",
+    "sha256": "0dfacbb1720dc08699e8fcfaad915992750cdc4f72ac9fcd391b71c57afb6d75",
+    "sizeBytes": 68466
+  },
+  "run-09-test-semantic-gaps.mjs": {
+    "originalPath": "validation\\antigravity\\run-20261014-09\\test-semantic-gaps.mjs",
+    "sha256": "00a1192a28fc9c71e266517c02a415fa3cc512e45f22ce5488ba2a0279db9188",
+    "sizeBytes": 16389
+  },
+  "run-09-test-settlement-lifecycle.mjs": {
+    "originalPath": "validation\\antigravity\\run-20261014-09\\test-settlement-lifecycle.mjs",
+    "sha256": "9345381c80af08dd14aebb9bb4917250611ef87873a04e2b2d7761fed14a3d57",
+    "sizeBytes": 16438
+  }
+}

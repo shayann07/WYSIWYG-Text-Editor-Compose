@@ -1,0 +1,7 @@
+Review the attached Compose Multiplatform Editor Standalone Specification 4.13.0 independently. This is a read-only design review: do not implement production code or advance phases. Read all sections, including the integrated-owner contract in §4.9 and the scoped evidence report.
+
+Assess whether admission, provisional structural replacement and history semantics compose correctly under queued and reentrant input, generation changes, partial commits, nonterminal unmark, terminal changes, cancellation, formatting and multiple Undos. Challenge exact coordinate bases, publication/rollback, identity lifetimes, hierarchy/provenance rebasing, semantic equality and surviving unrelated content. Assess the explicit ListItem Block+ schema and object-seam policies against the intended product.
+
+The reference model now executes these tested components together. Do not repeat the old separate-model finding without checking the revised evidence. Conversely, synthetic stamps and bounded reference traces do not qualify native hosts, the full product command catalog, persistent Kotlin storage, accessibility or performance. Distinguish inspected, inferred and executed evidence.
+
+For each material finding give section, severity, classification, concrete initial state/event sequence, expected versus specified behavior, smallest correction and a discriminating test. State unread material and unrun claims. Return a scoped readiness verdict and a finite closure checklist. Do not rubber-stamp, invent defects or silently reduce product scope.

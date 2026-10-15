@@ -1,0 +1,22 @@
+probe.cpp
+OneLineShaper-patched.cpp
+C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\include\bit(11): warning STL4038: The contents of <bit> are available only with C++20 or later.
+skia-release\src/base/SkMathPriv.h(23): error C2039: 'countl_zero': is not a member of 'std'
+C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\include\unordered_set(23): note: see declaration of 'std'
+skia-release\src/base/SkMathPriv.h(23): error C2065: 'countl_zero': undeclared identifier
+skia-release\src/base/SkMathPriv.h(23): error C2275: 'uint32_t': expected an expression instead of a type
+skia-release\src/base/SkMathPriv.h(22): error C3615: constexpr function 'SkCLZ' cannot result in a constant expression
+skia-release\src/base/SkMathPriv.h(22): note: failure was caused by control reaching the end of a constexpr function
+skia-release\src/base/SkMathPriv.h(30): error C2039: 'countr_zero': is not a member of 'std'
+C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\include\unordered_set(23): note: see declaration of 'std'
+skia-release\src/base/SkMathPriv.h(30): error C2065: 'countr_zero': undeclared identifier
+skia-release\src/base/SkMathPriv.h(30): error C2275: 'uint32_t': expected an expression instead of a type
+skia-release\src/base/SkMathPriv.h(29): error C3615: constexpr function 'SkCTZ' cannot result in a constant expression
+skia-release\src/base/SkMathPriv.h(29): note: failure was caused by control reaching the end of a constexpr function
+skia-release\src/base/SkMathPriv.h(37): error C2039: 'popcount': is not a member of 'std'
+C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\include\unordered_set(23): note: see declaration of 'std'
+skia-release\src/base/SkMathPriv.h(37): error C2065: 'popcount': undeclared identifier
+skia-release\src/base/SkMathPriv.h(37): error C2275: 'uint32_t': expected an expression instead of a type
+skia-release\src/base/SkMathPriv.h(36): error C3615: constexpr function 'SkPopCount' cannot result in a constant expression
+skia-release\src/base/SkMathPriv.h(36): note: failure was caused by control reaching the end of a constexpr function
+Generating Code...

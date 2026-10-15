@@ -1,0 +1,142 @@
+{
+  "runId": "run-20261014-09",
+  "timestamp": "2026-10-14T14:13:35.165Z",
+  "environment": {
+    "node": "v24.20.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "totalElapsedMs": 66929.05,
+  "suitesCount": 9,
+  "allSuitesPassed": true,
+  "verdict": "ARCHITECTURAL_MERGE_APPROVED: Candidate B (Segment-Mapped Overlay) Repaired & Qualified for plan-v4 Revision 4.9.5",
+  "results": [
+    {
+      "suite": "Repaired-Defect-Regressions-A-F",
+      "status": "PASS",
+      "summary": "18/18 verification blocks resolved and verified (Failures A through F and retained regressions)"
+    },
+    {
+      "suite": "Hand-Calculated-Fixtures",
+      "status": "PASS",
+      "summary": {
+        "oracle": "18/18 passed",
+        "candidateB": "18/18 passed",
+        "candidateA": "10/18 passed (8 architectural failures)"
+      },
+      "details": {
+        "IndependentOracle": {
+          "passed": 18,
+          "failed": 0,
+          "errors": []
+        },
+        "CandidateA": {
+          "passed": 10,
+          "failed": 8,
+          "errors": [
+            {
+              "fixture": "gap43_partial_commit_absorbed_content",
+              "error": "Text mismatch on Gap 4.3: partial commit commits preceding prefix and preserves absorbed original c: actual \"aYcd\" vs expected \"aXYcd\"\n\n'aYcd' !== 'aXYcd'\n"
+            },
+            {
+              "fixture": "gap44_deletion_at_commit_boundary_cancelled",
+              "error": "Text mismatch on Gap 4.4: deletion at commitment cut boundary belongs to remaining effect and is cancelled: actual \"ab\" vs expected \"abc\"\n\n'ab' !== 'abc'\n"
+            },
+            {
+              "fixture": "gap44_deletion_after_retargeted_cut_boundary",
+              "error": "Text mismatch on Gap 4.4: deletion after retargeted cut boundary belongs to remaining effect and is cancelled: actual \"abce\" vs expected \"abcde\"\n\n'abce' !== 'abcde'\n"
+            },
+            {
+              "fixture": "gap45_replacement_rollback_ownership",
+              "error": "Text mismatch on Gap 4.5: replacement rollback obligation has exactly one owner when split: actual \"aUc\" vs expected \"aXUc\"\n\n'aUc' !== 'aXUc'\n"
+            },
+            {
+              "fixture": "finding_a_repeated_undo_redo_empty_preimage",
+              "error": "Text mismatch on Finding A: repeated undo/redo preserves empty document preimage: actual \"x\" vs expected \"\"\n\n'x' !== ''\n"
+            },
+            {
+              "fixture": "finding_b_native_removal_history",
+              "error": "Text mismatch on Finding B: native removal creates tracked undo history: actual \"ac\" vs expected \"abc\"\n\n'ac' !== 'abc'\n"
+            },
+            {
+              "fixture": "finding_c_disposal_preserves_provisional",
+              "error": "Undo stack length mismatch on Finding C: disposal preserves accepted provisional content: actual 0 vs expected 1\n\n0 !== 1\n"
+            },
+            {
+              "fixture": "finding_d_resumed_preedit_omitted_range_selection",
+              "error": "Text mismatch on Finding D: resumed preedit with omitted range targets selection: actual \"HYllo\" vs expected \"HXYllo\"\n\n'HYllo' !== 'HXYllo'\n"
+            }
+          ]
+        },
+        "CandidateB": {
+          "passed": 18,
+          "failed": 0,
+          "errors": []
+        }
+      }
+    },
+    {
+      "suite": "Settlement-Lifecycle-Adversarial",
+      "status": "PASS",
+      "summary": "21 lifecycle scenarios passed cleanly (nonterminal unmarks, preedit resumption, token fencing, turnover, disposal)"
+    },
+    {
+      "suite": "Deep-Semantic-Gaps",
+      "status": "PASS",
+      "summary": "17 detailed traces verified across Gaps 4.1 to 4.7 (formatting provenance, retargeting, absorbed units, zero-length deletions, multi-unit rollback)"
+    },
+    {
+      "suite": "Subclass-Mutation-Verification",
+      "status": "PASS",
+      "summary": "40/40 mutants caught cleanly (40 clean assertion kills, 0 unrelated crashes); 40/40 positive controls passed on unmodified Candidate B"
+    },
+    {
+      "suite": "Named-Longer-Sequences",
+      "status": "PASS",
+      "summary": "8/8 long named sequences verified across Candidate B and Independent Oracle (repeated 12-cycles, whole-doc deletion/replacement, nativeRemoval across lifecycle, disposal teardown, undo during composition, resumed preedit target resolution, dynamic selection bounds, interleaved formatting & branch invalidation)"
+    },
+    {
+      "suite": "Contract-Coverage-Sweep-85-Cells",
+      "status": "PASS",
+      "summary": "85/85 contract matrix cells verified exhaustively across Candidate B and Independent Oracle (17 events across 5 lifecycle states)"
+    },
+    {
+      "suite": "Bounded-Model-Checker",
+      "status": "PASS",
+      "summary": "Candidate B verified across 139746 unique states and 196532 transitions at depth 4. Candidate A proven unsound (Invariant 1 Violation (I_VISIBLE_PROJECTION): attributes mismatch on queueCommand).",
+      "details": {
+        "candidateB": {
+          "states": 139746,
+          "transitions": 196532,
+          "rejections": 56787,
+          "elapsedMs": 63554
+        },
+        "candidateAFailure": "Invariant 1 Violation (I_VISIBLE_PROJECTION): attributes mismatch on queueCommand"
+      }
+    },
+    {
+      "suite": "Comparative-Performance-Benchmark",
+      "status": "PASS",
+      "summary": "Candidate B executes at 1674 ops/sec (597.45 µs per full multi-step cycle), comfortably within the frame budget.",
+      "details": {
+        "candidateA": {
+          "name": "Candidate A (Flat Buffer)",
+          "iterations": 5000,
+          "durationMs": 194.24,
+          "opsPerSec": 25741,
+          "timePerOpUs": 38.85,
+          "approxHeapDeltaBytes": 0
+        },
+        "candidateB": {
+          "name": "Candidate B (Overlay)",
+          "iterations": 5000,
+          "durationMs": 2987.25,
+          "opsPerSec": 1674,
+          "timePerOpUs": 597.45,
+          "approxHeapDeltaBytes": 0
+        },
+        "overheadRatio": 15.38
+      }
+    }
+  ]
+}

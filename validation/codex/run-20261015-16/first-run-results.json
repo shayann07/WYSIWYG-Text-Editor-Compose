@@ -1,0 +1,75 @@
+{
+  "run": "run-20261015-16",
+  "timestamp": "2026-10-15T15:17:39.339Z",
+  "environment": {
+    "node": "v24.20.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "passed": false,
+  "elapsedMs": 324.0101,
+  "results": [
+    {
+      "name": "structuralTests",
+      "status": "FAIL",
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ 'Buy and mom'\n- 'Buyand mom'\n      ^\n\n    at Module.structuralTests (file:///D:/Work/WYSIWYG-Text-Editor-Compose/validation/codex/run-20261015-16/test-contracts.mjs:20:211)\n    at file:///D:/Work/WYSIWYG-Text-Editor-Compose/validation/codex/run-20261015-16/verify.mjs:5:57\n    at ModuleJob.run (node:internal/modules/esm/module_job:561:25)\n    at async node:internal/modules/esm/loader:647:26\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)"
+    },
+    {
+      "name": "overlayTests",
+      "status": "PASS",
+      "detail": {
+        "cases": 6
+      },
+      "elapsedMs": 11.5856
+    },
+    {
+      "name": "generatedStructuralTests",
+      "status": "PASS",
+      "detail": {
+        "cases": 324,
+        "oracle": "independent raw splice, exact fixture-root restoration, schema checks"
+      },
+      "elapsedMs": 284.46009999999995
+    },
+    {
+      "name": "admissionTests",
+      "status": "PASS",
+      "detail": {
+        "cases": 6,
+        "limits": "synthetic stamps; alternate basis identity mapping remains in prior model; no host provenance claim"
+      },
+      "elapsedMs": 0.6371999999999503
+    },
+    {
+      "name": "historyTests",
+      "status": "PASS",
+      "detail": {
+        "cases": 8
+      },
+      "elapsedMs": 1.5504000000000246
+    },
+    {
+      "name": "mutations",
+      "status": "PASS",
+      "detail": {
+        "passingControls": 3,
+        "killed": 3
+      },
+      "elapsedMs": 8.366199999999992
+    }
+  ],
+  "sourceHashes": {
+    "candidate-b-coordinator.mjs": "2ad62940f6c21b0fa00e2cbea9fa39ae4671cfc4e9f1a2e0738d79fa2e405898",
+    "protocol-model.mjs": "8be1828a9dcab31ae6a349d53bec3b41e21f72da1f3bbacd04db560a233fb360",
+    "request-contract.mjs": "205ea355e0e9f78095a9ca643bf109894c6f80a8d7c123bb207443d170f2adae",
+    "structural-model.mjs": "85308d18a07c939b0188fe194436e73b3e982e951f84df1091987e9c7cae5269",
+    "test-contracts.mjs": "3047e0c82b6ae4fc030ddb78103de2c55d4b7f7e0ea91748835a7afe89cbecea",
+    "verify.mjs": "ba699952e95181bc7accda6e80b2931cb1eebe9cb04dd5ece01b045dfdbff4a0"
+  },
+  "limits": [
+    "Array/tree-copy reference model only",
+    "Admission and history models are separately tested contracts, not integrated OS adapters",
+    "Not exhaustive model checking",
+    "No production or platform qualification"
+  ]
+}

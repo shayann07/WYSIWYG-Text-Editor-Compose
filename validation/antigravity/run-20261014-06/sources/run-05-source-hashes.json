@@ -1,0 +1,47 @@
+{
+  "plan-v4.md": {
+    "originalPath": "plan-v4.md",
+    "sha256": "c9f74a515d9f2a0eeb593d071713c17ebd5ec6035cfbc5672fe2fba23c79e465",
+    "sizeBytes": 96387
+  },
+  "antigravity-validation-report.md": {
+    "originalPath": "antigravity-validation-report.md",
+    "sha256": "d9f8f6f54d6c8be0894d0dfbdddb81b2cd36f9857677e8dc1a51c3a44925235b",
+    "sizeBytes": 27488
+  },
+  "antigravity-validation-matrix.csv": {
+    "originalPath": "antigravity-validation-matrix.csv",
+    "sha256": "e414c97215cbf8c8a6e6551bb8e8dd116dbc229b7d67e50a3298c665a0ec61ac",
+    "sizeBytes": 20432
+  },
+  "antigravity-plan-diff.md": {
+    "originalPath": "antigravity-plan-diff.md",
+    "sha256": "b088ffc74531d8b2ded50df262ac56f8e78fc75ad147a17f84cf0f0be18427eb",
+    "sizeBytes": 36821
+  },
+  "v5.3-proposal.txt": {
+    "originalPath": "C:/Users/shaya/.codex/attachments/a2779598-a61d-4def-b810-97f4132dd39f/Pasted text.txt",
+    "sha256": "dec81c69423ed1a24c5ae7ddfd15907452cf7d121b42e361144a9897c96c489c",
+    "sizeBytes": 27019
+  },
+  "run-04-protocol-coordinator.mjs": {
+    "originalPath": "validation/antigravity/run-20261013-04/protocol-coordinator.mjs",
+    "sha256": "c5ba01ee76b78e3784d3f7e35d5b6454487c1d2333e9f1b0504922908546e825",
+    "sizeBytes": 55987
+  },
+  "run-04-independent-model-checker.mjs": {
+    "originalPath": "validation/antigravity/run-20261013-04/independent-model-checker.mjs",
+    "sha256": "1dd115d72e9de85d566103198697c8afbe095e7f41a75df4505e144ea0adf469",
+    "sizeBytes": 43975
+  },
+  "run-04-reference-model.mjs": {
+    "originalPath": "validation/antigravity/run-20261013-04/reference-model.mjs",
+    "sha256": "222bca5f34dfb763c617b3a128ddbb5baf599ba9833d9326164c33ac1487f5eb",
+    "sizeBytes": 13334
+  },
+  "run-04-runner.mjs": {
+    "originalPath": "validation/antigravity/run-20261013-04/runner.mjs",
+    "sha256": "7bbffda8528909978454e8b643855c9d955f4e2e9b658b08f87db13b515e3ce7",
+    "sizeBytes": 6501
+  }
+}

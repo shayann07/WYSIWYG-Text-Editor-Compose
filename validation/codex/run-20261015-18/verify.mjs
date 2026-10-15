@@ -1,0 +1,10 @@
+import fs from 'node:fs';import path from 'node:path';import {fileURLToPath} from 'node:url';import {createHash} from 'node:crypto';
+import * as integrated from './test-integrated.mjs';import * as repairs from './test-repairs.mjs';
+const dir=path.dirname(fileURLToPath(import.meta.url)),results=[],begin=performance.now();
+for(const [name,fn]of [...['reproduceBaseline','regressionTests','structuralChains','awtTests','retentionTests','retentionSoak','midStageBasis','repairMutations'].map(n=>[n,repairs[n]]),...['namedTests','generatedIntegration','ledgerExploration','repeatedSessions','integratedMutations','scheduling'].map(n=>[n,integrated[n]])]){
+ const t=performance.now();try{const detail=await fn();results.push({name,status:detail.passed===false?'FAIL':'PASS',detail,elapsedMs:performance.now()-t});}catch(e){results.push({name,status:'FAIL',error:e.stack});}
+ const item=results.at(-1);console.log(name,item.status,JSON.stringify(item.error??(item.status==='FAIL'?item.detail:{cases:Array.isArray(item.detail?.cases)?item.detail.cases.length:item.detail?.cases,sessions:item.detail?.sessions,edits:item.detail?.edits,killed:item.detail?.killed,requests:item.detail?.requests})));
+}
+const sourceHashes=Object.fromEntries(fs.readdirSync(dir).filter(f=>f.endsWith('.mjs')).map(f=>[f,createHash('sha256').update(fs.readFileSync(path.join(dir,f))).digest('hex')]));
+const report={run:'run-20261015-18',timestamp:new Date().toISOString(),environment:{node:process.version,platform:process.platform,arch:process.arch},passed:results.every(x=>x.status==='PASS'),elapsedMs:performance.now()-begin,results,sourceHashes,limits:['Integrated reference, not production Kotlin','Synthetic host stamps and AWT layout fixtures','Retention charges/counts are not heap measurements','Bounded traces, not complete proof']};
+fs.writeFileSync(path.join(dir,'results.json'),JSON.stringify(report,null,2));if(!report.passed){fs.writeFileSync(path.join(dir,`failure-${Date.now()}.json`),JSON.stringify(report,null,2));process.exitCode=1;}

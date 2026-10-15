@@ -1,0 +1,26 @@
+[
+  {
+    "test": "1",
+    "name": "Settlement erases the Redo entry created by queued Undo",
+    "description": "_runInTransaction clears redoStack based on the outer action name and net document change, erasing valid Redo branches created by queued Undos inside the transaction",
+    "error": "redoStack must retain the Redo entry created by queued Undo!"
+  },
+  {
+    "test": "2",
+    "name": "Queued commands lose surviving targets after an earlier queued Undo",
+    "description": "Command drainage does not transform remaining queued targets across earlier queued Undos using token identities, causing surviving targets to be invalidated by stale coordinates",
+    "error": "Bold command must NOT be rejected with TargetInvalidated!"
+  },
+  {
+    "test": "3",
+    "name": "The synchronous settlement exception accepts invalid evidence",
+    "description": "Implementation checked only truthiness of syncBoundary and extent, accepting invalid epochs, wrong sessions, and unqualified callers",
+    "error": "undo with invalid settlement evidence must NOT be accepted!"
+  },
+  {
+    "test": "4",
+    "name": "Resolve reentrancy policy drift",
+    "description": "Transaction wrapper rejects reentrant mutations with ReentrantMutation instead of queueing them in FIFO order to process after the active transaction completes as specified in Section 4.1",
+    "error": "Reentrant mutations must queue FIFO after active transaction completes, not reject with ReentrantMutation!"
+  }
+]

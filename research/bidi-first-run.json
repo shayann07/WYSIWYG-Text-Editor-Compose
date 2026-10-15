@@ -1,0 +1,23 @@
+{
+  "runtime": "v24.19.0",
+  "oracle": "bidi-js@1.1.0 (declares Unicode 13)",
+  "scope": "L/R/ON/WS, ASCII brackets, one run sequence, fixed base direction",
+  "fixtures": 48314,
+  "comparisons": 1649259,
+  "edits": 8910,
+  "adversary": {
+    "characters": 300001,
+    "changedLevels": 200001,
+    "updatedNodes": 17,
+    "queryVisits": 247,
+    "buildMs": 145.74900000000002,
+    "baselineMs": 50.75540000000001,
+    "updateMs": 0.03260000000000218,
+    "note": "Single local timing sample; full baseline output versus a maintained index and selected queries. No production latency claim."
+  },
+  "unsupported": [
+    "weak types", "NSM", "explicit embeddings/isolates", "insertion/deletion",
+    "incremental bracket topology", "glyph layout"
+  ],
+  "noveltyVerdict": "Does not qualify under the active goal's exclusion of recombining known techniques."
+}

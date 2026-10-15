@@ -1,0 +1,74 @@
+{
+  "runId": "run-20261013-02",
+  "timestamp": "2026-10-13T17:08:14.372Z",
+  "environment": {
+    "node": "v24.20.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "elapsedMs": 219.96,
+  "totalCases": 12,
+  "passedCases": 12,
+  "results": [
+    {
+      "test": "R01",
+      "status": "PASS",
+      "description": "ZWJ insert/remove preserves constituent styles; explicit format expands to cluster and preserves constituent styles."
+    },
+    {
+      "test": "R02",
+      "status": "PASS",
+      "description": "Immutable baseline candidate reconciliation passed detour, empty, tie-breaking and surrogate alignment."
+    },
+    {
+      "test": "R03",
+      "status": "PASS",
+      "description": "Partial commit freezes committed attributes; later suffix edits or cancellation cannot alter frozen prefix."
+    },
+    {
+      "test": "R04",
+      "status": "PASS",
+      "description": "Target expansion starts new attribution epoch; structural boundary composition rejected without prior bridge sync."
+    },
+    {
+      "test": "R05",
+      "status": "PASS",
+      "description": "Queued format yields separate history groups; FIFO queueing preserved during settlement; unmark and symmetrical undo/redo verified."
+    },
+    {
+      "test": "R06",
+      "status": "PASS",
+      "description": "Epoch lifecycle rejects stale events, caches duplicate stamps, expires evicted receipts, admits new sequences."
+    },
+    {
+      "test": "R07",
+      "status": "PASS",
+      "description": "UTF-16 unit deletion allows isolated units, code-point deletion rejects malformed traversals, reversed selection and caret projection verified."
+    },
+    {
+      "test": "R08",
+      "status": "PASS",
+      "description": "No-op style command creates no history/revision bump; exception cleanly rolls back all staged mutations."
+    },
+    {
+      "test": "R09",
+      "status": "PASS",
+      "description": "Split/join/delete anchor mapping and table cell non-merging deletion verified."
+    },
+    {
+      "test": "R10",
+      "status": "PASS",
+      "description": "Link interior/exterior boundary typing, whitespace exit, and heading bold suppression Value(false)/Clear verified."
+    },
+    {
+      "test": "R14",
+      "status": "PASS",
+      "description": "Raw UTF-16 with isolated surrogates survives canonical persistence verbatim; valid-Unicode export generates conversion report and U+FFFD (note: serialization round-trip does not establish crash durability or journal correctness)."
+    },
+    {
+      "test": "Property-I07-I08",
+      "status": "PASS",
+      "description": "Stateful property test executed 10000 iterations across independent coordinator instances (10000 path independence checks, 10000 independent oracle comparisons, 7762 partial-commit freeze checks, 1 epoch-reset divergence verifications)."
+    }
+  ]
+}

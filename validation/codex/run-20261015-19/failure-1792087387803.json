@@ -1,0 +1,343 @@
+{
+  "run": "run-20261015-19",
+  "timestamp": "2026-10-15T18:03:07.802Z",
+  "environment": {
+    "node": "v24.20.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "passed": false,
+  "elapsedMs": 204.37730000000002,
+  "results": [
+    {
+      "name": "documentCases",
+      "status": "PASS",
+      "detail": {
+        "passed": true,
+        "cases": [
+          {
+            "name": "paragraphAndHeading",
+            "status": "PASS"
+          },
+          {
+            "name": "deletionAndUnicode",
+            "status": "PASS"
+          },
+          {
+            "name": "malformedCodePointAtomic",
+            "status": "PASS"
+          },
+          {
+            "name": "listSplitIndentOutdent",
+            "status": "PASS"
+          },
+          {
+            "name": "emptyListAndQuoteExit",
+            "status": "PASS"
+          },
+          {
+            "name": "wrappingMovingDeleting",
+            "status": "PASS"
+          },
+          {
+            "name": "atomsAndResources",
+            "status": "PASS"
+          },
+          {
+            "name": "typingIntentAndCoalescing",
+            "status": "PASS"
+          },
+          {
+            "name": "headingFalseClear",
+            "status": "PASS"
+          },
+          {
+            "name": "linkBoundaryWhitespace",
+            "status": "PASS"
+          },
+          {
+            "name": "anchorsSplitJoinUndo",
+            "status": "PASS"
+          },
+          {
+            "name": "gapAnchorsAndMoves",
+            "status": "PASS"
+          },
+          {
+            "name": "asyncPasteLease",
+            "status": "PASS"
+          },
+          {
+            "name": "richAndPlainPaste",
+            "status": "PASS"
+          },
+          {
+            "name": "tableCreateNavigate",
+            "status": "PASS"
+          },
+          {
+            "name": "rowsColumnsAndFlowDeletion",
+            "status": "PASS"
+          },
+          {
+            "name": "cellSelectionOneUndo",
+            "status": "PASS"
+          },
+          {
+            "name": "multiCellCompositionRollback",
+            "status": "PASS"
+          },
+          {
+            "name": "cellsTSV",
+            "status": "PASS"
+          },
+          {
+            "name": "crossCellMoveAnchors",
+            "status": "PASS"
+          },
+          {
+            "name": "queuedCommandsAndFailure",
+            "status": "PASS"
+          },
+          {
+            "name": "cancelQueuedAndFocus",
+            "status": "PASS"
+          },
+          {
+            "name": "annotations",
+            "status": "PASS"
+          }
+        ]
+      },
+      "elapsedMs": 194.3296
+    },
+    {
+      "name": "commandCoverage",
+      "status": "FAIL",
+      "detail": {
+        "passed": false,
+        "rows": [
+          {
+            "command": "typeText",
+            "executed": 9
+          },
+          {
+            "command": "replaceSelection",
+            "executed": 1
+          },
+          {
+            "command": "deleteSelection",
+            "executed": 2
+          },
+          {
+            "command": "backspace",
+            "executed": 1
+          },
+          {
+            "command": "deleteForward",
+            "executed": 1
+          },
+          {
+            "command": "deleteCodePoints",
+            "executed": 1
+          },
+          {
+            "command": "enter",
+            "executed": 7
+          },
+          {
+            "command": "softBreak",
+            "executed": 1
+          },
+          {
+            "command": "moveCaret",
+            "executed": 1
+          },
+          {
+            "command": "setBlockType",
+            "executed": 1
+          },
+          {
+            "command": "patchNode",
+            "executed": 1
+          },
+          {
+            "command": "wrapQuote",
+            "executed": 2
+          },
+          {
+            "command": "unwrapQuote",
+            "executed": 1
+          },
+          {
+            "command": "wrapList",
+            "executed": 1
+          },
+          {
+            "command": "unwrapList",
+            "executed": 1
+          },
+          {
+            "command": "indent",
+            "executed": 1
+          },
+          {
+            "command": "outdent",
+            "executed": 1
+          },
+          {
+            "command": "moveNode",
+            "executed": 3
+          },
+          {
+            "command": "deleteNode",
+            "executed": 2
+          },
+          {
+            "command": "insertInlineAtom",
+            "executed": 1
+          },
+          {
+            "command": "insertBlockObject",
+            "executed": 1
+          },
+          {
+            "command": "insertTable",
+            "executed": 1
+          },
+          {
+            "command": "insertRow",
+            "executed": 1
+          },
+          {
+            "command": "deleteRow",
+            "executed": 1
+          },
+          {
+            "command": "insertColumn",
+            "executed": 1
+          },
+          {
+            "command": "deleteColumn",
+            "executed": 1
+          },
+          {
+            "command": "deleteTable",
+            "executed": 1
+          },
+          {
+            "command": "tableTab",
+            "executed": 3
+          },
+          {
+            "command": "clearCells",
+            "executed": 1
+          },
+          {
+            "command": "copy",
+            "executed": 0
+          },
+          {
+            "command": "cut",
+            "executed": 0
+          },
+          {
+            "command": "pasteText",
+            "executed": 2
+          },
+          {
+            "command": "pasteRich",
+            "executed": 1
+          },
+          {
+            "command": "pasteTSV",
+            "executed": 1
+          },
+          {
+            "command": "selectFlow",
+            "executed": 2
+          },
+          {
+            "command": "selectCells",
+            "executed": 4
+          },
+          {
+            "command": "selectNode",
+            "executed": 1
+          },
+          {
+            "command": "selectBlocks",
+            "executed": 1
+          },
+          {
+            "command": "registerAnchor",
+            "executed": 7
+          },
+          {
+            "command": "moveAnchor",
+            "executed": 1
+          },
+          {
+            "command": "unregisterAnchor",
+            "executed": 1
+          },
+          {
+            "command": "capturePaste",
+            "executed": 3
+          },
+          {
+            "command": "applyPaste",
+            "executed": 1
+          },
+          {
+            "command": "cancelPaste",
+            "executed": 1
+          },
+          {
+            "command": "putResource",
+            "executed": 1
+          },
+          {
+            "command": "removeResource",
+            "executed": 1
+          },
+          {
+            "command": "addAnnotation",
+            "executed": 1
+          },
+          {
+            "command": "removeAnnotation",
+            "executed": 1
+          },
+          {
+            "command": "cancelCommand",
+            "executed": 1
+          },
+          {
+            "command": "focusLost",
+            "executed": 1
+          }
+        ]
+      },
+      "elapsedMs": 1.3824000000000183
+    }
+  ],
+  "sourceHashes": {
+    "awt-contract-model.mjs": "d6a7fdea0465c5e2fc93dbc6fbed9b60ab3b2f6ab36801ca3e2788d8515896fd",
+    "candidate-b-coordinator.mjs": "2ad62940f6c21b0fa00e2cbea9fa39ae4671cfc4e9f1a2e0738d79fa2e405898",
+    "document-model.mjs": "fc4b4a227d393ff557f08ee8df301d53cb0d502f29f06cc059d4c1b85a47143d",
+    "document-tree.mjs": "8b874ffb4124e8ecfc9851d4cab93c93310f2d6ce84be741ab591dda1ff898f1",
+    "integrated-model.mjs": "ddc7e52b200060c40485ff0348325196373e115db0a17c0336edcbad3798fe7b",
+    "request-contract.mjs": "205ea355e0e9f78095a9ca643bf109894c6f80a8d7c123bb207443d170f2adae",
+    "structural-model.mjs": "8a93b008994bdfe549c14878df6c1fcab16a23bc98a7f7702fd50f9dd69437b1",
+    "test-document.mjs": "1969e61c1c9994ca743d9f2fed64d6261743efb77248d5ad07f7d326ba6856e7",
+    "test-integrated.mjs": "bd0b3afe098469ff3a109806eeb0a85b2f80dbfff8f6e435ed534d6262d837b4",
+    "test-repairs.mjs": "2d452d47069276f897fbd1fafc8dbc3a06c1b922b495c8bd9dd10f1a7b8652fa",
+    "verify.mjs": "397c0016f3f52f51f2fdb1afe8e269b2a4b44d87d66a95fb4ac4702cc9eeaf24"
+  },
+  "limits": [
+    "Whole-document reference, not production code",
+    "Synthetic input and Intl segmentation",
+    "Full-copy trees, not production complexity or heap proof"
+  ]
+}

@@ -1,0 +1,107 @@
+﻿=== Reproducing Coordinator Defects Against ORIGINAL run-20261013-02 Harness ===
+
+--- Testing Defect A: Settlement loses composition identity and history integrity ---
+Command dispatch result: { status: 'Deferred', ticketId: 'ticket-1791911371932-sp7i' }
+First unmark result (settled: false): {
+  status: 'Accepted',
+  receipt: {
+    type: 'Unmarked',
+    documentRevision: 1,
+    sessionRevision: 3,
+    text: 'HXllo',
+    finalExtent: [ 1, 2 ],
+    state: 'AwaitingSettlement',
+    settled: false
+  }
+}
+State after first unmark: {
+  compositionState: 'AwaitingSettlement',
+  activeSessionId: null,
+  undoStackLen: 1,
+  lastSettledExtent: [ 1, 2 ],
+  lastSettledSessionId: 's',
+  pendingCommandsLen: 1
+}
+Second unmark result (settled: true): {
+  status: 'Accepted',
+  receipt: {
+    type: 'Unmarked',
+    documentRevision: 1,
+    sessionRevision: 5,
+    text: 'HXllo',
+    finalExtent: [ 0, 0 ],
+    state: 'Idle',
+    settled: true
+  }
+}
+State after second unmark: {
+  compositionState: 'Idle',
+  activeSessionId: null,
+  undoStackLen: 2,
+  lastSettledExtent: [ 0, 0 ],
+  lastSettledSessionId: null,
+  pendingCommandsLen: 0
+}
+Doc text: HXllo
+Bold attribute count: 0
+CONFIRMED DEFECT A: All 4 aspects of Defect A reproduced perfectly!
+  - First unmark prematurely cleared activeSessionId and created history
+  - Second unmark reset extent to [0, 0]
+  - Two composition history entries were created in undoStack
+  - Bold was never applied to 'X' (or anywhere) due to [0, 0] extent!
+
+--- Testing Defect B: Target expansion destroys partial-commit protection ---
+Doc text after preedit XY: HXYllo
+Partial commit result: {
+  status: 'Accepted',
+  receipt: {
+    type: 'PartialCommitted',
+    documentRevision: 2,
+    attributionEpoch: 2,
+    frozenCount: 1,
+    markedRange: [ 2, 3 ]
+  }
+}
+Frozen units count: 1
+Target expansion result: {
+  status: 'Accepted',
+  receipt: {
+    type: 'TargetExpanded',
+    attributionEpoch: 3,
+    markedRange: [ 2, 4 ]
+  }
+}
+Frozen units count after expansion: 0
+Cancel result: {
+  status: 'Accepted',
+  receipt: {
+    type: 'Cancelled',
+    documentRevision: 3,
+    sessionRevision: 5,
+    text: 'Hello',
+    finalExtent: null,
+    state: 'Idle'
+  }
+}
+Doc text after cancel: Hello
+Undo stack length after cancel: 0
+CONFIRMED DEFECT B: Target expansion destroyed partial-commit protection!
+  - Doc returned to 'Hello' (frozen 'X' disappeared!)
+  - Undo stack has 0 entries (committed text lost from history!)
+
+--- Testing Defect C: Connection replacement drops composition history ---
+Doc text during preedit: HXllo
+Pre-composition snapshot text: Hello
+New connection epoch opened: 2
+Doc text after new connection: HXllo
+Undo stack length after new connection: 0
+Composition before snapshot after new connection: null
+CONFIRMED DEFECT C: Connection replacement dropped composition history!
+  - 'HXllo' remains in document text
+  - compositionBeforeSnapshot was discarded
+  - undoStack has 0 entries (no undo entry exists for accepted text!)
+
+--- Testing Defect D: Repeated identical preedit advancing DocumentRevision ---
+Revisions after first preedit: { docRev: 1, sessionRev: 2 }
+Revisions after second identical preedit: { docRev: 2, sessionRev: 3 }
+CONFIRMED DEFECT D: Repeated identical preedit advanced DocumentRevision from 1 to 2 despite no semantic document change!

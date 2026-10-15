@@ -1,0 +1,22 @@
+[
+  {
+    "test": "A",
+    "description": "Repeated undo/redo corrupts an empty-document history preimage",
+    "error": "Repeated undo/redo corrupted empty-document history preimage!\n+ actual - expected\n\n  [\n    'x',\n    '',\n    'x',\n+   'x'\n-   ''\n  ]\n"
+  },
+  {
+    "test": "B",
+    "description": "Native removal creates edits with no undo history",
+    "error": "Native removal created edit with no undo history! {\"status\":\"Rejected\",\"reason\":\"NothingToUndo\"}\n+ actual - expected\n\n+ 'Rejected'\n- 'Accepted'\n"
+  },
+  {
+    "test": "C",
+    "description": "Disposal discards accepted provisional content",
+    "error": "Disposal discarded accepted provisional content! \"Hello\" !== \"HXllo\"\n\n'Hello' !== 'HXllo'\n"
+  },
+  {
+    "test": "D",
+    "description": "Resumed preedit uses a different target from proposed-state validation",
+    "error": "Resumed preedit used stale attribution window instead of selection target! \"HYllo\" !== \"HXYllo\"\n\n'HYllo' !== 'HXYllo'\n"
+  }
+]

@@ -1,0 +1,85 @@
+{
+  "run": "run-20261015-16",
+  "timestamp": "2026-10-15T15:29:48.577Z",
+  "environment": {
+    "node": "v24.20.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "passed": false,
+  "elapsedMs": 441.6096,
+  "results": [
+    {
+      "name": "structuralTests",
+      "status": "FAIL",
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  {\n    compositionState: 'Composing',\n    connectionState: 'Active',\n    docAttributes: [\n      {},\n...\n    settlementToken: null,\n-   structuralTree: {\n-     children: [\n-       {\n-         id: 'a',\n-         props: {},\n-         type: 'paragraph',\n-         units: [\n-           {\n-             attrs: {},\n-             char: 'A',\n-             kind: 'text',\n-             originSessionId: null,\n-             tokenId: 'a:0'\n-           }\n-         ]\n-       },\n-       {\n-         id: 'o',\n-         props: {\n-           kind: 'image'\n-         },\n-         type: 'object'\n-       },\n-       {\n-         id: 'b',\n-         props: {},\n-         type: 'paragraph',\n-         units: [\n-           {\n-             attrs: {},\n-             char: 'B',\n-             kind: 'text',\n-             originSessionId: null,\n-             tokenId: 'b:0'\n-           }\n-         ]\n-       }\n-     ],\n-     id: 'f',\n-     props: {},\n-     type: 'flow'\n-   },\n    typingIntent: {},\n    units: [\n      {\n        attrs: {},\n        char: 'A',\n\n    at Module.structuralTests (file:///D:/Work/WYSIWYG-Text-Editor-Compose/validation/codex/run-20261015-16/test-contracts.mjs:34:216)\n    at file:///D:/Work/WYSIWYG-Text-Editor-Compose/validation/codex/run-20261015-16/verify.mjs:5:57\n    at ModuleJob.run (node:internal/modules/esm/module_job:561:25)\n    at async node:internal/modules/esm/loader:647:26\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)"
+    },
+    {
+      "name": "overlayTests",
+      "status": "PASS",
+      "detail": {
+        "cases": 6
+      },
+      "elapsedMs": 10.5077
+    },
+    {
+      "name": "generatedStructuralTests",
+      "status": "PASS",
+      "detail": {
+        "cases": 324,
+        "oracle": "independent raw splice, exact fixture-root restoration, schema checks"
+      },
+      "elapsedMs": 376.7921
+    },
+    {
+      "name": "admissionTests",
+      "status": "PASS",
+      "detail": {
+        "cases": 6,
+        "limits": "synthetic stamps; alternate basis identity mapping remains in prior model; no host provenance claim"
+      },
+      "elapsedMs": 1.037300000000016
+    },
+    {
+      "name": "historyTests",
+      "status": "PASS",
+      "detail": {
+        "cases": 8
+      },
+      "elapsedMs": 0.9513000000000034
+    },
+    {
+      "name": "historyExploration",
+      "status": "PASS",
+      "detail": {
+        "cases": 726,
+        "maxQueuedCommands": 4,
+        "assertions": "history root/chain, redo chain, ticket outcomes; not a complete state-space proof"
+      },
+      "elapsedMs": 6.237700000000018
+    },
+    {
+      "name": "mutations",
+      "status": "PASS",
+      "detail": {
+        "passingControls": 6,
+        "killed": 6
+      },
+      "elapsedMs": 9.694199999999967
+    }
+  ],
+  "sourceHashes": {
+    "candidate-b-coordinator.mjs": "2ad62940f6c21b0fa00e2cbea9fa39ae4671cfc4e9f1a2e0738d79fa2e405898",
+    "protocol-model.mjs": "0c650307efe5dcc63ee54a4cb0ca148d6b84adf17c87c785c2c49b08d299b746",
+    "request-contract.mjs": "205ea355e0e9f78095a9ca643bf109894c6f80a8d7c123bb207443d170f2adae",
+    "structural-model.mjs": "dcc8181b44ccba65bd25879faa1c9b53a5f409763effd8066af310819e136e11",
+    "test-contracts.mjs": "cdd0ec4f00daf2611f5586ff983685da54f70d74d66cc432461f995fdf6fea38",
+    "verify.mjs": "3b858d18f02529411da27e78f8c11eca307901af8f72915f8521b2d18e240b12"
+  },
+  "limits": [
+    "Array/tree-copy reference model only",
+    "Admission and history models are separately tested contracts, not integrated OS adapters",
+    "Not exhaustive model checking",
+    "No production or platform qualification"
+  ]
+}

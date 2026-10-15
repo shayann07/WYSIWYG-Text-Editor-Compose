@@ -1,0 +1,4 @@
+SkLoadICU: datafile 'D:\Work\WYSIWYG-Text-Editor-Compose\research\native-layout-source\icudtl.dat' is missing
+SkLoadICU: datafile 'D:\Work\WYSIWYG-Text-Editor-Compose\research\native-layout-source\icudtl.dat' is missing
+
+[skia] ** ERROR ** ../../modules/skparagraph/src/ParagraphBuilderImpl.cpp(182): fatal error: "check(fUnicode)"

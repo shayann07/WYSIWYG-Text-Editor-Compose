@@ -1,0 +1,133 @@
+{
+  "run": "run-20261015-17",
+  "timestamp": "2026-10-15T15:45:15.061Z",
+  "environment": {
+    "node": "v24.20.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "passed": false,
+  "elapsedMs": 11448.662400000001,
+  "results": [
+    {
+      "name": "namedTests",
+      "status": "FAIL",
+      "detail": {
+        "passed": false,
+        "cases": [
+          {
+            "name": "queuedStructuralContinuation",
+            "status": "PASS"
+          },
+          {
+            "name": "failedInitiator",
+            "status": "PASS"
+          },
+          {
+            "name": "partialCancelLedger",
+            "status": "PASS"
+          },
+          {
+            "name": "changedTerminalCommit",
+            "status": "PASS"
+          },
+          {
+            "name": "cancelDoesNotDoubleUndo",
+            "status": "PASS"
+          },
+          {
+            "name": "atomicSettlementRollback",
+            "status": "PASS"
+          },
+          {
+            "name": "reentryPublishedBasis",
+            "status": "FAIL",
+            "error": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert.ok(tail.units.every(u=>u.attrs.bold===true))\n\n    at reentryPublishedBasis (file:///D:/Work/WYSIWYG-Text-Editor-Compose/validation/codex/run-20261015-17/test-integrated.mjs:67:85)\n    at Module.namedTests (file:///D:/Work/WYSIWYG-Text-Editor-Compose/validation/codex/run-20261015-17/test-integrated.mjs:126:96)\n    at file:///D:/Work/WYSIWYG-Text-Editor-Compose/validation/codex/run-20261015-17/verify.mjs:5:62\n    at ModuleJob.run (node:internal/modules/esm/module_job:561:25)\n    at async node:internal/modules/esm/loader:647:26\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)"
+          },
+          {
+            "name": "failurePreservesReentrantRequests",
+            "status": "PASS"
+          },
+          {
+            "name": "barrierAndAfterTicket",
+            "status": "PASS"
+          },
+          {
+            "name": "postEditSelectionMapping",
+            "status": "PASS"
+          },
+          {
+            "name": "noOpAndIdentityReuse",
+            "status": "PASS"
+          },
+          {
+            "name": "unmarkResumeAndFence",
+            "status": "PASS"
+          },
+          {
+            "name": "connectionTurnover",
+            "status": "PASS"
+          },
+          {
+            "name": "duplicateAndImmutablePublication",
+            "status": "PASS"
+          },
+          {
+            "name": "unsupportedSeamAndCancelledCommands",
+            "status": "PASS"
+          },
+          {
+            "name": "codeConversionAndHistory",
+            "status": "PASS"
+          },
+          {
+            "name": "backwardIslands",
+            "status": "PASS"
+          }
+        ]
+      },
+      "elapsedMs": 144.8377
+    },
+    {
+      "name": "generatedIntegration",
+      "status": "PASS",
+      "detail": {
+        "cases": 255,
+        "oracle": "fixture roots + independent raw splice; all events through owner dispatcher"
+      },
+      "elapsedMs": 1533.8487
+    },
+    {
+      "name": "ledgerExploration",
+      "status": "PASS",
+      "detail": {
+        "cases": 240,
+        "maxQueuedCommands": 3
+      },
+      "elapsedMs": 1278.3273
+    },
+    {
+      "name": "scheduling",
+      "status": "PASS",
+      "detail": {
+        "requests": 130,
+        "firstBudget": 64
+      },
+      "elapsedMs": 8482.7111
+    }
+  ],
+  "sourceHashes": {
+    "candidate-b-coordinator.mjs": "2ad62940f6c21b0fa00e2cbea9fa39ae4671cfc4e9f1a2e0738d79fa2e405898",
+    "integrated-model.mjs": "555a9447ad7b3bdbea6c2e3ffe3d5243d6fa60e6780183746d5565526a6bf05c",
+    "request-contract.mjs": "205ea355e0e9f78095a9ca643bf109894c6f80a8d7c123bb207443d170f2adae",
+    "structural-model.mjs": "8a3bce63c046898337acc84d1f37f12ce8b933b54e2d5346bbcc7954b1bac822",
+    "test-integrated.mjs": "450db0ccbfe927e5c4e06c1412cae3ce3919dea24f33e07eead1e6776cc966e6",
+    "verify.mjs": "70e9302c7da363f487c2f5c704b35afb04835ceaeea5d70db319cd5ec410d287"
+  },
+  "limits": [
+    "One integrated reference owner, not production Kotlin",
+    "Synthetic adapter provenance only",
+    "Full-copy trees/arrays; no performance claim",
+    "Bounded traces, not a complete protocol proof"
+  ]
+}

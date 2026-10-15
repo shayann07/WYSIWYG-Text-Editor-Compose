@@ -1,0 +1,94 @@
+{
+  "passed": false,
+  "cases": [
+    {
+      "name": "queuedStructuralContinuation",
+      "status": "PASS"
+    },
+    {
+      "name": "failedInitiator",
+      "status": "PASS"
+    },
+    {
+      "name": "partialCancelLedger",
+      "status": "PASS"
+    },
+    {
+      "name": "changedTerminalCommit",
+      "status": "PASS"
+    },
+    {
+      "name": "cancelDoesNotDoubleUndo",
+      "status": "PASS"
+    },
+    {
+      "name": "atomicSettlementRollback",
+      "status": "PASS"
+    },
+    {
+      "name": "reentryPublishedBasis",
+      "status": "PASS"
+    },
+    {
+      "name": "failurePreservesReentrantRequests",
+      "status": "PASS"
+    },
+    {
+      "name": "barrierAndAfterTicket",
+      "status": "PASS"
+    },
+    {
+      "name": "postEditSelectionMapping",
+      "status": "PASS"
+    },
+    {
+      "name": "noOpAndIdentityReuse",
+      "status": "PASS"
+    },
+    {
+      "name": "unmarkResumeAndFence",
+      "status": "PASS"
+    },
+    {
+      "name": "connectionTurnover",
+      "status": "PASS"
+    },
+    {
+      "name": "duplicateAndImmutablePublication",
+      "status": "PASS"
+    },
+    {
+      "name": "unsupportedSeamAndCancelledCommands",
+      "status": "PASS"
+    },
+    {
+      "name": "codeConversionAndHistory",
+      "status": "PASS"
+    },
+    {
+      "name": "backwardIslands",
+      "status": "PASS"
+    },
+    {
+      "name": "semanticNoOpAfterRetarget",
+      "status": "PASS"
+    },
+    {
+      "name": "failedTerminalReentrantContinuation",
+      "status": "PASS"
+    },
+    {
+      "name": "exactNativeRemoval",
+      "status": "PASS"
+    },
+    {
+      "name": "newSessionRebasesHierarchy",
+      "status": "PASS"
+    },
+    {
+      "name": "observerIsolation",
+      "status": "FAIL",
+      "error": "AssertionError [ERR_ASSERTION]: {\"ticket\":1,\"status\":\"Rejected\",\"reason\":\"ObserverFailure\"}\n+ actual - expected\n\n+ 'Rejected'\n- 'Accepted'\n\n    at accepted (file:///D:/Work/WYSIWYG-Text-Editor-Compose/validation/codex/run-20261015-17/test-integrated.mjs:9:29)\n    at send (file:///D:/Work/WYSIWYG-Text-Editor-Compose/validation/codex/run-20261015-17/test-integrated.mjs:10:30)\n    at observerIsolation (file:///D:/Work/WYSIWYG-Text-Editor-Compose/validation/codex/run-20261015-17/test-integrated.mjs:139:97)\n    at namedTests (file:///D:/Work/WYSIWYG-Text-Editor-Compose/validation/codex/run-20261015-17/test-integrated.mjs:143:96)\n    at file:///D:/Work/WYSIWYG-Text-Editor-Compose/[eval1]:3:9\n    at ModuleJob.run (node:internal/modules/esm/module_job:561:25)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async node:internal/modules/esm/loader:223:26\n    at async ModuleLoader.executeModuleJob (node:internal/modules/esm/loader:220:20)\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)"
+    }
+  ]
+}

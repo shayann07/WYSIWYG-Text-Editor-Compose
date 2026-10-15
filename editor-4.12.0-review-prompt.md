@@ -1,0 +1,7 @@
+Review the attached Compose Multiplatform Editor Standalone Specification 4.12.0 independently. Read every section before giving a verdict. This is a read-only specification review; do not implement production code or advance phases.
+
+Determine whether the specified product semantics are coherent and implementable without inventing core behavior. Challenge input provenance and publication timing, the ListItem Block+ schema choice, structural reconstruction and object seams, immutable candidate reconciliation and partial-commit footprints, the settlement-local Undo ledger, native/Web projection, formatting/graphemes, hierarchy-depth costs and history/persistence.
+
+For each material finding provide an exact section, classification (contradiction, missing decision, model defect, evidence gap or platform experiment), a concrete initial state and event trace, expected versus specified behavior, smallest correction and a discriminating test. Do not conflate archived run-15 coordinator behavior with the new admission/history contract models. Their integration is explicitly unrun. Treat PASS counts as reported evidence unless you execute the sources yourself.
+
+Distinguish design readiness, model coverage, implementation authorization and release qualification. No production phase is authorized. Do not rubber-stamp, invent defects, silently narrow scope or propose a new architecture merely for novelty. Return a scoped verdict, prioritized findings and finite acceptance criteria. State any unread material or unexecuted claims.

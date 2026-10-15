@@ -1,0 +1,9 @@
+n=2 independently recoverable bits=1 invisible independent bits=0 recovered hidden ones=0
+n=3 independently recoverable bits=3 invisible independent bits=1 recovered hidden ones=1
+n=4 independently recoverable bits=6 invisible independent bits=3 recovered hidden ones=2
+n=8 independently recoverable bits=28 invisible independent bits=21 recovered hidden ones=9
+n=12 independently recoverable bits=66 invisible independent bits=55 recovered hidden ones=30
+n=16 independently recoverable bits=120 invisible independent bits=105 recovered hidden ones=55
+n=24 independently recoverable bits=276 invisible independent bits=253 recovered hidden ones=125
+Published Compose queries passed: 8500
+This witnesses a quadratic worst-case information requirement for preserving these span semantics. It is not a corrective algorithm or a benchmark.

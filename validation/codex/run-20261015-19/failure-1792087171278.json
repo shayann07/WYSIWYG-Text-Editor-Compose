@@ -1,0 +1,336 @@
+{
+  "run": "run-20261015-19",
+  "timestamp": "2026-10-15T17:59:31.277Z",
+  "environment": {
+    "node": "v24.20.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "passed": false,
+  "elapsedMs": 210.2846,
+  "results": [
+    {
+      "name": "documentCases",
+      "status": "FAIL",
+      "detail": {
+        "passed": false,
+        "cases": [
+          {
+            "name": "paragraphAndHeading",
+            "status": "PASS"
+          },
+          {
+            "name": "deletionAndUnicode",
+            "status": "PASS"
+          },
+          {
+            "name": "malformedCodePointAtomic",
+            "status": "PASS"
+          },
+          {
+            "name": "listSplitIndentOutdent",
+            "status": "PASS"
+          },
+          {
+            "name": "emptyListAndQuoteExit",
+            "status": "PASS"
+          },
+          {
+            "name": "wrappingMovingDeleting",
+            "status": "PASS"
+          },
+          {
+            "name": "atomsAndResources",
+            "status": "PASS"
+          },
+          {
+            "name": "typingIntentAndCoalescing",
+            "status": "PASS"
+          },
+          {
+            "name": "headingFalseClear",
+            "status": "PASS"
+          },
+          {
+            "name": "linkBoundaryWhitespace",
+            "status": "PASS"
+          },
+          {
+            "name": "anchorsSplitJoinUndo",
+            "status": "PASS"
+          },
+          {
+            "name": "gapAnchorsAndMoves",
+            "status": "FAIL",
+            "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n'a' !== 'b'\n\n    at gapAnchorsAndMoves (file:///D:/Work/WYSIWYG-Text-Editor-Compose/validation/codex/run-20261015-19/test-document.mjs:38:340)\n    at Module.documentCases (file:///D:/Work/WYSIWYG-Text-Editor-Compose/validation/codex/run-20261015-19/test-document.mjs:51:99)\n    at file:///D:/Work/WYSIWYG-Text-Editor-Compose/validation/codex/run-20261015-19/verify.mjs:4:108\n    at ModuleJob.run (node:internal/modules/esm/module_job:561:25)\n    at async node:internal/modules/esm/loader:647:26\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)"
+          },
+          {
+            "name": "asyncPasteLease",
+            "status": "PASS"
+          },
+          {
+            "name": "richAndPlainPaste",
+            "status": "PASS"
+          },
+          {
+            "name": "tableCreateNavigate",
+            "status": "PASS"
+          },
+          {
+            "name": "rowsColumnsAndFlowDeletion",
+            "status": "PASS"
+          },
+          {
+            "name": "cellSelectionOneUndo",
+            "status": "PASS"
+          },
+          {
+            "name": "multiCellCompositionRollback",
+            "status": "PASS"
+          },
+          {
+            "name": "cellsTSV",
+            "status": "PASS"
+          },
+          {
+            "name": "crossCellMoveAnchors",
+            "status": "PASS"
+          },
+          {
+            "name": "queuedCommandsAndFailure",
+            "status": "PASS"
+          },
+          {
+            "name": "cancelQueuedAndFocus",
+            "status": "PASS"
+          },
+          {
+            "name": "annotations",
+            "status": "PASS"
+          }
+        ]
+      },
+      "elapsedMs": 202.24419999999998
+    },
+    {
+      "name": "commandCoverage",
+      "status": "PASS",
+      "detail": {
+        "passed": true,
+        "rows": [
+          {
+            "command": "typeText",
+            "executed": 9
+          },
+          {
+            "command": "replaceSelection",
+            "executed": 1
+          },
+          {
+            "command": "deleteSelection",
+            "executed": 2
+          },
+          {
+            "command": "backspace",
+            "executed": 1
+          },
+          {
+            "command": "deleteForward",
+            "executed": 1
+          },
+          {
+            "command": "deleteCodePoints",
+            "executed": 1
+          },
+          {
+            "command": "enter",
+            "executed": 7
+          },
+          {
+            "command": "softBreak",
+            "executed": 1
+          },
+          {
+            "command": "moveCaret",
+            "executed": 1
+          },
+          {
+            "command": "setBlockType",
+            "executed": 1
+          },
+          {
+            "command": "patchNode",
+            "executed": 1
+          },
+          {
+            "command": "wrapQuote",
+            "executed": 2
+          },
+          {
+            "command": "unwrapQuote",
+            "executed": 1
+          },
+          {
+            "command": "wrapList",
+            "executed": 1
+          },
+          {
+            "command": "unwrapList",
+            "executed": 1
+          },
+          {
+            "command": "indent",
+            "executed": 1
+          },
+          {
+            "command": "outdent",
+            "executed": 1
+          },
+          {
+            "command": "moveNode",
+            "executed": 3
+          },
+          {
+            "command": "deleteNode",
+            "executed": 2
+          },
+          {
+            "command": "insertInlineAtom",
+            "executed": 1
+          },
+          {
+            "command": "insertBlockObject",
+            "executed": 1
+          },
+          {
+            "command": "insertTable",
+            "executed": 1
+          },
+          {
+            "command": "insertRow",
+            "executed": 1
+          },
+          {
+            "command": "deleteRow",
+            "executed": 1
+          },
+          {
+            "command": "insertColumn",
+            "executed": 1
+          },
+          {
+            "command": "deleteColumn",
+            "executed": 1
+          },
+          {
+            "command": "deleteTable",
+            "executed": 1
+          },
+          {
+            "command": "tableTab",
+            "executed": 3
+          },
+          {
+            "command": "clearCells",
+            "executed": 1
+          },
+          {
+            "command": "pasteText",
+            "executed": 2
+          },
+          {
+            "command": "pasteRich",
+            "executed": 1
+          },
+          {
+            "command": "pasteTSV",
+            "executed": 1
+          },
+          {
+            "command": "selectFlow",
+            "executed": 2
+          },
+          {
+            "command": "selectCells",
+            "executed": 4
+          },
+          {
+            "command": "selectNode",
+            "executed": 1
+          },
+          {
+            "command": "selectBlocks",
+            "executed": 1
+          },
+          {
+            "command": "registerAnchor",
+            "executed": 7
+          },
+          {
+            "command": "moveAnchor",
+            "executed": 1
+          },
+          {
+            "command": "unregisterAnchor",
+            "executed": 1
+          },
+          {
+            "command": "capturePaste",
+            "executed": 3
+          },
+          {
+            "command": "applyPaste",
+            "executed": 1
+          },
+          {
+            "command": "cancelPaste",
+            "executed": 1
+          },
+          {
+            "command": "putResource",
+            "executed": 1
+          },
+          {
+            "command": "removeResource",
+            "executed": 1
+          },
+          {
+            "command": "addAnnotation",
+            "executed": 1
+          },
+          {
+            "command": "removeAnnotation",
+            "executed": 1
+          },
+          {
+            "command": "cancelCommand",
+            "executed": 1
+          },
+          {
+            "command": "focusLost",
+            "executed": 1
+          }
+        ]
+      },
+      "elapsedMs": 1.0715000000000146
+    }
+  ],
+  "sourceHashes": {
+    "awt-contract-model.mjs": "d6a7fdea0465c5e2fc93dbc6fbed9b60ab3b2f6ab36801ca3e2788d8515896fd",
+    "candidate-b-coordinator.mjs": "2ad62940f6c21b0fa00e2cbea9fa39ae4671cfc4e9f1a2e0738d79fa2e405898",
+    "document-model.mjs": "02df2df375bde0a4dd5dc51d32cf745e4fb3070b3edec09949324d7bdc2a7129",
+    "document-tree.mjs": "4005cd1ee89abdf0794342c847ce6d472aa890696dc6721f0282c1d2cbd12ae0",
+    "integrated-model.mjs": "ddc7e52b200060c40485ff0348325196373e115db0a17c0336edcbad3798fe7b",
+    "request-contract.mjs": "205ea355e0e9f78095a9ca643bf109894c6f80a8d7c123bb207443d170f2adae",
+    "structural-model.mjs": "8a93b008994bdfe549c14878df6c1fcab16a23bc98a7f7702fd50f9dd69437b1",
+    "test-document.mjs": "1969e61c1c9994ca743d9f2fed64d6261743efb77248d5ad07f7d326ba6856e7",
+    "test-integrated.mjs": "bd0b3afe098469ff3a109806eeb0a85b2f80dbfff8f6e435ed534d6262d837b4",
+    "test-repairs.mjs": "2d452d47069276f897fbd1fafc8dbc3a06c1b922b495c8bd9dd10f1a7b8652fa",
+    "verify.mjs": "397c0016f3f52f51f2fdb1afe8e269b2a4b44d87d66a95fb4ac4702cc9eeaf24"
+  },
+  "limits": [
+    "Whole-document reference, not production code",
+    "Synthetic input and Intl segmentation",
+    "Full-copy trees, not production complexity or heap proof"
+  ]
+}

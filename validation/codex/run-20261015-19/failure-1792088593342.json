@@ -1,0 +1,412 @@
+{
+  "run": "run-20261015-19",
+  "timestamp": "2026-10-15T18:23:13.341Z",
+  "environment": {
+    "node": "v24.20.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "passed": false,
+  "elapsedMs": 329.65020000000004,
+  "results": [
+    {
+      "name": "documentCases",
+      "status": "FAIL",
+      "detail": {
+        "passed": false,
+        "cases": [
+          {
+            "name": "paragraphAndHeading",
+            "status": "PASS"
+          },
+          {
+            "name": "deletionAndUnicode",
+            "status": "PASS"
+          },
+          {
+            "name": "malformedCodePointAtomic",
+            "status": "PASS"
+          },
+          {
+            "name": "listSplitIndentOutdent",
+            "status": "PASS"
+          },
+          {
+            "name": "emptyListAndQuoteExit",
+            "status": "PASS"
+          },
+          {
+            "name": "wrappingMovingDeleting",
+            "status": "PASS"
+          },
+          {
+            "name": "atomsAndResources",
+            "status": "PASS"
+          },
+          {
+            "name": "typingIntentAndCoalescing",
+            "status": "PASS"
+          },
+          {
+            "name": "headingFalseClear",
+            "status": "PASS"
+          },
+          {
+            "name": "linkBoundaryWhitespace",
+            "status": "PASS"
+          },
+          {
+            "name": "anchorsSplitJoinUndo",
+            "status": "PASS"
+          },
+          {
+            "name": "gapAnchorsAndMoves",
+            "status": "PASS"
+          },
+          {
+            "name": "asyncPasteLease",
+            "status": "PASS"
+          },
+          {
+            "name": "richAndPlainPaste",
+            "status": "PASS"
+          },
+          {
+            "name": "tableCreateNavigate",
+            "status": "PASS"
+          },
+          {
+            "name": "rowsColumnsAndFlowDeletion",
+            "status": "PASS"
+          },
+          {
+            "name": "cellSelectionOneUndo",
+            "status": "PASS"
+          },
+          {
+            "name": "multiCellCompositionRollback",
+            "status": "PASS"
+          },
+          {
+            "name": "cellsTSV",
+            "status": "PASS"
+          },
+          {
+            "name": "crossCellMoveAnchors",
+            "status": "PASS"
+          },
+          {
+            "name": "queuedCommandsAndFailure",
+            "status": "PASS"
+          },
+          {
+            "name": "cancelQueuedAndFocus",
+            "status": "PASS"
+          },
+          {
+            "name": "annotations",
+            "status": "PASS"
+          },
+          {
+            "name": "copyCutAndGrapheme",
+            "status": "PASS"
+          },
+          {
+            "name": "cellFormattingAndProperties",
+            "status": "PASS"
+          },
+          {
+            "name": "annotationsCancelRestores",
+            "status": "PASS"
+          },
+          {
+            "name": "cellSelectionCancelRestoresKind",
+            "status": "PASS"
+          },
+          {
+            "name": "surroundingDeletePreservesSelection",
+            "status": "PASS"
+          },
+          {
+            "name": "unsafeRichLinkReported",
+            "status": "PASS"
+          },
+          {
+            "name": "cancelledCommandCredit",
+            "status": "PASS"
+          },
+          {
+            "name": "focusLossPreservesTextCancelsFormat",
+            "status": "PASS"
+          },
+          {
+            "name": "richCellClipboard",
+            "status": "FAIL",
+            "error": "AssertionError [ERR_ASSERTION]: {\"ticket\":3,\"status\":\"Rejected\",\"reason\":\"Failed to execute 'structuredClone': Options cannot be converted to a dictionary\"}\n+ actual - expected\n\n+ 'Rejected'\n- 'Accepted'\n\n    at ok (file:///D:/Work/WYSIWYG-Text-Editor-Compose/validation/codex/run-20261015-19/test-document.mjs:15:23)\n    at cmd (file:///D:/Work/WYSIWYG-Text-Editor-Compose/validation/codex/run-20261015-19/test-document.mjs:16:249)\n    at richCellClipboard (file:///D:/Work/WYSIWYG-Text-Editor-Compose/validation/codex/run-20261015-19/test-document.mjs:58:158)\n    at Module.documentCases (file:///D:/Work/WYSIWYG-Text-Editor-Compose/validation/codex/run-20261015-19/test-document.mjs:67:99)\n    at file:///D:/Work/WYSIWYG-Text-Editor-Compose/validation/codex/run-20261015-19/verify.mjs:4:108\n    at ModuleJob.run (node:internal/modules/esm/module_job:561:25)\n    at async node:internal/modules/esm/loader:647:26\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)"
+          },
+          {
+            "name": "asyncCellsKeepTargetAndFocus",
+            "status": "PASS"
+          },
+          {
+            "name": "asyncCellsDetectInterveningEdits",
+            "status": "PASS"
+          },
+          {
+            "name": "nativeCellEpochIsolation",
+            "status": "PASS"
+          },
+          {
+            "name": "flowSwitchRollbackPreservesReentry",
+            "status": "PASS"
+          },
+          {
+            "name": "flowSwitchFailureKeepsReplayGuard",
+            "status": "PASS"
+          },
+          {
+            "name": "cellCompositionFailureIsAtomic",
+            "status": "PASS"
+          },
+          {
+            "name": "queuedCellFocusBeforeFormat",
+            "status": "PASS"
+          }
+        ]
+      },
+      "elapsedMs": 319.8541
+    },
+    {
+      "name": "commandCoverage",
+      "status": "PASS",
+      "detail": {
+        "passed": true,
+        "rows": [
+          {
+            "command": "typeText",
+            "executed": 11
+          },
+          {
+            "command": "replaceSelection",
+            "executed": 1
+          },
+          {
+            "command": "deleteSelection",
+            "executed": 2
+          },
+          {
+            "command": "backspace",
+            "executed": 1
+          },
+          {
+            "command": "deleteForward",
+            "executed": 1
+          },
+          {
+            "command": "deleteCodePoints",
+            "executed": 2
+          },
+          {
+            "command": "enter",
+            "executed": 7
+          },
+          {
+            "command": "softBreak",
+            "executed": 1
+          },
+          {
+            "command": "moveCaret",
+            "executed": 1
+          },
+          {
+            "command": "setBlockType",
+            "executed": 1
+          },
+          {
+            "command": "patchNode",
+            "executed": 1
+          },
+          {
+            "command": "patchCell",
+            "executed": 1
+          },
+          {
+            "command": "wrapQuote",
+            "executed": 2
+          },
+          {
+            "command": "unwrapQuote",
+            "executed": 1
+          },
+          {
+            "command": "wrapList",
+            "executed": 1
+          },
+          {
+            "command": "unwrapList",
+            "executed": 1
+          },
+          {
+            "command": "indent",
+            "executed": 1
+          },
+          {
+            "command": "outdent",
+            "executed": 1
+          },
+          {
+            "command": "moveNode",
+            "executed": 3
+          },
+          {
+            "command": "deleteNode",
+            "executed": 2
+          },
+          {
+            "command": "insertInlineAtom",
+            "executed": 1
+          },
+          {
+            "command": "insertBlockObject",
+            "executed": 1
+          },
+          {
+            "command": "insertTable",
+            "executed": 1
+          },
+          {
+            "command": "insertRow",
+            "executed": 1
+          },
+          {
+            "command": "deleteRow",
+            "executed": 1
+          },
+          {
+            "command": "insertColumn",
+            "executed": 1
+          },
+          {
+            "command": "deleteColumn",
+            "executed": 1
+          },
+          {
+            "command": "deleteTable",
+            "executed": 1
+          },
+          {
+            "command": "tableTab",
+            "executed": 3
+          },
+          {
+            "command": "clearCells",
+            "executed": 1
+          },
+          {
+            "command": "copy",
+            "executed": 1
+          },
+          {
+            "command": "cut",
+            "executed": 1
+          },
+          {
+            "command": "pasteText",
+            "executed": 2
+          },
+          {
+            "command": "pasteRich",
+            "executed": 2
+          },
+          {
+            "command": "pasteTSV",
+            "executed": 1
+          },
+          {
+            "command": "selectFlow",
+            "executed": 8
+          },
+          {
+            "command": "selectCells",
+            "executed": 10
+          },
+          {
+            "command": "selectNode",
+            "executed": 1
+          },
+          {
+            "command": "selectBlocks",
+            "executed": 1
+          },
+          {
+            "command": "registerAnchor",
+            "executed": 7
+          },
+          {
+            "command": "moveAnchor",
+            "executed": 1
+          },
+          {
+            "command": "unregisterAnchor",
+            "executed": 1
+          },
+          {
+            "command": "capturePaste",
+            "executed": 5
+          },
+          {
+            "command": "applyPaste",
+            "executed": 2
+          },
+          {
+            "command": "cancelPaste",
+            "executed": 1
+          },
+          {
+            "command": "putResource",
+            "executed": 1
+          },
+          {
+            "command": "removeResource",
+            "executed": 1
+          },
+          {
+            "command": "addAnnotation",
+            "executed": 2
+          },
+          {
+            "command": "removeAnnotation",
+            "executed": 1
+          },
+          {
+            "command": "cancelCommand",
+            "executed": 2
+          },
+          {
+            "command": "focusLost",
+            "executed": 2
+          }
+        ]
+      },
+      "elapsedMs": 1.7062999999999988
+    }
+  ],
+  "sourceHashes": {
+    "awt-contract-model.mjs": "d6a7fdea0465c5e2fc93dbc6fbed9b60ab3b2f6ab36801ca3e2788d8515896fd",
+    "candidate-b-coordinator.mjs": "2ad62940f6c21b0fa00e2cbea9fa39ae4671cfc4e9f1a2e0738d79fa2e405898",
+    "document-model.mjs": "09484f488fea92e9161f368291e6d93f0db8e3962c93df57a248a360ea31d1ad",
+    "document-tree.mjs": "de37a9b66a8668b41a1d0e4cb6c08b48d181e0f2a1dc60a2f5775afc9933a360",
+    "integrated-model.mjs": "e3d0140fccac1188309cff26f82bb0eeeaee5927754b4db5e40a537a9a03f1d8",
+    "request-contract.mjs": "205ea355e0e9f78095a9ca643bf109894c6f80a8d7c123bb207443d170f2adae",
+    "structural-model.mjs": "8a93b008994bdfe549c14878df6c1fcab16a23bc98a7f7702fd50f9dd69437b1",
+    "test-document.mjs": "8fa66762adada8038272b247bd13ae2a9c92eae136275497ff6918d8ffa552d7",
+    "test-integrated.mjs": "bd0b3afe098469ff3a109806eeb0a85b2f80dbfff8f6e435ed534d6262d837b4",
+    "test-repairs.mjs": "2d452d47069276f897fbd1fafc8dbc3a06c1b922b495c8bd9dd10f1a7b8652fa",
+    "verify.mjs": "397c0016f3f52f51f2fdb1afe8e269b2a4b44d87d66a95fb4ac4702cc9eeaf24"
+  },
+  "limits": [
+    "Whole-document reference, not production code",
+    "Synthetic input and Intl segmentation",
+    "Full-copy trees, not production complexity or heap proof"
+  ]
+}

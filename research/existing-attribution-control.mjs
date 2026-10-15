@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import { Schema } from './runtime/node_modules/prosemirror-model/dist/index.js';
+import { EditorState, TextSelection } from './runtime/node_modules/prosemirror-state/dist/index.js';
+const schema=new Schema({nodes:{doc:{content:'paragraph+'},paragraph:{content:'text*'},text:{}},marks:{bold:{},italic:{}}});
+const bold=schema.marks.bold.create(), italic=schema.marks.italic.create();
+const doc=schema.node('doc',null,[schema.node('paragraph',null,[schema.text('\u{1F469}',[bold]),schema.text('\u{1F4BB}',[italic])])]);
+let state=EditorState.create({schema,doc,selection:TextSelection.create(doc,3)});
+state=state.apply(state.tr.setStoredMarks([bold]).insertText('\u200d'));
+assert.equal(state.doc.textContent,'\u{1F469}\u200d\u{1F4BB}');
+state=state.apply(state.tr.delete(3,4));
+assert.deepEqual(state.doc.toJSON(),doc.toJSON());
+console.log(JSON.stringify({oracle:'prosemirror-model@1.25.12 + prosemirror-state@1.4.4',result:'Original text and marks survive ZWJ insertion/deletion without Undo',verdict:'Existing implementation already has the essential direction-1 property.'},null,2));

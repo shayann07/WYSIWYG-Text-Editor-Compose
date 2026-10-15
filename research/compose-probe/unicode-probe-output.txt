@@ -1,0 +1,13 @@
+before-low: TextRange(1, 1)
+after-high: TextRange(1, 1)
+collapsed-selection: TextRange(1, 1)
+forward-selection: TextRange(0, 1)
+reversed-selection: TextRange(1, 0)
+TextFieldState delete high surrogate: [de00]
+Legacy command delete 1 UTF-16 unit: [d83d]
+Legacy command delete 1 code point: []
+Legacy code-point command on malformed range: [0061]
+Published legacy adapter queued: [DeleteSurroundingTextCommand(lengthBeforeCursor=1, lengthAfterCursor=0)]; result=[d83d]
+Published state adapter [d83d, de00] -> []
+Published state adapter [0061, d83d] -> [0061]
+Unicode protocol probe completed: headless state/command APIs and private Skiko adapter factories; no OS keyboard, input connection, or UI session was exercised.

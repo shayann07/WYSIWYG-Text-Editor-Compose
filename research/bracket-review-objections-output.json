@@ -1,0 +1,82 @@
+{
+  "stabilizationChecks": 1635,
+  "results": [
+    {
+      "name": "late overflow invalidates early pair",
+      "beforeLength": 100005,
+      "editAt": 100005,
+      "cost": {
+        "rebuiltCharacters": 319,
+        "blocks": 392,
+        "contextCharacters": 319
+      },
+      "before": {
+        "directions": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "overflow": false,
+        "blockVisits": 391,
+        "fallbackBlockVisits": 0,
+        "scannedCharacters": 256,
+        "tableProbes": 390,
+        "rangeProbes": 1027,
+        "contextCells": 1
+      },
+      "after": {
+        "directions": [
+          1,
+          1,
+          1,
+          0
+        ],
+        "overflow": true,
+        "blockVisits": 392,
+        "fallbackBlockVisits": 392,
+        "scannedCharacters": 512,
+        "tableProbes": 391,
+        "rangeProbes": 1021,
+        "contextCells": 1
+      }
+    },
+    {
+      "name": "distant interior strong resolves early opener",
+      "beforeLength": 100004,
+      "editAt": 100002,
+      "cost": {
+        "rebuiltCharacters": 255,
+        "blocks": 391,
+        "contextCharacters": 255
+      },
+      "before": {
+        "directions": [
+          1,
+          0
+        ],
+        "overflow": false,
+        "blockVisits": 391,
+        "fallbackBlockVisits": 0,
+        "scannedCharacters": 256,
+        "tableProbes": 781,
+        "rangeProbes": 1033,
+        "contextCells": 1
+      },
+      "after": {
+        "directions": [
+          1,
+          1
+        ],
+        "overflow": false,
+        "blockVisits": 391,
+        "fallbackBlockVisits": 0,
+        "scannedCharacters": 256,
+        "tableProbes": 781,
+        "rangeProbes": 1033,
+        "contextCells": 1
+      }
+    }
+  ],
+  "conclusion": "Confirms global semantic dependencies and this implementation's block traversal. Refutes the specific claim that alternating closers require arbitrarily many reachable restarts at fixed incoming depth. Proves neither a general compact summary nor a query-time scan lower bound."
+}

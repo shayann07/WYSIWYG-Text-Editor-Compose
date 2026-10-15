@@ -1,0 +1,20 @@
+[
+  {
+    "test": "1",
+    "name": "Rollback mapping silently expands a target over restored text",
+    "description": "mapTrackedRangeOnCancel returns min-to-max interval over surviving tokens, silently including restored intervening text",
+    "error": "Restored character 'c' at index 2 must NOT be bold!\n+ actual - expected\n\n+ true\n- undefined\n"
+  },
+  {
+    "test": "2",
+    "name": "Advertised public dispatcher bypasses transaction accounting",
+    "description": "Direct call to dispatchCommand mutates document and creates history without entering transaction owner or advancing documentRevision",
+    "error": "documentRevision must advance from 0 to 1 on direct dispatchCommand formatting!\n\n0 !== 1\n"
+  },
+  {
+    "test": "3",
+    "name": "Undo ordering specified by bypassing the settlement barrier",
+    "description": "undo() flushes overlay and transitions to Idle while activeFence and settlementEvidence are null, allowing desynchronized subsequent commits",
+    "error": "Coordinator must NOT unilaterally transition to Idle on application undo without native completion!"
+  }
+]

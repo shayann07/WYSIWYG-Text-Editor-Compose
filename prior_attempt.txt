@@ -1,0 +1,66 @@
+
+> [!WARNING] **Skepticism Disclaimer**
+> We have high algorithmic confidence in Candidate B's memory model, overlay reconciliation, and bounded state-space transitions within the isolated Node.js test harness, but zero confidence that native desktop, Android, iOS, or browser IME hosts or assistive technologies function end-to-end because no live OS IME, window server, or accessibility tree was executed.
+
+## 1. What I changed
+
+### In `validation/antigravity/run-20261014-08/`
+- **[`candidate-b-coordinator.mjs`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/validation/antigravity/run-20261014-08/candidate-b-coordinator.mjs)** & **[`independent-oracle.mjs`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/validation/antigravity/run-20261014-08/independent-oracle.mjs)**:
+  - **Finding A (Undo/Redo Empty Preimages)**: Eliminated truthiness fallback bugs (`entry.beforeText || this.docText`), enforcing strict `undefined`/`null` checks `(entry.beforeText !== undefined && entry.beforeText !== null) ? entry.beforeText : ''`. Symmetrically transfers all fields (`beforeText`, `beforeAttrs`, `beforeSelection`, `afterText`, `afterAttrs`, `afterSelection`, `extent`, `range`, `patch`, `selection`) between `undoStack` and `redoStack`, preserving empty string preimages through repeated cycles (`["x", "", "x", ""]`).
+  - **Finding B (Native Removal Across Lifecycle)**: Implemented `_nativeRemoval(range, replacementText, selection)` across `Idle`, `Composing`, and `AwaitingSettlement`, recording a symmetrical `Composition`/`NativeRemoval` undo history entry without dropping prior composition history.
+  - **Finding C (Disposal Content Preservation)**: Updated `_dispose()` to materialize accepted visible provisional units into durable committed storage $D_c$ and push a history entry before closing, fulfilling the preserve-visible-content teardown contract.
+  - **Finding D (Resumed Preedit Unified Target Resolution)**: Implemented `_resolveTargetDescriptor(payload)` shared between proposed-state validation and mutation dispatch: when `payload.range` is omitted, active marked range targets the candidate span; if marked range is null (after nonterminal `unmark(settled: false)`), target falls back to current selection.
+  - **Universal Rejection Atomicity (Invariant 10)**: In `applyInput()`, unconditionally restores `preTxSnapshot` if `result.status === 'Rejected'`. Upfront checks stack emptiness in `undo()` and `redo()` before cancelling active compositions.
+- **[`fixtures.mjs`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/validation/antigravity/run-20261014-08/fixtures.mjs)** & **[`test-fixtures.mjs`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/validation/antigravity/run-20261014-08/test-fixtures.mjs)**:
+  - Added 4 hand-calculated regression fixtures for Findings Aâ€“D (total 18 fixtures).
+- **[`test-settlement-lifecycle.mjs`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/validation/antigravity/run-20261014-08/test-settlement-lifecycle.mjs)**:
+  - Added 6 disposal lifecycle cases across pre-mutation, mid-composition, awaiting settlement, queued command cancellation, staged failure rollback, and duplicate closure (total 21 scenarios).
+- **[`test-repaired-regressions.mjs`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/validation/antigravity/run-20261014-08/test-repaired-regressions.mjs)**:
+  - Added Blocks 11â€“14 covering Findings Aâ€“D (total 14 verification blocks).
+- **[`test-mutations.mjs`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/validation/antigravity/run-20261014-08/test-mutations.mjs)**:
+  - Added 7 required behavioral mutants (Mutants 12â€“18; total 34 mutants and 34 positive controls).
+- **[`runner.mjs`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/validation/antigravity/run-20261014-08/runner.mjs)**:
+  - Updated configuration, headers, and output serialization to record run-08 evidence in `results.json`.
+
+### Root Documentation Reconciliation
+- **[`plan-v4.md`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/plan-v4.md)**:
+  - Bumped to Revision 4.9.4.
+  - Formulated Run-08 Findings Aâ€“D into Sections 4.1, 4.2, 4.4, and 4.5.
+  - Pinned UAX #29 fixture details (Unicode 17.0, CLDR 48.0, ICU 78.3 under Node.js v24.20.0, hand-selected examples vs full conformance corpus).
+  - Preserved raw LF semantics without automated U+2028 conversion, 100-ms long-paragraph qualification target (p95 <= 100 ms, known high-risk/unmet), and synchronous Web ProseMirror admission.
+  - Added Revision 4.9.4 Verification Summary.
+- **[`antigravity-validation-report.md`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/antigravity-validation-report.md)**:
+  - Bumped to Revision 4.9.4; updated matrix to 72 evaluated items (45 PASS); documented all 14 regression blocks, 18 fixtures, 21 lifecycle scenarios, 34 mutants, depth 4 model check (143,929 unique states, 204,932 transitions), and microbenchmark (586.24 Âµs/op).
+- **[`antigravity-validation-matrix.csv`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/antigravity-validation-matrix.csv)**:
+  - Updated to 72 items, adding rows for Run-08 Findings Aâ€“D, model checker depth 4, and benchmark results.
+- **[`antigravity-plan-diff.md`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/antigravity-plan-diff.md)**:
+  - Bumped to Revision 4.9.4; updated Section 8.3 metrics and added Section 9 detailing Run-08 Findings Aâ€“D and universal rejection atomicity.
+
+## 2. Why
+To repair remaining history and lifecycle contract violations in Candidate B within an isolated validation directory (`run-20261014-08`), ensure bit-for-bit rejection atomicity (Invariant 10), prove soundness against the Independent Oracle, and reconcile all root specification documents without advancing project phases or writing production code.
+
+## 3. Verification Record
+- **Deep Verification (ran actual tests):**
+  - `reproduce-failures.mjs`: Reproduced 4/4 baseline defects in `raw-reproduced-failures.json`.
+  - `test-fixtures.mjs`: **18/18 passed** on Independent Oracle and Candidate B; Candidate A failed 8 negative controls.
+  - `test-settlement-lifecycle.mjs`: **21/21 passed** cleanly across all settlement, fencing, turnover, and disposal lifecycles.
+  - `test-repaired-regressions.mjs`: **14/14 verification blocks passed** cleanly.
+  - `test-semantic-gaps.mjs`: **17/17 passed** cleanly across Gaps 4.1â€“4.7.
+  - `test-mutations.mjs`: **34/34 positive controls passed**, and **34/34 mutants caught cleanly** (34 clean assertion kills, 0 unrelated crashes).
+  - `independent-model-checker.mjs`: Explored **143,929 unique abstract states** and **204,932 transitions** at depth 4 in 66,574 ms with **0 invariant violations** across all 10 formal invariants. Candidate A failed at depth 0 on Invariant 1.
+  - `runner.mjs`: Executed full 7-phase suite in 69,847.79 ms and wrote [`results.json`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/validation/antigravity/run-20261014-08/results.json).
+- **Shallow Verification (manual run only):** None.
+- **Unverified aspects:**
+  - Gate G0 native multiplatform hosts (Desktop Compose/AWT, Android InputConnection, iOS UITextInput, Web ProseMirror DOM).
+  - Live OS IME candidate popups, dead keys, and reconversion.
+  - Live screen reader interactive testing (TalkBack, VoiceOver, NVDA, Orca).
+  - Physical filesystem journal crash recovery and durability.
+  - Full Unicode 17.0 UAX #29 conformance corpus beyond hand-selected regression fixtures.
+
+## 4. Known Issues
+- `Minor Robustness Risk` â€” UAX #29 grapheme segmentation relies on host V8 `Intl.Segmenter` (ICU 78.3 / Unicode 17.0); custom multiplatform Kotlin engine implementation will require a certified native segmenter in Phase 1.
+- `Minor Robustness Risk` â€” 100K-unit single paragraph layout latency remains a known high-risk/unmet challenge (p95 <= 100 ms target) not solved by block virtualization.
+
+## 5. Untested Edge Cases & Next Step
+- **What a reviewer should attack first**: Native platform adapter race conditions when OS focus loss occurs concurrently with an in-flight IME completion callback carrying an obsolete epoch stamp.
+- **Next Step**: Proceed with Phase 0 capability and dependency freeze (`validation/capability-manifest.json`) and native platform spike implementations. Production implementation remains strictly prohibited.

@@ -1,0 +1,719 @@
+{
+  "checks": 7056,
+  "rows": [
+    {
+      "length": 769,
+      "blockSize": 28,
+      "changedDirections": 513,
+      "buildMs": 2.5359000000000016,
+      "allocatedTypedBytes": 57272,
+      "edit": {
+        "rebuiltCharacters": 28,
+        "blocks": 28,
+        "contextCharacters": 28
+      },
+      "queryCosts": [
+        {
+          "start": 0,
+          "end": 48,
+          "overflow": false,
+          "blockVisits": 28,
+          "fallbackBlockVisits": 0,
+          "scannedCharacters": 56,
+          "tableProbes": 42,
+          "rangeProbes": 66,
+          "contextCells": 26
+        },
+        {
+          "start": 384,
+          "end": 432,
+          "overflow": false,
+          "blockVisits": 28,
+          "fallbackBlockVisits": 0,
+          "scannedCharacters": 81,
+          "tableProbes": 41,
+          "rangeProbes": 69,
+          "contextCells": 35
+        },
+        {
+          "start": 721,
+          "end": 769,
+          "overflow": false,
+          "blockVisits": 28,
+          "fallbackBlockVisits": 0,
+          "scannedCharacters": 54,
+          "tableProbes": 42,
+          "rangeProbes": 70,
+          "contextCells": 26
+        }
+      ],
+      "editAndLastWindowMs": {
+        "median": 0.06139999999999901,
+        "p95": 0.13459999999999894,
+        "samples": 21
+      },
+      "bidiJsWholeParagraphAndSliceMs": {
+        "median": 0.10000000000000142,
+        "p95": 0.5329999999999941,
+        "samples": 21
+      }
+    },
+    {
+      "length": 3073,
+      "blockSize": 56,
+      "changedDirections": 2049,
+      "buildMs": 0.897199999999998,
+      "allocatedTypedBytes": 250020,
+      "edit": {
+        "rebuiltCharacters": 56,
+        "blocks": 55,
+        "contextCharacters": 56
+      },
+      "queryCosts": [
+        {
+          "start": 0,
+          "end": 48,
+          "overflow": false,
+          "blockVisits": 55,
+          "fallbackBlockVisits": 0,
+          "scannedCharacters": 56,
+          "tableProbes": 126,
+          "rangeProbes": 322,
+          "contextCells": 54
+        },
+        {
+          "start": 1536,
+          "end": 1584,
+          "overflow": false,
+          "blockVisits": 55,
+          "fallbackBlockVisits": 0,
+          "scannedCharacters": 112,
+          "tableProbes": 121,
+          "rangeProbes": 316,
+          "contextCells": 72
+        },
+        {
+          "start": 3025,
+          "end": 3073,
+          "overflow": false,
+          "blockVisits": 55,
+          "fallbackBlockVisits": 0,
+          "scannedCharacters": 55,
+          "tableProbes": 124,
+          "rangeProbes": 327,
+          "contextCells": 54
+        }
+      ],
+      "editAndLastWindowMs": {
+        "median": 0.08660000000000423,
+        "p95": 0.1850999999999985,
+        "samples": 21
+      },
+      "bidiJsWholeParagraphAndSliceMs": {
+        "median": 0.29110000000000014,
+        "p95": 0.5202999999999989,
+        "samples": 21
+      }
+    },
+    {
+      "length": 12289,
+      "blockSize": 111,
+      "changedDirections": 8193,
+      "buildMs": 3.5131000000000014,
+      "allocatedTypedBytes": 1090756,
+      "edit": {
+        "rebuiltCharacters": 111,
+        "blocks": 111,
+        "contextCharacters": 111
+      },
+      "queryCosts": [
+        {
+          "start": 0,
+          "end": 48,
+          "overflow": false,
+          "blockVisits": 111,
+          "fallbackBlockVisits": 0,
+          "scannedCharacters": 111,
+          "tableProbes": 310,
+          "rangeProbes": 671,
+          "contextCells": 136
+        },
+        {
+          "start": 6144,
+          "end": 6192,
+          "overflow": false,
+          "blockVisits": 111,
+          "fallbackBlockVisits": 0,
+          "scannedCharacters": 111,
+          "tableProbes": 308,
+          "rangeProbes": 673,
+          "contextCells": 136
+        },
+        {
+          "start": 12241,
+          "end": 12289,
+          "overflow": false,
+          "blockVisits": 111,
+          "fallbackBlockVisits": 0,
+          "scannedCharacters": 110,
+          "tableProbes": 308,
+          "rangeProbes": 671,
+          "contextCells": 136
+        }
+      ],
+      "editAndLastWindowMs": {
+        "median": 0.09300000000000352,
+        "p95": 0.12830000000001007,
+        "samples": 21
+      },
+      "bidiJsWholeParagraphAndSliceMs": {
+        "median": 0.8445999999999998,
+        "p95": 1.317300000000003,
+        "samples": 21
+      }
+    },
+    {
+      "length": 49153,
+      "blockSize": 222,
+      "changedDirections": 32769,
+      "buildMs": 9.784400000000005,
+      "allocatedTypedBytes": 4739112,
+      "edit": {
+        "rebuiltCharacters": 222,
+        "blocks": 222,
+        "contextCharacters": 222
+      },
+      "queryCosts": [
+        {
+          "start": 0,
+          "end": 48,
+          "overflow": false,
+          "blockVisits": 222,
+          "fallbackBlockVisits": 0,
+          "scannedCharacters": 222,
+          "tableProbes": 577,
+          "rangeProbes": 1945,
+          "contextCells": 251
+        },
+        {
+          "start": 24576,
+          "end": 24624,
+          "overflow": false,
+          "blockVisits": 222,
+          "fallbackBlockVisits": 0,
+          "scannedCharacters": 442,
+          "tableProbes": 574,
+          "rangeProbes": 1935,
+          "contextCells": 324
+        },
+        {
+          "start": 49105,
+          "end": 49153,
+          "overflow": false,
+          "blockVisits": 222,
+          "fallbackBlockVisits": 0,
+          "scannedCharacters": 221,
+          "tableProbes": 575,
+          "rangeProbes": 1944,
+          "contextCells": 251
+        }
+      ],
+      "editAndLastWindowMs": {
+        "median": 0.39910000000000423,
+        "p95": 0.5834000000000117,
+        "samples": 21
+      },
+      "bidiJsWholeParagraphAndSliceMs": {
+        "median": 3.8186000000000035,
+        "p95": 4.737600000000015,
+        "samples": 21
+      }
+    },
+    {
+      "length": 196609,
+      "blockSize": 444,
+      "changedDirections": 131073,
+      "buildMs": 37.23519999999999,
+      "allocatedTypedBytes": 20491636,
+      "edit": {
+        "rebuiltCharacters": 444,
+        "blocks": 443,
+        "contextCharacters": 444
+      },
+      "queryCosts": [
+        {
+          "start": 0,
+          "end": 48,
+          "overflow": false,
+          "blockVisits": 443,
+          "fallbackBlockVisits": 0,
+          "scannedCharacters": 444,
+          "tableProbes": 1272,
+          "rangeProbes": 4392,
+          "contextCells": 562
+        },
+        {
+          "start": 98304,
+          "end": 98352,
+          "overflow": false,
+          "blockVisits": 443,
+          "fallbackBlockVisits": 0,
+          "scannedCharacters": 444,
+          "tableProbes": 1270,
+          "rangeProbes": 4390,
+          "contextCells": 562
+        },
+        {
+          "start": 196561,
+          "end": 196609,
+          "overflow": false,
+          "blockVisits": 443,
+          "fallbackBlockVisits": 0,
+          "scannedCharacters": 443,
+          "tableProbes": 1270,
+          "rangeProbes": 4390,
+          "contextCells": 562
+        }
+      ],
+      "editAndLastWindowMs": {
+        "median": 0.7921999999999798,
+        "p95": 1.1139000000000578,
+        "samples": 21
+      },
+      "bidiJsWholeParagraphAndSliceMs": {
+        "median": 15.705800000000067,
+        "p95": 17.788400000000024,
+        "samples": 21
+      }
+    }
+  ],
+  "adversaries": [
+    {
+      "initialLength": 20481,
+      "blockSize": 144,
+      "allocatedTypedBytes": 2060552,
+      "operations": [
+        {
+          "at": 0,
+          "count": 0,
+          "inserted": "]",
+          "cost": {
+            "rebuiltCharacters": 145,
+            "blocks": 144,
+            "contextCharacters": 145
+          },
+          "windows": [
+            {
+              "start": 0,
+              "end": 48,
+              "overflow": false,
+              "blockVisits": 144,
+              "fallbackBlockVisits": 0,
+              "scannedCharacters": 73,
+              "tableProbes": 430,
+              "rangeProbes": 2428,
+              "contextCells": 200
+            },
+            {
+              "start": 10241,
+              "end": 10289,
+              "overflow": false,
+              "blockVisits": 144,
+              "fallbackBlockVisits": 0,
+              "scannedCharacters": 143,
+              "tableProbes": 427,
+              "rangeProbes": 2424,
+              "contextCells": 228
+            },
+            {
+              "start": 20434,
+              "end": 20482,
+              "overflow": false,
+              "blockVisits": 144,
+              "fallbackBlockVisits": 0,
+              "scannedCharacters": 143,
+              "tableProbes": 428,
+              "rangeProbes": 2414,
+              "contextCells": 229
+            }
+          ]
+        },
+        {
+          "at": 10241,
+          "count": 1,
+          "inserted": "([R]",
+          "cost": {
+            "rebuiltCharacters": 146,
+            "blocks": 145,
+            "contextCharacters": 146
+          },
+          "windows": [
+            {
+              "start": 0,
+              "end": 48,
+              "overflow": false,
+              "blockVisits": 145,
+              "fallbackBlockVisits": 0,
+              "scannedCharacters": 73,
+              "tableProbes": 434,
+              "rangeProbes": 2441,
+              "contextCells": 202
+            },
+            {
+              "start": 10242,
+              "end": 10290,
+              "overflow": false,
+              "blockVisits": 145,
+              "fallbackBlockVisits": 0,
+              "scannedCharacters": 146,
+              "tableProbes": 427,
+              "rangeProbes": 2424,
+              "contextCells": 230
+            },
+            {
+              "start": 20437,
+              "end": 20485,
+              "overflow": false,
+              "blockVisits": 145,
+              "fallbackBlockVisits": 0,
+              "scannedCharacters": 143,
+              "tableProbes": 432,
+              "rangeProbes": 2427,
+              "contextCells": 231
+            }
+          ]
+        },
+        {
+          "at": 20484,
+          "count": 1,
+          "inserted": "",
+          "cost": {
+            "rebuiltCharacters": 142,
+            "blocks": 145,
+            "contextCharacters": 142
+          },
+          "windows": [
+            {
+              "start": 0,
+              "end": 48,
+              "overflow": false,
+              "blockVisits": 145,
+              "fallbackBlockVisits": 0,
+              "scannedCharacters": 73,
+              "tableProbes": 434,
+              "rangeProbes": 2457,
+              "contextCells": 204
+            },
+            {
+              "start": 10242,
+              "end": 10290,
+              "overflow": false,
+              "blockVisits": 145,
+              "fallbackBlockVisits": 0,
+              "scannedCharacters": 146,
+              "tableProbes": 427,
+              "rangeProbes": 2440,
+              "contextCells": 232
+            },
+            {
+              "start": 20436,
+              "end": 20484,
+              "overflow": false,
+              "blockVisits": 145,
+              "fallbackBlockVisits": 0,
+              "scannedCharacters": 142,
+              "tableProbes": 432,
+              "rangeProbes": 2427,
+              "contextCells": 231
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "initialLength": 16385,
+      "blockSize": 129,
+      "allocatedTypedBytes": 5639288,
+      "operations": [
+        {
+          "at": 0,
+          "count": 0,
+          "inserted": "]",
+          "cost": {
+            "rebuiltCharacters": 130,
+            "blocks": 129,
+            "contextCharacters": 130
+          },
+          "windows": [
+            {
+              "start": 0,
+              "end": 48,
+              "overflow": false,
+              "blockVisits": 129,
+              "fallbackBlockVisits": 0,
+              "scannedCharacters": 65,
+              "tableProbes": 2207,
+              "rangeProbes": 135,
+              "contextCells": 63
+            },
+            {
+              "start": 8193,
+              "end": 8241,
+              "overflow": false,
+              "blockVisits": 129,
+              "fallbackBlockVisits": 0,
+              "scannedCharacters": 256,
+              "tableProbes": 2206,
+              "rangeProbes": 139,
+              "contextCells": 189
+            },
+            {
+              "start": 16338,
+              "end": 16386,
+              "overflow": false,
+              "blockVisits": 129,
+              "fallbackBlockVisits": 0,
+              "scannedCharacters": 128,
+              "tableProbes": 2207,
+              "rangeProbes": 140,
+              "contextCells": 126
+            }
+          ]
+        },
+        {
+          "at": 8193,
+          "count": 1,
+          "inserted": "([R]",
+          "cost": {
+            "rebuiltCharacters": 259,
+            "blocks": 130,
+            "contextCharacters": 259
+          },
+          "windows": [
+            {
+              "start": 0,
+              "end": 48,
+              "overflow": true,
+              "blockVisits": 67,
+              "fallbackBlockVisits": 130,
+              "scannedCharacters": 130,
+              "tableProbes": 3048,
+              "rangeProbes": 78,
+              "contextCells": 146
+            },
+            {
+              "start": 8194,
+              "end": 8242,
+              "overflow": true,
+              "blockVisits": 67,
+              "fallbackBlockVisits": 130,
+              "scannedCharacters": 215,
+              "tableProbes": 2144,
+              "rangeProbes": 77,
+              "contextCells": 167
+            },
+            {
+              "start": 16341,
+              "end": 16389,
+              "overflow": true,
+              "blockVisits": 67,
+              "fallbackBlockVisits": 130,
+              "scannedCharacters": 65,
+              "tableProbes": 3049,
+              "rangeProbes": 84,
+              "contextCells": 146
+            }
+          ]
+        },
+        {
+          "at": 16388,
+          "count": 1,
+          "inserted": "",
+          "cost": {
+            "rebuiltCharacters": 127,
+            "blocks": 130,
+            "contextCharacters": 127
+          },
+          "windows": [
+            {
+              "start": 0,
+              "end": 48,
+              "overflow": true,
+              "blockVisits": 67,
+              "fallbackBlockVisits": 130,
+              "scannedCharacters": 130,
+              "tableProbes": 3048,
+              "rangeProbes": 78,
+              "contextCells": 146
+            },
+            {
+              "start": 8194,
+              "end": 8242,
+              "overflow": true,
+              "blockVisits": 67,
+              "fallbackBlockVisits": 130,
+              "scannedCharacters": 215,
+              "tableProbes": 2144,
+              "rangeProbes": 77,
+              "contextCells": 167
+            },
+            {
+              "start": 16340,
+              "end": 16388,
+              "overflow": true,
+              "blockVisits": 67,
+              "fallbackBlockVisits": 130,
+              "scannedCharacters": 64,
+              "tableProbes": 3049,
+              "rangeProbes": 84,
+              "contextCells": 146
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "initialLength": 24641,
+      "blockSize": 157,
+      "allocatedTypedBytes": 2417212,
+      "operations": [
+        {
+          "at": 0,
+          "count": 0,
+          "inserted": "]",
+          "cost": {
+            "rebuiltCharacters": 158,
+            "blocks": 158,
+            "contextCharacters": 158
+          },
+          "windows": [
+            {
+              "start": 0,
+              "end": 48,
+              "overflow": true,
+              "blockVisits": 158,
+              "fallbackBlockVisits": 158,
+              "scannedCharacters": 128,
+              "tableProbes": 371,
+              "rangeProbes": 1303,
+              "contextCells": 132
+            },
+            {
+              "start": 12321,
+              "end": 12369,
+              "overflow": true,
+              "blockVisits": 158,
+              "fallbackBlockVisits": 158,
+              "scannedCharacters": 209,
+              "tableProbes": 369,
+              "rangeProbes": 1310,
+              "contextCells": 159
+            },
+            {
+              "start": 24594,
+              "end": 24642,
+              "overflow": true,
+              "blockVisits": 158,
+              "fallbackBlockVisits": 158,
+              "scannedCharacters": 222,
+              "tableProbes": 369,
+              "rangeProbes": 1303,
+              "contextCells": 200
+            }
+          ]
+        },
+        {
+          "at": 12321,
+          "count": 1,
+          "inserted": "([R]",
+          "cost": {
+            "rebuiltCharacters": 160,
+            "blocks": 159,
+            "contextCharacters": 160
+          },
+          "windows": [
+            {
+              "start": 0,
+              "end": 48,
+              "overflow": true,
+              "blockVisits": 159,
+              "fallbackBlockVisits": 159,
+              "scannedCharacters": 128,
+              "tableProbes": 508,
+              "rangeProbes": 1321,
+              "contextCells": 134
+            },
+            {
+              "start": 12322,
+              "end": 12370,
+              "overflow": true,
+              "blockVisits": 159,
+              "fallbackBlockVisits": 159,
+              "scannedCharacters": 215,
+              "tableProbes": 501,
+              "rangeProbes": 1310,
+              "contextCells": 161
+            },
+            {
+              "start": 24597,
+              "end": 24645,
+              "overflow": true,
+              "blockVisits": 159,
+              "fallbackBlockVisits": 159,
+              "scannedCharacters": 221,
+              "tableProbes": 504,
+              "rangeProbes": 1321,
+              "contextCells": 201
+            }
+          ]
+        },
+        {
+          "at": 24644,
+          "count": 1,
+          "inserted": "",
+          "cost": {
+            "rebuiltCharacters": 155,
+            "blocks": 159,
+            "contextCharacters": 155
+          },
+          "windows": [
+            {
+              "start": 0,
+              "end": 48,
+              "overflow": true,
+              "blockVisits": 159,
+              "fallbackBlockVisits": 159,
+              "scannedCharacters": 128,
+              "tableProbes": 508,
+              "rangeProbes": 1321,
+              "contextCells": 134
+            },
+            {
+              "start": 12322,
+              "end": 12370,
+              "overflow": true,
+              "blockVisits": 159,
+              "fallbackBlockVisits": 159,
+              "scannedCharacters": 215,
+              "tableProbes": 501,
+              "rangeProbes": 1310,
+              "contextCells": 161
+            },
+            {
+              "start": 24596,
+              "end": 24644,
+              "overflow": true,
+              "blockVisits": 159,
+              "fallbackBlockVisits": 159,
+              "scannedCharacters": 220,
+              "tableProbes": 504,
+              "rangeProbes": 1321,
+              "contextCells": 201
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "timingLimits": "Single Windows Node process, 5 warmups and 21 samples per size; includes candidate replacement and window query, baseline full UBA and slice. Native variants prebuilt. Candidate accepts classified tokens and has an existing index, baseline classifies full Unicode text. Build time and typed-array memory reported separately. This is not an editor/device benchmark or a comparison of equivalent complete Unicode capabilities."
+}

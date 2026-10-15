@@ -1,0 +1,36 @@
+Claim,Scope,Evidence,Status,Remaining requirement
+documentCases,Executed reference contract,validation/codex/run-20261015-19/results.json: documentCases,PASS (SCOPED),"Only recorded traces, counts and bounds"
+inheritedDocumentCases,Executed reference contract,validation/codex/run-20261015-19/results.json: inheritedDocumentCases,PASS (SCOPED),"Only recorded traces, counts and bounds"
+anchorMatrix,Executed reference contract,validation/codex/run-20261015-19/results.json: anchorMatrix,PASS (SCOPED),"Only recorded traces, counts and bounds"
+cellCompositionMatrix,Executed reference contract,validation/codex/run-20261015-19/results.json: cellCompositionMatrix,PASS (SCOPED),"Only recorded traces, counts and bounds"
+commandCoverage,Executed reference contract,validation/codex/run-20261015-19/results.json: commandCoverage,PASS (SCOPED),"Only recorded traces, counts and bounds"
+documentMutations,Executed reference contract,validation/codex/run-20261015-19/results.json: documentMutations,PASS (SCOPED),"Only recorded traces, counts and bounds"
+reproduceBaseline,Executed reference contract,validation/codex/run-20261015-19/results.json: reproduceBaseline,PASS (SCOPED),"Only recorded traces, counts and bounds"
+regressionTests,Executed reference contract,validation/codex/run-20261015-19/results.json: regressionTests,PASS (SCOPED),"Only recorded traces, counts and bounds"
+structuralChains,Executed reference contract,validation/codex/run-20261015-19/results.json: structuralChains,PASS (SCOPED),"Only recorded traces, counts and bounds"
+awtTests,Executed reference contract,validation/codex/run-20261015-19/results.json: awtTests,PASS (SCOPED),"Only recorded traces, counts and bounds"
+retentionTests,Executed reference contract,validation/codex/run-20261015-19/results.json: retentionTests,PASS (SCOPED),"Only recorded traces, counts and bounds"
+retentionSoak,Executed reference contract,validation/codex/run-20261015-19/results.json: retentionSoak,PASS (SCOPED),"Only recorded traces, counts and bounds"
+midStageBasis,Executed reference contract,validation/codex/run-20261015-19/results.json: midStageBasis,PASS (SCOPED),"Only recorded traces, counts and bounds"
+repairMutations,Executed reference contract,validation/codex/run-20261015-19/results.json: repairMutations,PASS (SCOPED),"Only recorded traces, counts and bounds"
+namedTests,Executed reference contract,validation/codex/run-20261015-19/results.json: namedTests,PASS (SCOPED),"Only recorded traces, counts and bounds"
+generatedIntegration,Executed reference contract,validation/codex/run-20261015-19/results.json: generatedIntegration,PASS (SCOPED),"Only recorded traces, counts and bounds"
+ledgerExploration,Executed reference contract,validation/codex/run-20261015-19/results.json: ledgerExploration,PASS (SCOPED),"Only recorded traces, counts and bounds"
+repeatedSessions,Executed reference contract,validation/codex/run-20261015-19/results.json: repeatedSessions,PASS (SCOPED),"Only recorded traces, counts and bounds"
+integratedMutations,Executed reference contract,validation/codex/run-20261015-19/results.json: integratedMutations,PASS (SCOPED),"Only recorded traces, counts and bounds"
+scheduling,Executed reference contract,validation/codex/run-20261015-19/results.json: scheduling,PASS (SCOPED),"Only recorded traces, counts and bounds"
+G0,Production qualification,plan-v4.md section 8,NOT RUN,No production implementation or gate advancement
+G1,Production qualification,plan-v4.md section 8,NOT RUN,No production implementation or gate advancement
+G2,Production qualification,plan-v4.md section 8,NOT RUN,No production implementation or gate advancement
+G3,Production qualification,plan-v4.md section 8,NOT RUN,No production implementation or gate advancement
+G4,Production qualification,plan-v4.md section 8,NOT RUN,No production implementation or gate advancement
+G5,Production qualification,plan-v4.md section 8,NOT RUN,No production implementation or gate advancement
+G6,Production qualification,plan-v4.md section 8,NOT RUN,No production implementation or gate advancement
+G7,Production qualification,plan-v4.md section 8,NOT RUN,No production implementation or gate advancement
+G8,Production qualification,plan-v4.md section 8,NOT RUN,No production implementation or gate advancement
+Unicode,Qualification boundary,plan-v4.md sections 4.11 and 9.6,NOT QUALIFIED,Pinned segmentation and full conformance data; Intl fixtures are insufficient
+Storage and retention,Qualification boundary,plan-v4.md sections 4.11 and 9.6,NOT QUALIFIED,"Persistent hierarchical Kotlin indexes, allocator/GC measurements and lease reclamation"
+Native input and AT,Qualification boundary,plan-v4.md sections 4.11 and 9.6,NOT QUALIFIED,"Live OS/browser provenance, cell/gap hosting, visual selection, screen readers"
+Imports and resources,Qualification boundary,plan-v4.md sections 4.11 and 9.6,NOT QUALIFIED,Actual HTML/system clipboard/codec/resource I/O and format round trips
+Durability,Qualification boundary,plan-v4.md sections 4.11 and 9.6,NOT QUALIFIED,Physical process-kill journal recovery
+Performance,Qualification boundary,plan-v4.md sections 4.11 and 9.6,NOT QUALIFIED,"Full layout, large paragraph, deep document and device budgets"

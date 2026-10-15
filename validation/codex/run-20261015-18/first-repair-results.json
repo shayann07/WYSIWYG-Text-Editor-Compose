@@ -1,0 +1,47 @@
+{
+  "reproduceBaseline": {
+    "status": "PASS",
+    "detail": [
+      {
+        "name": "terminalSelections",
+        "reproduced": true,
+        "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'InvalidSelection'\n"
+      },
+      {
+        "name": "repeatedListJoins",
+        "reproduced": true,
+        "message": "Expected values to be strictly equal:\n\n'i2' !== 'i1'\n"
+      },
+      {
+        "name": "malformedRange",
+        "reproduced": true,
+        "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'InvalidTargetRange'\n"
+      },
+      {
+        "name": "domainCompatibility",
+        "reproduced": true,
+        "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'ProtectedStructuralBoundary'\n"
+      }
+    ]
+  },
+  "regressionTests": {
+    "status": "PASS",
+    "detail": {
+      "cases": 23
+    }
+  },
+  "awtTests": {
+    "status": "PASS",
+    "detail": {
+      "cases": 8,
+      "scope": "layout-coordinate contract with synthetic frames, not a native AWT host"
+    }
+  },
+  "retentionTests": {
+    "status": "PASS",
+    "detail": {
+      "cases": 10,
+      "limits": "deterministic serialized-byte/count charges; not JVM or native heap measurements"
+    }
+  }
+}

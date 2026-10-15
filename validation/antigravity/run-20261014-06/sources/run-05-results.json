@@ -1,0 +1,111 @@
+{
+  "runId": "run-20261014-05",
+  "timestamp": "2026-10-13T22:39:36.440Z",
+  "environment": {
+    "node": "v24.20.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "totalElapsedMs": 805.01,
+  "suitesCount": 6,
+  "allSuitesPassed": true,
+  "verdict": "ARCHITECTURAL_MERGE_APPROVED: Candidate B (Segment-Mapped Overlay) Selected for plan-v4 Revision 4.9",
+  "results": [
+    {
+      "suite": "Hand-Calculated-Fixtures",
+      "status": "PASS",
+      "summary": {
+        "oracle": "14/14 passed",
+        "candidateB": "14/14 passed",
+        "candidateA": "10/14 passed (4 architectural failures)"
+      },
+      "details": {
+        "IndependentOracle": {
+          "passed": 14,
+          "failed": 0,
+          "errors": []
+        },
+        "CandidateA": {
+          "passed": 10,
+          "failed": 4,
+          "errors": [
+            {
+              "fixture": "gap43_partial_commit_absorbed_content",
+              "error": "Text mismatch on Gap 4.3: partial commit commits preceding prefix and preserves absorbed original c: actual \"aYcd\" vs expected \"aXYcd\"\n\n'aYcd' !== 'aXYcd'\n"
+            },
+            {
+              "fixture": "gap44_deletion_at_commit_boundary_cancelled",
+              "error": "Text mismatch on Gap 4.4: deletion at commitment cut boundary belongs to remaining effect and is cancelled: actual \"ab\" vs expected \"abc\"\n\n'ab' !== 'abc'\n"
+            },
+            {
+              "fixture": "gap44_deletion_after_retargeted_cut_boundary",
+              "error": "Text mismatch on Gap 4.4: deletion after retargeted cut boundary belongs to remaining effect and is cancelled: actual \"abce\" vs expected \"abcde\"\n\n'abce' !== 'abcde'\n"
+            },
+            {
+              "fixture": "gap45_replacement_rollback_ownership",
+              "error": "Text mismatch on Gap 4.5: replacement rollback obligation has exactly one owner when split: actual \"aUc\" vs expected \"aXUc\"\n\n'aUc' !== 'aXUc'\n"
+            }
+          ]
+        },
+        "CandidateB": {
+          "passed": 14,
+          "failed": 0,
+          "errors": []
+        }
+      }
+    },
+    {
+      "suite": "Settlement-Lifecycle-Adversarial",
+      "status": "PASS",
+      "summary": "7 lifecycle scenarios passed cleanly (nonterminal unmarks, preedit resumption, token fencing)"
+    },
+    {
+      "suite": "Deep-Semantic-Gaps",
+      "status": "PASS",
+      "summary": "17 detailed traces verified across Gaps 4.1 to 4.7 (formatting provenance, retargeting, absorbed units, zero-length deletions, multi-unit rollback)"
+    },
+    {
+      "suite": "Subclass-Mutation-Verification",
+      "status": "PASS",
+      "summary": "11/11 coordinator subclass mutants caught cleanly by invariants"
+    },
+    {
+      "suite": "Bounded-Model-Checker",
+      "status": "PASS",
+      "summary": "Candidate B verified across 3585 unique states and 8710 transitions at depth 5. Candidate A proven unsound on Invariant 4 (Invariant 4 Violation (I_COMMITTED_EQUIVALENCE): candidate committed 'Helo' does not match oracle committed 'Hello'\n\n'Helo' !== 'Hello'\n).",
+      "details": {
+        "candidateB": {
+          "states": 3585,
+          "transitions": 8710,
+          "rejections": 2506,
+          "elapsedMs": 336
+        },
+        "candidateAFailure": "Invariant 4 Violation (I_COMMITTED_EQUIVALENCE): candidate committed 'Helo' does not match oracle committed 'Hello'\n\n'Helo' !== 'Hello'\n"
+      }
+    },
+    {
+      "suite": "Comparative-Performance-Benchmark",
+      "status": "PASS",
+      "summary": "Candidate B executes at 13969 ops/sec (71.59 µs per full multi-step cycle), comfortably exceeding the 60fps/120fps budget (<16ms) by two orders of magnitude.",
+      "details": {
+        "candidateA": {
+          "name": "Candidate A (Flat Buffer)",
+          "iterations": 5000,
+          "durationMs": 83.71,
+          "opsPerSec": 59729,
+          "timePerOpUs": 16.74,
+          "approxHeapDeltaBytes": 38605504
+        },
+        "candidateB": {
+          "name": "Candidate B (Overlay)",
+          "iterations": 5000,
+          "durationMs": 357.93,
+          "opsPerSec": 13969,
+          "timePerOpUs": 71.59,
+          "approxHeapDeltaBytes": 49421944
+        },
+        "overheadRatio": 4.28
+      }
+    }
+  ]
+}

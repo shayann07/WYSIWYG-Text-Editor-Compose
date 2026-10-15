@@ -1,0 +1,26 @@
+[
+  {
+    "test": "1",
+    "name": "Disjoint Rollback Target Failure",
+    "description": "Cancellation maps targets using one netRollbackDelta at one cancelPoint, shifting targets incorrectly on disjoint edits",
+    "error": "Command range was [4,5], expected [3, 4]\n+ actual - expected\n\n  [\n-   3,\n    4,\n+   5\n  ]\n"
+  },
+  {
+    "test": "2",
+    "name": "Idle Command Noncompletion",
+    "description": "queueCommand in Idle leaves command permanently Pending without settlement blocker",
+    "error": "Command must receive an explicit terminal outcome when submitted in Idle!"
+  },
+  {
+    "test": "3",
+    "name": "Cross-Epoch Duplicate Receipt Confusion",
+    "description": "Duplicate lookup keys only by sequence before epoch validation, attaching newer connection receipt to older callback",
+    "error": "Old connection must be Rejected!\n+ actual - expected\n\n+ 'Duplicate'\n- 'Rejected'\n"
+  },
+  {
+    "test": "4",
+    "name": "Ambiguous / Accidental Undo Ordering with Queued Formatting",
+    "description": "Undo ordering with queued formatting emerged accidentally from stack order without explicit policy or edge case guarantees",
+    "error": "Run-08 lacks explicit contract/policy governing Undo ordering with queued formatting and does not cover Redo or settlement edge cases"
+  }
+]

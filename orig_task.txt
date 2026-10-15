@@ -1,0 +1,260 @@
+
+**Task**: /boost 
+
+Continue in D:\Work\WYSIWYG-Text-Editor-Compose.
+
+TASK
+
+Repair the remaining history and lifecycle contract violations in Candidate B. Keep the architecture. Specification and isolated executable validation only.
+
+No production implementation, Phase 0 scaffolding, dependency freeze or phase advancement.
+
+Create run-20261014-08, or a unique equivalent if occupied. Preserve and hash revision 4.9.3 and run-07 sources/results. Do not modify previous runs or the standalone project-record Page.
+
+Codex independently reran:
+- All 10 repaired regression blocks: PASS.
+- All 27 unmodified mutation controls: PASS.
+- All 27 mutants: caught.
+
+Codex did not independently rerun the reported 143,913-state exploration. Do not attribute that execution to Codex.
+
+Additional traces still fail.
+
+1. REPRODUCE AGAINST UNCHANGED RUN-07
+
+A. Repeated undo/redo corrupts an empty-document history preimage
+
+Execute through applyInput:
+- Initial document "".
+- commit("x").
+- undo.
+- redo.
+- undo.
+
+Expected document sequence:
+["x", "", "x", ""]
+
+Actual:
+["x", "", "x", "x"]
+
+Inspect truthiness fallbacks such as:
+    entry.beforeText || this.docText
+    entry.afterText || this.docText
+
+An empty string is valid historical content, not a missing value.
+
+Do not fix only this literal expression. Audit all history record construction, transfer between undo/redo stacks, empty attributes, selections and optional fields.
+
+Add repeated-cycle properties:
+- undo -> redo preserves the complete current semantic state.
+- redo -> undo preserves the complete prior semantic state.
+- Multiple cycles do not change stored preimages or postimages.
+- Empty-document insertions and whole-document deletions work.
+- Formatting and composition groups retain distinct boundaries.
+- New editing after Undo clears only the incompatible redo branch.
+
+Compare text, raw attributes and recorded selection, not only stack lengths.
+
+B. Native removal creates edits with no undo history
+
+- Initial "abc", selection [1,2).
+- nativeRemoval(range:[1,2), replacementText:"").
+- Document becomes "ac".
+- undo.
+
+Observed: Rejected(NothingToUndo).
+
+The coordinator accepts the edit but creates no history entry.
+
+Define nativeRemovalâ€™s history behavior in Idle, Composing and AwaitingSettlement. If it finalizes a composition, preserve the original session preimage. If it is an ordinary admitted native edit, give it the appropriate independent history entry.
+
+Verify:
+- Exact accepted replacement.
+- Resulting selection validity and supplied selection preservation.
+- History and redo behavior.
+- Pending-command outcomes.
+- Session and settlement cleanup.
+- Empty replacement, nonempty replacement and whole-document removal.
+
+Do not silently make an accepted semantic edit untracked.
+
+C. Disposal discards accepted provisional content
+
+- Initial "Hello".
+- startComposition([1,2)).
+- preedit("X") -> "HXllo".
+- dispose().
+
+Observed: document becomes "Hello"; history is empty.
+
+_openNewConnection now materializes the overlay, but _dispose clears it before capturing the final state.
+
+Reconcile disposal with the established preservation policy and planâ€™s â€œDocumentRevision unchangedâ€ claim. Under preserve-visible-content teardown, retain "HXllo" and finalize the appropriate history before closing.
+
+If disposal is intended to discard content, that is a different explicit product policy with different recovery/revision consequences. Do not silently choose it while reporting preservation.
+
+Test disposal:
+- Before any mutation.
+- During ordinary preedit.
+- After partial commit.
+- After nonterminal unmark.
+- With queued commands.
+- During staged failure.
+- Repeatedly.
+
+D. Resumed preedit uses a different target from proposed-state validation
+
+- Initial "Hello".
+- startComposition([1,2)).
+- preedit("X") -> "HXllo".
+- unmark(settled:false), leaving selection [2,2).
+- preedit("Y") without an explicit range.
+
+Observed: "HYllo", replacing the old candidate.
+
+_computeProposedPostLength resolves the omitted range to the current selection when markedRange is null. The mutation path instead reuses the old attribution window.
+
+Specify the normalized eventâ€™s target once. Under the current selection-fallback contract, expected output is "HXYllo". If an adapter means â€œreplace the retained candidate,â€ it must supply that distinct target explicitly.
+
+Use the SAME resolved replacement descriptor for:
+- Proposed-length validation.
+- Text mutation.
+- Marked-range construction.
+- Attribution-epoch decisions.
+- Target/selection mapping.
+- Receipt generation.
+
+Test omitted and explicit ranges after nonterminal unmark, including reversed selections and resulting selections valid only after growth.
+
+2. BUILD A COMPLETE HISTORY AND TERMINATION MATRIX
+
+Before changing code, enumerate every admitted semantic mutation and every session termination path.
+
+Include:
+- preedit, partialCommit, commit, nativeRemoval.
+- terminal/nonterminal unmark and completeSettlement.
+- cancellation and explicit application abort.
+- connection replacement, focus loss and disposal.
+- queued formatting.
+- undo/redo, including a request during active composition.
+
+For each state/event pair specify:
+- Whether it is admitted.
+- Which visible content survives.
+- Which history preimage remains authoritative.
+- Whether and when a group is finalized.
+- What happens to selection, targets, commands and settlement evidence.
+- Revisions and receipts.
+- Invalid-event outcome.
+
+Every retained semantic edit must have a valid history path under the declared policy. No path may clear the sole required preimage before fulfilling that obligation.
+
+Do not let Undo silently discard an active overlay or bypass the composition settlement policy. Define and test the intended behavior.
+
+3. REPAIR ROOT CAUSES
+
+Prefer one transaction-owned target-resolution operation over separate range calculations in validation and mutation.
+
+Prefer explicit immutable history records with named before/after fields over constructing approximate replacements when moving entries between stacks.
+
+Use a coherent materialize/finalize/retire sequence for termination paths, with explicitly documented differences where required.
+
+Keep protocol acknowledgement, composition commitment and physical durability distinct.
+
+Do not weaken tests to accept content loss or missing history.
+
+4. STRENGTHEN THE ORACLE AND EXPLORATION
+
+Add Aâ€“D as hand-calculated regressions before implementing fixes.
+
+Extend generated traces with:
+- Empty initial documents.
+- Whole-document deletion and replacement.
+- Repeated undo/redo cycles.
+- nativeRemoval in each lifecycle state.
+- Disposal after partial commit and nonterminal unmark.
+- Commands and Undo during active composition.
+- Resumed preedit with omitted versus explicit target.
+- Post-edit selections on growth/shrinkage.
+
+Short exhaustive bounds will not cover every long trace. Run named longer sequences separately and report that distinction.
+
+The independent oracle must not simply mirror the candidateâ€™s history-stack transfer logic or target fallback. Compare against independently specified before/after states.
+
+Check history record contents after every move between stacks. Execute the resulting undo/redo operations rather than treating record presence as invertibility.
+
+For each mutation test:
+- The unchanged repaired candidate passes the identical assertion.
+- The behavioral mutant fails it for the intended reason.
+- Unexpected exceptions are reported separately.
+
+Include mutants for:
+- Treating empty historical text as absent.
+- Rebuilding a redo entry from current rather than historical content.
+- Dropping nativeRemoval history.
+- Clearing the overlay before disposal finalization.
+- Using one replacement range for validation and another for mutation.
+- Losing the original session preimage on resumed input.
+- Undo bypassing an unfinished composition obligation.
+
+5. AUDIT THE EVIDENCE CLAIMS
+
+â€œPinned UAX #29 fixturesâ€ must identify what is pinned:
+- Unicode version.
+- Fixture source and scope.
+- Runtime/ICU version where Intl.Segmenter is used.
+- Whether tests are selected examples or the official conformance corpus.
+
+A few chosen combining-mark/emoji examples must not be described as full Unicode conformance.
+
+Maintain the distinction between:
+- A specific regression repaired.
+- A property verified within explicit bounds.
+- A platform behavior still NOT RUN.
+
+Do not claim that all internal contradictions are eliminated merely because the current runner passes.
+
+6. RECONCILE SAVED FILES AND FINAL RESPONSE
+
+Update the single authoritative plan-v4.md, report, matrix and diff with traceable corrections.
+
+The latest pasted report again says both that absolute claims were withdrawn and that â€œzero remaining internal design contradictionsâ€ exist. It also repeats U+2028 conversion, automatic block splitting and prescribed fallback architectures.
+
+Check every such statement against the actual saved plan and owner decisions. Preserve:
+- Raw LF semantics.
+- The 100-ms long-paragraph qualification target.
+- Synchronous Web admission.
+- Owner approval for scope restrictions or architectural fallback decisions.
+
+Remove stale contradictory summaries. Do not automatically prescribe a paragraph cap, asynchronous echo or SQLite as the only possible outcome of an unrun experiment.
+
+7. DELIVER AND STOP
+
+Deliver:
+- Original failing traces and exact input hashes.
+- Corrected Candidate B and independent expected behavior.
+- Passing repaired regressions.
+- Repeated history-cycle and termination-matrix coverage.
+- Mutation controls.
+- Exact exploration bounds and exclusions.
+- Updated plan/report/matrix/diff.
+- Remaining known blockers.
+
+Perform a second adversarial review of interactions among the fixes.
+
+Final answer must distinguish:
+1. What was reproduced.
+2. What changed and why.
+3. What was actually executed.
+4. Which contracts remain incomplete or untested.
+5. Whether any implementation-critical contradiction remains.
+
+If one remains, report PLAN NOT READY.
+
+No production implementation or phase advancement. The owner decides when planning is accepted.
+
+**Additional Context**:
+- Active workspace: D:\Work\WYSIWYG-Text-Editor-Compose
+- Baseline input to preserve and snapshot: plan-v4.md (Revision 4.9.3), validation/antigravity/run-20261014-07/, antigravity-validation-report.md, antigravity-validation-matrix.csv, antigravity-plan-diff.md.
+- New run directory must be created at validation/antigravity/run-20261014-08/ and all source files hashed into source-hashes.json. Keep all previous runs intact.
+- Follow all constraints strictly: no production Kotlin code, no project scaffolding, no dependency freezing. Pure specification and isolated executable validation.

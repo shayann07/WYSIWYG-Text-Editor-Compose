@@ -1,0 +1,12 @@
+[
+  {
+    "name": "repeatedStartRetargets",
+    "status": "FAIL",
+    "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n+   0,\n+   1\n-   2,\n-   3\n  ]\n\n    at Object.repeatedStartRetargets (file:///D:/Work/WYSIWYG-Text-Editor-Compose/validation/codex/run-20261015-17/test-integrated.mjs:176:127)\n    at file:///D:/Work/WYSIWYG-Text-Editor-Compose/[eval1]:2:117\n    at ModuleJob.run (node:internal/modules/esm/module_job:561:25)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async node:internal/modules/esm/loader:223:26\n    at async ModuleLoader.executeModuleJob (node:internal/modules/esm/loader:220:20)\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)"
+  },
+  {
+    "name": "explicitPreeditCannotBypassAdmission",
+    "status": "FAIL",
+    "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'ProtectedStructuralBoundary'\n\n    at Object.explicitPreeditCannotBypassAdmission (file:///D:/Work/WYSIWYG-Text-Editor-Compose/validation/codex/run-20261015-17/test-integrated.mjs:179:298)\n    at file:///D:/Work/WYSIWYG-Text-Editor-Compose/[eval1]:2:117\n    at ModuleJob.run (node:internal/modules/esm/module_job:561:25)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async node:internal/modules/esm/loader:223:26\n    at async ModuleLoader.executeModuleJob (node:internal/modules/esm/loader:220:20)\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)"
+  }
+]

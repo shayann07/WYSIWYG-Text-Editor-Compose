@@ -1,0 +1,208 @@
+{
+  "pairChecks": 183301,
+  "edits": 6400,
+  "fragmentationInsertions": 1000,
+  "scaling": [
+    {
+      "n": 1024,
+      "blockSize": 32,
+      "allocatedBytes": 29440,
+      "referenceScannedCharacters": 1024,
+      "mutations": [
+        {
+          "at": 0,
+          "rebuiltCharacters": 32,
+          "blocks": 32,
+          "query": {
+            "pair": null,
+            "abortedAt": null,
+            "tableProbes": 124,
+            "scannedCharacters": 32,
+            "blockVisits": 32
+          }
+        },
+        {
+          "at": 512,
+          "rebuiltCharacters": 32,
+          "blocks": 32,
+          "query": {
+            "pair": [
+              0,
+              3
+            ],
+            "abortedAt": null,
+            "tableProbes": 77,
+            "scannedCharacters": 32,
+            "blockVisits": 32
+          }
+        },
+        {
+          "at": 1023,
+          "rebuiltCharacters": 32,
+          "blocks": 32,
+          "query": {
+            "pair": [
+              0,
+              3
+            ],
+            "abortedAt": null,
+            "tableProbes": 33,
+            "scannedCharacters": 32,
+            "blockVisits": 32
+          }
+        }
+      ]
+    },
+    {
+      "n": 4096,
+      "blockSize": 64,
+      "allocatedBytes": 116224,
+      "referenceScannedCharacters": 4096,
+      "mutations": [
+        {
+          "at": 0,
+          "rebuiltCharacters": 64,
+          "blocks": 64,
+          "query": {
+            "pair": null,
+            "abortedAt": null,
+            "tableProbes": 252,
+            "scannedCharacters": 64,
+            "blockVisits": 64
+          }
+        },
+        {
+          "at": 2048,
+          "rebuiltCharacters": 64,
+          "blocks": 64,
+          "query": {
+            "pair": [
+              0,
+              3
+            ],
+            "abortedAt": null,
+            "tableProbes": 157,
+            "scannedCharacters": 64,
+            "blockVisits": 64
+          }
+        },
+        {
+          "at": 4095,
+          "rebuiltCharacters": 64,
+          "blocks": 64,
+          "query": {
+            "pair": [
+              0,
+              3
+            ],
+            "abortedAt": null,
+            "tableProbes": 65,
+            "scannedCharacters": 64,
+            "blockVisits": 64
+          }
+        }
+      ]
+    },
+    {
+      "n": 16384,
+      "blockSize": 128,
+      "allocatedBytes": 461824,
+      "referenceScannedCharacters": 16384,
+      "mutations": [
+        {
+          "at": 0,
+          "rebuiltCharacters": 128,
+          "blocks": 128,
+          "query": {
+            "pair": null,
+            "abortedAt": null,
+            "tableProbes": 508,
+            "scannedCharacters": 128,
+            "blockVisits": 128
+          }
+        },
+        {
+          "at": 8192,
+          "rebuiltCharacters": 128,
+          "blocks": 128,
+          "query": {
+            "pair": [
+              0,
+              3
+            ],
+            "abortedAt": null,
+            "tableProbes": 317,
+            "scannedCharacters": 128,
+            "blockVisits": 128
+          }
+        },
+        {
+          "at": 16383,
+          "rebuiltCharacters": 128,
+          "blocks": 128,
+          "query": {
+            "pair": [
+              0,
+              3
+            ],
+            "abortedAt": null,
+            "tableProbes": 129,
+            "scannedCharacters": 128,
+            "blockVisits": 128
+          }
+        }
+      ]
+    },
+    {
+      "n": 65536,
+      "blockSize": 256,
+      "allocatedBytes": 1841152,
+      "referenceScannedCharacters": 65536,
+      "mutations": [
+        {
+          "at": 0,
+          "rebuiltCharacters": 256,
+          "blocks": 256,
+          "query": {
+            "pair": null,
+            "abortedAt": null,
+            "tableProbes": 1020,
+            "scannedCharacters": 256,
+            "blockVisits": 256
+          }
+        },
+        {
+          "at": 32768,
+          "rebuiltCharacters": 256,
+          "blocks": 256,
+          "query": {
+            "pair": [
+              0,
+              3
+            ],
+            "abortedAt": null,
+            "tableProbes": 637,
+            "scannedCharacters": 256,
+            "blockVisits": 256
+          }
+        },
+        {
+          "at": 65535,
+          "rebuiltCharacters": 256,
+          "blocks": 256,
+          "query": {
+            "pair": [
+              0,
+              3
+            ],
+            "abortedAt": null,
+            "tableProbes": 257,
+            "scannedCharacters": 256,
+            "blockVisits": 256
+          }
+        }
+      ]
+    }
+  ],
+  "scope": "ASCII BD16 stack/pair-at-position component only; direct reference, not ICU or full Unicode conformance. Depth-adaptive per-block tables, array block container, no N0/IME/layout integration."
+}

@@ -1,0 +1,20 @@
+{
+  "oracle": "Unicode-hosted BidiPBAReference.java, 2017, ReadMe declares Unicode 8.0. Unmodified upstream sources.",
+  "fixtureChecks": 1967,
+  "positionChecks": 72490,
+  "overflowDifferences": [
+    {
+      "fixture": 1965,
+      "length": 66,
+      "overflowAt": 65,
+      "oldPairs": [
+        [
+          0,
+          1
+        ]
+      ],
+      "currentPairs": []
+    }
+  ],
+  "scope": "ASCII pair locations only. Does not validate modern full UBA or N0, Unicode data, shaping, or editing integration."
+}

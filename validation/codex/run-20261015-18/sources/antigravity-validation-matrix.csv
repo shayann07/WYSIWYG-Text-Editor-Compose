@@ -1,0 +1,20 @@
+Claim,Scope,Evidence,Status,Remaining requirement
+namedTests,One integrated reference dispatcher,run-20261015-17/results.json,PASS (SCOPED),Reference operations/bounds only
+generatedIntegration,One integrated reference dispatcher,run-20261015-17/results.json,PASS (SCOPED),Reference operations/bounds only
+ledgerExploration,One integrated reference dispatcher,run-20261015-17/results.json,PASS (SCOPED),Reference operations/bounds only
+repeatedSessions,One integrated reference dispatcher,run-20261015-17/results.json,PASS (SCOPED),Reference operations/bounds only
+integratedMutations,One integrated reference dispatcher,run-20261015-17/results.json,PASS (SCOPED),Reference operations/bounds only
+scheduling,One integrated reference dispatcher,run-20261015-17/results.json,PASS (SCOPED),Reference operations/bounds only
+G0,Production phase gate,plan-v4.md §8,NOT RUN,No production implementation authorized
+G1,Production phase gate,plan-v4.md §8,NOT RUN,No production implementation authorized
+G2,Production phase gate,plan-v4.md §8,NOT RUN,No production implementation authorized
+G3,Production phase gate,plan-v4.md §8,NOT RUN,No production implementation authorized
+G4,Production phase gate,plan-v4.md §8,NOT RUN,No production implementation authorized
+G5,Production phase gate,plan-v4.md §8,NOT RUN,No production implementation authorized
+G6,Production phase gate,plan-v4.md §8,NOT RUN,No production implementation authorized
+G7,Production phase gate,plan-v4.md §8,NOT RUN,No production implementation authorized
+G8,Production phase gate,plan-v4.md §8,NOT RUN,No production implementation authorized
+Admission + structural composition + Undo,Integrated reference public boundary,integrated-model.mjs; test-integrated.mjs,PASS (SCOPED),Full product/Kotlin/native qualification remains
+Native session provenance and fences,Real OS/browser,plan-v4.md §4.2,NOT RUN,Synthetic stamps are not native evidence
+Full command/cell-flow/anchor/typing-intent catalog,Whole editor,plan-v4.md §4.9,NOT QUALIFIED,Integrated reference implements a stated subset
+Historical run-16,Separate earlier contracts,run-20261015-16/results.json,HISTORICAL; NOT RERUN,Do not add historical counts to current execution

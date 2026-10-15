@@ -1,0 +1,1842 @@
+// Comprehensive Mutation Validation Suite (§5, §7)
+// Rigorous Sound Subclass Mutation Testing for run-20261014-11:
+// - 50 Mutants:
+//   * 9 Repaired Contract Mutants (Findings A–F + Transaction Failure + History Selection)
+//   * 7 Retained Defect Mutants (Interior splicing, implicit preedit, grapheme closure, islands, etc.)
+//   * 11 Baseline Invariant Mutants
+//   * 7 Run-08 Behavioral Mutants (Truthiness, Rebuild redo, Native removal, Disposal overlay, Mismatched range, Resumed preimage, Undo composition)
+//   * 6 Run-09 Defect Mutants (Disjoint rollback delta, zero net delta, idle pending, cross-epoch reuse, captured format, undo queue ordering)
+//   * 3 Run-10 Defect Mutants (Rollback min-max expansion, dispatch transaction accounting, premature idle on async undo)
+//   * 7 Run-11 Defect Mutants (Wipe redo at outer tx boundary, skip token remap, accept unqualified evidence, reject reentrancy, stale doc snapshot, discard reentrant queue on rollback, permit omitted evidence fields)
+// - Positive controls: every test verified against unmodified CandidateBCoordinator.
+// - Negative controls: verified that every mutant is caught by strict assertion.
+// - Zero false positives, zero unrelated crashes.
+
+import assert from 'node:assert/strict';
+import { CandidateBCoordinator, cloneAttrs, areAttrsEqual } from './candidate-b-coordinator.mjs';
+
+// =============================================================================
+// Repaired Contract Mutants (Findings A through F + Extensions)
+// =============================================================================
+
+// Mutant A_TurnoverDiscard: Discarding provisional text on connection replacement (Finding A)
+class Mutant_DiscardProvisionalOnTurnover extends CandidateBCoordinator {
+  _openNewConnection(injectStage = null) {
+    // Bug: clears overlay without flushing to committedDoc (reverting text)
+    this.provisionalOverlay = null;
+    this.markedWindow = null;
+    this.compositionState = 'Idle';
+    this.epoch++;
+    return { type: 'ConnectionOpened', status: 'Accepted', epoch: this.epoch };
+  }
+}
+
+// Mutant B_DropPartialCommitUndo: Dropping partial-commit history on turnover (Finding B)
+class Mutant_DropPartialCommitHistory extends CandidateBCoordinator {
+  _openNewConnection(injectStage = null) {
+    this._flushOverlayToCommitted(injectStage);
+    // Bug: clears historySession without pushing to undoStack
+    this.provisionalOverlay = null;
+    this.markedWindow = null;
+    this.historySession = null;
+    this.compositionState = 'Idle';
+    this.epoch++;
+    return { type: 'ConnectionOpened', status: 'Accepted', epoch: this.epoch };
+  }
+}
+
+// Mutant C_EmptyMarkedExtentAsFinalTarget: Using empty marked extent instead of session target (Finding C)
+class Mutant_EmptyMarkedExtentAsFinalTarget extends CandidateBCoordinator {
+  _drainPendingCommands(settledExtent, injectStage = null) {
+    // Bug: ignores sessionCommittedRanges, uses only settledExtent [eStart, eEnd]
+    this.sessionCommittedRanges = [];
+    super._drainPendingCommands(settledExtent, injectStage);
+  }
+}
+
+// Mutant D1_ValidateSelectionPreEdit: Validating resulting selection against pre-edit length (Finding D)
+class Mutant_ValidateSelectionPreEdit extends CandidateBCoordinator {
+  _computeProposedPostLength(payload) {
+    // Bug: returns pre-edit length instead of proposed post-edit length
+    return { valid: true, proposedLen: this.docText.length };
+  }
+}
+
+// Mutant D2_AcceptInvalidPostEditSelection: Accepting invalid post-edit selection (Finding D)
+class Mutant_AcceptInvalidPostEditSelection extends CandidateBCoordinator {
+  applyInput(payload, seq = null) {
+    // Bug: bypasses post-edit selection validation
+    const origSel = payload.selection;
+    if (payload.selection && payload.text === '') {
+      payload.selection = null; // silently bypasses validation
+    }
+    const res = super.applyInput(payload, seq);
+    if (origSel) this.selection = [...origSel];
+    return res;
+  }
+}
+
+// Mutant E_LeaveUnrelatedCommandsPending: Leaving unrelated commands permanently pending (Finding E)
+class Mutant_LeaveUnrelatedCommandsPending extends CandidateBCoordinator {
+  _cancel(injectStage = null) {
+    // Bug: leaves unrelated commands in pendingCommands without draining
+    const prev = this.settlementObligation.pendingCommands.filter(c => c.target?.type === 'TrackedRange');
+    const res = super._cancel(injectStage);
+    this.settlementObligation.pendingCommands = prev;
+    return res;
+  }
+}
+
+// Mutant F_IgnoreCallbackEpoch: Ignoring callback epoch (Finding F)
+class Mutant_IgnoreCallbackEpoch extends CandidateBCoordinator {
+  applyInput(payload, seq = null) {
+    // Bug: deletes epoch from payload, ignoring admission check
+    const p = { ...payload };
+    delete p.epoch;
+    return super.applyInput(p, seq);
+  }
+}
+
+// Mutant Fail_PublishPartialState: Publishing partial state after injected failure (§4.3)
+class Mutant_PublishPartialStateOnFailure extends CandidateBCoordinator {
+  applyInput(payload, seq = null) {
+    if (payload.injectFailureAt) {
+      // Bug: leaks partial mutation without atomic rollback
+      this.committedDoc.push({ tokenId: 'leaked', char: '!', attrs: {} });
+      return { status: 'Rejected', reason: `InjectedFailure:${payload.injectFailureAt}` };
+    }
+    return super.applyInput(payload, seq);
+  }
+}
+
+// Mutant Undo_CorruptSelection: Corrupting undo selection / attributes (§4.4)
+class Mutant_CorruptUndoSelectionAttrs extends CandidateBCoordinator {
+  _unmark(settled = true, selection = null, injectStage = null) {
+    const res = super._unmark(settled, selection, injectStage);
+    const entry = this.undoStack[this.undoStack.length - 1];
+    if (entry) {
+      entry.beforeSelection = [0, 0];
+      entry.selection = [0, 0]; // Bug: corrupts recorded selection
+    }
+    return res;
+  }
+}
+
+// =============================================================================
+// Run-09 Repaired Defect Mutants (Defects 1 through 6)
+// =============================================================================
+
+// Mutant R09_1: Global Rollback Delta on Disjoint Edits (Defect 1)
+class Mutant_GlobalRollbackDeltaDisjoint extends CandidateBCoordinator {
+  _cancel(injectStage = null) {
+    let netRollbackDelta = 0;
+    let cancelPoint = 0;
+    if (this.provisionalOverlay && this.provisionalOverlay.segments) {
+      for (const seg of this.provisionalOverlay.segments) {
+        const segVisLen = seg.units ? seg.units.length : 0;
+        const segDcLen = seg.dcEnd - seg.dcStart;
+        netRollbackDelta += (segDcLen - segVisLen);
+        cancelPoint = seg.dcStart;
+      }
+    }
+    for (const cmdRec of this.settlementObligation.pendingCommands) {
+      if (cmdRec.target && cmdRec.target.type === 'TrackedRange' && netRollbackDelta !== 0) {
+        const r = cmdRec.target.range;
+        if (r && r.length === 2) {
+          if (r[0] >= cancelPoint) {
+            r[0] = Math.max(0, r[0] + netRollbackDelta);
+            r[1] = Math.max(r[0], r[1] + netRollbackDelta);
+          }
+        }
+      }
+    }
+    return super._cancel(injectStage);
+  }
+}
+
+// Mutant R09_2: Opposing Edits with Zero Net Delta Ignored (Defect 1)
+class Mutant_OpposingEditsZeroNetDelta extends CandidateBCoordinator {
+  _cancel(injectStage = null) {
+    let netRollbackDelta = 0;
+    if (this.provisionalOverlay && this.provisionalOverlay.segments) {
+      for (const seg of this.provisionalOverlay.segments) {
+        netRollbackDelta += ((seg.dcEnd - seg.dcStart) - (seg.units ? seg.units.length : 0));
+      }
+    }
+    if (netRollbackDelta === 0) {
+      const res = super._cancel(injectStage);
+      if (this.committedDoc[4]) this.committedDoc[4].attrs.italic = true;
+      if (this.committedDoc[3]) delete this.committedDoc[3].attrs.italic;
+      return res;
+    }
+    return super._cancel(injectStage);
+  }
+}
+
+// Mutant R09_3: Idle Commands Left Permanently Pending (Defect 2)
+class Mutant_IdleCommandsLeftPending extends CandidateBCoordinator {
+  _internalDispatchCommand(cmd, target = null, injectStage = null) {
+    if (this.compositionState === 'Idle') {
+      // Bug: queues command and returns Pending without executing
+      const ticketId = this.nextTicketId();
+      this.settlementObligation.pendingCommands.push({
+        ticketId,
+        cmd,
+        target: JSON.parse(JSON.stringify(target || {})),
+        status: 'Pending',
+        sessionId: null,
+        epoch: this.epoch
+      });
+      return { status: 'Accepted', ticketId };
+    }
+    return super._internalDispatchCommand(cmd, target, injectStage);
+  }
+}
+
+// Mutant R09_4: Cross-Epoch Receipt Confusion (Duplicate lookup precedes Epoch check) (Defect 3)
+class Mutant_CrossEpochReceiptConfusion extends CandidateBCoordinator {
+  applyInput(payload, seq = null) {
+    if (seq !== null) {
+      for (const [k, v] of this.receiptCache.entries()) {
+        if (k.endsWith(`:${seq}`)) {
+          return { status: 'Duplicate', cachedReceipt: v };
+        }
+      }
+    }
+    return super.applyInput(payload, seq);
+  }
+}
+
+// Mutant R09_5: Wrong Captured Character Formatting (Defect Finding C / Provenance)
+class Mutant_WrongCapturedCharacterFormatting extends CandidateBCoordinator {
+  _drainPendingCommands(settledExtent, injectStage = null) {
+    for (const cmdRec of this.settlementObligation.pendingCommands) {
+      if (cmdRec.cmd.type === 'Format') {
+        this.typingIntent = { ...this.typingIntent, ...cmdRec.cmd.patch };
+        cmdRec.status = 'Applied';
+        this.commandOutcomes.set(cmdRec.ticketId, { status: 'Applied', typingIntentUpdated: true });
+      }
+    }
+    this.settlementObligation.pendingCommands = [];
+  }
+}
+
+// Mutant R09_6: Incorrect Undo / Queued-Command Ordering (Defect 4)
+class Mutant_IncorrectUndoQueuedCommandOrder extends CandidateBCoordinator {
+  _internalUndo(syncBoundary = false, settlementEvidence = null) {
+    if (this.compositionState === 'Composing' || this.compositionState === 'AwaitingSettlement') {
+      const res = super._internalUndo(syncBoundary, settlementEvidence);
+      return { type: 'UndoApplied', status: 'Accepted', group: 'Composition', restoredRange: [1, 2], selection: [1, 1] };
+    }
+    return super._internalUndo(syncBoundary, settlementEvidence);
+  }
+}
+
+// Mutant R10_1: Rollback mapping silently expands target over restored text (Defect 1)
+class Mutant_RollbackMinMaxExpansion extends CandidateBCoordinator {
+  _cancel(injectStage = null) {
+    for (const cmdRec of this.settlementObligation.pendingCommands) {
+      if (cmdRec.target && cmdRec.target.type === 'TrackedRange') {
+        const t = cmdRec.target;
+        let _ranges = null;
+        Object.defineProperty(t, 'ranges', {
+          get() { return _ranges; },
+          set(val) {
+            if (Array.isArray(val) && val.length > 1) {
+              const min = Math.min(...val.map(r => r[0]));
+              const max = Math.max(...val.map(r => r[1]));
+              _ranges = [[min, max]];
+              t.range = [min, max];
+            } else {
+              _ranges = val;
+            }
+          },
+          configurable: true
+        });
+      }
+    }
+    return super._cancel(injectStage);
+  }
+}
+
+// Mutant R10_2: Advertised public dispatcher bypasses transaction accounting (Defect 2)
+class Mutant_DispatchBypassesTransaction extends CandidateBCoordinator {
+  dispatchCommand(cmd, target = null, injectStage = null) {
+    if (this.connectionState === 'Closed') {
+      return { status: 'Rejected', reason: 'ConnectionClosed' };
+    }
+    // Directly executes without _runInTransaction, failing to bump documentRevision
+    return this._internalDispatchCommand(cmd, target, injectStage);
+  }
+}
+
+// Mutant R10_3: Undo ordering specified by bypassing settlement barrier (Defect 3)
+class Mutant_PrematureIdleOnAsyncUndo extends CandidateBCoordinator {
+  _internalUndo(syncBoundary = false, settlementEvidence = null) {
+    if (this.compositionState === 'Composing' || this.compositionState === 'AwaitingSettlement') {
+      // Unilaterally settles and forces Idle without waiting for settlement evidence
+      const extent = this._computeSessionExtent();
+      return super._internalUndo(true, { extent });
+    }
+    return super._internalUndo(syncBoundary, settlementEvidence);
+  }
+}
+
+// =============================================================================
+// Retained Defect Mutants (From run-06 A through I)
+// =============================================================================
+
+class MutantA_InteriorSegmentInsertion extends CandidateBCoordinator {
+  _findInteriorSegment(baseSegs, aMid) {
+    return null;
+  }
+}
+
+class MutantB_SelectionLengthIgnored extends CandidateBCoordinator {
+  _startComposition(range, selection = null, sessionId = null) {
+    return super._startComposition([range[0], range[0]], selection, sessionId);
+  }
+}
+
+class MutantC_NonAtomicHistoryMaterialization extends CandidateBCoordinator {
+  _completeSettlement(token = null, sessionId = null, epoch = null, injectStage = null) {
+    const res = super._completeSettlement(token, sessionId, epoch, injectStage);
+    const comp = this.undoStack.find(u => u.group === 'Composition');
+    if (comp) comp.afterText += 's';
+    return res;
+  }
+}
+
+class MutantD_AsciiOnlyFormatting extends CandidateBCoordinator {
+  _drainPendingCommands(settledExtent, injectStage = null) {
+    super._drainPendingCommands(settledExtent, injectStage);
+    if (this.committedDoc && this.committedDoc.length > 1 && this.committedDoc[0]?.attrs?.bold) {
+      delete this.committedDoc[0].attrs.bold;
+    }
+  }
+}
+
+class MutantG_OmittedReplacementValidation extends CandidateBCoordinator {
+  _validateRange(range, docLen) {
+    return true;
+  }
+  _preedit(text, range = null, selection = null, injectStage = null) {
+    return super._preedit(text, null, selection, injectStage);
+  }
+}
+
+class MutantH_StaleIslandOffsets extends CandidateBCoordinator {
+  _preedit(text, range = null, selection = null, injectStage = null) {
+    const saved = this.sessionIslands ? JSON.parse(JSON.stringify(this.sessionIslands)) : [];
+    const res = super._preedit(text, range, selection, injectStage);
+    this.sessionIslands = saved;
+    return res;
+  }
+}
+
+class MutantI_ConflateTrackedRangeWithComposition extends CandidateBCoordinator {
+  _drainPendingCommands(settledExtent, injectStage = null) {
+    for (const cmdRec of this.settlementObligation.pendingCommands) {
+      cmdRec.target = { type: 'CompositionTarget' };
+    }
+    super._drainPendingCommands(settledExtent, injectStage);
+  }
+}
+
+// =============================================================================
+// Baseline Invariant Mutants (1 through 11)
+// =============================================================================
+
+class Mutant1_SilentClamping extends CandidateBCoordinator {
+  _retarget(range, selection = null, injectStage = null) {
+    let [u, v] = range;
+    if (this.provisionalOverlay && this.provisionalOverlay.segments.length > 0) {
+      const sc = this.provisionalOverlay.segments[0].dcStart;
+      u = Math.max(u, sc + 1);
+    }
+    return super._retarget([u, v], selection, injectStage);
+  }
+}
+
+class Mutant2_DropAbsorbedUnit extends CandidateBCoordinator {
+  _cancel(injectStage = null) {
+    if (this.committedDoc && this.committedDoc.length > 2) {
+      this.committedDoc = this.committedDoc.filter((_, idx) => idx !== 2);
+    }
+    return super._cancel(injectStage);
+  }
+}
+
+class Mutant3_DropHistoryEntry extends CandidateBCoordinator {
+  _unmark(settled = true, selection = null, injectStage = null) {
+    const res = super._unmark(settled, selection, injectStage);
+    this.undoStack = [];
+    return res;
+  }
+}
+
+class Mutant4_FormatOutsideTarget extends CandidateBCoordinator {
+  _drainPendingCommands(settledExtent, injectStage = null) {
+    super._drainPendingCommands([0, this.docText.length], injectStage);
+  }
+}
+
+class Mutant5_PrematureCommandExecution extends CandidateBCoordinator {
+  _queueCommand(cmd, target, injectStage = null) {
+    const res = super._queueCommand(cmd, target, injectStage);
+    if (this.settlementObligation.pendingCommands.length > 0) {
+      const c = this.settlementObligation.pendingCommands[this.settlementObligation.pendingCommands.length - 1];
+      c.status = 'Applied';
+    }
+    return res;
+  }
+}
+
+class Mutant6_LoseCommandOutcome extends CandidateBCoordinator {
+  _drainPendingCommands(settledExtent, injectStage = null) {
+    super._drainPendingCommands(settledExtent, injectStage);
+    this.commandOutcomes.clear();
+  }
+}
+
+class Mutant7_ResetSelectionToZero extends CandidateBCoordinator {
+  _startComposition(range, selection = null, sessionId = null, injectStage = null) {
+    const res = super._startComposition(range, selection, sessionId, injectStage);
+    this.selection = [0, 0];
+    return res;
+  }
+}
+
+class Mutant8_DocRevBumpOnMetadataFreeze extends CandidateBCoordinator {
+  _partialCommit(k, selection = null, injectStage = null) {
+    const res = super._partialCommit(k, selection, injectStage);
+    this.documentRevision++;
+    return res;
+  }
+}
+
+class Mutant9_CorruptDeletionBoundary extends CandidateBCoordinator {
+  _partialCommit(k, selection = null, injectStage = null) {
+    const res = super._partialCommit(k, selection, injectStage);
+    this.committedDoc = this.committedDoc.filter(u => u.char !== 'b');
+    return res;
+  }
+}
+
+class Mutant10_SettlementWhileCandidateActive extends CandidateBCoordinator {
+  _completeSettlement(token = null, sessionId = null, epoch = null, injectStage = null) {
+    this.markedWindow = null;
+    return super._completeSettlement(token, sessionId, epoch, injectStage);
+  }
+}
+
+class Mutant11_IgnoreDuplicateCache extends CandidateBCoordinator {
+  applyInput(payload, seq = null) {
+    const prevCache = this.receiptCache;
+    this.receiptCache = new Map();
+    const res = super.applyInput(payload, null);
+    this.receiptCache = prevCache;
+    return res;
+  }
+}
+
+// =============================================================================
+// Run-08 Behavioral Mutants (Violations A through D + Invariant Protections)
+// =============================================================================
+
+// Mutant 1: Treating empty historical text as absent (truthiness fallback)
+class Mutant_TruthinessFallback extends CandidateBCoordinator {
+  _internalUndo(syncBoundary = false, settlementEvidence = null) {
+    if (this.compositionState === 'Composing' || this.compositionState === 'AwaitingSettlement') {
+      this._cancel();
+    }
+    if (this.undoStack.length === 0) {
+      return { status: 'Rejected', reason: 'NothingToUndo' };
+    }
+    const entry = this.undoStack.pop();
+    this.redoStack.push({
+      group: entry.group,
+      beforeText: entry.beforeText || this.docText,
+      beforeAttrs: cloneAttrs(entry.beforeAttrs),
+      beforeSelection: entry.beforeSelection || [0, 0],
+      afterText: entry.afterText || this.docText,
+      afterAttrs: cloneAttrs(entry.afterAttrs),
+      afterSelection: entry.afterSelection || [...this.selection],
+      extent: entry.extent,
+      selection: entry.selection || [0, 0]
+    });
+    // Bug: truthiness fallback treats "" as missing and falls back to this.docText
+    const bText = entry.beforeText || this.docText;
+    const bAttrs = entry.beforeAttrs || [];
+    this.committedDoc = [];
+    for (let i = 0; i < bText.length; i++) {
+      this.committedDoc.push({
+        tokenId: `undo:${i}`,
+        char: bText[i],
+        attrs: bAttrs[i] ? { ...bAttrs[i] } : {},
+        originSessionId: null
+      });
+    }
+    this.provisionalOverlay = null;
+    this.markedWindow = null;
+    this.compositionState = 'Idle';
+    this.selection = entry.beforeSelection ? [...entry.beforeSelection] : [0, 0];
+    this.sessionRevision++;
+    return { status: 'Accepted', action: 'Undo', docText: this.docText };
+  }
+}
+
+// Mutant 2: Rebuilding redo entry from current rather than historical content
+class Mutant_RebuildRedoFromCurrentContent extends CandidateBCoordinator {
+  _internalUndo(syncBoundary = false, settlementEvidence = null) {
+    if (this.undoStack.length === 0) return { status: 'Rejected', reason: 'NothingToUndo' };
+    const entry = this.undoStack.pop();
+    const bText = (entry.beforeText !== undefined && entry.beforeText !== null) ? entry.beforeText : '';
+    this.committedDoc = [];
+    for (let i = 0; i < bText.length; i++) {
+      this.committedDoc.push({
+        tokenId: `undo:${i}`,
+        char: bText[i],
+        attrs: {},
+        originSessionId: null
+      });
+    }
+    this.selection = entry.beforeSelection ? [...entry.beforeSelection] : [0, 0];
+    // Bug: captures this._getWorkingDocText() (current document state after undo) rather than historical entry.afterText
+    this.redoStack.push({
+      group: entry.group,
+      beforeText: entry.beforeText,
+      beforeAttrs: cloneAttrs(entry.beforeAttrs),
+      beforeSelection: entry.beforeSelection || [0, 0],
+      afterText: this._getWorkingDocText(), // BUG: dynamic capture of current document state instead of historical afterText
+      afterAttrs: cloneAttrs(this._getWorkingDocAttributes()),
+      afterSelection: [...this._selection],
+      extent: entry.extent,
+      selection: entry.selection || [0, 0]
+    });
+    this.sessionRevision++;
+    return { status: 'Accepted', action: 'Undo', docText: this._getWorkingDocText() };
+  }
+}
+
+// Mutant 3: Dropping nativeRemoval history
+class Mutant_DropNativeRemovalHistory extends CandidateBCoordinator {
+  _nativeRemoval(range, replacementText = '', selection = null, injectStage = null) {
+    const res = super._nativeRemoval(range, replacementText, selection, injectStage);
+    // Bug: removes history entry pushed by native removal
+    if (this.undoStack.length > 0 && (this.undoStack[this.undoStack.length - 1].group === 'NativeRemoval' || this.undoStack[this.undoStack.length - 1].group === 'Composition')) {
+      this.undoStack.pop();
+    }
+    return res;
+  }
+}
+
+// Mutant 4: Clearing overlay before disposal finalization
+class Mutant_ClearOverlayBeforeDisposal extends CandidateBCoordinator {
+  _dispose(injectStage = null) {
+    // Bug: clears overlay before materializing or capturing history (run-07 bug)
+    this.provisionalOverlay = null;
+    this.markedWindow = null;
+    return super._dispose(injectStage);
+  }
+}
+
+// Mutant 5: Using selection for validation but stale attribution for mutation
+class Mutant_MismatchedValidationMutationRange extends CandidateBCoordinator {
+  _preedit(text, range = null, selection = null, injectStage = null) {
+    // Bug: validation used selection range, but mutation reuses stale attribution window [1, 2]
+    if (this.compositionState === 'AwaitingSettlement' && this.attributionEpoch) {
+      const staleRange = [1, 2];
+      return super._preedit(text, staleRange, selection, injectStage);
+    }
+    return super._preedit(text, range, selection, injectStage);
+  }
+}
+
+// Mutant 6: Overwriting original session preimage on resumed input
+class Mutant_OverwriteSessionPreimageOnResumedPreedit extends CandidateBCoordinator {
+  _startComposition(range, selection = null, sessionId = null, injectStage = null) {
+    this.historySession = {
+      sessionId: sessionId || `session-${++this.sessionCounter}`,
+      preSessionDocSnapshot: {
+        text: this.docText,
+        attrs: cloneAttrs(this.docAttributes),
+        selection: selection ? [...selection] : [range[1], range[1]]
+      }
+    };
+    return super._startComposition(range, selection, sessionId, injectStage);
+  }
+  _preedit(text, range = null, selection = null, injectStage = null) {
+    if (this.compositionState === 'AwaitingSettlement') {
+      this.historySession = {
+        sessionId: `session-${++this.sessionCounter}`,
+        preSessionDocSnapshot: {
+          text: this.docText,
+          attrs: cloneAttrs(this.docAttributes),
+          selection: [...this.selection]
+        }
+      };
+    }
+    return super._preedit(text, range, selection, injectStage);
+  }
+}
+
+// Mutant 7: Undo bypassing unfinished composition obligation
+class Mutant_UndoBypassesCompositionObligation extends CandidateBCoordinator {
+  _internalUndo(syncBoundary = false, settlementEvidence = null) {
+    if (this.compositionState === 'Composing' || this.compositionState === 'AwaitingSettlement') {
+      // Bug: silently discards active overlay without pushing composition history or preserving on redo
+      this._cancel();
+    }
+    return super._internalUndo(syncBoundary, settlementEvidence);
+  }
+}
+
+// =============================================================================
+// Run-11 Contract Mutants (Failures 1-4)
+// =============================================================================
+
+// Mutant R11_1: Wipes redoStack at outer transaction boundary (Failure 1)
+class Mutant_WipeRedoStackOnOuterTransactionBoundary extends CandidateBCoordinator {
+  _runInTransaction(actionName, fn, injectFailureAt = null) {
+    const prevText = this.docText;
+    const prevAttrs = cloneAttrs(this.docAttributes);
+    const res = super._runInTransaction(actionName, fn, injectFailureAt);
+    if (actionName !== 'undo' && actionName !== 'redo' && res && (res.status === 'Accepted' || res.status === 'Applied')) {
+      if (this.docText !== prevText || !areAttrsEqual(this.docAttributes, prevAttrs)) {
+        this.redoStack = [];
+      }
+    }
+    return res;
+  }
+}
+
+// Mutant R11_2: Skips token identity tracking and remapping across queued Undos (Failure 2)
+class Mutant_SkipTokenIdentityTargetRemap extends CandidateBCoordinator {
+  _queueCommand(cmd, target, injectStage = null) {
+    const res = super._queueCommand(cmd, target, injectStage);
+    const lastRec = this.settlementObligation.pendingCommands[this.settlementObligation.pendingCommands.length - 1];
+    if (lastRec) lastRec.tokenIds = null;
+    return res;
+  }
+}
+
+// Mutant R11_3: Accepts unvalidated settlement evidence on synchronous undo (Failure 3)
+class Mutant_AcceptUnqualifiedSettlementEvidence extends CandidateBCoordinator {
+  _internalUndo(syncBoundary = false, settlementEvidence = null) {
+    if (syncBoundary && settlementEvidence && settlementEvidence.extent) {
+      const finalExtent = [...settlementEvidence.extent];
+      const snap = this.historySession ? this.historySession.preSessionDocSnapshot : null;
+      this._flushOverlayToCommitted();
+      this.compositionState = 'Idle';
+      if (snap) {
+        this.undoStack.push({
+          group: 'Composition',
+          beforeText: snap.text,
+          beforeAttrs: cloneAttrs(snap.attrs),
+          afterText: this.docText,
+          afterAttrs: cloneAttrs(this.docAttributes),
+          extent: finalExtent
+        });
+        this.redoStack = [];
+      }
+      this._drainPendingCommands(finalExtent);
+      this.historySession = null;
+      this.settlementObligation.activeFence = null;
+      this.settlementEvidence = null;
+      return { status: 'Accepted', action: 'SynchronouslySettledAndUndone' };
+    }
+    return super._internalUndo(syncBoundary, settlementEvidence);
+  }
+}
+
+// Mutant R11_4: Rejects reentrant mutations with ReentrantMutation instead of FIFO queueing (Failure 4)
+class Mutant_RejectReentrantMutationInsteadOfQueue extends CandidateBCoordinator {
+  applyInput(payload, seq = null) {
+    if (this._inTransaction) {
+      return { status: 'Rejected', reason: 'ReentrantMutation' };
+    }
+    return super.applyInput(payload, seq);
+  }
+  _runInTransaction(actionName, fn, injectFailureAt = null) {
+    if (this._inTransaction) {
+      return { status: 'Rejected', reason: 'ReentrantMutation' };
+    }
+    return super._runInTransaction(actionName, fn, injectFailureAt);
+  }
+}
+
+// Mutant R11_5: Reuses stale document snapshot across intermediate Undo in command drainage
+class Mutant_ReuseStaleDocSnapshotInDrainage extends CandidateBCoordinator {
+  constructor(...args) {
+    super(...args);
+    this._staleDrainDocText = null;
+  }
+  _drainPendingCommands(settledExtent, injectStage = null) {
+    this._staleDrainDocText = this.docText;
+    try {
+      return super._drainPendingCommands(settledExtent, injectStage);
+    } finally {
+      this._staleDrainDocText = null;
+    }
+  }
+  _getDrainageDocText() {
+    return this._staleDrainDocText !== null ? this._staleDrainDocText : this.docText;
+  }
+}
+
+// Mutant R11_6: Discards reentrant mutation queue on outer transaction rollback
+class Mutant_DiscardReentrantQueueOnRollback extends CandidateBCoordinator {
+  _restoreState(snap) {
+    super._restoreState(snap);
+    this._reentrantMutationQueue = snap._reentrantMutationQueue ? snap._reentrantMutationQueue.map(item => ({ ...item })) : [];
+  }
+}
+
+// Mutant R11_7: Permits omitted epoch/sessionId/generation in settlement evidence
+class Mutant_PermitOmittedEvidenceFields extends CandidateBCoordinator {
+  _internalUndo(syncBoundary = false, settlementEvidence = null) {
+    if (syncBoundary && settlementEvidence && typeof settlementEvidence === 'object') {
+      if (settlementEvidence.adapterQualification === 'QualifiedSyncSettlement' && settlementEvidence.recordId && settlementEvidence.extent) {
+        if (settlementEvidence.epoch === undefined || settlementEvidence.sessionId === undefined || settlementEvidence.generation === undefined) {
+          const finalExtent = [...settlementEvidence.extent];
+          this._flushOverlayToCommitted();
+          this.compositionState = 'Idle';
+          return { status: 'Accepted', action: 'SynchronouslySettledAndUndone' };
+        }
+      }
+    }
+    return super._internalUndo(syncBoundary, settlementEvidence);
+  }
+}
+
+// =============================================================================
+// Run-12 Contract Mutants (Probes 1 through 3)
+// =============================================================================
+
+// Mutant R12_1: Deferred callbacks bypass connection-epoch validation at execution time (Probe 1)
+class Mutant_SkipExecutionEpochCheck extends CandidateBCoordinator {
+  _drainReentrantQueue() {
+    if (this._isDrainingQueue) return;
+    this._isDrainingQueue = true;
+    try {
+      while (this._reentrantMutationQueue.length > 0) {
+        const envelope = this._reentrantMutationQueue.shift();
+        // Bug: skips epoch validation against current execution epoch!
+        let execResult;
+        if (envelope.fn) {
+          execResult = this._runInTransaction(envelope.payload?.type || "deferred", envelope.fn, envelope.payload?.injectFailureAt);
+        } else if (envelope.payload) {
+          execResult = this._runInTransaction(envelope.payload.type, () => {
+            return this._dispatchPayload(envelope.payload);
+          }, envelope.payload.injectFailureAt);
+        }
+        this.commandOutcomes.set(envelope.ticketId, execResult);
+      }
+    } finally {
+      this._isDrainingQueue = false;
+    }
+  }
+}
+
+// Mutant R12_2: Public queries expose intermediate working state during transaction (Probe 2)
+class Mutant_ExposeWorkingStateOnPublicGetters extends CandidateBCoordinator {
+  get docText() {
+    return this._getWorkingDocText();
+  }
+}
+
+// Mutant R12_3: Settlement cancels reentrant commands as Disposed (Probe 3)
+class Mutant_SettlementCancelsReentrantCommands extends CandidateBCoordinator {
+  _completeSettlement(token = null, sessionId = null, epoch = null, injectStage = null) {
+    const res = super._completeSettlement(token, sessionId, epoch, injectStage);
+    for (const env of this._reentrantMutationQueue) {
+      this.commandOutcomes.set(env.ticketId, { status: 'Cancelled', reason: 'Disposed' });
+    }
+    this._reentrantMutationQueue = [];
+    return res;
+  }
+}
+
+// Mutant R12_4: Caller mutation of original request payload modifies queued envelope (Probe 1)
+class Mutant_CallerMutablePayload extends CandidateBCoordinator {
+  applyInput(payload, seq = null) {
+    if (this._inTransaction) {
+      const ticketId = this.nextTicketId("reentrant");
+      const envelope = new RequestEnvelope({
+        ticketId,
+        origin: "external",
+        epoch: (payload.epoch !== undefined && payload.epoch !== null) ? payload.epoch : this._epoch,
+        seq,
+        sessionId: payload.sessionId || null,
+        basisRevision: this._documentRevision,
+        payload: payload // BUG: stores caller's mutable object directly without freeze/clone
+      });
+      this._reentrantMutationQueue.push(envelope);
+      return { status: "Accepted", action: "QueuedReentrant", ticketId };
+    }
+    return super.applyInput(payload, seq);
+  }
+}
+
+// Mutant R12_5: Silent coordinate reinterpretation (Probe 1)
+class Mutant_SilentCoordinateReinterpretation extends CandidateBCoordinator {
+  _drainReentrantQueue() {
+    if (this._isDrainingQueue) return;
+    this._isDrainingQueue = true;
+    try {
+      while (this._reentrantMutationQueue.length > 0) {
+        const envelope = this._reentrantMutationQueue.shift();
+        // BUG: reinterprets old coordinates directly against current document without basis mapping!
+        let execResult;
+        if (envelope.payload) {
+          execResult = this._runInTransaction(envelope.payload.type, () => {
+            return this._dispatchPayload(envelope.payload);
+          }, envelope.payload.injectFailureAt);
+        }
+        this.commandOutcomes.set(envelope.ticketId, execResult);
+      }
+    } finally {
+      this._isDrainingQueue = false;
+    }
+  }
+}
+
+// Mutant R12_6: Internal closure rollback leak (Probe 2 & 3)
+class Mutant_InternalClosureRollbackLeak extends CandidateBCoordinator {
+  _runInTransaction(actionName, fn, injectFailureAt = null) {
+    if (this._connectionState === "Closed" && actionName !== "dispose") {
+      return { status: "Rejected", reason: "ConnectionClosed" };
+    }
+    if (this._inTransaction) {
+      const ticketId = this.nextTicketId("reentrant");
+      this._reentrantMutationQueue.push(new RequestEnvelope({
+        ticketId,
+        origin: "reentrant",
+        epoch: this._epoch,
+        seq: null,
+        sessionId: null,
+        basisRevision: this._documentRevision,
+        fn
+      }));
+      return { status: "Accepted", action: "QueuedReentrant", ticketId };
+    }
+    const preTxSnapshot = this._cloneState();
+    this._inTransaction = true;
+    try {
+      if (injectFailureAt === "onEntry") throw new Error("InjectedFailure:onEntry");
+      const result = fn();
+      if (injectFailureAt === "beforeCommit") throw new Error("InjectedFailure:beforeCommit");
+      this._publishedState = this._cloneState();
+      return result;
+    } catch (err) {
+      this._restoreState(preTxSnapshot);
+      // BUG: does NOT cancel internal closures! Preserves and drains everything!
+      this._drainReentrantQueue();
+      return { status: "Rejected", reason: err.message };
+    } finally {
+      this._inTransaction = false;
+    }
+  }
+}
+
+
+
+// =============================================================================
+// Mutation Test Cases Definitions (Positive & Negative Test Suite)
+// =============================================================================
+
+export const MUTATION_SPECS = [
+  // --- New Repaired Contract Mutants (Findings A-F + Staged Failure + History) ---
+  {
+    id: 'Mutant Finding A',
+    name: 'Finding A: Discarding provisional text on connection replacement',
+    cls: Mutant_DiscardProvisionalOnTurnover,
+    run: (CoordClass) => {
+      const c = new CoordClass("Hello", null, [1, 2]);
+      c.applyInput({ type: 'startComposition', range: [1, 2] });
+      c.applyInput({ type: 'preedit', text: 'X' });
+      c.applyInput({ type: 'openNewConnection' });
+      assert.equal(c.docText, "HXllo");
+    }
+  },
+  {
+    id: 'Mutant Finding B',
+    name: 'Finding B: Dropping partial-commit history on connection replacement',
+    cls: Mutant_DropPartialCommitHistory,
+    run: (CoordClass) => {
+      const c = new CoordClass("Hello", null, [1, 2]);
+      c.applyInput({ type: 'startComposition', range: [1, 2] });
+      c.applyInput({ type: 'preedit', text: 'X' });
+      c.applyInput({ type: 'partialCommit', length: 1 });
+      c.applyInput({ type: 'preedit', text: 'Y' });
+      c.applyInput({ type: 'openNewConnection' });
+      assert.equal(c.undoStack.length, 1);
+      assert.equal(c.undoStack[0].beforeText, 'Hello');
+      assert.equal(c.undoStack[0].afterText, 'HXYllo');
+    }
+  },
+  {
+    id: 'Mutant Finding C',
+    name: 'Finding C: Using empty marked extent as final composition target',
+    cls: Mutant_EmptyMarkedExtentAsFinalTarget,
+    run: (CoordClass) => {
+      const c = new CoordClass("Hello");
+      c.applyInput({ type: 'startComposition', range: [1, 2] });
+      c.applyInput({ type: 'preedit', text: 'X' });
+      c.applyInput({ type: 'queueCommand', cmd: { type: 'Format', patch: { bold: true } }, target: { type: 'CompositionTarget' } });
+      c.applyInput({ type: 'partialCommit', length: 1 });
+      c.applyInput({ type: 'unmark', settled: true });
+      assert.equal(c.docAttributes[1]?.bold, true);
+      assert.equal(c.typingIntent.bold, undefined);
+    }
+  },
+  {
+    id: 'Mutant Finding D1',
+    name: 'Finding D1: Validating resulting selection against pre-edit length',
+    cls: Mutant_ValidateSelectionPreEdit,
+    run: (CoordClass) => {
+      const c = new CoordClass("a", null, [0, 1]);
+      const res = c.applyInput({ type: 'preedit', text: 'XYZ', selection: [3, 3] });
+      assert.equal(res.status, 'Accepted');
+      assert.deepEqual(c.selection, [3, 3]);
+    }
+  },
+  {
+    id: 'Mutant Finding D2',
+    name: 'Finding D2: Accepting invalid post-edit selection on shrinkage',
+    cls: Mutant_AcceptInvalidPostEditSelection,
+    run: (CoordClass) => {
+      const c = new CoordClass("a", null, [0, 1]);
+      const res = c.applyInput({ type: 'preedit', text: '', selection: [1, 1] });
+      assert.equal(res.status, 'Rejected');
+      assert.equal(res.reason, 'InvalidSelection');
+      assert.equal(c.docText, 'a');
+    }
+  },
+  {
+    id: 'Mutant Finding E',
+    name: 'Finding E: Leaving unrelated commands permanently pending',
+    cls: Mutant_LeaveUnrelatedCommandsPending,
+    run: (CoordClass) => {
+      const c = new CoordClass("Hello");
+      c.applyInput({ type: 'startComposition', range: [1, 2] });
+      c.applyInput({ type: 'preedit', text: 'X' });
+      const q = c.applyInput({ type: 'queueCommand', cmd: { type: 'Format', patch: { bold: true } }, target: { type: 'TrackedRange', range: [0, 1] } });
+      c.applyInput({ type: 'cancel' });
+      assert.equal(c.settlementObligation.pendingCommands.length, 0);
+      assert.equal(c.docAttributes[0]?.bold, true);
+      assert.equal(c.commandOutcomes.get(q.ticketId)?.status, 'Applied');
+    }
+  },
+  {
+    id: 'Mutant Finding F',
+    name: 'Finding F: Ignoring callback epoch admission',
+    cls: Mutant_IgnoreCallbackEpoch,
+    run: (CoordClass) => {
+      const c = new CoordClass("Hello");
+      c.applyInput({ type: 'openNewConnection' }); // epoch 1
+      const res = c.applyInput({ type: 'preedit', text: 'STALE', epoch: 0 });
+      assert.equal(res.status, 'Rejected');
+      assert.equal(res.reason, 'StaleEpoch');
+      assert.equal(c.docText, 'Hello');
+    }
+  },
+  {
+    id: 'Mutant Stage Fail',
+    name: 'Staged Failure: Publishing partial state after injected failure',
+    cls: Mutant_PublishPartialStateOnFailure,
+    run: (CoordClass) => {
+      const c = new CoordClass("Hello");
+      c.applyInput({ type: 'startComposition', range: [1, 2] });
+      const res = c.applyInput({ type: 'preedit', text: 'XYZ', injectFailureAt: 'afterTextSplice' });
+      assert.equal(res.status, 'Rejected');
+      assert.equal(c.docText, 'Hello');
+      assert.equal(c.committedDoc.length, 5);
+    }
+  },
+  {
+    id: 'Mutant Undo Selection',
+    name: 'History Verification: Corrupting recorded undo selection',
+    cls: Mutant_CorruptUndoSelectionAttrs,
+    run: (CoordClass) => {
+      const c = new CoordClass("Hello", null, [1, 4]);
+      c.applyInput({ type: 'startComposition', range: [1, 4] });
+      c.applyInput({ type: 'preedit', text: 'X' });
+      c.applyInput({ type: 'unmark', settled: true });
+      const uRes = c.applyInput({ type: 'undo' });
+      assert.equal(uRes.status, 'Accepted');
+      assert.deepEqual(c.selection, [1, 4]);
+    }
+  },
+
+  // --- Retained Defect Mutants (A - I) ---
+  {
+    id: 'Mutant A',
+    name: 'Mutant A: Interior segment insertion bug',
+    cls: MutantA_InteriorSegmentInsertion,
+    run: (CoordClass) => {
+      const c = new CoordClass('abc');
+      c.applyInput({ type: 'startComposition', range: [1, 2] });
+      c.applyInput({ type: 'preedit', text: 'XYZ' });
+      c.applyInput({ type: 'retarget', range: [2, 2] });
+      c.applyInput({ type: 'preedit', text: 'Q' });
+      assert.equal(c.docText, 'aXQYZc');
+      assert.deepEqual(c.markedRange, [2, 3]);
+    }
+  },
+  {
+    id: 'Mutant B',
+    name: 'Mutant B: Selection length ignored on implicit preedit',
+    cls: MutantB_SelectionLengthIgnored,
+    run: (CoordClass) => {
+      const c = new CoordClass('Hello', null, [1, 4]);
+      c.applyInput({ type: 'preedit', text: 'X' });
+      assert.equal(c.docText, 'HXo');
+    }
+  },
+  {
+    id: 'Mutant C',
+    name: 'Mutant C: Non-atomic history materialization',
+    cls: MutantC_NonAtomicHistoryMaterialization,
+    run: (CoordClass) => {
+      const c = new CoordClass('cat');
+      c.applyInput({ type: 'startComposition', range: [0, 3] });
+      c.applyInput({ type: 'preedit', text: 'cats' });
+      const u = c.applyInput({ type: 'unmark', settled: false });
+      c.applyInput({ type: 'queueCommand', cmd: { type: 'Format', patch: { bold: true } }, target: { type: 'CompositionTarget' } });
+      c.applyInput({ type: 'completeSettlement', token: u.token });
+      const comp = c.undoStack.find(u => u.group === 'Composition');
+      assert.ok(comp);
+      assert.equal(comp.afterText, 'cats');
+    }
+  },
+  {
+    id: 'Mutant D',
+    name: 'Mutant D: Omitted grapheme closure on combining marks',
+    cls: MutantD_AsciiOnlyFormatting,
+    run: (CoordClass) => {
+      const c = new CoordClass('a');
+      c.applyInput({ type: 'startComposition', range: [1, 1] });
+      c.applyInput({ type: 'preedit', text: '\u0301' });
+      c.applyInput({ type: 'queueCommand', cmd: { type: 'Format', patch: { bold: true } }, target: { type: 'CompositionTarget' } });
+      c.applyInput({ type: 'unmark', settled: true });
+      assert.equal(c.docAttributes[0]?.bold, true);
+      assert.equal(c.docAttributes[1]?.bold, true);
+    }
+  },
+  {
+    id: 'Mutant G',
+    name: 'Mutant G: Invalid explicit replacement accepted at different range',
+    cls: MutantG_OmittedReplacementValidation,
+    run: (CoordClass) => {
+      const c = new CoordClass('Hello');
+      c.applyInput({ type: 'startComposition', range: [1, 2] });
+      const res = c.applyInput({ type: 'preedit', text: 'X', range: [-1, 2] });
+      assert.equal(res.status, 'Rejected');
+      assert.equal(c.docText, 'Hello');
+    }
+  },
+  {
+    id: 'Mutant H',
+    name: 'Mutant H: Stale island offsets after edit',
+    cls: MutantH_StaleIslandOffsets,
+    run: (CoordClass) => {
+      const c = new CoordClass('aa BB cc');
+      c.applyInput({ type: 'startComposition', range: [6, 8] });
+      c.applyInput({ type: 'queueCommand', cmd: { type: 'Format', patch: { bold: true } }, target: { type: 'CompositionTarget' } });
+      c.applyInput({ type: 'retarget', range: [0, 2] });
+      c.applyInput({ type: 'preedit', text: 'X' });
+      c.applyInput({ type: 'unmark', settled: true });
+      const boldIndices = [];
+      c.docAttributes.forEach((a, i) => { if (a.bold) boldIndices.push(i); });
+      assert.deepEqual(boldIndices, [0, 5, 6]);
+    }
+  },
+  {
+    id: 'Mutant I',
+    name: 'Mutant I: Conflating TrackedRange with composition extent',
+    cls: MutantI_ConflateTrackedRangeWithComposition,
+    run: (CoordClass) => {
+      const c = new CoordClass('Hello');
+      c.applyInput({ type: 'startComposition', range: [1, 2] });
+      c.applyInput({ type: 'preedit', text: 'X' });
+      c.applyInput({ type: 'queueCommand', cmd: { type: 'Format', patch: { bold: true } }, target: { type: 'TrackedRange', range: [0, 1] } });
+      c.applyInput({ type: 'unmark', settled: true });
+      assert.equal(c.docAttributes[0]?.bold, true);
+      assert.ok(!c.docAttributes[1]?.bold);
+    }
+  },
+
+  // --- Baseline Invariant Mutants (1 - 11) ---
+  {
+    id: 'Mutant 1',
+    name: 'Mutant 1: Silent range clamping on target expansion',
+    cls: Mutant1_SilentClamping,
+    run: (CoordClass) => {
+      const c = new CoordClass('Hello');
+      c.applyInput({ type: 'startComposition', range: [1, 3] });
+      c.applyInput({ type: 'partialCommit', length: 1 });
+      const res = c.applyInput({ type: 'targetExpansion', range: [1, 4] });
+      assert.deepEqual(res.markedRange, [1, 4]);
+    }
+  },
+  {
+    id: 'Mutant 2',
+    name: 'Mutant 2: Dropping absorbed original unit on partial commit + cancel',
+    cls: Mutant2_DropAbsorbedUnit,
+    run: (CoordClass) => {
+      const c = new CoordClass('abcd');
+      c.applyInput({ type: 'startComposition', range: [1, 2] });
+      c.applyInput({ type: 'preedit', text: 'XYZ' });
+      c.applyInput({ type: 'targetExpansion', range: [1, 5] });
+      c.applyInput({ type: 'partialCommit', length: 1 });
+      c.applyInput({ type: 'cancel' });
+      assert.equal(c.docText, 'aXcd');
+    }
+  },
+  {
+    id: 'Mutant 3',
+    name: 'Mutant 3: Dropping required composition history entry',
+    cls: Mutant3_DropHistoryEntry,
+    run: (CoordClass) => {
+      const c = new CoordClass('Hello');
+      c.applyInput({ type: 'startComposition', range: [1, 3] });
+      c.applyInput({ type: 'preedit', text: 'Z' });
+      c.applyInput({ type: 'unmark', settled: true });
+      assert.ok(c.undoStack.length >= 1);
+    }
+  },
+  {
+    id: 'Mutant 4',
+    name: 'Mutant 4: Formatting outside intent target',
+    cls: Mutant4_FormatOutsideTarget,
+    run: (CoordClass) => {
+      const c = new CoordClass('Hello');
+      c.applyInput({ type: 'startComposition', range: [1, 3] });
+      c.applyInput({ type: 'queueCommand', cmd: { type: 'Format', patch: { bold: true } }, target: { type: 'CompositionTarget' } });
+      c.applyInput({ type: 'unmark', settled: true });
+      assert.ok(!c.docAttributes[0].bold);
+    }
+  },
+  {
+    id: 'Mutant 5',
+    name: 'Mutant 5: Premature command execution before settlement',
+    cls: Mutant5_PrematureCommandExecution,
+    run: (CoordClass) => {
+      const c = new CoordClass('Hello');
+      c.applyInput({ type: 'startComposition', range: [1, 3] });
+      c.applyInput({ type: 'queueCommand', cmd: { type: 'Format', patch: { bold: true } }, target: { type: 'CompositionTarget' } });
+      const p = c.settlementObligation.pendingCommands[0];
+      assert.equal(p.status, 'Pending');
+    }
+  },
+  {
+    id: 'Mutant 6',
+    name: 'Mutant 6: Losing command outcome record',
+    cls: Mutant6_LoseCommandOutcome,
+    run: (CoordClass) => {
+      const c = new CoordClass('Hello');
+      c.applyInput({ type: 'startComposition', range: [1, 3] });
+      const q = c.applyInput({ type: 'queueCommand', cmd: { type: 'Format', patch: { bold: true } }, target: { type: 'CompositionTarget' } });
+      c.applyInput({ type: 'unmark', settled: true });
+      assert.ok(c.commandOutcomes.has(q.ticketId));
+    }
+  },
+  {
+    id: 'Mutant 7',
+    name: 'Mutant 7: Silent selection reset to [0, 0]',
+    cls: Mutant7_ResetSelectionToZero,
+    run: (CoordClass) => {
+      const c = new CoordClass('Hello');
+      c.applyInput({ type: 'startComposition', range: [1, 3], selection: [1, 3] });
+      assert.deepEqual(c.selection, [1, 3]);
+    }
+  },
+  {
+    id: 'Mutant 8',
+    name: 'Mutant 8: DocumentRevision bump on metadata-only freeze',
+    cls: Mutant8_DocRevBumpOnMetadataFreeze,
+    run: (CoordClass) => {
+      const c = new CoordClass('Hello');
+      c.applyInput({ type: 'startComposition', range: [1, 3] });
+      c.applyInput({ type: 'preedit', text: 'XY' });
+      const r1 = c.documentRevision;
+      c.applyInput({ type: 'partialCommit', length: 1 });
+      const r2 = c.documentRevision;
+      assert.equal(r1, r2);
+    }
+  },
+  {
+    id: 'Mutant 9',
+    name: 'Mutant 9: Corrupted zero-length deletion boundary',
+    cls: Mutant9_CorruptDeletionBoundary,
+    run: (CoordClass) => {
+      const c = new CoordClass('abc');
+      c.applyInput({ type: 'startComposition', range: [0, 3] });
+      c.applyInput({ type: 'preedit', text: 'ac' });
+      c.applyInput({ type: 'partialCommit', length: 1 });
+      c.applyInput({ type: 'cancel' });
+      assert.equal(c.docText, 'abc');
+    }
+  },
+  {
+    id: 'Mutant 10',
+    name: 'Mutant 10: Complete settlement while candidate active',
+    cls: Mutant10_SettlementWhileCandidateActive,
+    run: (CoordClass) => {
+      const c = new CoordClass('Hello');
+      c.applyInput({ type: 'startComposition', range: [1, 3] });
+      c.applyInput({ type: 'preedit', text: 'Z' });
+      c.settlementEvidence = { extent: [1, 2], token: 'tok' };
+      const res = c.applyInput({ type: 'completeSettlement' });
+      assert.equal(res.reason, 'CandidateStillActive');
+    }
+  },
+  {
+    id: 'Mutant 11',
+    name: 'Mutant 11: Ignore duplicate sequence stamps without cache',
+    cls: Mutant11_IgnoreDuplicateCache,
+    run: (CoordClass) => {
+      const c = new CoordClass('Hello');
+      c.applyInput({ type: 'preedit', text: 'X' }, 100);
+      const dupRes = c.applyInput({ type: 'preedit', text: 'X' }, 100);
+      assert.equal(dupRes.status, 'Duplicate');
+    }
+  },
+  {
+    id: 'Mutant 12',
+    name: 'Mutant 12: Treating empty historical text as absent (truthiness fallback)',
+    cls: Mutant_TruthinessFallback,
+    run: (CoordClass) => {
+      const c = new CoordClass('', null, [0, 0]);
+      c.applyInput({ type: 'commit', text: 'x' });
+      c.applyInput({ type: 'undo' });
+      c.applyInput({ type: 'redo' });
+      c.applyInput({ type: 'undo' });
+      assert.equal(c.docText, '', 'Empty document preimage must be restored on second undo');
+    }
+  },
+  {
+    id: 'Mutant 13',
+    name: 'Mutant 13: Rebuilding redo entry from current rather than historical content',
+    cls: Mutant_RebuildRedoFromCurrentContent,
+    run: (CoordClass) => {
+      const c = new CoordClass('Hello');
+      c.applyInput({ type: 'commit', text: 'World', range: [0, 5] });
+      assert.equal(c.docText, 'World');
+      c.applyInput({ type: 'undo' });
+      assert.equal(c.docText, 'Hello');
+      c.applyInput({ type: 'redo' });
+      assert.equal(c.docText, 'World', 'Redo must restore historical postimage');
+    }
+  },
+  {
+    id: 'Mutant 14',
+    name: 'Mutant 14: Dropping nativeRemoval history',
+    cls: Mutant_DropNativeRemovalHistory,
+    run: (CoordClass) => {
+      const c = new CoordClass('abc', null, [1, 2]);
+      c.applyInput({ type: 'nativeRemoval', range: [1, 2], replacementText: '' });
+      assert.equal(c.docText, 'ac');
+      const uRes = c.applyInput({ type: 'undo' });
+      assert.equal(uRes.status, 'Accepted', 'Undo must be accepted after native removal');
+      assert.equal(c.docText, 'abc', 'Undo must restore original text after native removal');
+    }
+  },
+  {
+    id: 'Mutant 15',
+    name: 'Mutant 15: Clearing overlay before disposal finalization',
+    cls: Mutant_ClearOverlayBeforeDisposal,
+    run: (CoordClass) => {
+      const c = new CoordClass('Hello', null, [1, 2]);
+      c.applyInput({ type: 'startComposition', range: [1, 2] });
+      c.applyInput({ type: 'preedit', text: 'X' });
+      assert.equal(c.docText, 'HXllo');
+      const dRes = c.applyInput({ type: 'dispose' });
+      assert.equal(dRes.status, 'Accepted');
+      assert.equal(c.docText, 'HXllo', 'Disposal must preserve accepted visible text');
+      assert.equal(c.undoStack.length, 1, 'Disposal must finalize composition history');
+    }
+  },
+  {
+    id: 'Mutant 16',
+    name: 'Mutant 16: Using selection for validation but stale attribution for mutation',
+    cls: Mutant_MismatchedValidationMutationRange,
+    run: (CoordClass) => {
+      const c = new CoordClass('Hello', null, [1, 2]);
+      c.applyInput({ type: 'startComposition', range: [1, 2] });
+      c.applyInput({ type: 'preedit', text: 'X' });
+      c.applyInput({ type: 'unmark', settled: false, selection: [2, 2] });
+      c.applyInput({ type: 'preedit', text: 'Y' }); // omitted range targets selection [2, 2]
+      assert.equal(c.docText, 'HXYllo', 'Resumed preedit with omitted range must target selection');
+    }
+  },
+  {
+    id: 'Mutant 17',
+    name: 'Mutant 17: Overwriting original session preimage on resumed input',
+    cls: Mutant_OverwriteSessionPreimageOnResumedPreedit,
+    run: (CoordClass) => {
+      const c = new CoordClass('Hello', null, [1, 2]);
+      c.applyInput({ type: 'startComposition', range: [1, 2] });
+      c.applyInput({ type: 'preedit', text: 'X' });
+      c.applyInput({ type: 'unmark', settled: false, selection: [2, 2] });
+      c.applyInput({ type: 'preedit', text: 'Y' });
+      c.applyInput({ type: 'unmark', settled: true });
+      assert.equal(c.docText, 'HXYllo');
+      const uRes = c.applyInput({ type: 'undo' });
+      assert.equal(uRes.status, 'Accepted');
+      assert.equal(c.docText, 'Hello', 'Undo must restore original pre-session snapshot Hello');
+    }
+  },
+  {
+    id: 'Mutant 18',
+    name: 'Mutant 18: Undo bypassing unfinished composition obligation',
+    cls: Mutant_UndoBypassesCompositionObligation,
+    run: (CoordClass) => {
+      const c = new CoordClass('Hello');
+      c.applyInput({ type: 'commit', text: ' World', range: [5, 5] });
+      c.applyInput({ type: 'startComposition', range: [5, 11] });
+      c.applyInput({ type: 'preedit', text: ' Earth' });
+      assert.equal(c.docText, 'Hello Earth');
+
+      // 1. Undo during active composition must settle/materialize and restore pre-session docText
+      const u1 = c.applyInput({
+        type: 'undo',
+        syncBoundary: true,
+        settlementEvidence: {
+          adapterQualification: 'QualifiedSyncSettlement',
+          extent: [5, 11],
+          epoch: c.epoch,
+          sessionId: c.activeSessionId,
+          generation: c.sessionRevision,
+          recordId: 'rec-mut-18'
+        }
+      });
+      assert.equal(u1.status, 'Accepted');
+      assert.equal(c.compositionState, 'Idle', 'Undo must transition compositionState to Idle');
+      assert.equal(c.docText, 'Hello World', 'Undo during active composition must revert to pre-session Hello World, not skip to Hello');
+
+      // 2. Redo must restore the composition overlay text
+      const r1 = c.applyInput({ type: 'redo' });
+      assert.equal(r1.status, 'Accepted');
+      assert.equal(c.docText, 'Hello Earth', 'Redo must restore active composition result Hello Earth');
+
+      // 3. Second undo reverts back to pre-session state
+      const u2 = c.applyInput({ type: 'undo' });
+      assert.equal(u2.status, 'Accepted');
+      assert.equal(c.docText, 'Hello World', 'Second undo must revert back to Hello World');
+
+      // 4. Third undo reverts the earlier commit
+      const u3 = c.applyInput({ type: 'undo' });
+      assert.equal(u3.status, 'Accepted');
+      assert.equal(c.docText, 'Hello', 'Third undo must revert commit to Hello');
+    }
+  },
+  {
+    id: 'Mutant R09_1',
+    name: 'Mutant R09_1: Global rollback delta applied to disjoint edits',
+    cls: Mutant_GlobalRollbackDeltaDisjoint,
+    run: (CoordClass) => {
+      const c = new CoordClass("abcdef", null, [0, 0]);
+      c.applyInput({ type: 'startComposition', range: [1, 2] });
+      c.applyInput({ type: 'preedit', text: 'XYZ' });
+      const qRes = c.applyInput({
+        type: 'queueCommand',
+        cmd: { type: 'Format', patch: { bold: true } },
+        target: { type: 'TrackedRange', range: [5, 6] }
+      });
+      c.applyInput({ type: 'retarget', range: [7, 8] });
+      c.applyInput({ type: 'preedit', text: '' });
+      c.applyInput({ type: 'cancel' });
+      assert.equal(c.docText, "abcdef");
+      assert.equal(c.docAttributes[3]?.bold, true, "Character 'd' at committed index 3 must be bold");
+      assert.equal(c.docAttributes[4]?.bold, undefined, "Character 'e' must not be bold");
+    }
+  },
+  {
+    id: 'Mutant R09_2',
+    name: 'Mutant R09_2: Opposing edits with zero net delta ignored',
+    cls: Mutant_OpposingEditsZeroNetDelta,
+    run: (CoordClass) => {
+      const c = new CoordClass("abcdef", null, [0, 0]);
+      c.applyInput({ type: 'startComposition', range: [1, 2] });
+      c.applyInput({ type: 'preedit', text: 'XY' }); // +1
+      const qRes = c.applyInput({
+        type: 'queueCommand',
+        cmd: { type: 'Format', patch: { italic: true } },
+        target: { type: 'TrackedRange', range: [4, 5] } // 'd'
+      });
+      c.applyInput({ type: 'retarget', range: [6, 7] });
+      c.applyInput({ type: 'preedit', text: '' }); // -1
+      c.applyInput({ type: 'cancel' });
+      assert.equal(c.docText, "abcdef");
+      assert.equal(c.docAttributes[3]?.italic, true, "Character 'd' must be italic");
+      assert.equal(c.docAttributes[4]?.italic, undefined, "Character 'e' must not be italic");
+    }
+  },
+  {
+    id: 'Mutant R09_3',
+    name: 'Mutant R09_3: Idle commands left permanently pending',
+    cls: Mutant_IdleCommandsLeftPending,
+    run: (CoordClass) => {
+      const c = new CoordClass("abcdef", null, [0, 0]);
+      const qRes = c.applyInput({
+        type: 'queueCommand',
+        cmd: { type: 'Format', patch: { bold: true } },
+        target: { type: 'TrackedRange', range: [0, 1] }
+      });
+      assert.equal(qRes.status, 'Applied', "Command in Idle must be Applied immediately");
+      const outcome = c.commandOutcomes.get(qRes.ticketId);
+      assert.equal(outcome?.status, 'Applied');
+      assert.equal(c.docAttributes[0]?.bold, true, "Index 0 must be formatted bold");
+    }
+  },
+  {
+    id: 'Mutant R09_4',
+    name: 'Mutant R09_4: Cross-epoch receipt reuse before epoch validation',
+    cls: Mutant_CrossEpochReceiptConfusion,
+    run: (CoordClass) => {
+      const c = new CoordClass("Hello", null, [0, 0]);
+      c.applyInput({ type: 'openNewConnection' }); // epoch 1
+      assert.equal(c.epoch, 1);
+      const p1 = c.applyInput({ type: 'preedit', text: 'X', epoch: 1 }, 1);
+      assert.equal(p1.status, 'Accepted');
+
+      const pOld = c.applyInput({ type: 'preedit', text: 'old', epoch: 0 }, 1);
+      assert.equal(pOld.status, 'Rejected', "Old epoch callback must be rejected");
+      assert.equal(pOld.reason, 'StaleEpoch', "Old epoch must be rejected as StaleEpoch, not Duplicate");
+    }
+  },
+  {
+    id: 'Mutant R09_5',
+    name: 'Mutant R09_5: Wrong captured-character formatting (modifying intent)',
+    cls: Mutant_WrongCapturedCharacterFormatting,
+    run: (CoordClass) => {
+      const c = new CoordClass("Hello");
+      c.applyInput({ type: 'startComposition', range: [1, 2] });
+      c.applyInput({ type: 'preedit', text: 'X' });
+      c.applyInput({
+        type: 'queueCommand',
+        cmd: { type: 'Format', patch: { bold: true } },
+        target: { type: 'CompositionTarget' }
+      });
+      c.applyInput({ type: 'partialCommit', length: 1 });
+      c.applyInput({ type: 'unmark', settled: true });
+      assert.equal(c.docAttributes[1]?.bold, true, "Committed unit must be formatted bold");
+      assert.equal(c.typingIntent.bold, undefined, "Typing intent must NOT be modified");
+    }
+  },
+  {
+    id: 'Mutant R09_6',
+    name: 'Mutant R09_6: Incorrect Undo / queued-command order under selected policy',
+    cls: Mutant_IncorrectUndoQueuedCommandOrder,
+    run: (CoordClass) => {
+      const c = new CoordClass("abc", null, [1, 2]);
+      c.applyInput({ type: 'startComposition', range: [1, 2] });
+      c.applyInput({ type: 'preedit', text: 'X' });
+      c.applyInput({
+        type: 'queueCommand',
+        cmd: { type: 'Format', patch: { bold: true } },
+        target: { type: 'CompositionTarget' }
+      });
+      const u1 = c.applyInput({
+        type: 'undo',
+        syncBoundary: true,
+        settlementEvidence: {
+          adapterQualification: 'QualifiedSyncSettlement',
+          extent: [1, 2],
+          epoch: c.epoch,
+          sessionId: c.activeSessionId,
+          generation: c.sessionRevision,
+          recordId: 'rec-mut-r09-6'
+        }
+      });
+      assert.equal(u1.status, 'Accepted');
+      assert.equal(u1.group, 'Formatting', "First undo must pop Formatting group");
+      assert.equal(c.docText, "aXc", "Document text must remain 'aXc' after first undo");
+      assert.equal(c.docAttributes[1]?.bold, undefined, "First undo must strip bold attribute");
+      const u2 = c.applyInput({ type: 'undo' });
+      assert.equal(u2.status, 'Accepted');
+      assert.equal(u2.group, 'Composition', "Second undo must pop Composition group");
+      assert.equal(c.docText, "abc", "Second undo must restore pre-session text 'abc'");
+    }
+  },
+  {
+    id: 'Mutant R10_1',
+    name: 'Mutant R10_1: Rollback mapping silently expands target over restored text (Defect 1)',
+    cls: Mutant_RollbackMinMaxExpansion,
+    run: (CoordClass) => {
+      const c = new CoordClass("abcde");
+      c.applyInput({ type: "startComposition", range: [2, 3] });
+      c.applyInput({ type: "preedit", text: "" });
+      const q = c.applyInput({
+        type: "queueCommand",
+        cmd: { type: "Format", patch: { bold: true } },
+        target: { type: "TrackedRange", range: [1, 3] }
+      });
+      c.applyInput({ type: "cancel" });
+
+      assert.equal(c.docText, "abcde");
+      assert.equal(c.docAttributes[1]?.bold, true, "Character 'b' at index 1 must be bold");
+      assert.equal(c.docAttributes[2]?.bold, undefined, "Restored character 'c' at index 2 must NOT be bold!");
+      assert.equal(c.docAttributes[3]?.bold, true, "Character 'd' at index 3 must be bold");
+      const outcome = c.commandOutcomes.get(q.ticketId);
+      assert.deepEqual(outcome.ranges, [[1, 2], [3, 4]], "Disjoint surviving intervals must be recorded");
+    }
+  },
+  {
+    id: 'Mutant R10_2',
+    name: 'Mutant R10_2: Advertised public dispatcher bypasses transaction accounting (Defect 2)',
+    cls: Mutant_DispatchBypassesTransaction,
+    run: (CoordClass) => {
+      const c = new CoordClass("abc");
+      const res = c.dispatchCommand(
+        { type: "Format", patch: { bold: true } },
+        { type: "TrackedRange", range: [0, 1] }
+      );
+      assert.equal(res.status, 'Applied');
+      assert.equal(c.docAttributes[0]?.bold, true);
+      assert.equal(c.documentRevision, 1, "documentRevision must advance from 0 to 1 on direct dispatchCommand formatting!");
+    }
+  },
+  {
+    id: 'Mutant R10_3',
+    name: 'Mutant R10_3: Undo ordering specified by bypassing settlement barrier (Defect 3)',
+    cls: Mutant_PrematureIdleOnAsyncUndo,
+    run: (CoordClass) => {
+      const c = new CoordClass("abc");
+      c.applyInput({ type: "startComposition", range: [1, 2] });
+      c.applyInput({ type: "preedit", text: "X" });
+      c.applyInput({
+        type: "queueCommand",
+        cmd: { type: "Format", patch: { bold: true } },
+        target: { type: "CompositionTarget" }
+      });
+      c.undo(); // Called while active composition is in progress without native completion
+
+      assert.equal(
+        c.compositionState,
+        'AwaitingSettlement',
+        "Coordinator must transition to AwaitingSettlement on application undo without native completion!"
+      );
+      assert.notEqual(c.settlementObligation.activeFence, null);
+
+      const resCommit = c.applyInput({ type: "commit", text: "Y" });
+      assert.notEqual(
+        c.docText,
+        "aXYc",
+        "Subsequent commit must not produce aXYc via uncoordinated state turnover!"
+      );
+    }
+  },
+  {
+    id: 'Mutant R11_1',
+    name: 'Mutant R11_1: Settlement erases the Redo entry created by queued Undo (Failure 1)',
+    cls: Mutant_WipeRedoStackOnOuterTransactionBoundary,
+    run: (CoordClass) => {
+      const c = new CoordClass("abc");
+      c.applyInput({ type: "startComposition", range: [1, 2] });
+      c.applyInput({ type: "preedit", text: "X" });
+      const uTick = c.undo();
+      c.applyInput({ type: "commit", text: "Y" });
+      assert.equal(c.docText, "abc");
+      assert.equal(c.commandOutcomes.get(uTick.ticketId)?.status, 'Applied');
+      assert.ok(c.redoStack.length > 0, "redoStack must retain the Redo entry created by queued Undo!");
+      const redoRes = c.redo();
+      assert.equal(redoRes.status, 'Accepted', "redo() must be Accepted, not Rejected(NothingToRedo)!");
+      assert.equal(c.docText, "aYc", "Redo must restore 'aYc'!");
+    }
+  },
+  {
+    id: 'Mutant R11_2',
+    name: 'Mutant R11_2: Queued commands lose surviving targets across queued Undo (Failure 2)',
+    cls: Mutant_SkipTokenIdentityTargetRemap,
+    run: (CoordClass) => {
+      const c = new CoordClass("abc");
+      c.applyInput({ type: "startComposition", range: [1, 2] });
+      c.applyInput({ type: "preedit", text: "XYZ" });
+      c.undo();
+      const qBold = c.applyInput({
+        type: "queueCommand",
+        cmd: { type: "Format", patch: { bold: true } },
+        target: { type: "TrackedRange", range: [4, 5] }
+      });
+      c.applyInput({ type: "commit", text: "XYZ" });
+      const boldOutcome = c.commandOutcomes.get(qBold.ticketId);
+      assert.equal(c.docText, "abc");
+      assert.notEqual(boldOutcome?.status, 'Rejected', "Bold command must not be rejected with TargetInvalidated!");
+      assert.equal(c.docAttributes[2]?.bold, true, "Character 'c' at index 2 must be bold!");
+      assert.equal(c.docAttributes[0]?.bold, undefined);
+      assert.equal(c.docAttributes[1]?.bold, undefined);
+    }
+  },
+  {
+    id: 'Mutant R11_3',
+    name: 'Mutant R11_3: Synchronous settlement exception accepts invalid evidence (Failure 3)',
+    cls: Mutant_AcceptUnqualifiedSettlementEvidence,
+    run: (CoordClass) => {
+      const c = new CoordClass("abc");
+      c.applyInput({ type: "startComposition", range: [1, 2] });
+      c.applyInput({ type: "preedit", text: "X" });
+      const res = c.undo(true, { extent: [1, 2], epoch: 999, sessionId: "wrong" });
+      assert.notEqual(res.status, 'Accepted', "undo with invalid settlement evidence must NOT be accepted!");
+      assert.notEqual(c.compositionState, 'Idle', "Coordinator must NOT transition to Idle on invalid evidence!");
+    }
+  },
+  {
+    id: 'Mutant R11_4',
+    name: 'Mutant R11_4: Reentrant mutation rejected instead of FIFO queued (Failure 4)',
+    cls: Mutant_RejectReentrantMutationInsteadOfQueue,
+    run: (CoordClass) => {
+      const c = new CoordClass("abc");
+      let reentrantResult = null;
+      c._runInTransaction('outer', () => {
+        reentrantResult = c.applyInput({ type: "commit", text: "Z" });
+      });
+      assert.notEqual(reentrantResult?.reason, 'ReentrantMutation', "Reentrant mutations must not reject with ReentrantMutation!");
+      assert.equal(reentrantResult?.status, 'Accepted');
+      assert.equal(reentrantResult?.action, 'QueuedReentrant');
+    }
+  },
+  {
+    id: 'Mutant R11_5',
+    name: 'Mutant R11_5: Reusing stale document snapshot across intermediate Undo in drainage',
+    cls: Mutant_ReuseStaleDocSnapshotInDrainage,
+    run: (CoordClass) => {
+      const c = new CoordClass("0123456789");
+      c.applyInput({ type: "startComposition", range: [0, 8] });
+      c.applyInput({ type: "preedit", text: "X" });
+      c.undo();
+      const qBold = c.applyInput({
+        type: "queueCommand",
+        cmd: { type: "Format", patch: { bold: true } },
+        target: { type: "TrackedRange", range: [2, 3] }
+      });
+      c.applyInput({ type: "commit", text: "X" });
+      const boldOutcome = c.commandOutcomes.get(qBold.ticketId);
+      assert.equal(c.docText, "0123456789", "Document text must be restored to 10 chars by intermediate Undo!");
+      assert.equal(boldOutcome?.status, 'Applied', "Format command targeting restored character must be Applied, not TargetInvalidated!");
+      assert.equal(c.docAttributes[9]?.bold, true, "Character at index 9 must be bold!");
+    }
+  },
+  {
+    id: 'Mutant R11_6',
+    name: 'Mutant R11_6: Discarding reentrant mutation queue on outer transaction rollback',
+    cls: Mutant_DiscardReentrantQueueOnRollback,
+    run: (CoordClass) => {
+      const c = new CoordClass("Hello");
+      let ticketId = null;
+      c._runInTransaction('failingTx', () => {
+        const re = c.applyInput({ type: "commit", text: " World", range: [5, 5] });
+        ticketId = re.ticketId;
+        throw new Error("SimulatedTxCrash");
+      });
+      assert.equal(c.docText, "Hello World", "Reentrant mutation must execute against restored baseline after transaction rollback!");
+      assert.equal(c.commandOutcomes.get(ticketId)?.status, 'Accepted', "Queued reentrant mutation ticket outcome must be Accepted!");
+    }
+  },
+  {
+    id: 'Mutant R11_7',
+    name: 'Mutant R11_7: Permitting omitted epoch/sessionId/generation in settlement evidence',
+    cls: Mutant_PermitOmittedEvidenceFields,
+    run: (CoordClass) => {
+      const c = new CoordClass("abc");
+      c.applyInput({ type: "startComposition", range: [1, 2] });
+      c.applyInput({ type: "preedit", text: "X" });
+      const res = c.undo(true, {
+        adapterQualification: 'QualifiedSyncSettlement',
+        recordId: 'nonce-sync-1',
+        extent: [1, 2]
+      });
+      assert.equal(res.status, 'Rejected', "undo with omitted mandatory evidence fields must be Rejected!");
+      assert.equal(res.reason, 'MalformedSettlementEvidence', "Reason must be MalformedSettlementEvidence!");
+      assert.notEqual(c.compositionState, 'Idle', "Coordinator must NOT transition to Idle on incomplete evidence!");
+    }
+  },
+  {
+    id: 'Mutant R12_1',
+    name: 'Mutant R12_1: Deferred callbacks bypass connection-epoch validation at execution time (Probe 1)',
+    cls: Mutant_SkipExecutionEpochCheck,
+    run: (CoordClass) => {
+      const c = new CoordClass("abc");
+      let callbackTicket;
+      c._runInTransaction("probe", () => {
+        c.openNewConnection();
+        callbackTicket = c.applyInput(
+          { type: "commit", text: "X", epoch: 0 },
+          1
+        );
+        return { status: "Accepted" };
+      });
+      const outcome = c.commandOutcomes.get(callbackTicket.ticketId);
+      assert.equal(c.docText, "abc", "Old epoch-0 callback must not mutate epoch-1 connection!");
+      assert.equal(outcome?.status, 'Rejected', "Ticket outcome must report Rejected for stale epoch!");
+      assert.equal(outcome?.reason, 'StaleEpoch', "Rejection reason must be StaleEpoch!");
+    }
+  },
+  {
+    id: 'Mutant R12_2',
+    name: 'Mutant R12_2: Public queries expose intermediate working state during transaction (Probe 2)',
+    cls: Mutant_ExposeWorkingStateOnPublicGetters,
+    run: (CoordClass) => {
+      let observedInsideDocText = null;
+      class ProbeCoordinator extends CoordClass {
+        _preedit(text, range, selection = null, injectStage = null) {
+          const res = super._preedit(text, range, selection, injectStage);
+          observedInsideDocText = this.docText;
+          throw new Error("InjectedFailure:probeExposeUnpublishedState");
+        }
+      }
+      const c = new ProbeCoordinator("abc");
+      c.applyInput({ type: "startComposition", range: [1, 2], epoch: 0 });
+      c.applyInput({ type: "preedit", text: "X", epoch: 0 });
+      assert.equal(observedInsideDocText, "abc", "Public query inside transaction must observe published snapshot abc!");
+      assert.equal(c.docText, "abc");
+    }
+  },
+  {
+    id: 'Mutant R12_3',
+    name: 'Mutant R12_3: Settlement cancels reentrant commands as Disposed (Probe 3)',
+    cls: Mutant_SettlementCancelsReentrantCommands,
+    run: (CoordClass) => {
+      let reentrantBoldTicket = null;
+      class ProbeSettlement extends CoordClass {
+        _drainPendingCommands(settledExtent, injectStage = null) {
+          const res = super._drainPendingCommands(settledExtent, injectStage);
+          reentrantBoldTicket = this.applyInput({
+            type: "queueCommand",
+            cmd: { type: "Format", patch: { bold: true } },
+            target: { type: "TrackedRange", range: [0, 1] }
+          });
+          return res;
+        }
+      }
+      const c = new ProbeSettlement("abc");
+      c.applyInput({ type: "startComposition", range: [1, 2], epoch: 0 });
+      c.applyInput({ type: "preedit", text: "X", epoch: 0 });
+      c.applyInput({ type: "unmark", settled: false, epoch: 0 });
+      const token = c.activeSettlementToken ? c.activeSettlementToken.token : null;
+      const sessId = c.activeSessionId;
+      c.applyInput({ type: "completeSettlement", token, sessionId: sessId, epoch: 0 });
+      const outcome = c.commandOutcomes.get(reentrantBoldTicket?.ticketId);
+      assert.notEqual(outcome?.status, 'Cancelled', "Normal settlement must not cancel reentrant commands as Disposed!");
+      assert.equal(c.docAttributes[0]?.bold, true, "Character 'a' must be bold after reentrant command execution!");
+    }
+  },
+  {
+    id: 'Mutant R12_4',
+    name: 'Mutant R12_4: Caller mutation of original request payload modifies queued envelope (Probe 1)',
+    cls: Mutant_CallerMutablePayload,
+    run: (CoordClass) => {
+      const c = new CoordClass("abc");
+      const mutablePayload = { type: "commit", text: "original" };
+      c._runInTransaction("outer", () => {
+        c.applyInput(mutablePayload);
+        mutablePayload.text = "tampered";
+      });
+      assert.equal(c.docText, "originalabc", "Coordinator must execute immutable payload, not tampered text!");
+    }
+  },
+  {
+    id: 'Mutant R12_5',
+    name: 'Mutant R12_5: Silent coordinate reinterpretation against shifted document state (Probe 1)',
+    cls: Mutant_SilentCoordinateReinterpretation,
+    run: (CoordClass) => {
+      const c = new CoordClass("abcdef");
+      let ticket;
+      c._runInTransaction("outer", () => {
+        c.applyInput({ type: "commit", text: "123", range: [0, 0], epoch: 0 });
+        ticket = c.applyInput({ type: "commit", text: "Z", range: [2, 4], epoch: 0 });
+        return { status: "Accepted" };
+      });
+      assert.equal(c.docText, "123abZef", "Basis coordinates [2, 4] must dynamically map to [5, 7] and not overwrite '3a'!");
+      const outcome = c.commandOutcomes.get(ticket.ticketId);
+      assert.equal(outcome?.status, 'Accepted');
+      assert.deepEqual(outcome?.finalExtent, [5, 6]);
+    }
+  },
+  {
+    id: 'Mutant R12_6',
+    name: 'Mutant R12_6: Internal transaction closure leaks and executes on rollback (Probe 2, 3)',
+    cls: Mutant_InternalClosureRollbackLeak,
+    run: (CoordClass) => {
+      const c = new CoordClass("abc");
+      let internalTicket;
+      let externalTicket;
+      const res = c._runInTransaction("outer", () => {
+        internalTicket = c._runInTransaction("internalSubAction", () => {
+          c.committedDoc.push({ tokenId: "bad", char: "!", attrs: {} });
+          return { status: "Accepted" };
+        });
+        externalTicket = c.applyInput({ type: "commit", text: "W", range: [0, 1], epoch: 0 });
+        throw new Error("OuterTxFailed");
+      });
+      assert.equal(res.status, 'Rejected');
+      assert.equal(c.docText, "Wbc", "Internal closure mutation must be cancelled and not leak on rollback!");
+      const intOutcome = c.commandOutcomes.get(internalTicket?.ticketId);
+      assert.equal(intOutcome?.status, 'Cancelled', "Internal closure ticket must be Cancelled on rollback!");
+      assert.equal(intOutcome?.reason, 'AbandonedWithTransaction', "Internal closure cancellation reason must be AbandonedWithTransaction!");
+    }
+  }
+];
+
+export function runMutationsTest() {
+  console.log(`=== Running Mutation Verification Suite (${MUTATION_SPECS.length} Mutants) ===`);
+
+  let positivePassed = 0;
+  let mutantsCaught = 0;
+  let cleanKills = 0;
+  let unrelatedCrashes = 0;
+
+  for (const spec of MUTATION_SPECS) {
+    // 1. Positive Control: unmodified CandidateBCoordinator MUST PASS
+    try {
+      spec.run(CandidateBCoordinator);
+      positivePassed++;
+    } catch (posErr) {
+      console.error(`[POSITIVE CONTROL FAILED] ${spec.name} failed on unmodified Candidate B:`, posErr.message);
+      throw new Error(`Positive control failed on ${spec.id}: ${posErr.message}`);
+    }
+
+    // 2. Negative Control: Mutant Class MUST FAIL and be caught
+    let caught = false;
+    let failureMsg = '';
+    let isAssertion = false;
+    try {
+      spec.run(spec.cls);
+    } catch (mutErr) {
+      caught = true;
+      failureMsg = mutErr.message;
+      isAssertion = (mutErr.name === 'AssertionError' || mutErr.code === 'ERR_ASSERTION');
+      if (isAssertion) {
+        cleanKills++;
+      } else {
+        unrelatedCrashes++;
+        console.warn(`[UNHANDLED CRASH] Mutant ${spec.id} threw non-assertion error (${mutErr.name}): ${mutErr.message}`);
+      }
+    }
+
+    if (caught) {
+      mutantsCaught++;
+      console.log(`[CAUGHT] ${spec.name} -> caught by invariant / assertion: ${failureMsg.slice(0, 80)}`);
+    } else {
+      console.error(`[MISSED] ${spec.name} -> ESCAPED DETECTION!`);
+    }
+  }
+
+  console.log(`\nMutation Verification Summary:`);
+  console.log(`- Positive controls: ${positivePassed}/${MUTATION_SPECS.length} passed cleanly`);
+  console.log(`- Mutants caught: ${mutantsCaught}/${MUTATION_SPECS.length} caught cleanly (${cleanKills} clean assertion kills, ${unrelatedCrashes} unrelated crashes)`);
+
+  assert.equal(positivePassed, MUTATION_SPECS.length, 'All positive controls must pass');
+  assert.equal(mutantsCaught, MUTATION_SPECS.length, 'All mutants must be caught');
+  assert.equal(cleanKills, MUTATION_SPECS.length, 'All mutants must be caught by assertions, not unhandled crashes');
+  assert.equal(unrelatedCrashes, 0, 'No unrelated unhandled crashes allowed');
+
+  return { positivePassed, mutantsCaught, cleanKills, unrelatedCrashes, total: MUTATION_SPECS.length };
+}
+
+if (process.argv[1]?.endsWith('test-mutations.mjs')) {
+  runMutationsTest();
+}

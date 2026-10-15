@@ -1,0 +1,7 @@
+InsideOnly before edit: with-hidden=[2, 3, 3] without-hidden=[2, 3, 3]
+InsideOnly delete-middle then insert: with-hidden=[2, 1, 3] without-hidden=[2, 0, 3]
+InsideOnly visible-value compaction is unsound: a fully hidden span becomes the only style for the inserted character.
+allowReplacement=false matched=true
+allowReplacement=true matched=true
+Comparisons executed: 60000
+Research probe only: randomized equivalence excludes InsideOnly, arbitrary span-handle removal, and style-range mutation. A separate InsideOnly counterexample is included. No IME or layout coverage.

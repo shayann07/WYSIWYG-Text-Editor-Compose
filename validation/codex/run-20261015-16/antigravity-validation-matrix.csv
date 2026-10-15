@@ -1,0 +1,21 @@
+Claim,Scope,Evidence,Status,Remaining requirement
+structuralTests,Executed reference contract,run-20261015-16/results.json: structuralTests,PASS (SCOPED),No native/production qualification
+overlayTests,Executed reference contract,run-20261015-16/results.json: overlayTests,PASS (SCOPED),No native/production qualification
+generatedStructuralTests,Executed reference contract,run-20261015-16/results.json: generatedStructuralTests,PASS (SCOPED),No native/production qualification
+admissionTests,Executed reference contract,run-20261015-16/results.json: admissionTests,PASS (SCOPED),No native/production qualification
+historyTests,Executed reference contract,run-20261015-16/results.json: historyTests,PASS (SCOPED),No native/production qualification
+historyExploration,Executed reference contract,run-20261015-16/results.json: historyExploration,PASS (SCOPED),No native/production qualification
+mutations,Executed reference contract,run-20261015-16/results.json: mutations,PASS (SCOPED),No native/production qualification
+G0,Production/integrated gate,plan-v4.md §8,NOT RUN,No production implementation authorized
+G1,Production/integrated gate,plan-v4.md §8,NOT RUN,No production implementation authorized
+G2,Production/integrated gate,plan-v4.md §8,NOT RUN,No production implementation authorized
+G3,Production/integrated gate,plan-v4.md §8,NOT RUN,No production implementation authorized
+G4,Production/integrated gate,plan-v4.md §8,NOT RUN,No production implementation authorized
+G5,Production/integrated gate,plan-v4.md §8,NOT RUN,No production implementation authorized
+G6,Production/integrated gate,plan-v4.md §8,NOT RUN,No production implementation authorized
+G7,Production/integrated gate,plan-v4.md §8,NOT RUN,No production implementation authorized
+G8,Production/integrated gate,plan-v4.md §8,NOT RUN,No production implementation authorized
+Legacy run-15,Historical separate model,run-20261015-15/results.json,"HISTORICAL, NOT RERUN",Do not infer new ledger/provenance coverage
+Integrated admission + structure + ledger,Single public transaction boundary,plan-v4.md §9.6,NOT RUN,Integrate separate contracts and replay failure/reentry cases
+Object seam handling,Real host and semantic node commands,plan-v4.md §4.3,NOT QUALIFIED,No silent flattening or input loss
+Schema change,ListItem Block+ product rule,plan-v4.md §4.3,DESIGN POLICY; MODEL CASES PASS,Layout/AT/import/export qualification

@@ -1,0 +1,8 @@
+{
+  "oracle": "Unmodified Unicode-hosted Java reference, Unicode 8.0; classified-token input",
+  "checkedRequests": 12418,
+  "windowChecks": 111690,
+  "directionChecks": 1749721,
+  "overflowRequestsExcluded": 2,
+  "scope": "L/R/ON, ASCII brackets, one isolating run, paragraph parity 0 and 1. Checks level parity, not all UBA levels or layout."
+}
