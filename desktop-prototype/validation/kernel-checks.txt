@@ -25,3 +25,20 @@ PASS invalid save leaves previous file intact and failed replace removes temp
 PASS oversized file and oversized document reject without giant allocation
 PASS stale window cannot overwrite a newer completed save; mid-write conflict preserves newer file
 ALL 10 file checks passed. No power-loss durability or production journal claim.
+PASS collapsed toggle changes intent only; inserted style and intent restore through Undo
+PASS style change separates contiguous typing history
+PASS logical boundary chooses one side and relocation clears explicit intent
+PASS range replacement seed ignores selection direction and supports plain paste
+PASS mixed selection toggle patches only chosen property and restores exact history
+PASS grapheme presentation preserves hidden raw styles until explicit format
+PASS format expands to cluster edges but skips paragraph separator
+PASS IME detour reuses original raw styles, unmatched units use frozen seed
+PASS format while composing waits, follows final composition extent, and undoes separately
+PASS composition abort cancels its queued formatting and absorbs its Undo credit
+PASS partial commit retains styles and frozen seed across the suffix epoch
+PASS queued Undo before format cannot retarget formatting to unrelated text or reject terminal input
+PASS native delete-to-empty saves the seed; empty Delete does not persist a mere typing toggle
+PASS delete-to-empty retains effective style, Enter carries ordinary presentation
+PASS backspace inherits surviving left; forward delete inherits surviving right
+PASS v1 prototype files remain readable; v2 restores style metadata
+ALL 16 formatting checks passed; physical IME remains unqualified.

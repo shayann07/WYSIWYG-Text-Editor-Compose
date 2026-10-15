@@ -28,11 +28,13 @@ fun runFileChecks() {
             val bytes = DocumentFiles.encode(fixture); val payload = bytes.copyOf(bytes.size - 32); change(payload)
             check(runCatching { DocumentFiles.decode(payload + MessageDigest.getInstance("SHA-256").digest(payload)) }.isFailure)
         }
-        invalid { ByteBuffer.wrap(it).putInt(4, 2) }
+        invalid { ByteBuffer.wrap(it).putInt(4, 3) }
         invalid { ByteBuffer.wrap(it).putInt(8, Int.MAX_VALUE) }
         invalid { ByteBuffer.wrap(it).putInt(8, -1) }
-        invalid { it[14] = 8 }
-        invalid { it[14] = UnitKind.PARAGRAPH_BREAK.ordinal.toByte() }
+        invalid { it[15] = 8 }
+        invalid { it[15] = UnitKind.PARAGRAPH_BREAK.ordinal.toByte() }
+        invalid { it[16] = 8 }
+        invalid { it[12] = 8 }
     }
     test("save-point follows written snapshot, not later edits or selection") {
         val e = EditorEngine(fixture); val point = SavePoint(fixture)
@@ -75,7 +77,7 @@ fun runFileChecks() {
             Files.list(root).use { paths -> check(paths.noneMatch { it.fileName.toString().endsWith(".tmp") }) }
         }
         test("oversized file and oversized document reject without giant allocation") {
-            val huge = root.resolve("oversize.astra"); Files.write(huge, ByteArray(300_045))
+            val huge = root.resolve("oversize.astra"); Files.write(huge, ByteArray(400_046))
             check(runCatching { DocumentFiles.read(huge) }.isFailure)
             check(runCatching { DocumentFiles.encode(document("a".repeat(DocumentFiles.MAX_UNITS + 1))) }.isFailure)
         }

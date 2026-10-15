@@ -10,19 +10,20 @@ import java.security.MessageDigest
 object DocumentFiles {
     const val MAX_UNITS = 100_000
     private const val MAGIC = 0x41535450 // ASTP
-    private const val VERSION = 1
-    private const val HEADER = 12
+    private const val VERSION = 2
+    private const val HEADER = 13
     private const val DIGEST = 32
-    private const val MAX_BYTES = HEADER + MAX_UNITS * 3 + DIGEST
+    private const val MAX_BYTES = HEADER + MAX_UNITS * 4 + DIGEST
 
     fun encode(document: Document): ByteArray {
         require(document.units.size <= MAX_UNITS) { "Prototype files are limited to $MAX_UNITS UTF-16 units." }
         val bytes = ByteArrayOutputStream()
         DataOutputStream(bytes).use { out ->
             out.writeInt(MAGIC); out.writeInt(VERSION); out.writeInt(document.units.size)
+            out.writeByte(document.startStyle.bits)
             document.units.forEach { unit ->
                 require(unit.kind != UnitKind.PARAGRAPH_BREAK || unit.char == '\n') { "Invalid paragraph break" }
-                out.writeChar(unit.char.code); out.writeByte(unit.kind.ordinal)
+                out.writeChar(unit.char.code); out.writeByte(unit.kind.ordinal); out.writeByte(unit.style.bits)
             }
         }
         val payload = bytes.toByteArray()
@@ -30,21 +31,23 @@ object DocumentFiles {
     }
 
     fun decode(bytes: ByteArray): Document {
-        require(bytes.size in HEADER + DIGEST..MAX_BYTES) { "Invalid or oversized prototype file" }
+        require(bytes.size in 12 + DIGEST..MAX_BYTES) { "Invalid or oversized prototype file" }
         val payload = bytes.copyOfRange(0, bytes.size - DIGEST)
         require(MessageDigest.isEqual(MessageDigest.getInstance("SHA-256").digest(payload), bytes.copyOfRange(payload.size, bytes.size))) { "File checksum failed; document was not opened." }
         return DataInputStream(ByteArrayInputStream(payload)).use { input ->
             require(input.readInt() == MAGIC) { "Not an Astra prototype file" }
-            require(input.readInt() == VERSION) { "Unsupported prototype file version" }
+            val version = input.readInt(); require(version in 1..VERSION) { "Unsupported prototype file version" }
             val count = input.readInt()
-            require(count in 0..MAX_UNITS && payload.size == HEADER + count * 3) { "Invalid file length" }
+            require(count in 0..MAX_UNITS && payload.size == (if (version == 1) 12 + count * 3 else HEADER + count * 4)) { "Invalid file length" }
+            val startStyle = if (version == 1) TextStyleFlags() else TextStyleFlags.fromBits(input.readUnsignedByte())
             Document(List(count) { index ->
                 val char = input.readChar(); val tag = input.readUnsignedByte()
                 require(tag in UnitKind.entries.indices) { "Unknown unit kind" }
                 val kind = UnitKind.entries[tag]
                 require(kind != UnitKind.PARAGRAPH_BREAK || char == '\n') { "Invalid paragraph break" }
-                TextUnit(index.toLong() + 1, char, kind)
-            })
+                val style = if (version == 1) TextStyleFlags() else TextStyleFlags.fromBits(input.readUnsignedByte())
+                TextUnit(index.toLong() + 1, char, kind, style)
+            }, startStyle)
         }
     }
 

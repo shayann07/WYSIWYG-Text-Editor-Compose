@@ -43,7 +43,18 @@ fun runHostChecks(surface: EditorSurface) {
     surface.dispatchEvent(KeyEvent(surface,KeyEvent.KEY_PRESSED,System.currentTimeMillis(),KeyEvent.CTRL_DOWN_MASK or KeyEvent.ALT_DOWN_MASK or KeyEvent.ALT_GRAPH_DOWN_MASK,KeyEvent.VK_A,'a'))
     check(e.snapshot().selection==Selection(1,1)) { "AltGr+A must not run Select All" }
     e.perform(EditAction.Undo);check(e.snapshot().visible.text.isEmpty())
-    val report="{\"status\":\"PASS\",\"committedSliceQueries\":$queries,\"imeEvents\":7,\"rawFFFF\":\"PASS\",\"invalidCaretRejected\":\"PASS\",\"altGrShortcutIsolation\":\"PASS\",\"scope\":\"Attached AWT host and real Compose layout; synthetic IME event stream, not a physical OS IME\"}"
+    e.replace("Styled","Fixture");e.selectAll()
+    fun shortcut(key:Int){surface.dispatchEvent(KeyEvent(surface,KeyEvent.KEY_PRESSED,System.currentTimeMillis(),KeyEvent.CTRL_DOWN_MASK,key,KeyEvent.CHAR_UNDEFINED))}
+    shortcut(KeyEvent.VK_B);shortcut(KeyEvent.VK_I)
+    check(e.snapshot().visible.units.all { it.style==TextStyleFlags(true,true) })
+    val styledLayout=checkNotNull(surface.view.measure).invoke(e.snapshot()).layout
+    check(styledLayout.layoutInput.text.spanStyles.single().item.fontWeight==androidx.compose.ui.text.font.FontWeight.Bold)
+    check(styledLayout.layoutInput.text.spanStyles.single().item.fontStyle==androidx.compose.ui.text.font.FontStyle.Italic)
+    check(surface.getTextLocation(null).height>0)
+    shortcut(KeyEvent.VK_Z);check(e.snapshot().visible.units.all { it.style==TextStyleFlags(bold=true) })
+    shortcut(KeyEvent.VK_Z);check(e.snapshot().visible.units.all { it.style==TextStyleFlags() })
+    shortcut(KeyEvent.VK_Z);check(e.snapshot().visible.text.isEmpty())
+    val report="{\"status\":\"PASS\",\"committedSliceQueries\":$queries,\"imeEvents\":7,\"rawFFFF\":\"PASS\",\"invalidCaretRejected\":\"PASS\",\"altGrShortcutIsolation\":\"PASS\",\"formatShortcutsLayoutUndo\":\"PASS\",\"scope\":\"Attached AWT host and real Compose layout; synthetic IME event stream, not a physical OS IME\"}"
     File("desktop-prototype/target/host-checks.json").apply {parentFile.mkdirs();writeText(report)}
     println(report)
     surface.writeDiagnostics()

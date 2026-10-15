@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "checks": [
+    "Ctrl+B bold visible and selection retained",
+    "Ctrl+I adds italic without losing bold",
+    "Ctrl+Z removes italic only",
+    "Ctrl+Y restores italic",
+    "real Save dialog writes v2 document",
+    "independent Python decoder verifies text, all 31 style bitfields and checksum",
+    "Open creates a new window visibly retaining bold and italic; empty Undo"
+  ],
+  "scope": "Windows real keyboard shortcuts, dialogs and Compose rendering; no physical OS IME",
+  "fileVersion": 2,
+  "savedUnits": 31,
+  "sha256": "0f8018719d8af7207352b48d7f924e5b4caa5e85e6c1d8307b574170afc46641",
+  "visualIssueFixedAfterWalkthrough": "Missing checkmark glyph replaced by plain on/mixed labels"
+}

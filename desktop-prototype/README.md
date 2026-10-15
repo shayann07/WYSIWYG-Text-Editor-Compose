@@ -1,6 +1,6 @@
 # Astra Editor — the first desktop prototype
 
-This is a real, local window you can type into. It is the first runnable desktop slice of frozen v5, not the complete rich-text editor.
+This is a real, local window you can type into. It is a small desktop slice of frozen v5 with bold/italic, not the complete rich-text editor.
 
 ## Open it
 
@@ -8,7 +8,7 @@ On this machine, double-click **run.cmd** in this folder. It builds the Kotlin c
 
 Use **Save / Ctrl+S** to save an `.astra` prototype document and **Open / Ctrl+O** to reopen it. **Ctrl+Shift+S** saves a separate copy. Open always creates another window; it never replaces your unsaved document. Closing a modified document asks Save / Discard / Cancel.
 
-There is **no autosave or crash recovery** yet. Save explicitly. Prototype files preserve raw UTF-16 and paragraph/soft-break tags, but do not store Undo history or caret position. They are a versioned prototype format, not the final v5 production container. Files are limited to 100,000 UTF-16 units; this is an explicit prototype limit, not a change to v5.
+There is **no autosave or crash recovery** yet. Save explicitly. Prototype files preserve raw UTF-16 and paragraph/soft-break tags, but do not store Undo history or caret position. They are a versioned prototype format, not the final v5 production container. New files use format version 2 with raw bold/italic and empty-block styles; version 1 files still open. Files are limited to 100,000 UTF-16 units; this is an explicit prototype limit, not a change to v5.
 
 Close running prototype windows before rebuilding with the launcher. Do not save documents under `desktop-prototype/target`: it is disposable build output and the launcher cleans it.
 
@@ -18,7 +18,8 @@ Close running prototype windows before rebuilding with the launcher. Do not save
 - Click to place the cursor; drag to select. Double-click selects a word.
 - Arrow keys move the cursor. Shift+arrows extend selection. Home/End and Ctrl+Home/End work.
 - Ctrl+Z undoes; Ctrl+Shift+Z or Ctrl+Y redoes. Undo restores selection direction too.
-- Ctrl+A/C/X/V select all, copy, cut and paste plain text. The toolbar has Open, Save, Undo, Redo, Copy and Paste.
+- Ctrl+A/C/X/V select all, copy, cut and paste plain text. The toolbar has Open, Save, Undo, Redo, Bold, Italic, Copy and Paste.
+- Ctrl+B / Ctrl+I toggle bold / italic. With a selection they format text; at a caret they change new typing. Toolbar labels show on or mixed state. Undo restores formatting and selection.
 - Backspace/Delete operate on whole graphemes, including emoji ZWJ sequences.
 - Scroll with the mouse wheel; typing brings the caret back into view.
 
@@ -51,15 +52,15 @@ The pom explicitly aligns AndroidX runtime, runtime-saveable and runtime-retain 
 
 ## Verified and still open
 
-See [validation/continuation-report.md](validation/continuation-report.md), the initial [validation/report.md](validation/report.md), and recorded check results.
+See [validation/formatting-report.md](validation/formatting-report.md), [validation/continuation-report.md](validation/continuation-report.md), the initial [validation/report.md](validation/report.md), and recorded check results.
 
 - Passed: 15 kernel checks, including 1,000 deterministic edits/Undo and all 1,093 Unicode 16 grapheme fixtures.
 - Passed: attached AWT host plus real Compose layout, 15 committed-text slice queries, seven **synthetic** input-method events, partial acceptance, composition Undo and a raw surrogate-caret navigation regression.
 - Passed in the real Windows window: typed-key input, clipboard insertion, mouse placement/drag selection, keyboard backward selection, replacement, Undo restoring selection, Redo, paragraph navigation and emoji deletion/restoration.
 - Not qualified: a physical Chinese/Japanese/etc. OS IME, candidate popups across native lifecycle changes, editable screen-reader behavior, Linux/macOS, large-document end-to-end latency or power-loss durability.
 
-Additional checks cover 10 file groups, 2,000 generated composition sessions through Save/Open and Undo/Redo, and a real Save/reopen/unsaved-close walkthrough.
+Additional checks cover 10 file groups, 16 formatting groups, 2,000 generated composition sessions, 12,000 randomized range-format commands with exact Undo, and real Save/Open and formatting walkthroughs.
 
 Saving writes a sibling temporary file, forces it, then atomically replaces the destination. Unsupported atomic replacement fails rather than truncating the original. Checksums detect corruption. A completed external change since Open/Save causes ordinary Save to refuse; Save As lets you choose a separate copy. This conflict check is best effort, not a filesystem compare-and-swap guarantee against a writer racing the final rename. Directory durability and power failure remain unqualified.
 
-This is a plain-text prototype: formatting, tables, the full hierarchical/persistent kernel, the complete v5 command catalog, resource management and durable recovery are not implemented here. The frozen v5 documents are unchanged. No production release gate is declared passed.
+This is a limited rich-text prototype: links, additional styling, tables, the full hierarchical/persistent kernel, the complete v5 command catalog, resource management and durable recovery are not implemented here. The frozen v5 documents are unchanged. No production release gate is declared passed.

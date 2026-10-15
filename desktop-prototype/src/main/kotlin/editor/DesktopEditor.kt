@@ -13,6 +13,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
@@ -34,6 +36,19 @@ import kotlin.math.*
 private fun displayText(text: String): String = buildString {
     var i = 0
     while (i < text.length) { val c = text[i]; if (Character.isHighSurrogate(c) && i + 1 < text.length && Character.isLowSurrogate(text[i + 1])) { append(c); append(text[++i]) } else append(if (Character.isSurrogate(c)) '\ufffd' else c); i++ }
+}
+
+internal fun attributedDisplay(document: Document): AnnotatedString = buildAnnotatedString {
+    append(displayText(document.text))
+    val runs = displayedStyles(document)
+    var start = 0
+    while (start < runs.size) {
+        var end = start + 1
+        while (end < runs.size && runs[end].start == runs[end - 1].end && runs[end].style == runs[start].style) end++
+        val style = runs[start].style
+        if (style.bold || style.italic) addStyle(SpanStyle(fontWeight = if (style.bold) FontWeight.Bold else FontWeight.Normal, fontStyle = if (style.italic) FontStyle.Italic else FontStyle.Normal), runs[start].start, runs[end - 1].end)
+        start = end
+    }
 }
 data class Geometry(val layout: TextLayoutResult, val x: Float, val y: Float, val scale: Float, val revision: Long) {
     fun caret(offset: Int, primary: Boolean = true): androidx.compose.ui.geometry.Rect {
@@ -64,7 +79,7 @@ private fun DocumentCanvas(state: ViewState) {
         val textWidth = (pageWidth - padding * 2).roundToInt().coerceAtLeast(1)
         val style = TextStyle(color = ComposeColor(0xff202b3c), fontFamily = FontFamily.SansSerif, fontSize = 18.sp, lineHeight = 30.sp, textDirection = TextDirection.Content)
         fun measure(frame: EditorFrame): Geometry {
-            val layout = synchronized(measurer) { measurer.measure(AnnotatedString(displayText(frame.visible.text)), style = style, constraints = Constraints(maxWidth = textWidth)) }
+            val layout = synchronized(measurer) { measurer.measure(attributedDisplay(frame.visible), style = style, constraints = Constraints(maxWidth = textWidth)) }
             return Geometry(layout, pageLeft + padding, 28.dp.toPx() + padding - state.scroll * scale, scale, frame.documentRevision)
         }
         state.measure = ::measure
@@ -172,6 +187,8 @@ class EditorSurface(val engine: EditorEngine, val view: ViewState, private val d
                 when {
                     command && e.keyCode == KeyEvent.VK_S -> requestSave(e.isShiftDown)
                     command && e.keyCode == KeyEvent.VK_O -> requestOpen()
+                    command && e.keyCode == KeyEvent.VK_B -> engine.toggleFormat(FormatKey.BOLD)
+                    command && e.keyCode == KeyEvent.VK_I -> engine.toggleFormat(FormatKey.ITALIC)
                     command && e.keyCode == KeyEvent.VK_Z -> engine.perform(if (e.isShiftDown) EditAction.Redo else EditAction.Undo)
                     command && e.keyCode == KeyEvent.VK_Y -> engine.perform(EditAction.Redo)
                     command && e.keyCode == KeyEvent.VK_A -> engine.selectAll()
@@ -199,7 +216,7 @@ class EditorSurface(val engine: EditorEngine, val view: ViewState, private val d
                     val text = published.visible.text; val words = BreakIterator.getWordInstance().apply { setText(text) }
                     val a = words.preceding((pos + 1).coerceAtMost(text.length)).let { if (it < 0) 0 else it }; val b = words.following(pos).let { if (it < 0) text.length else it }
                     dragAnchor = a; engine.move(Selection(a, b))
-                } else { dragAnchor = if (e.isShiftDown) published.selection.anchor else pos; engine.move(Selection(dragAnchor, pos)) }
+                } else { dragAnchor = if (e.isShiftDown) published.selection.anchor else pos; engine.move(Selection(dragAnchor, pos), side = pointerSide(e.point, pos)) }
             }
         })
         addMouseMotionListener(object : MouseMotionAdapter() { override fun mouseDragged(e: MouseEvent) {
@@ -216,6 +233,12 @@ class EditorSurface(val engine: EditorEngine, val view: ViewState, private val d
         val at = g.layout.getOffsetForPosition(Offset(point.x * g.scale - g.x, point.y * g.scale - g.y)).coerceIn(0, published.visible.units.size)
         val a = Graphemes.snap(published.visible.text, at, false); val b = Graphemes.snap(published.visible.text, at, true)
         return if (abs(g.caret(a).left - point.x * g.scale) < abs(g.caret(b).left - point.x * g.scale)) a else b
+    }
+    private fun pointerSide(point: Point, offset: Int): TypingSide {
+        val g = geometry() ?: return TypingSide.LEFT
+        val rightOfCaret = point.x * g.scale >= g.caret(offset).left
+        val rtl = g.layout.getBidiRunDirection(offset) == androidx.compose.ui.text.style.ResolvedTextDirection.Rtl
+        return if (rightOfCaret != rtl) TypingSide.RIGHT else TypingSide.LEFT
     }
     private data class Stop(val offset: Int, val x: Float, val line: Int, val primary: Boolean)
     private fun stops(g: Geometry): List<Stop> = Graphemes.stops(published.visible.text).flatMap { offset ->
@@ -240,13 +263,13 @@ class EditorSurface(val engine: EditorEngine, val view: ViewState, private val d
             else -> { val x = preferredX ?: here.x.also { preferredX = it }; val line = (here.line + if (key == KeyEvent.VK_UP) -1 else 1).coerceIn(0, g.layout.lineCount - 1); target = all.filter { it.line == line }.minByOrNull { abs(it.x - x) } ?: here }
         }
         if (key !in arrayOf(KeyEvent.VK_UP, KeyEvent.VK_DOWN)) preferredX = null
-        engine.move(Selection(if (extend) Graphemes.snap(text, s.anchor, false) else target.offset, target.offset, target.primary), target.primary)
+        engine.move(Selection(if (extend) Graphemes.snap(text, s.anchor, false) else target.offset, target.offset, target.primary), target.primary, if (target.offset < s.focus) TypingSide.RIGHT else TypingSide.LEFT)
     }
     private fun wordDelete(back: Boolean) {
         val text = published.visible.text; val at = published.selection.focus
         val word = BreakIterator.getWordInstance().apply { setText(text) }
         val other = (if (back) word.preceding(at) else word.following(at)).let { if (it < 0) if (back) 0 else text.length else it }
-        engine.replace("", "Delete", range = Selection(at, other))
+        engine.replace("", "Delete", range = Selection(at, other), deleteSide = if (back) TypingSide.LEFT else TypingSide.RIGHT)
     }
     fun copySelection(cut: Boolean) {
         val s = published.selection; if (s.collapsed) return
@@ -338,16 +361,21 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
     val open=button("Open","Open a document in a new window (Ctrl+O)"){files.open()}
     val save=button("Save","Save document (Ctrl+S); Save As: Ctrl+Shift+S"){files.save()}
     val undo=button("Undo","Ctrl+Z"){engine.perform(EditAction.Undo)};val redo=button("Redo","Ctrl+Shift+Z or Ctrl+Y"){engine.perform(EditAction.Redo)}
+    val bold=button("Bold","Toggle bold (Ctrl+B)"){engine.toggleFormat(FormatKey.BOLD)}
+    val italic=button("Italic","Toggle italic (Ctrl+I)"){engine.toggleFormat(FormatKey.ITALIC)}
     button("Copy","Copy selected text (Ctrl+C)"){surface.copySelection(false)};button("Paste","Paste plain text (Ctrl+V)"){surface.paste()};header.add(buttons,BorderLayout.EAST)
     val footer=JPanel(BorderLayout()).apply {background=bg;border=EmptyBorder(10,24,10,24)}
     val position=JLabel();val notice=JLabel();listOf(position,notice).forEach {it.font=Font("Segoe UI",Font.PLAIN,12);it.foreground=Color(0x64748b)}
     footer.add(position,BorderLayout.WEST);footer.add(notice,BorderLayout.EAST)
     files=WindowFiles(window,engine,initialPath){surface.statusChanged(engine.snapshot())}
     surface.requestSave={files.save(it)};surface.requestOpen={files.open()}
-    surface.statusChanged={f->val before=f.visible.text.take(f.selection.focus);val line=before.count {it=='\n'}+1;val col=Graphemes.stops(before.substringAfterLast('\n')).size;position.text="Line $line · Column $col"+(if(f.selection.collapsed)"" else " · ${f.selection.end-f.selection.start} selected");notice.text=if(f.notice=="Ready")files.status else f.notice;title.text=files.name;window.title="${files.name} — Astra Editor";open.isEnabled=!files.busy;save.isEnabled=!files.busy;undo.isEnabled=f.undoCount>0||f.marked!=null;redo.isEnabled=f.redoCount>0&&f.marked==null}
+    surface.statusChanged={f->val before=f.visible.text.take(f.selection.focus);val line=before.count {it=='\n'}+1;val col=Graphemes.stops(before.substringAfterLast('\n')).size;position.text="Line $line · Column $col"+(if(f.selection.collapsed)"" else " · ${f.selection.end-f.selection.start} selected");notice.text=files.status+(if(f.notice=="Ready")"" else " · ${f.notice}");title.text=files.name;window.title="${files.name} — Astra Editor";open.isEnabled=!files.busy;save.isEnabled=!files.busy;undo.isEnabled=f.undoCount>0||f.marked!=null;redo.isEnabled=f.redoCount>0&&f.marked==null
+        fun label(name: String, key: FormatKey) = when(engine.formatState(key)) { true -> "$name on"; false -> name; null -> "$name mixed" }
+        bold.text=label("Bold",FormatKey.BOLD);italic.text=label("Italic",FormatKey.ITALIC)
+    }
     surface.statusChanged(engine.snapshot())
     return window.apply {
-        minimumSize=Dimension(760,400)
+        minimumSize=Dimension(940,400)
         contentPane=JPanel(BorderLayout()).apply {add(header,BorderLayout.NORTH);add(layers,BorderLayout.CENTER);add(footer,BorderLayout.SOUTH)}
         pack();setLocationRelativeTo(null);isVisible=true
         addWindowListener(object:WindowAdapter(){override fun windowClosed(e:WindowEvent){compose.dispose()}})

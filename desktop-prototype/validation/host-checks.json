@@ -1,1 +1,1 @@
-{"status":"PASS","committedSliceQueries":15,"imeEvents":7,"rawFFFF":"PASS","invalidCaretRejected":"PASS","altGrShortcutIsolation":"PASS","scope":"Attached AWT host and real Compose layout; synthetic IME event stream, not a physical OS IME"}
+{"status":"PASS","committedSliceQueries":15,"imeEvents":7,"rawFFFF":"PASS","invalidCaretRejected":"PASS","altGrShortcutIsolation":"PASS","formatShortcutsLayoutUndo":"PASS","scope":"Attached AWT host and real Compose layout; synthetic IME event stream, not a physical OS IME"}

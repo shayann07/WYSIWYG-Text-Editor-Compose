@@ -1,11 +1,11 @@
 {
   "status": "PASS",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "command": "desktop-prototype\\run.cmd",
   "windowTitle": "Untitled \u2014 Astra Editor",
   "process": "javaw.exe",
-  "windowIdAtObservation": 8980844,
+  "windowIdAtObservation": 10029420,
   "diagnosticsEnabled": false,
-  "observed": "Fresh empty document, Open and Save controls, no user document modified",
-  "scope": "Normal Windows launcher and rendered window"
+  "observed": "Fresh empty document; Save/Open/Bold/Italic controls. Bold on label readable; toggled back off. No user document modified.",
+  "scope": "Normal Windows launcher and real rendered window"
 }

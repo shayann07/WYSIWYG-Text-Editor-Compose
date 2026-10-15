@@ -5,7 +5,7 @@ import javax.swing.SwingUtilities
 import javax.swing.UIManager
 
 fun main(args: Array<String>) {
-    if ("--check" in args) { runChecks(); runFileChecks(); return }
+    if ("--check" in args) { runChecks(); runFileChecks(); runFormatChecks(); return }
     if ("--stress" in args) { runStressChecks(); return }
     val diagnostics = args.indexOf("--diagnostics").takeIf { it >= 0 }?.let { File(args[it + 1]) }
     SwingUtilities.invokeLater {

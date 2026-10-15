@@ -41,6 +41,28 @@ fun runStressChecks() {
     check(Graphemes.stops("🇦🇦\u0301🇦🇦") == listOf(0, 5, 9))
     check(Graphemes.stops("🇦\n🇦🇦") == listOf(0, 2, 3, 7))
     println("PASS regional-indicator parity resets across extending marks and hard breaks")
+    repeat(200) {
+        val raw="abcdefghijklmnopqrstuvwxyz"
+        var expected=raw.map { TextStyleFlags(random.nextBoolean(),random.nextBoolean()) }
+        val initial=Document(raw.mapIndexed { i,c -> TextUnit(i.toLong(),c,style=expected[i]) })
+        val e=EditorEngine(initial);val history=ArrayList<Pair<List<TextStyleFlags>,Selection>>()
+        repeat(60) {
+            var a=random.nextInt(raw.length+1);var b=random.nextInt(raw.length+1)
+            if(a==b){a=0;b=raw.length}
+            val s=Selection(a,b);val key=FormatKey.entries.random(random)
+            val value=!expected.subList(s.start,s.end).all { it.get(key) }
+            val next=expected.mapIndexed { index,style -> if(index in s.start until s.end) style.patch(key,value) else style }
+            if(next!=expected)history+=expected to s
+            e.move(s);e.toggleFormat(key);expected=next
+            check(e.snapshot().visible.units.map { it.style }==expected)
+            check(DocumentFiles.decode(DocumentFiles.encode(e.snapshot().committed)).same(e.snapshot().committed))
+        }
+        for((styles,selection) in history.asReversed()) {
+            e.perform(EditAction.Undo);check(e.snapshot().visible.units.map { it.style }==styles);check(e.snapshot().selection==selection)
+        }
+        check(e.snapshot().visible.same(initial))
+    }
+    println("PASS 12000 randomized range-format commands against an independent style-array oracle, file roundtrip and exact Undo")
     // Timings are observations, not flaky pass/fail gates. This deliberately stresses GB12/13.
     Graphemes.stops("warm up")
     for (count in listOf(2_000, 8_000, 32_000)) {

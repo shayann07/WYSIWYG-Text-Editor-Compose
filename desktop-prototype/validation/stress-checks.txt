@@ -1,5 +1,6 @@
 PASS 2000 generated raw-UTF16 composition sessions: detours, partial acceptance, abort/commit, Save/Open, exact Undo/Redo
 PASS regional-indicator parity resets across extending marks and hard breaks
-Regional indicators: 2000 scalars / 4000 UTF-16 units; 10.009 ms
-Regional indicators: 8000 scalars / 16000 UTF-16 units; 21.366 ms
-Regional indicators: 32000 scalars / 64000 UTF-16 units; 47.194 ms
+PASS 12000 randomized range-format commands against an independent style-array oracle, file roundtrip and exact Undo
+Regional indicators: 2000 scalars / 4000 UTF-16 units; 2.885 ms
+Regional indicators: 8000 scalars / 16000 UTF-16 units; 14.879 ms
+Regional indicators: 32000 scalars / 64000 UTF-16 units; 23.549 ms
