@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "launcher": "run.cmd",
+  "mode": "Normal launch with runtime jars and no raw document diagnostics",
+  "observedWindow": "Astra Editor \u2014 Desktop Prototype",
+  "process": "javaw.exe",
+  "initialDocument": "empty",
+  "initialUndoRedo": "disabled",
+  "frozenV5Modified": false
+}

@@ -47,6 +47,8 @@ Verified mouse placement/drag selection, Shift+Left backward selection, typing r
 4. Visual navigation from a raw mid-surrogate native position could fall back to the beginning of the document. User navigation now snaps to a legal grapheme edge before selecting a visual stop; a host regression covers it.
 5. Windows PowerShell's script policy blocked the initial wrapper. The default launcher now uses an ordinary batch build/launch path without changing that policy.
 
+6. Windows batch set /p truncated the long dependency classpath. The default launcher now copies runtime dependencies with group-prefixed filenames and uses a short Java wildcard classpath. This also avoids basename collisions between AndroidX and JetBrains artifacts.
+
 No architecture redesign or frozen-spec change was needed. The prototype uses a narrow array/snapshot Kotlin kernel; it is not a claim that the persistent, fully attributed v5 engine has been implemented.
 
 ## Remaining scope

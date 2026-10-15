@@ -7,10 +7,9 @@ where mvn.cmd >nul 2>nul
 if errorlevel 1 goto missing
 set "EDITOR_MVN=mvn.cmd"
 :build
-call "%EDITOR_MVN%" -f "%~dp0pom.xml" -q -B -ntp compile dependency:build-classpath -Dmdep.outputFile=target/classpath.txt
+call "%EDITOR_MVN%" -f "%~dp0pom.xml" -q -B -ntp compile dependency:copy-dependencies -DincludeScope=runtime -DoutputDirectory=target/lib -Dmdep.prependGroupId=true
 if errorlevel 1 goto failed
-set /p "EDITOR_CP="<"%~dp0target\classpath.txt"
-set "CLASSPATH=%~dp0target\classes;%EDITOR_CP%"
+set "CLASSPATH=%~dp0target\classes;%~dp0target\lib\*"
 if /I "%~1"=="--check" goto check
 start "" javaw.exe editor.MainKt
 if errorlevel 1 goto failed
