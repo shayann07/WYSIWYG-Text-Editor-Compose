@@ -1,0 +1,1 @@
+PASS: TextHitInfo.beforeOffset(0) = trailing(-1), insertion 0; TextLayout accepts both boundary aliases. Not a live IME test.

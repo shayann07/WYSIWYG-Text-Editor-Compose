@@ -1,0 +1,19 @@
+Area,Decision,Evidence,Remaining gate,Reopen condition
+Composition/anchors/history,FROZEN CONTRACT,22 accepted + independent regressions; retained suites,G2/G3 implementation and broad differential traces,Concrete trace violates a frozen invariant
+Unicode graphemes,FROZEN Unicode 16 policy,1093 official fixtures; hashed reference tables,G1 Kotlin tables; word/bidi and platform integration,Official pinned-corpus or differential failure
+Hierarchy/index,FROZEN measure/membership contract,100 oracle trees and 4147 ranks; reviewed prototype is limited,"G1/G8 persistent implementation, depth counters, memory",Current-version locator failure or unmet measured bounds
+Durability/recovery,FROZEN protocol and committed-first policy,17 simulated scenarios; 1145 tear cuts,G7 physical write/flush/replace/IndexedDB qualification,"Acknowledgement loss, chain violation, lost recovery draft"
+Native input,CONDITIONAL BACKEND,Headless state traces; JDK hit alias; primary API review,G0/G5 real Android/iOS/Desktop provenance and cell/gap hosting,No bridge can implement exact semantics without loss
+Web/AT,CONDITIONAL BACKEND,Protected-node contract; reviewer synthetic DOM evidence only,"G0/G5/G6 actual IME, DOM and accessibility",Node preservation/provenance/AT requirements not implementable
+Import/resources,FROZEN normalized-fragment contract,Rich fragment regression tests,"G6 HTML, clipboard, codecs, resource I/O and round trips",Conversion loses required structure/attribution or violates budgets
+Layout/performance,UNQUALIFIED RELEASE GATE,Historical full-layout evidence; synthetic shaper hypothesis,G4/G8 full pipeline and device budgets,No qualified backend meets fixed product envelope
+Physical memory,UNQUALIFIED RELEASE GATE,Bounded ownership/serialized charges only,G1/G8 actual runtime heap/GC and reclamation,Owners retain evicted roots or exceed measured budget
+G0,OPEN / NOT PRODUCTION QUALIFIED,See specification section 8,G0,"Failure requires evidence, correction and regression"
+G1,OPEN / NOT PRODUCTION QUALIFIED,See specification section 8,G1,"Failure requires evidence, correction and regression"
+G2,OPEN / NOT PRODUCTION QUALIFIED,See specification section 8,G2,"Failure requires evidence, correction and regression"
+G3,OPEN / NOT PRODUCTION QUALIFIED,See specification section 8,G3,"Failure requires evidence, correction and regression"
+G4,OPEN / NOT PRODUCTION QUALIFIED,See specification section 8,G4,"Failure requires evidence, correction and regression"
+G5,OPEN / NOT PRODUCTION QUALIFIED,See specification section 8,G5,"Failure requires evidence, correction and regression"
+G6,OPEN / NOT PRODUCTION QUALIFIED,See specification section 8,G6,"Failure requires evidence, correction and regression"
+G7,OPEN / NOT PRODUCTION QUALIFIED,See specification section 8,G7,"Failure requires evidence, correction and regression"
+G8,OPEN / NOT PRODUCTION QUALIFIED,See specification section 8,G8,"Failure requires evidence, correction and regression"

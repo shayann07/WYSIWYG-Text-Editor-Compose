@@ -1,0 +1,12 @@
+{
+  "reviews\\gemini-v5-readiness\\probe-hierarchical-storage-and-recovery.mjs": "f3757982906cd485a8251c4ff9abbaca632dd358d172b7b81acf1637a9b5d9e6",
+  "reviews\\gemini-v5-readiness\\probe-interactions-and-unicode.mjs": "2e82fdbd2acc2a12b5b105232e8fbf156d23ed902bd48ffe2216d7096c4c34ad",
+  "reviews\\gemini-v5-readiness\\probe-shaper-and-performance.cpp": "9957c4df67794b7f3abdb8023a5af16ada6f7b6c1863fb37f5abf07c92e0a8db",
+  "reviews\\gemini-v5-readiness\\probe_chromium_dom.py": "d8fe0c285c7f4fa3bfd829f30bdcd0239ee49bee0ecf849bd24fc8563e1361e2",
+  "reviews\\gemini-v5-readiness\\proposed-v5-amendments.md": "0d5102326261b14f20253a816368806d7d1fa0e31dc228e70015b3dbc6add9c4",
+  "reviews\\gemini-v5-readiness\\README.md": "71f8d26967e26cba711a23a34860021b6953c4d71161fc295cece372213a3a3a",
+  "reviews\\gemini-v5-readiness\\repaired-document-model.mjs": "2db957c1718a8c285966119b0aa99a6d69b5a5ede7fa3afd7246e39cdda49a5f",
+  "reviews\\gemini-v5-readiness\\results.json": "bf80b5918ba01d3ddd821c7b5b599491dd630be0c1e0a0d5d0ce773700f750cb",
+  "reviews\\gemini-v5-readiness\\run-all.mjs": "0bb83a5bc238abf01bc73f86bff495d8f52ece7ffe5a26950925f7aa08bc3dd3",
+  "reviews\\gemini-v5-readiness\\v5-freeze-readiness-report.md": "0d5102326261b14f20253a816368806d7d1fa0e31dc228e70015b3dbc6add9c4"
+}

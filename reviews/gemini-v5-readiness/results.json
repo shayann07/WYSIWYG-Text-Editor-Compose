@@ -1,0 +1,416 @@
+{
+  "baselineCommit": "b66b790068908e45dd8642d3410bc53f609c700f",
+  "reviewBranch": "review/gemini-v5-readiness",
+  "environment": {
+    "node": "v18.20.4",
+    "platform": "linux/x64",
+    "gpp": "g++ (Debian 12.2.0-14+deb12u1) 12.2.0",
+    "chromium": {
+      "name": "chrome",
+      "version": "154.0.8037.92",
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36"
+    }
+  },
+  "baselinePreservationVerified": {
+    "plan-v4.md": "16dcbd9c0504df8e5aa8fcf21780922e7fc4c4aadef26ad3cafb493b21a9d3c1",
+    "antigravity-validation-report.md": "150cf273ef948dca75c30eebf7ed20275773dca67f5b4c7d461c8d284de256b2",
+    "antigravity-validation-matrix.csv": "08b3887fd38b0bd9ba2b0648d20f1ff30e295b6a136104e44f2db56acd466035",
+    "validation/codex/run-20261015-19/results.json": "37dd704a2e00ab3e48fca25862cf81a216d84ed4fe40c2ba4965079cff8625be",
+    "validation/codex/run-20261015-19/document-contract.md": "1d1fab8012dc13473090b74205fe6dbad6cd663b7ac7882ced97e25a4e7cf7ad",
+    "editor-4.15.0-standalone-review.md": "637ebec819c9eee544bb39e3964207f689be8e2bd63138d6e920b20d1fb42154"
+  },
+  "probes": {
+    "interactionAndUnicode": {
+      "counterexamplesReproducedOnBaseline": 25,
+      "counterexamplesRepaired": 25,
+      "inheritedCasesOnRepairedModel": 35,
+      "fuzzInteractionTraces": 60,
+      "counterexampleDetails": [
+        {
+          "name": "F01A_candidateDetourPreservesAnnotationsAnchorsAndRevision",
+          "reproducedOnBaseline": true,
+          "baselineFailure": "Expected values to be strictly deep-equal:\n+ actual - expected ... Lines skipped\n\n  {\n    association: 'before',\n+   deleted: true,\n-   deleted: false,\n    generation: 0,\n    id: 'anchor:1',\n...\n      flowId: 'body',\n      kind: 'text',\n+     offset: 0\n-     offset: 1\n    }\n  }"
+        },
+        {
+          "name": "F01B_partialCommitPlusRetargetCancelPreservesSurvivingAnchorsAndAnnotations",
+          "reproducedOnBaseline": true,
+          "baselineFailure": "Expected values to be strictly deep-equal:\n+ actual - expected ... Lines skipped\n\n  {\n    association: 'before',\n+   deleted: true,\n-   deleted: false,\n    generation: 0,\n    id: 'anchor:1',\n...\n      flowId: 'body',\n      kind: 'text',\n+     offset: 1\n-     offset: 2\n    }\n  }"
+        },
+        {
+          "name": "F02A_emptyCandidateSettlementFormatDoesNotCauseUndoFallThrough",
+          "reproducedOnBaseline": true,
+          "baselineFailure": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'Applied'\n- 'Cancelled'"
+        },
+        {
+          "name": "F02B_1_cancelledApplyPasteContributesLedgerSlotToPreventUndoFallThrough",
+          "reproducedOnBaseline": true,
+          "baselineFailure": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'Applied'\n- 'NoChange'"
+        },
+        {
+          "name": "F02B_2_applyPastePreservesTargetChangedReasonOnCellLeaseDrift",
+          "reproducedOnBaseline": true,
+          "baselineFailure": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'TargetDeleted'\n- 'TargetChanged'\n         ^"
+        },
+        {
+          "name": "F03A_retargetDoesNotLeakExteriorLinkBoundarySeed",
+          "reproducedOnBaseline": true,
+          "baselineFailure": "Expected values to be strictly equal:\n+ actual - expected\n\n+ {\n+   id: 'l1',\n+   url: 'https://a.test'\n+ }\n- undefined"
+        },
+        {
+          "name": "F03B_retargetToBlockEndInheritsLeftNeighborMarks",
+          "reproducedOnBaseline": true,
+          "baselineFailure": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- true"
+        },
+        {
+          "name": "F04A_deletingLeadingBlockObjectWithBoundaryPreservesRightListStructure",
+          "reproducedOnBaseline": true,
+          "baselineFailure": "Expected values to be strictly equal:\n\n'img' !== 'L'\n"
+        },
+        {
+          "name": "F04B_deletingLeadingBlockObjectBeforeAdjacentBlockObjectSucceeds",
+          "reproducedOnBaseline": true,
+          "baselineFailure": "{\"ticket\":1,\"status\":\"Rejected\",\"reason\":\"UnrepresentableObjectSeam\"}"
+        },
+        {
+          "name": "F04C_deletingBlockObjectAndPrefixOfNestedHeadingPreservesHeadingAndList",
+          "reproducedOnBaseline": true,
+          "baselineFailure": "Expected values to be strictly equal:\n\n'img' !== 'L'\n"
+        },
+        {
+          "name": "F05A_deletingParagraphBeforeBlockObjectSnapsTextCaretToNearestTextBlock",
+          "reproducedOnBaseline": true,
+          "baselineFailure": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n+   0,\n+   0\n-   2,\n-   2\n  ]"
+        },
+        {
+          "name": "F05B_1_deleteCodePointsRejectsCrossingUnselectedTableAtom",
+          "reproducedOnBaseline": true,
+          "baselineFailure": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'Accepted'\n- 'Rejected'"
+        },
+        {
+          "name": "F05B_2_deleteCodePointsRejectsIncompatibleCodeAndProseBlockJoin",
+          "reproducedOnBaseline": true,
+          "baselineFailure": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'Accepted'\n- 'Rejected'"
+        },
+        {
+          "name": "F06A_explicitTargetDuringCellSelectionDoesNotWipeUnrelatedCellSelection",
+          "reproducedOnBaseline": true,
+          "baselineFailure": "Expected values to be strictly equal:\n\n'!' !== 'A!'\n"
+        },
+        {
+          "name": "F06B_queuedUnrepresentableObjectSeamOrEmptyWrapQuoteCancelsCleanlyOnCommit",
+          "reproducedOnBaseline": true,
+          "baselineFailure": "{\"ticket\":4,\"status\":\"Rejected\",\"reason\":\"UnrepresentableObjectSeam\"}"
+        },
+        {
+          "name": "F06C_enterInEmptyQuoteInsideListItemUnwrapsQuoteBeforeSplittingListItem",
+          "reproducedOnBaseline": true,
+          "baselineFailure": "Expected values to be strictly equal:\n\ntrue !== false\n"
+        },
+        {
+          "name": "F06D_moveCaretCollapsingMidSurrogateSelectionSnapsToClusterBoundary",
+          "reproducedOnBaseline": true,
+          "baselineFailure": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n+   2,\n+   2\n-   3,\n-   3\n  ]"
+        },
+        {
+          "name": "F07A_isolatedSurrogateFollowedByCombiningMarkHasHardSingleUnitBoundary",
+          "reproducedOnBaseline": true,
+          "baselineFailure": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'ab'\n- 'a\\ud800b'"
+        },
+        {
+          "name": "F07B_inlineAtomDoesNotCoalesceWithTrailingCombiningMarkInFormatExpansion",
+          "reproducedOnBaseline": true,
+          "baselineFailure": "UnknownNode"
+        },
+        {
+          "name": "F07C_pasteRichBlocksAtHeadingStartPreservesHeadingTypePropsAndNodeId",
+          "reproducedOnBaseline": true,
+          "baselineFailure": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'new:1:1:block'\n- 'h1'"
+        },
+        {
+          "name": "F07D_pasteRichSanitizesEmptyBlockAttributesAndRejectsMultiCharUnits",
+          "reproducedOnBaseline": true,
+          "baselineFailure": "Expected values to be strictly equal:\n\n0 !== 1\n"
+        },
+        {
+          "name": "F07E_closedSlicePreservesLeadingEmptyBlockOnCopy",
+          "reproducedOnBaseline": true,
+          "baselineFailure": "Expected values to be strictly equal:\n\n1 !== 2\n"
+        },
+        {
+          "name": "F08B_unifiedPendingBytesAccountingAcrossPastesAndClipboard",
+          "reproducedOnBaseline": true,
+          "baselineFailure": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'Accepted'\n- 'Rejected'"
+        },
+        {
+          "name": "F10A_1_awtTextLocationRejectsNegativeCharIndexWithTrailingTrue",
+          "reproducedOnBaseline": true,
+          "baselineFailure": "Missing expected exception."
+        },
+        {
+          "name": "F10A_2_awtTextLocationResolvesNullOffsetDuringActiveComposition",
+          "reproducedOnBaseline": true,
+          "baselineFailure": "InvalidComposedHit"
+        }
+      ]
+    },
+    "storageAndRecovery": {
+      "monoidMeasureVerification": {
+        "singleMeasureBugRank": 7,
+        "twoComponentTrueRank": 11,
+        "cellIsolationRank": {
+          "flowId": "f00",
+          "rank": 4,
+          "stats": {
+            "docVisits": 5,
+            "docAlloc": 0,
+            "mapVisits": 15,
+            "mapAlloc": 0
+          }
+        }
+      },
+      "boundaryFirstLeafDeletionVerification": {
+        "naiveBugRank": -1,
+        "repairedRank": null
+      },
+      "standardCapacity1MUnits10KBlocks": {
+        "totalUnits": 1000000,
+        "totalBlocks": 10000,
+        "buildMs": 184.67,
+        "persistentLocalEditMs": {
+          "p50": 0.2905,
+          "p95": 1.0671,
+          "p99": 5.1925
+        },
+        "fullCopy10KBlocksCloneMedianMs": 58.22,
+        "sampleEditWork": {
+          "docVisits": 1,
+          "docAlloc": 6,
+          "mapVisits": 1225,
+          "mapAlloc": 1152
+        }
+      },
+      "depthScaling": [
+        {
+          "containerDepth": 1,
+          "lookupRank": 11,
+          "lookupDocVisits": 7,
+          "lookupMapVisits": 15,
+          "editDocAlloc": 6,
+          "editMapAlloc": 47
+        },
+        {
+          "containerDepth": 4,
+          "lookupRank": 29,
+          "lookupDocVisits": 13,
+          "lookupMapVisits": 46,
+          "editDocAlloc": 12,
+          "editMapAlloc": 138
+        },
+        {
+          "containerDepth": 8,
+          "lookupRank": 53,
+          "lookupDocVisits": 21,
+          "lookupMapVisits": 88,
+          "editDocAlloc": 20,
+          "editMapAlloc": 267
+        },
+        {
+          "containerDepth": 16,
+          "lookupRank": 101,
+          "lookupDocVisits": 37,
+          "lookupMapVisits": 188,
+          "editDocAlloc": 36,
+          "editMapAlloc": 593
+        },
+        {
+          "containerDepth": 32,
+          "lookupRank": 197,
+          "lookupDocVisits": 69,
+          "lookupMapVisits": 422,
+          "editDocAlloc": 68,
+          "editMapAlloc": 1277
+        }
+      ],
+      "canonicalAndRecoveryVerification": {
+        "canonicalUtf16LeRoundTripPassed": true,
+        "tornWriteDetectedAndTruncated": {
+          "type": "JournalTailTruncated",
+          "offset": 5783,
+          "discardedBytes": 40,
+          "reason": "IncompleteHeader"
+        },
+        "naiveDvRecoveryLostSecondaryCells": true,
+        "dualDcDvRecoveryRestoredAllCellsOnUndo": true
+      }
+    },
+    "shaperAndPerformance": {
+      "oneLineShaperBookkeepingScaling": [
+        {
+          "shapingBlocks": 64,
+          "utf16EquivalentLength": 192,
+          "unpatchedM150": {
+            "medianMs": 0.0265,
+            "p95Ms": 0.0481,
+            "sortComparisons": 8881,
+            "loopVisits": 2080
+          },
+          "patchedClearResolvedBlocks": {
+            "medianMs": 0.0163,
+            "p95Ms": 0.0187,
+            "sortComparisons": 0,
+            "loopVisits": 64
+          },
+          "bookkeepingSpeedupRatio": 1.6
+        },
+        {
+          "shapingBlocks": 256,
+          "utf16EquivalentLength": 768,
+          "unpatchedM150": {
+            "medianMs": 0.6935,
+            "p95Ms": 1.6932,
+            "sortComparisons": 233027,
+            "loopVisits": 32896
+          },
+          "patchedClearResolvedBlocks": {
+            "medianMs": 0.0374,
+            "p95Ms": 0.0684,
+            "sortComparisons": 0,
+            "loopVisits": 256
+          },
+          "bookkeepingSpeedupRatio": 18.5
+        },
+        {
+          "shapingBlocks": 1024,
+          "utf16EquivalentLength": 3072,
+          "unpatchedM150": {
+            "medianMs": 6.5917,
+            "p95Ms": 8.0081,
+            "sortComparisons": 5240121,
+            "loopVisits": 524800
+          },
+          "patchedClearResolvedBlocks": {
+            "medianMs": 0.2864,
+            "p95Ms": 0.4793,
+            "sortComparisons": 0,
+            "loopVisits": 1024
+          },
+          "bookkeepingSpeedupRatio": 23
+        },
+        {
+          "shapingBlocks": 4096,
+          "utf16EquivalentLength": 12288,
+          "unpatchedM150": {
+            "medianMs": 126.8339,
+            "p95Ms": 140.9845,
+            "sortComparisons": 108662527,
+            "loopVisits": 8390656
+          },
+          "patchedClearResolvedBlocks": {
+            "medianMs": 0.793,
+            "p95Ms": 1.4346,
+            "sortComparisons": 0,
+            "loopVisits": 4096
+          },
+          "bookkeepingSpeedupRatio": 159.9
+        },
+        {
+          "shapingBlocks": 8192,
+          "utf16EquivalentLength": 24576,
+          "unpatchedM150": {
+            "medianMs": 567.9626,
+            "p95Ms": 572.7887,
+            "sortComparisons": 484699138,
+            "loopVisits": 33558528
+          },
+          "patchedClearResolvedBlocks": {
+            "medianMs": 1.522,
+            "p95Ms": 1.9242,
+            "sortComparisons": 0,
+            "loopVisits": 8192
+          },
+          "bookkeepingSpeedupRatio": 373.2
+        },
+        {
+          "shapingBlocks": 16384,
+          "utf16EquivalentLength": 49152,
+          "unpatchedM150": {
+            "medianMs": 2398.5075,
+            "p95Ms": 2424.5599,
+            "sortComparisons": 2139495941,
+            "loopVisits": 134225920
+          },
+          "patchedClearResolvedBlocks": {
+            "medianMs": 2.4644,
+            "p95Ms": 2.7426,
+            "sortComparisons": 0,
+            "loopVisits": 16384
+          },
+          "bookkeepingSpeedupRatio": 973.3
+        }
+      ],
+      "defaultIgnorableZeroGlyphBlockTest": {
+        "m150Unpatched": {
+          "emittedRuns": 15,
+          "expectedRuns": 16,
+          "rangeContinuityValid": false
+        },
+        "mainPatched": {
+          "emittedRuns": 16,
+          "expectedRuns": 16,
+          "rangeContinuityValid": true
+        }
+      }
+    },
+    "chromiumDomAndClipboard": {
+      "browserHtmlAndGraphemeDomSemantics": {
+        "bareTdDroppedByHtml5Parser": {
+          "parsedChildElementCount": 0,
+          "survivingTextContent": "Cell ACell B"
+        },
+        "graphemeSplitAcrossDomSpans": {
+          "combiningSplitTotalWidthPx": 7.11,
+          "combiningWholeWidthPx": 7.11,
+          "zwjEmojiSplitTotalWidthPx": 39.94,
+          "zwjEmojiWholeWidthPx": 19.97,
+          "zwjLigatureBrokenBySpanBoundary": true
+        },
+        "orphanLiElementsInBody": [
+          {
+            "parentTag": "BODY",
+            "tag": "LI",
+            "text": "First item tail"
+          },
+          {
+            "parentTag": "BODY",
+            "tag": "LI",
+            "text": "Second item"
+          }
+        ]
+      },
+      "composingDomPreservation": {
+        "naiveInnerHtmlReplacementDestroysComposingNodeAndSelection": {
+          "sameNode": false,
+          "selectionSurvived": false
+        },
+        "siblingMarkUpdatePreservesNodeAndSelection": true,
+        "splittingComposingTextNodeMovesSelectionToNewNode": {
+          "originalNodeStillHoldsSelection": false,
+          "selectionAfterSplit": {
+            "anchorNodeIsNewTail": false,
+            "anchorNodeIsOriginal": false,
+            "anchorOffset": 0,
+            "focusOffset": 3,
+            "newTailTextNodeValue": "rld",
+            "originalTextNodeNewValue": "wo"
+          },
+          "tailNodeHoldsSelection": false
+        }
+      },
+      "browser": {
+        "name": "chrome",
+        "version": "154.0.8037.92",
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36"
+      }
+    }
+  }
+}

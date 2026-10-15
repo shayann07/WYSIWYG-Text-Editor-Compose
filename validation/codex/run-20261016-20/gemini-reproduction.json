@@ -1,0 +1,414 @@
+{
+  "environment": {
+    "node": "v24.20.0",
+    "platform": "win32"
+  },
+  "rows": [
+    {
+      "name": "F01A_candidateDetourPreservesAnnotationsAnchorsAndRevision",
+      "baseline": {
+        "status": "FAIL",
+        "code": "ERR_ASSERTION",
+        "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n    association: 'before',\n+   deleted: true,\n-   deleted: false,\n    generation: 0,\n    id: 'anchor:1',\n    point: {\n      blockId: 'p',\n      flowId: 'body',\n      kind: 'text',\n+     offset: 0\n-     offset: 1\n    }\n  }\n"
+      },
+      "geminiRepair": {
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "F01B_partialCommitPlusRetargetCancelPreservesSurvivingAnchorsAndAnnotations",
+      "baseline": {
+        "status": "FAIL",
+        "code": "ERR_ASSERTION",
+        "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n    association: 'before',\n+   deleted: true,\n-   deleted: false,\n    generation: 0,\n    id: 'anchor:1',\n    point: {\n      blockId: 'p',\n      flowId: 'body',\n      kind: 'text',\n+     offset: 1\n-     offset: 2\n    }\n  }\n"
+      },
+      "geminiRepair": {
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "F02A_emptyCandidateSettlementFormatDoesNotCauseUndoFallThrough",
+      "baseline": {
+        "status": "FAIL",
+        "code": "ERR_ASSERTION",
+        "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'Applied'\n- 'Cancelled'\n"
+      },
+      "geminiRepair": {
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "F02B_1_cancelledApplyPasteContributesLedgerSlotToPreventUndoFallThrough",
+      "baseline": {
+        "status": "FAIL",
+        "code": "ERR_ASSERTION",
+        "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'Applied'\n- 'NoChange'\n"
+      },
+      "geminiRepair": {
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "F02B_2_applyPastePreservesTargetChangedReasonOnCellLeaseDrift",
+      "baseline": {
+        "status": "FAIL",
+        "code": "ERR_ASSERTION",
+        "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'TargetDeleted'\n- 'TargetChanged'\n         ^\n"
+      },
+      "geminiRepair": {
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "F03A_retargetDoesNotLeakExteriorLinkBoundarySeed",
+      "baseline": {
+        "status": "FAIL",
+        "code": "ERR_ASSERTION",
+        "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ {\n+   id: 'l1',\n+   url: 'https://a.test'\n+ }\n- undefined\n"
+      },
+      "geminiRepair": {
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "F03B_retargetToBlockEndInheritsLeftNeighborMarks",
+      "baseline": {
+        "status": "FAIL",
+        "code": "ERR_ASSERTION",
+        "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- true\n"
+      },
+      "geminiRepair": {
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "F04A_deletingLeadingBlockObjectWithBoundaryPreservesRightListStructure",
+      "baseline": {
+        "status": "FAIL",
+        "code": "ERR_ASSERTION",
+        "error": "Expected values to be strictly equal:\n\n'img' !== 'L'\n"
+      },
+      "geminiRepair": {
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "F04B_deletingLeadingBlockObjectBeforeAdjacentBlockObjectSucceeds",
+      "baseline": {
+        "status": "FAIL",
+        "code": "ERR_ASSERTION",
+        "error": "{\"ticket\":1,\"status\":\"Rejected\",\"reason\":\"UnrepresentableObjectSeam\"}\n+ actual - expected\n\n+ 'Rejected'\n- 'Accepted'\n"
+      },
+      "geminiRepair": {
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "F04C_deletingBlockObjectAndPrefixOfNestedHeadingPreservesHeadingAndList",
+      "baseline": {
+        "status": "FAIL",
+        "code": "ERR_ASSERTION",
+        "error": "Expected values to be strictly equal:\n\n'img' !== 'L'\n"
+      },
+      "geminiRepair": {
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "F05A_deletingParagraphBeforeBlockObjectSnapsTextCaretToNearestTextBlock",
+      "baseline": {
+        "status": "FAIL",
+        "code": "ERR_ASSERTION",
+        "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n+   0,\n+   0\n-   2,\n-   2\n  ]\n"
+      },
+      "geminiRepair": {
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "F05B_1_deleteCodePointsRejectsCrossingUnselectedTableAtom",
+      "baseline": {
+        "status": "FAIL",
+        "code": "ERR_ASSERTION",
+        "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'Accepted'\n- 'Rejected'\n"
+      },
+      "geminiRepair": {
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "F05B_2_deleteCodePointsRejectsIncompatibleCodeAndProseBlockJoin",
+      "baseline": {
+        "status": "FAIL",
+        "code": "ERR_ASSERTION",
+        "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'Accepted'\n- 'Rejected'\n"
+      },
+      "geminiRepair": {
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "F06A_explicitTargetDuringCellSelectionDoesNotWipeUnrelatedCellSelection",
+      "baseline": {
+        "status": "FAIL",
+        "code": "ERR_ASSERTION",
+        "error": "Expected values to be strictly equal:\n\n'!' !== 'A!'\n"
+      },
+      "geminiRepair": {
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "F06B_queuedUnrepresentableObjectSeamOrEmptyWrapQuoteCancelsCleanlyOnCommit",
+      "baseline": {
+        "status": "FAIL",
+        "code": "ERR_ASSERTION",
+        "error": "{\"ticket\":4,\"status\":\"Rejected\",\"reason\":\"UnrepresentableObjectSeam\"}\n+ actual - expected\n\n+ 'Rejected'\n- 'Accepted'\n"
+      },
+      "geminiRepair": {
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "F06C_enterInEmptyQuoteInsideListItemUnwrapsQuoteBeforeSplittingListItem",
+      "baseline": {
+        "status": "FAIL",
+        "code": "ERR_ASSERTION",
+        "error": "Expected values to be strictly equal:\n\ntrue !== false\n"
+      },
+      "geminiRepair": {
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "F06D_moveCaretCollapsingMidSurrogateSelectionSnapsToClusterBoundary",
+      "baseline": {
+        "status": "FAIL",
+        "code": "ERR_ASSERTION",
+        "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n+   2,\n+   2\n-   3,\n-   3\n  ]\n"
+      },
+      "geminiRepair": {
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "F07A_isolatedSurrogateFollowedByCombiningMarkHasHardSingleUnitBoundary",
+      "baseline": {
+        "status": "FAIL",
+        "code": "ERR_ASSERTION",
+        "error": "Expected values to be strictly equal:\n\n'ab' !== 'a\\ud800b'\n"
+      },
+      "geminiRepair": {
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "F07B_inlineAtomDoesNotCoalesceWithTrailingCombiningMarkInFormatExpansion",
+      "baseline": {
+        "status": "FAIL",
+        "error": "UnknownNode"
+      },
+      "geminiRepair": {
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "F07C_pasteRichBlocksAtHeadingStartPreservesHeadingTypePropsAndNodeId",
+      "baseline": {
+        "status": "FAIL",
+        "code": "ERR_ASSERTION",
+        "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'new:1:1:block'\n- 'h1'\n"
+      },
+      "geminiRepair": {
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "F07D_pasteRichSanitizesEmptyBlockAttributesAndRejectsMultiCharUnits",
+      "baseline": {
+        "status": "FAIL",
+        "code": "ERR_ASSERTION",
+        "error": "Expected values to be strictly equal:\n\n0 !== 1\n"
+      },
+      "geminiRepair": {
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "F07E_closedSlicePreservesLeadingEmptyBlockOnCopy",
+      "baseline": {
+        "status": "FAIL",
+        "code": "ERR_ASSERTION",
+        "error": "Expected values to be strictly equal:\n\n1 !== 2\n"
+      },
+      "geminiRepair": {
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "F08B_unifiedPendingBytesAccountingAcrossPastesAndClipboard",
+      "baseline": {
+        "status": "FAIL",
+        "code": "ERR_ASSERTION",
+        "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'Accepted'\n- 'Rejected'\n"
+      },
+      "geminiRepair": {
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "F10A_1_awtTextLocationRejectsNegativeCharIndexWithTrailingTrue",
+      "baseline": {
+        "status": "FAIL",
+        "code": "ERR_ASSERTION",
+        "error": "Missing expected exception."
+      },
+      "geminiRepair": {
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "F10A_2_awtTextLocationResolvesNullOffsetDuringActiveComposition",
+      "baseline": {
+        "status": "FAIL",
+        "error": "InvalidComposedHit"
+      },
+      "geminiRepair": {
+        "status": "PASS"
+      }
+    }
+  ],
+  "aggregate": {
+    "counterexamplesReproducedOnBaseline": 25,
+    "counterexamplesRepaired": 25,
+    "inheritedCasesOnRepairedModel": 35,
+    "fuzzInteractionTraces": 60,
+    "details": [
+      {
+        "name": "F01A_candidateDetourPreservesAnnotationsAnchorsAndRevision",
+        "reproducedOnBaseline": true,
+        "baselineFailure": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n    association: 'before',\n+   deleted: true,\n-   deleted: false,\n    generation: 0,\n    id: 'anchor:1',\n    point: {\n      blockId: 'p',\n      flowId: 'body',\n      kind: 'text',\n+     offset: 0\n-     offset: 1\n    }\n  }\n"
+      },
+      {
+        "name": "F01B_partialCommitPlusRetargetCancelPreservesSurvivingAnchorsAndAnnotations",
+        "reproducedOnBaseline": true,
+        "baselineFailure": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n    association: 'before',\n+   deleted: true,\n-   deleted: false,\n    generation: 0,\n    id: 'anchor:1',\n    point: {\n      blockId: 'p',\n      flowId: 'body',\n      kind: 'text',\n+     offset: 1\n-     offset: 2\n    }\n  }\n"
+      },
+      {
+        "name": "F02A_emptyCandidateSettlementFormatDoesNotCauseUndoFallThrough",
+        "reproducedOnBaseline": true,
+        "baselineFailure": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'Applied'\n- 'Cancelled'\n"
+      },
+      {
+        "name": "F02B_1_cancelledApplyPasteContributesLedgerSlotToPreventUndoFallThrough",
+        "reproducedOnBaseline": true,
+        "baselineFailure": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'Applied'\n- 'NoChange'\n"
+      },
+      {
+        "name": "F02B_2_applyPastePreservesTargetChangedReasonOnCellLeaseDrift",
+        "reproducedOnBaseline": true,
+        "baselineFailure": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'TargetDeleted'\n- 'TargetChanged'\n         ^\n"
+      },
+      {
+        "name": "F03A_retargetDoesNotLeakExteriorLinkBoundarySeed",
+        "reproducedOnBaseline": true,
+        "baselineFailure": "Expected values to be strictly equal:\n+ actual - expected\n\n+ {\n+   id: 'l1',\n+   url: 'https://a.test'\n+ }\n- undefined\n"
+      },
+      {
+        "name": "F03B_retargetToBlockEndInheritsLeftNeighborMarks",
+        "reproducedOnBaseline": true,
+        "baselineFailure": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- true\n"
+      },
+      {
+        "name": "F04A_deletingLeadingBlockObjectWithBoundaryPreservesRightListStructure",
+        "reproducedOnBaseline": true,
+        "baselineFailure": "Expected values to be strictly equal:\n\n'img' !== 'L'\n"
+      },
+      {
+        "name": "F04B_deletingLeadingBlockObjectBeforeAdjacentBlockObjectSucceeds",
+        "reproducedOnBaseline": true,
+        "baselineFailure": "{\"ticket\":1,\"status\":\"Rejected\",\"reason\":\"UnrepresentableObjectSeam\"}\n+ actual - expected\n\n+ 'Rejected'\n- 'Accepted'\n"
+      },
+      {
+        "name": "F04C_deletingBlockObjectAndPrefixOfNestedHeadingPreservesHeadingAndList",
+        "reproducedOnBaseline": true,
+        "baselineFailure": "Expected values to be strictly equal:\n\n'img' !== 'L'\n"
+      },
+      {
+        "name": "F05A_deletingParagraphBeforeBlockObjectSnapsTextCaretToNearestTextBlock",
+        "reproducedOnBaseline": true,
+        "baselineFailure": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n+   0,\n+   0\n-   2,\n-   2\n  ]\n"
+      },
+      {
+        "name": "F05B_1_deleteCodePointsRejectsCrossingUnselectedTableAtom",
+        "reproducedOnBaseline": true,
+        "baselineFailure": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'Accepted'\n- 'Rejected'\n"
+      },
+      {
+        "name": "F05B_2_deleteCodePointsRejectsIncompatibleCodeAndProseBlockJoin",
+        "reproducedOnBaseline": true,
+        "baselineFailure": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'Accepted'\n- 'Rejected'\n"
+      },
+      {
+        "name": "F06A_explicitTargetDuringCellSelectionDoesNotWipeUnrelatedCellSelection",
+        "reproducedOnBaseline": true,
+        "baselineFailure": "Expected values to be strictly equal:\n\n'!' !== 'A!'\n"
+      },
+      {
+        "name": "F06B_queuedUnrepresentableObjectSeamOrEmptyWrapQuoteCancelsCleanlyOnCommit",
+        "reproducedOnBaseline": true,
+        "baselineFailure": "{\"ticket\":4,\"status\":\"Rejected\",\"reason\":\"UnrepresentableObjectSeam\"}\n+ actual - expected\n\n+ 'Rejected'\n- 'Accepted'\n"
+      },
+      {
+        "name": "F06C_enterInEmptyQuoteInsideListItemUnwrapsQuoteBeforeSplittingListItem",
+        "reproducedOnBaseline": true,
+        "baselineFailure": "Expected values to be strictly equal:\n\ntrue !== false\n"
+      },
+      {
+        "name": "F06D_moveCaretCollapsingMidSurrogateSelectionSnapsToClusterBoundary",
+        "reproducedOnBaseline": true,
+        "baselineFailure": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n+   2,\n+   2\n-   3,\n-   3\n  ]\n"
+      },
+      {
+        "name": "F07A_isolatedSurrogateFollowedByCombiningMarkHasHardSingleUnitBoundary",
+        "reproducedOnBaseline": true,
+        "baselineFailure": "Expected values to be strictly equal:\n\n'ab' !== 'a\\ud800b'\n"
+      },
+      {
+        "name": "F07B_inlineAtomDoesNotCoalesceWithTrailingCombiningMarkInFormatExpansion",
+        "reproducedOnBaseline": true,
+        "baselineFailure": "UnknownNode"
+      },
+      {
+        "name": "F07C_pasteRichBlocksAtHeadingStartPreservesHeadingTypePropsAndNodeId",
+        "reproducedOnBaseline": true,
+        "baselineFailure": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'new:1:1:block'\n- 'h1'\n"
+      },
+      {
+        "name": "F07D_pasteRichSanitizesEmptyBlockAttributesAndRejectsMultiCharUnits",
+        "reproducedOnBaseline": true,
+        "baselineFailure": "Expected values to be strictly equal:\n\n0 !== 1\n"
+      },
+      {
+        "name": "F07E_closedSlicePreservesLeadingEmptyBlockOnCopy",
+        "reproducedOnBaseline": true,
+        "baselineFailure": "Expected values to be strictly equal:\n\n1 !== 2\n"
+      },
+      {
+        "name": "F08B_unifiedPendingBytesAccountingAcrossPastesAndClipboard",
+        "reproducedOnBaseline": true,
+        "baselineFailure": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'Accepted'\n- 'Rejected'\n"
+      },
+      {
+        "name": "F10A_1_awtTextLocationRejectsNegativeCharIndexWithTrailingTrue",
+        "reproducedOnBaseline": true,
+        "baselineFailure": "Missing expected exception."
+      },
+      {
+        "name": "F10A_2_awtTextLocationResolvesNullOffsetDuringActiveComposition",
+        "reproducedOnBaseline": true,
+        "baselineFailure": "InvalidComposedHit"
+      }
+    ]
+  }
+}

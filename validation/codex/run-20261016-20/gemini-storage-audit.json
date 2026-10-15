@@ -1,0 +1,101 @@
+{
+  "environment": {
+    "node": "v24.20.0",
+    "platform": "win32"
+  },
+  "geminiProbe": {
+    "monoidMeasureVerification": {
+      "singleMeasureBugRank": 7,
+      "twoComponentTrueRank": 11,
+      "cellIsolationRank": {
+        "flowId": "f00",
+        "rank": 4,
+        "stats": {
+          "docVisits": 5,
+          "docAlloc": 0,
+          "mapVisits": 15,
+          "mapAlloc": 0
+        }
+      }
+    },
+    "boundaryFirstLeafDeletionVerification": {
+      "naiveBugRank": -1,
+      "repairedRank": null
+    },
+    "standardCapacity1MUnits10KBlocks": {
+      "totalUnits": 1000000,
+      "totalBlocks": 10000,
+      "buildMs": 67.05,
+      "persistentLocalEditMs": {
+        "p50": 0.1249,
+        "p95": 0.3425,
+        "p99": 2.919
+      },
+      "fullCopy10KBlocksCloneMedianMs": 18.7,
+      "sampleEditWork": {
+        "docVisits": 1,
+        "docAlloc": 6,
+        "mapVisits": 1225,
+        "mapAlloc": 1152
+      }
+    },
+    "depthScaling": [
+      {
+        "containerDepth": 1,
+        "lookupRank": 11,
+        "lookupDocVisits": 7,
+        "lookupMapVisits": 15,
+        "editDocAlloc": 6,
+        "editMapAlloc": 47
+      },
+      {
+        "containerDepth": 4,
+        "lookupRank": 29,
+        "lookupDocVisits": 13,
+        "lookupMapVisits": 46,
+        "editDocAlloc": 12,
+        "editMapAlloc": 138
+      },
+      {
+        "containerDepth": 8,
+        "lookupRank": 53,
+        "lookupDocVisits": 21,
+        "lookupMapVisits": 88,
+        "editDocAlloc": 20,
+        "editMapAlloc": 267
+      },
+      {
+        "containerDepth": 16,
+        "lookupRank": 101,
+        "lookupDocVisits": 37,
+        "lookupMapVisits": 188,
+        "editDocAlloc": 36,
+        "editMapAlloc": 593
+      },
+      {
+        "containerDepth": 32,
+        "lookupRank": 197,
+        "lookupDocVisits": 69,
+        "lookupMapVisits": 422,
+        "editDocAlloc": 68,
+        "editMapAlloc": 1277
+      }
+    ],
+    "canonicalAndRecoveryVerification": {
+      "canonicalUtf16LeRoundTripPassed": true,
+      "tornWriteDetectedAndTruncated": {
+        "type": "JournalTailTruncated",
+        "offset": 5783,
+        "discardedBytes": 40,
+        "reason": "IncompleteHeader"
+      },
+      "naiveDvRecoveryLostSecondaryCells": true,
+      "dualDcDvRecoveryRestoredAllCellsOnUndo": true
+    }
+  },
+  "additionalDetachedToken": {
+    "expected": null,
+    "actual": 0,
+    "explanation": "Retired leaf still reaches an old flow object through stale ParentMap; reaching any flow is not membership in the current version."
+  }
+}

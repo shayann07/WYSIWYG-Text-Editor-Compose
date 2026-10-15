@@ -1,0 +1,22 @@
+[
+  {
+    "name": "cancelMustNotResurrectUnregisteredAnchor",
+    "status": "FAIL",
+    "error": "Expected values to be strictly equal:\n\ntrue !== false\n"
+  },
+  {
+    "name": "cancelPreservesExplicitAnchorRelocation",
+    "status": "FAIL",
+    "error": "Expected values to be strictly equal:\n\n2 !== 3\n"
+  },
+  {
+    "name": "anchorCreatedInsideCandidateStaysAtSameCandidatePoint",
+    "status": "FAIL",
+    "error": "Expected values to be strictly equal:\n\n3 !== 1\n"
+  },
+  {
+    "name": "metadataCommitAtSameRevisionMustBeRecovered",
+    "status": "FAIL",
+    "error": "Expected values to be strictly equal:\n\ntrue !== false\n"
+  }
+]

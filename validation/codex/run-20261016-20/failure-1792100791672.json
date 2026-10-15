@@ -1,0 +1,1123 @@
+{
+  "run": "run-20261016-20",
+  "timestamp": "2026-10-15T21:46:31.668Z",
+  "environment": {
+    "node": "v24.20.0",
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "passed": false,
+  "elapsedMs": 12356.3243,
+  "results": [
+    {
+      "name": "recoveryTests",
+      "status": "FAIL",
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n'YX' !== 'XY'\n\n    at recoveryTests (file:///D:/Work/WYSIWYG-Text-Editor-Compose/validation/codex/run-20261016-20/test-recovery.mjs:23:347)\n    at file:///D:/Work/WYSIWYG-Text-Editor-Compose/validation/codex/run-20261016-20/verify.mjs:10:712\n    at ModuleJob.run (node:internal/modules/esm/module_job:561:25)\n    at async node:internal/modules/esm/loader:647:26\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)"
+    },
+    {
+      "name": "measuredHierarchyTests",
+      "status": "PASS",
+      "detail": {
+        "generatedTrees": 100,
+        "rankChecks": 4147,
+        "deletedFirstBoundaryAndDetachedToken": "PASS",
+        "scope": "Monoid and membership equations, not a persistent-index complexity proof"
+      },
+      "elapsedMs": 15.539999999999992
+    },
+    {
+      "name": "acceptedGeminiRegressions",
+      "status": "PASS",
+      "detail": {
+        "cases": 22,
+        "names": [
+          "F01A_candidateDetourPreservesAnnotationsAnchorsAndRevision",
+          "F01B_partialCommitPlusRetargetCancelPreservesSurvivingAnchorsAndAnnotations",
+          "F02A_emptyCandidateSettlementFormatDoesNotCauseUndoFallThrough",
+          "F02B_1_cancelledApplyPasteContributesLedgerSlotToPreventUndoFallThrough",
+          "F02B_2_applyPastePreservesTargetChangedReasonOnCellLeaseDrift",
+          "F03A_retargetDoesNotLeakExteriorLinkBoundarySeed",
+          "F03B_retargetToBlockEndInheritsLeftNeighborMarks",
+          "F04A_deletingLeadingBlockObjectWithBoundaryPreservesRightListStructure",
+          "F04B_deletingLeadingBlockObjectBeforeAdjacentBlockObjectSucceeds",
+          "F04C_deletingBlockObjectAndPrefixOfNestedHeadingPreservesHeadingAndList",
+          "F05A_deletingParagraphBeforeBlockObjectSnapsTextCaretToNearestTextBlock",
+          "F05B_1_deleteCodePointsRejectsCrossingUnselectedTableAtom",
+          "F05B_2_deleteCodePointsRejectsIncompatibleCodeAndProseBlockJoin",
+          "F06A_explicitTargetDuringCellSelectionDoesNotWipeUnrelatedCellSelection",
+          "F06B_queuedUnrepresentableObjectSeamOrEmptyWrapQuoteCancelsCleanlyOnCommit",
+          "F06C_enterInEmptyQuoteInsideListItemUnwrapsQuoteBeforeSplittingListItem",
+          "F06D_moveCaretCollapsingMidSurrogateSelectionSnapsToClusterBoundary",
+          "F07A_isolatedSurrogateFollowedByCombiningMarkHasHardSingleUnitBoundary",
+          "F07C_pasteRichBlocksAtHeadingStartPreservesHeadingTypePropsAndNodeId",
+          "F07D_pasteRichSanitizesEmptyBlockAttributesAndRejectsMultiCharUnits",
+          "F07E_closedSlicePreservesLeadingEmptyBlockOnCopy",
+          "F08B_unifiedPendingBytesAccountingAcrossPastesAndClipboard"
+        ],
+        "excluded": {
+          "F07B": "Baseline branch calls wrong constructor/API; existing atom isolation already passed",
+          "F10A_1": "TextHitInfo.trailing(-1) is a valid boundary hit; rejecting it is incorrect",
+          "F10A_2": "Null during active composition is a compatibility policy, not a JDK-mandated baseline defect"
+        }
+      },
+      "elapsedMs": 118.68629999999999
+    },
+    {
+      "name": "independentV5Regressions",
+      "status": "PASS",
+      "detail": {
+        "cases": 11,
+        "names": [
+          "unregisteredAnchorStaysGone",
+          "relocatedAnchorSurvivesCancel",
+          "provisionalAnchorDoesNotDrift",
+          "anchorCreatedDuringCompositionSurvivesCancel",
+          "nativeRemovalProjectsMetadata",
+          "nativeObjectHeadDeletion",
+          "exactNativeObjectOffsetIsNotSnapped",
+          "awtBoundaryAliases",
+          "identicalAtomFormattingOracle",
+          "queuedTypingIntentDoesNotConsumeUndoCredit",
+          "disposeReleasesMetadataOrigins"
+        ]
+      },
+      "elapsedMs": 53.6216
+    },
+    {
+      "name": "documentCases",
+      "status": "PASS",
+      "detail": {
+        "passed": true,
+        "cases": [
+          {
+            "name": "paragraphAndHeading",
+            "status": "PASS"
+          },
+          {
+            "name": "deletionAndUnicode",
+            "status": "PASS"
+          },
+          {
+            "name": "malformedCodePointAtomic",
+            "status": "PASS"
+          },
+          {
+            "name": "listSplitIndentOutdent",
+            "status": "PASS"
+          },
+          {
+            "name": "emptyListAndQuoteExit",
+            "status": "PASS"
+          },
+          {
+            "name": "wrappingMovingDeleting",
+            "status": "PASS"
+          },
+          {
+            "name": "atomsAndResources",
+            "status": "PASS"
+          },
+          {
+            "name": "typingIntentAndCoalescing",
+            "status": "PASS"
+          },
+          {
+            "name": "headingFalseClear",
+            "status": "PASS"
+          },
+          {
+            "name": "linkBoundaryWhitespace",
+            "status": "PASS"
+          },
+          {
+            "name": "anchorsSplitJoinUndo",
+            "status": "PASS"
+          },
+          {
+            "name": "gapAnchorsAndMoves",
+            "status": "PASS"
+          },
+          {
+            "name": "asyncPasteLease",
+            "status": "PASS"
+          },
+          {
+            "name": "richAndPlainPaste",
+            "status": "PASS"
+          },
+          {
+            "name": "tableCreateNavigate",
+            "status": "PASS"
+          },
+          {
+            "name": "rowsColumnsAndFlowDeletion",
+            "status": "PASS"
+          },
+          {
+            "name": "cellSelectionOneUndo",
+            "status": "PASS"
+          },
+          {
+            "name": "multiCellCompositionRollback",
+            "status": "PASS"
+          },
+          {
+            "name": "cellsTSV",
+            "status": "PASS"
+          },
+          {
+            "name": "crossCellMoveAnchors",
+            "status": "PASS"
+          },
+          {
+            "name": "queuedCommandsAndFailure",
+            "status": "PASS"
+          },
+          {
+            "name": "cancelQueuedAndFocus",
+            "status": "PASS"
+          },
+          {
+            "name": "annotations",
+            "status": "PASS"
+          },
+          {
+            "name": "copyCutAndGrapheme",
+            "status": "PASS"
+          },
+          {
+            "name": "cellFormattingAndProperties",
+            "status": "PASS"
+          },
+          {
+            "name": "annotationsCancelRestores",
+            "status": "PASS"
+          },
+          {
+            "name": "cellSelectionCancelRestoresKind",
+            "status": "PASS"
+          },
+          {
+            "name": "surroundingDeletePreservesSelection",
+            "status": "PASS"
+          },
+          {
+            "name": "unsafeRichLinkReported",
+            "status": "PASS"
+          },
+          {
+            "name": "cancelledCommandCredit",
+            "status": "PASS"
+          },
+          {
+            "name": "focusLossPreservesTextCancelsFormat",
+            "status": "PASS"
+          },
+          {
+            "name": "richCellClipboard",
+            "status": "PASS"
+          },
+          {
+            "name": "asyncCellsKeepTargetAndFocus",
+            "status": "PASS"
+          },
+          {
+            "name": "asyncCellsDetectInterveningEdits",
+            "status": "PASS"
+          },
+          {
+            "name": "nativeCellEpochIsolation",
+            "status": "PASS"
+          },
+          {
+            "name": "flowSwitchRollbackPreservesReentry",
+            "status": "PASS"
+          },
+          {
+            "name": "flowSwitchFailureKeepsReplayGuard",
+            "status": "PASS"
+          },
+          {
+            "name": "cellCompositionFailureIsAtomic",
+            "status": "PASS"
+          },
+          {
+            "name": "queuedCellFocusBeforeFormat",
+            "status": "PASS"
+          },
+          {
+            "name": "transientFlowSwitchDoesNotRetireInput",
+            "status": "PASS"
+          },
+          {
+            "name": "gapEnterAndType",
+            "status": "PASS"
+          },
+          {
+            "name": "inlineClipboardRoundtrip",
+            "status": "PASS"
+          },
+          {
+            "name": "closedRichPasteDoesNotAddBlankParagraphs",
+            "status": "PASS"
+          },
+          {
+            "name": "backspaceLaterListParagraph",
+            "status": "PASS"
+          },
+          {
+            "name": "codeBoundaryAndMalformedAfterAreAtomic",
+            "status": "PASS"
+          },
+          {
+            "name": "nativeNodeSelectionRestoration",
+            "status": "PASS"
+          },
+          {
+            "name": "reentrantAnchorAssociation",
+            "status": "PASS"
+          },
+          {
+            "name": "nativeTypingIntentAndLinkExit",
+            "status": "PASS"
+          },
+          {
+            "name": "emptyCellStyleSeedsNativeComposition",
+            "status": "PASS"
+          },
+          {
+            "name": "inlineCodeBoundaryAndEnter",
+            "status": "PASS"
+          },
+          {
+            "name": "graphemeFormattingStopsAtAtom",
+            "status": "PASS"
+          },
+          {
+            "name": "invalidCommandsAndBudgets",
+            "status": "PASS"
+          },
+          {
+            "name": "invalidQueuedImportDoesNotUndoNativeInput",
+            "status": "PASS"
+          },
+          {
+            "name": "inlineAtomNodeCommands",
+            "status": "PASS"
+          },
+          {
+            "name": "inactiveCellRevision",
+            "status": "PASS"
+          },
+          {
+            "name": "requestContextAndDisposal",
+            "status": "PASS"
+          },
+          {
+            "name": "atomDeletionBoundary",
+            "status": "PASS"
+          },
+          {
+            "name": "nodeSelectionAfterMoveAndDelete",
+            "status": "PASS"
+          },
+          {
+            "name": "directionalCaretExtension",
+            "status": "PASS"
+          },
+          {
+            "name": "inlineRichReplacesCellRectangle",
+            "status": "PASS"
+          },
+          {
+            "name": "protectedContentAcrossCommands",
+            "status": "PASS"
+          },
+          {
+            "name": "protectedInsertionCanUndo",
+            "status": "PASS"
+          },
+          {
+            "name": "leadingGapBackspaceLiftsOwner",
+            "status": "PASS"
+          },
+          {
+            "name": "ambiguousRichFragmentRejects",
+            "status": "PASS"
+          },
+          {
+            "name": "nativeRemovalOfCellSelection",
+            "status": "PASS"
+          },
+          {
+            "name": "duplicateCellFlowsRejected",
+            "status": "PASS"
+          }
+        ]
+      },
+      "elapsedMs": 500.1765
+    },
+    {
+      "name": "inheritedDocumentCases",
+      "status": "PASS",
+      "detail": {
+        "cases": 35,
+        "scope": "Existing integrated boundary cases executed through the whole-document owner"
+      },
+      "elapsedMs": 291.8661000000001
+    },
+    {
+      "name": "anchorMatrix",
+      "status": "PASS",
+      "detail": {
+        "cases": 100,
+        "oracle": "explicit insertion/split equations, exact before-state restoration"
+      },
+      "elapsedMs": 414.81129999999985
+    },
+    {
+      "name": "cellCompositionMatrix",
+      "status": "PASS",
+      "detail": {
+        "cases": 54,
+        "oracle": "independent rectangular-cell value updates; original document identity/selection restoration"
+      },
+      "elapsedMs": 645.9975999999999
+    },
+    {
+      "name": "commandCoverage",
+      "status": "PASS",
+      "detail": {
+        "passed": true,
+        "rows": [
+          {
+            "command": "typeText",
+            "executed": 66
+          },
+          {
+            "command": "replaceSelection",
+            "executed": 1
+          },
+          {
+            "command": "deleteSelection",
+            "executed": 2
+          },
+          {
+            "command": "backspace",
+            "executed": 4
+          },
+          {
+            "command": "deleteForward",
+            "executed": 2
+          },
+          {
+            "command": "deleteCodePoints",
+            "executed": 2
+          },
+          {
+            "command": "enter",
+            "executed": 59
+          },
+          {
+            "command": "softBreak",
+            "executed": 1
+          },
+          {
+            "command": "moveCaret",
+            "executed": 3
+          },
+          {
+            "command": "setBlockType",
+            "executed": 1
+          },
+          {
+            "command": "patchNode",
+            "executed": 2
+          },
+          {
+            "command": "patchCell",
+            "executed": 2
+          },
+          {
+            "command": "wrapQuote",
+            "executed": 2
+          },
+          {
+            "command": "unwrapQuote",
+            "executed": 1
+          },
+          {
+            "command": "wrapList",
+            "executed": 1
+          },
+          {
+            "command": "unwrapList",
+            "executed": 1
+          },
+          {
+            "command": "indent",
+            "executed": 1
+          },
+          {
+            "command": "outdent",
+            "executed": 1
+          },
+          {
+            "command": "moveNode",
+            "executed": 5
+          },
+          {
+            "command": "deleteNode",
+            "executed": 4
+          },
+          {
+            "command": "insertInlineAtom",
+            "executed": 3
+          },
+          {
+            "command": "insertBlockObject",
+            "executed": 2
+          },
+          {
+            "command": "insertTable",
+            "executed": 1
+          },
+          {
+            "command": "insertRow",
+            "executed": 1
+          },
+          {
+            "command": "deleteRow",
+            "executed": 1
+          },
+          {
+            "command": "insertColumn",
+            "executed": 1
+          },
+          {
+            "command": "deleteColumn",
+            "executed": 1
+          },
+          {
+            "command": "deleteTable",
+            "executed": 2
+          },
+          {
+            "command": "tableTab",
+            "executed": 3
+          },
+          {
+            "command": "clearCells",
+            "executed": 2
+          },
+          {
+            "command": "copy",
+            "executed": 4
+          },
+          {
+            "command": "cut",
+            "executed": 1
+          },
+          {
+            "command": "pasteText",
+            "executed": 2
+          },
+          {
+            "command": "pasteRich",
+            "executed": 6
+          },
+          {
+            "command": "pasteTSV",
+            "executed": 1
+          },
+          {
+            "command": "selectFlow",
+            "executed": 13
+          },
+          {
+            "command": "selectCells",
+            "executed": 70
+          },
+          {
+            "command": "selectNode",
+            "executed": 4
+          },
+          {
+            "command": "selectBlocks",
+            "executed": 1
+          },
+          {
+            "command": "registerAnchor",
+            "executed": 118
+          },
+          {
+            "command": "moveAnchor",
+            "executed": 2
+          },
+          {
+            "command": "unregisterAnchor",
+            "executed": 2
+          },
+          {
+            "command": "capturePaste",
+            "executed": 7
+          },
+          {
+            "command": "applyPaste",
+            "executed": 2
+          },
+          {
+            "command": "cancelPaste",
+            "executed": 1
+          },
+          {
+            "command": "putResource",
+            "executed": 1
+          },
+          {
+            "command": "removeResource",
+            "executed": 1
+          },
+          {
+            "command": "addAnnotation",
+            "executed": 3
+          },
+          {
+            "command": "removeAnnotation",
+            "executed": 1
+          },
+          {
+            "command": "cancelCommand",
+            "executed": 2
+          },
+          {
+            "command": "focusLost",
+            "executed": 2
+          }
+        ]
+      },
+      "elapsedMs": 5.3858000000000175
+    },
+    {
+      "name": "documentMutations",
+      "status": "PASS",
+      "detail": {
+        "controls": 8,
+        "killed": 8,
+        "evidence": [
+          {
+            "name": "anchorGeneration",
+            "mutant": "RestoreRelocatedAnchor",
+            "message": "Expected values to be strictly equal:\n\n1 !== 3\n"
+          },
+          {
+            "name": "committedIsolation",
+            "mutant": "ExposeProvisionalAsCommitted",
+            "message": "Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  {\n    children: [\n      {\n        children: [\n          {\n...\n                                attrs: {},\n+                               char: 'X',\n+                               originSessionId: 'session:2',\n+                               tokenId: 'prov:session:2:e1:m0'\n-                               char: 'A',\n-                               kind: 'text',\n-                               originSessionId: null,\n-                               tokenId: 'p00:0'\n                              },\n+                             {\n+                               attrs: {},\n+                               char: 'Y',\n+                               originSessionId: 'session:2',\n+                               tokenId: 'prov:session:2:e1:m1'\n+                             }\n                            ]\n                          }\n                        ],\n                        id: 'f00',\n                        props: {},\n...\n                          {\n+                           emptyBlockAttributes: {},\n                            id: 'p01',\n                            props: {},\n                            type: 'paragraph',\n+                           units: []\n-                           units: [\n-                             {\n-                               attrs: {},\n-                               char: 'B',\n-                               kind: 'text',\n-                               originSessionId: null,\n-                               tokenId: 'p01:0'\n-                             }\n-                           ]\n                          }\n                        ],\n                        id: 'f01',\n                        props: {},\n                        type: 'flow'\n...\n                          {\n+                           emptyBlockAttributes: {},\n                            id: 'p10',\n                            props: {},\n                            type: 'paragraph',\n+                           units: []\n-                           units: [\n-                             {\n-                               attrs: {},\n-                               char: 'C',\n-                               kind: 'text',\n-                               originSessionId: null,\n-                               tokenId: 'p10:0'\n-                             }\n-                           ]\n                          }\n                        ],\n                        id: 'f10',\n                        props: {},\n                        type: 'flow'\n...\n                          {\n+                           emptyBlockAttributes: {},\n                            id: 'p11',\n                            props: {},\n                            type: 'paragraph',\n+                           units: []\n-                           units: [\n-                             {\n-                               attrs: {},\n-                               char: 'D',\n-                               kind: 'text',\n-                               originSessionId: null,\n-                               tokenId: 'p11:0'\n-                             }\n-                           ]\n                          }\n                        ],\n                        id: 'f11',\n                        props: {},\n                        type: 'flow'\n"
+          },
+          {
+            "name": "cellAcceptance",
+            "mutant": "LoseSecondaryCells",
+            "message": "Expected values to be strictly equal:\n\n'D' !== ''\n"
+          },
+          {
+            "name": "globalRevision",
+            "mutant": "ActiveFlowRevisionOnly",
+            "message": "Expected values to be strictly equal:\n\n1 !== 2\n"
+          },
+          {
+            "name": "finalScope",
+            "mutant": "KeepOldScopeEpoch",
+            "message": "Expected values to be strictly equal:\n\n1 !== 2\n"
+          },
+          {
+            "name": "cancelledCredit",
+            "mutant": "RemoveCancelledCredit",
+            "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'CommandWithoutHistory'\n"
+          },
+          {
+            "name": "inlineMove",
+            "mutant": "SkipInlineMove",
+            "message": "Expected values to be strictly equal:\n\n'A￼' !== 'A'\n"
+          },
+          {
+            "name": "historyDocument",
+            "mutant": "FlowOnlyHistory",
+            "message": "{\"ticket\":3,\"status\":\"Rejected\",\"reason\":\"InvalidSelection\"}\n+ actual - expected\n\n+ 'Rejected'\n- 'Accepted'\n"
+          }
+        ]
+      },
+      "elapsedMs": 127.23739999999998
+    },
+    {
+      "name": "reproduceBaseline",
+      "status": "PASS",
+      "detail": [
+        {
+          "name": "terminalSelections",
+          "reproduced": true,
+          "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'InvalidSelection'\n"
+        },
+        {
+          "name": "repeatedListJoins",
+          "reproduced": true,
+          "message": "Expected values to be strictly equal:\n\n'i2' !== 'i1'\n"
+        },
+        {
+          "name": "malformedRange",
+          "reproduced": true,
+          "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'InvalidTargetRange'\n"
+        },
+        {
+          "name": "domainCompatibility",
+          "reproduced": true,
+          "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'ProtectedStructuralBoundary'\n"
+        }
+      ],
+      "elapsedMs": 13.535200000000259
+    },
+    {
+      "name": "regressionTests",
+      "status": "PASS",
+      "detail": {
+        "cases": 26
+      },
+      "elapsedMs": 27.459400000000187
+    },
+    {
+      "name": "structuralChains",
+      "status": "PASS",
+      "detail": {
+        "cases": 10,
+        "maxItems": 6
+      },
+      "elapsedMs": 79.2842999999998
+    },
+    {
+      "name": "awtTests",
+      "status": "PASS",
+      "detail": {
+        "cases": 8,
+        "scope": "layout-coordinate contract with synthetic frames, not a native AWT host"
+      },
+      "elapsedMs": 0.25820000000021537
+    },
+    {
+      "name": "retentionTests",
+      "status": "PASS",
+      "detail": {
+        "cases": 13,
+        "limits": "deterministic serialized-byte/count charges; not JVM or native heap measurements"
+      },
+      "elapsedMs": 109.8741
+    },
+    {
+      "name": "retentionSoak",
+      "status": "PASS",
+      "detail": {
+        "edits": 400,
+        "samples": [
+          {
+            "receipts": 4,
+            "bases": 2,
+            "basisBytes": 317,
+            "pinnedBasisBytes": 0,
+            "pinnedTickets": 0,
+            "wires": 4,
+            "registry": 0,
+            "sequenceContexts": 1,
+            "sessionContexts": 0,
+            "history": 3,
+            "redo": 0,
+            "historyBytes": 1440,
+            "outcomes": 0,
+            "historyEvicted": 97,
+            "queued": 0
+          },
+          {
+            "receipts": 4,
+            "bases": 2,
+            "basisBytes": 320,
+            "pinnedBasisBytes": 0,
+            "pinnedTickets": 0,
+            "wires": 4,
+            "registry": 0,
+            "sequenceContexts": 1,
+            "sessionContexts": 0,
+            "history": 3,
+            "redo": 0,
+            "historyBytes": 1452,
+            "outcomes": 0,
+            "historyEvicted": 197,
+            "queued": 0
+          },
+          {
+            "receipts": 4,
+            "bases": 2,
+            "basisBytes": 320,
+            "pinnedBasisBytes": 0,
+            "pinnedTickets": 0,
+            "wires": 4,
+            "registry": 0,
+            "sequenceContexts": 1,
+            "sessionContexts": 0,
+            "history": 3,
+            "redo": 0,
+            "historyBytes": 1452,
+            "outcomes": 0,
+            "historyEvicted": 297,
+            "queued": 0
+          },
+          {
+            "receipts": 4,
+            "bases": 2,
+            "basisBytes": 320,
+            "pinnedBasisBytes": 0,
+            "pinnedTickets": 0,
+            "wires": 4,
+            "registry": 0,
+            "sequenceContexts": 1,
+            "sessionContexts": 0,
+            "history": 3,
+            "redo": 0,
+            "historyBytes": 1452,
+            "outcomes": 0,
+            "historyEvicted": 397,
+            "queued": 0
+          }
+        ],
+        "scope": "engine-owned record counts at fixed document size; not allocator/GC proof"
+      },
+      "elapsedMs": 179.33179999999993
+    },
+    {
+      "name": "midStageBasis",
+      "status": "PASS",
+      "detail": {
+        "cases": 1,
+        "scope": "reentrant capture after private structural mutation, before outer publication"
+      },
+      "elapsedMs": 2.9503999999997177
+    },
+    {
+      "name": "repairMutations",
+      "status": "PASS",
+      "detail": {
+        "controls": 9,
+        "killed": 9,
+        "evidence": [
+          {
+            "name": "terminal selection",
+            "mutant": "IgnoreSelection",
+            "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'InvalidSelection'\n"
+          },
+          {
+            "name": "working ancestry",
+            "mutant": "OldStructure",
+            "message": "Expected values to be strictly equal:\n\n'i2' !== 'i1'\n"
+          },
+          {
+            "name": "range shape",
+            "mutant": "CoerceRange",
+            "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'InvalidTargetRange'\n"
+          },
+          {
+            "name": "domain class",
+            "mutant": "OldStructure",
+            "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'ProtectedStructuralBoundary'\n"
+          },
+          {
+            "name": "bounded caches",
+            "mutant": "NoEviction",
+            "message": "The expression evaluated to a falsy value:\n\n  assert.ok(m.retentionStats().receipts<=2)\n"
+          },
+          {
+            "name": "root-free receipts",
+            "mutant": "RootReceipt",
+            "message": "The expression evaluated to a falsy value:\n\n  assert.ok([...m.receipts.values()].every(r=>!('snapshot'in r)))\n"
+          },
+          {
+            "name": "dependency pin",
+            "mutant": "LostPin",
+            "message": "{\"ticket\":6,\"status\":\"Rejected\",\"reason\":\"BasisDependencyFailed\"}\n+ actual - expected\n\n+ 'Rejected'\n- 'Accepted'\n"
+          },
+          {
+            "name": "retired session",
+            "mutant": "ForgotSession",
+            "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'StaleCompositionSession'\n"
+          },
+          {
+            "name": "expired wire",
+            "mutant": "ReplayExpired",
+            "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'Accepted'\n- 'DuplicateReceiptExpired'\n"
+          }
+        ]
+      },
+      "elapsedMs": 79.10809999999992
+    },
+    {
+      "name": "namedTests",
+      "status": "PASS",
+      "detail": {
+        "passed": true,
+        "cases": [
+          {
+            "name": "queuedStructuralContinuation",
+            "status": "PASS"
+          },
+          {
+            "name": "failedInitiator",
+            "status": "PASS"
+          },
+          {
+            "name": "partialCancelLedger",
+            "status": "PASS"
+          },
+          {
+            "name": "changedTerminalCommit",
+            "status": "PASS"
+          },
+          {
+            "name": "cancelDoesNotDoubleUndo",
+            "status": "PASS"
+          },
+          {
+            "name": "atomicSettlementRollback",
+            "status": "PASS"
+          },
+          {
+            "name": "reentryPublishedBasis",
+            "status": "PASS"
+          },
+          {
+            "name": "failurePreservesReentrantRequests",
+            "status": "PASS"
+          },
+          {
+            "name": "barrierAndAfterTicket",
+            "status": "PASS"
+          },
+          {
+            "name": "postEditSelectionMapping",
+            "status": "PASS"
+          },
+          {
+            "name": "noOpAndIdentityReuse",
+            "status": "PASS"
+          },
+          {
+            "name": "unmarkResumeAndFence",
+            "status": "PASS"
+          },
+          {
+            "name": "connectionTurnover",
+            "status": "PASS"
+          },
+          {
+            "name": "duplicateAndImmutablePublication",
+            "status": "PASS"
+          },
+          {
+            "name": "unsupportedSeamAndCancelledCommands",
+            "status": "PASS"
+          },
+          {
+            "name": "codeConversionAndHistory",
+            "status": "PASS"
+          },
+          {
+            "name": "backwardIslands",
+            "status": "PASS"
+          },
+          {
+            "name": "semanticNoOpAfterRetarget",
+            "status": "PASS"
+          },
+          {
+            "name": "failedTerminalReentrantContinuation",
+            "status": "PASS"
+          },
+          {
+            "name": "exactNativeRemoval",
+            "status": "PASS"
+          },
+          {
+            "name": "newSessionRebasesHierarchy",
+            "status": "PASS"
+          },
+          {
+            "name": "observerIsolation",
+            "status": "PASS"
+          },
+          {
+            "name": "hostFence",
+            "status": "PASS"
+          },
+          {
+            "name": "fragmentedBasis",
+            "status": "PASS"
+          },
+          {
+            "name": "payloadCapture",
+            "status": "PASS"
+          },
+          {
+            "name": "graphemeFormatUndo",
+            "status": "PASS"
+          },
+          {
+            "name": "retainedObjectsAndFreshGeneration",
+            "status": "PASS"
+          },
+          {
+            "name": "oneSettlementPublication",
+            "status": "PASS"
+          },
+          {
+            "name": "turnoverRollback",
+            "status": "PASS"
+          },
+          {
+            "name": "oldDuplicateAfterEpoch",
+            "status": "PASS"
+          },
+          {
+            "name": "disposalAndForeignFlow",
+            "status": "PASS"
+          },
+          {
+            "name": "unrelatedFormatOnCancellation",
+            "status": "PASS"
+          },
+          {
+            "name": "repeatedStartRetargets",
+            "status": "PASS"
+          },
+          {
+            "name": "explicitPreeditCannotBypassAdmission",
+            "status": "PASS"
+          },
+          {
+            "name": "retargetRetainedSelectedAtom",
+            "status": "PASS"
+          }
+        ]
+      },
+      "elapsedMs": 96.07439999999997
+    },
+    {
+      "name": "generatedIntegration",
+      "status": "PASS",
+      "detail": {
+        "cases": 255,
+        "oracle": "fixture roots + independent raw splice; all events through owner dispatcher"
+      },
+      "elapsedMs": 1331.1559999999995
+    },
+    {
+      "name": "ledgerExploration",
+      "status": "PASS",
+      "detail": {
+        "cases": 240,
+        "maxQueuedCommands": 3
+      },
+      "elapsedMs": 1633.7669999999998
+    },
+    {
+      "name": "repeatedSessions",
+      "status": "PASS",
+      "detail": {
+        "sessions": 80,
+        "seed": "0x13579bd",
+        "failureRetries": 10,
+        "staleDeliveries": 80
+      },
+      "elapsedMs": 1578.5504999999994
+    },
+    {
+      "name": "integratedMutations",
+      "status": "PASS",
+      "detail": {
+        "controls": 8,
+        "killed": 8,
+        "evidence": [
+          {
+            "case": "queuedStructuralContinuation",
+            "mutant": "CapturedContinuation",
+            "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'and\\nTAIL'\n- 'a你d\\nTAIL'\n"
+          },
+          {
+            "case": "cancelDoesNotDoubleUndo",
+            "mutant": "DoubleUndo",
+            "message": "Expected values to be strictly equal:\n\n'' !== 'hello '\n"
+          },
+          {
+            "case": "atomicSettlementRollback",
+            "mutant": "LostRollbackHistory",
+            "message": "Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  {\n    active: {\n      engineId: 'session:1',\n      fence: null,\n      key: '[1,1,1]',\n...\n    generation: 1,\n+   history: [\n+     {\n+       after: {\n+         selection: [\n+           2,\n+           2\n+         ],\n+         tree: {\n+           children: [\n+             {\n+               children: [\n+                 {\n+                   children: [\n+                     {\n+                       id: 'a',\n+                       props: {},\n+                       type: 'paragraph',\n+                       units: [\n+                         {\n+                           attrs: {},\n+                           char: 'a',\n+                           kind: 'text',\n+                           originSessionId: null,\n+                           tokenId: 'a:0'\n+                         },\n+                         {\n+                           attrs: {\n+                             italic: true\n+                           },\n+                           char: 'Z',\n+                           originSessionId: 'session:1',\n+                           tokenId: 'prov:session:1:e1:m0'\n+                         },\n+                         {\n+                           attrs: {},\n+                           char: 'd',\n+                           kind: 'text',\n+                           originSessionId: null,\n+                           tokenId: 'b:1'\n+                         }\n+                       ]\n+                     },\n+                     {\n+                       children: [\n+                         {\n+                           children: [\n+                             {\n+                               id: 't',\n+                               props: {},\n+                               type: 'paragraph',\n+                               units: [\n+                                 {\n+                                   attrs: {},\n+                                   char: 'T',\n+                                   kind: 'text',\n+                                   originSessionId: null,\n+                                   tokenId: 't:0'\n+                                 },\n+                                 {\n+                                   attrs: {},\n+                                   char: 'A',\n+                                   kind: 'text',\n+                                   originSessionId: null,\n+                                   tokenId: 't:1'\n+                                 },\n+                                 {\n+                                   attrs: {},\n+                                   char: 'I',\n+                                   kind: 'text',\n+                                   originSessionId: null,\n+                                   tokenId: 't:2'\n+                                 },\n+                                 {\n+                                   attrs: {},\n+                                   char: 'L',\n+                                   kind: 'text',\n+                                   originSessionId: null,\n+                                   tokenId: 't:3'\n+                                 }\n+                               ]\n+                             }\n+                           ],\n+                           id: 'ni',\n+                           props: {},\n+                           type: 'item'\n+                         }\n+                       ],\n+                       id: 'nested',\n+                       props: {},\n+                       type: 'list'\n+                     }\n+                   ],\n+                   id: 'i1',\n+                   props: {},\n+                   type: 'item'\n+                 }\n+               ],\n+               id: 'L',\n+               props: {},\n+               type: 'list'\n+             }\n+           ],\n+           id: 'f',\n+           props: {},\n+           type: 'flow'\n+         }\n+       },\n+       before: {\n+         selection: [\n+           1,\n+           4\n+         ],\n+         tree: {\n+           children: [\n+             {\n+               children: [\n+                 {\n+                   children: [\n+                     {\n+                       id: 'a',\n+                       props: {},\n+                       type: 'paragraph',\n+                       units: [\n+                         {\n+                           attrs: {},\n+                           char: 'a',\n+                           kind: 'text',\n+                           originSessionId: null,\n+                           tokenId: 'a:0'\n+                         },\n+                         {\n+                           attrs: {\n+                             italic: true\n+                           },\n+                           char: 'b',\n+                           kind: 'text',\n+                           originSessionId: null,\n+                           tokenId: 'a:1'\n+                         }\n+                       ]\n+                     }\n+                   ],\n+                   id: 'i1',\n+                   props: {},\n+                   type: 'item'\n+                 },\n+                 {\n+                   children: [\n+                     {\n+                       id: 'b',\n+                       props: {},\n+                       type: 'paragraph',\n+                       units: [\n+                         {\n+                           attrs: {},\n+                           char: 'c',\n+                           kind: 'text',\n+                           originSessionId: null,\n+                           tokenId: 'b:0'\n+                         },\n+                         {\n+                           attrs: {},\n+                           char: 'd',\n+                           kind: 'text',\n+                           originSessionId: null,\n+                           tokenId: 'b:1'\n+                         }\n+                       ]\n+                     },\n+                     {\n+                       children: [\n+                         {\n+                           children: [\n+                             {\n+                               id: 't',\n+                               props: {},\n+                               type: 'paragraph',\n+                               units: [\n+                                 {\n+                                   attrs: {},\n+                                   char: 'T',\n+                                   kind: 'text',\n+                                   originSessionId: null,\n+                                   tokenId: 't:0'\n+                                 },\n+                                 {\n+                                   attrs: {},\n+                                   char: 'A',\n+                                   kind: 'text',\n+                                   originSessionId: null,\n+                                   tokenId: 't:1'\n+                                 },\n+                                 {\n+                                   attrs: {},\n+                                   char: 'I',\n+                                   kind: 'text',\n+                                   originSessionId: null,\n+                                   tokenId: 't:2'\n+                                 },\n+                                 {\n+                                   attrs: {},\n+                                   char: 'L',\n+                                   kind: 'text',\n+                                   originSessionId: null,\n+                                   tokenId: 't:3'\n+                                 }\n+                               ]\n+                             }\n+                           ],\n+                           id: 'ni',\n+                           props: {},\n+                           type: 'item'\n+                         }\n+                       ],\n+                       id: 'nested',\n+                       props: {},\n+                       type: 'list'\n+                     }\n+                   ],\n+                   id: 'i2',\n+                   props: {},\n+                   type: 'item'\n+                 }\n+               ],\n+               id: 'L',\n+               props: {},\n+               type: 'list'\n+             }\n+           ],\n+           id: 'f',\n+           props: {},\n+           type: 'flow'\n+         }\n+       },\n+       id: 1,\n+       kind: 'Composition'\n+     },\n+     {\n+       after: {\n+         selection: [\n+           2,\n+           2\n+         ],\n+         tree: {\n+           children: [\n+             {\n+               children: [\n+                 {\n+                   children: [\n+                     {\n+                       id: 'a',\n+                       props: {},\n+                       type: 'paragraph',\n+                       units: [\n+                         {\n+                           attrs: {},\n+                           char: 'a',\n+                           kind: 'text',\n+                           originSessionId: null,\n+                           tokenId: 'a:0'\n+                         },\n+                         {\n+                           attrs: {\n+                             bold: true,\n+                             italic: true\n+                           },\n+                           char: 'Z',\n+                           originSessionId: 'session:1',\n+                           tokenId: 'prov:session:1:e1:m0'\n+                         },\n+                         {\n+                           attrs: {},\n+                           char: 'd',\n+                           kind: 'text',\n+                           originSessionId: null,\n+                           tokenId: 'b:1'\n+                         }\n+                       ]\n+                     },\n+                     {\n+                       children: [\n+                         {\n+                           children: [\n+                             {\n+                               id: 't',\n+                               props: {},\n+                               type: 'paragraph',\n+                               units: [\n+                                 {\n+                                   attrs: {},\n+                                   char: 'T',\n+                                   kind: 'text',\n+                                   originSessionId: null,\n+                                   tokenId: 't:0'\n+                                 },\n+                                 {\n+                                   attrs: {},\n+                                   char: 'A',\n+                                   kind: 'text',\n+                                   originSessionId: null,\n+                                   tokenId: 't:1'\n+                                 },\n+                                 {\n+                                   attrs: {},\n+                                   char: 'I',\n+                                   kind: 'text',\n+                                   originSessionId: null,\n+                                   tokenId: 't:2'\n+                                 },\n+                                 {\n+                                   attrs: {},\n+                                   char: 'L',\n+                                   kind: 'text',\n+                                   originSessionId: null,\n+                                   tokenId: 't:3'\n+                                 }\n+                               ]\n+                             }\n+                           ],\n+                           id: 'ni',\n+                           props: {},\n+                           type: 'item'\n+                         }\n+                       ],\n+                       id: 'nested',\n+                       props: {},\n+                       type: 'list'\n+                     }\n+                   ],\n+                   id: 'i1',\n+                   props: {},\n+                   type: 'item'\n+                 }\n+               ],\n+               id: 'L',\n+               props: {},\n+               type: 'list'\n+             }\n+           ],\n+           id: 'f',\n+           props: {},\n+           type: 'flow'\n+         }\n+       },\n+       before: {\n+         selection: [\n+           2,\n+           2\n+         ],\n+         tree: {\n+           children: [\n+             {\n+               children: [\n+                 {\n+                   children: [\n+                     {\n+                       id: 'a',\n+                       props: {},\n+                       type: 'paragraph',\n+                       units: [\n+                         {\n+                           attrs: {},\n+                           char: 'a',\n+                           kind: 'text',\n+                           originSessionId: null,\n+                           tokenId: 'a:0'\n+                         },\n+                         {\n+                           attrs: {\n+                             italic: true\n+                           },\n+                           char: 'Z',\n+                           originSessionId: 'session:1',\n+                           tokenId: 'prov:session:1:e1:m0'\n+                         },\n+                         {\n+                           attrs: {},\n+                           char: 'd',\n+                           kind: 'text',\n+                           originSessionId: null,\n+                           tokenId: 'b:1'\n+                         }\n+                       ]\n+                     },\n+                     {\n+                       children: [\n+                         {\n+                           children: [\n+                             {\n+                               id: 't',\n+                               props: {},\n+                               type: 'paragraph',\n+                               units: [\n+                                 {\n+                                   attrs: {},\n+                                   char: 'T',\n+                                   kind: 'text',\n+                                   originSessionId: null,\n+                                   tokenId: 't:0'\n+                                 },\n+                                 {\n+                                   attrs: {},\n+                                   char: 'A',\n+                                   kind: 'text',\n+                                   originSessionId: null,\n+                                   tokenId: 't:1'\n+                                 },\n+                                 {\n+                                   attrs: {},\n+                                   char: 'I',\n+                                   kind: 'text',\n+                                   originSessionId: null,\n+                                   tokenId: 't:2'\n+                                 },\n+                                 {\n+                                   attrs: {},\n+                                   char: 'L',\n+                                   kind: 'text',\n+                                   originSessionId: null,\n+                                   tokenId: 't:3'\n+                                 }\n+                               ]\n+                             }\n+                           ],\n+                           id: 'ni',\n+                           props: {},\n+                           type: 'item'\n+                         }\n+                       ],\n+                       id: 'nested',\n+                       props: {},\n+                       type: 'list'\n+                     }\n+                   ],\n+                   id: 'i1',\n+                   props: {},\n+                   type: 'item'\n+                 }\n+               ],\n+               id: 'L',\n+               props: {},\n+               type: 'list'\n+             }\n+           ],\n+           id: 'f',\n+           props: {},\n+           type: 'flow'\n+         }\n+       },\n+       id: 2,\n+       kind: 'Formatting'\n+     }\n+   ],\n-   history: [],\n    hostFence: true,\n    markedRange: [\n      1,\n      3\n    ],\n"
+          },
+          {
+            "case": "noOpAndIdentityReuse",
+            "mutant": "ReusedUnitNamespace",
+            "message": "unit identities must be unique\n\n3 !== 4\n"
+          },
+          {
+            "case": "hostFence",
+            "mutant": "GuessedFence",
+            "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'HostFenceRequired'\n"
+          },
+          {
+            "case": "observerIsolation",
+            "mutant": "ObserverVeto",
+            "message": "{\"ticket\":1,\"status\":\"Rejected\",\"reason\":\"ObserverFailure\"}\n+ actual - expected\n\n+ 'Rejected'\n- 'Accepted'\n"
+          },
+          {
+            "case": "explicitPreeditCannotBypassAdmission",
+            "mutant": "BypassStructuralGuard",
+            "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'ProtectedStructuralBoundary'\n"
+          },
+          {
+            "case": "repeatedStartRetargets",
+            "mutant": "IgnoreRepeatedStart",
+            "message": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n+   0,\n+   1\n-   2,\n-   3\n  ]\n"
+          }
+        ]
+      },
+      "elapsedMs": 99.5585000000001
+    },
+    {
+      "name": "scheduling",
+      "status": "PASS",
+      "detail": {
+        "requests": 130,
+        "firstBudget": 64
+      },
+      "elapsedMs": 4781.1409
+    }
+  ],
+  "sourceHashes": {
+    "awt-contract-model.mjs": "f90a5ff974b435211f2aefa388d7421dfebc4ebfda404cc50991220942207e26",
+    "candidate-b-coordinator.mjs": "2ad62940f6c21b0fa00e2cbea9fa39ae4671cfc4e9f1a2e0738d79fa2e405898",
+    "canonical-codec.mjs": "54c3dc596b5ad33d32832dc600abfc58304a600d3e3e13c404ddf1747a55aa30",
+    "document-model-base.mjs": "c702ea4c4adcfca938bf5f458ffb8caf3ae02c60eee19f22268a079e522f6b70",
+    "document-model.mjs": "4de147555f84c86edbfcdee05b81323b1bacddee6c76e9ef8c79d43a15b4f82b",
+    "document-tree.mjs": "5104a51318e6699555fc408b30295fd0c168fc23f2a2eb41f9b54b7666447b78",
+    "integrated-model.mjs": "d9184239fd52f973deb595557cd2e506ba3eb4d630e21ac47ad2024b27cbf644",
+    "recovery-model.mjs": "7eeecfadac23ba56932d80e12b1946063bb3715949818bfbeaec5030eb5733fd",
+    "request-contract.mjs": "205ea355e0e9f78095a9ca643bf109894c6f80a8d7c123bb207443d170f2adae",
+    "structural-model.mjs": "aeca8f7c28b3ce023e41e61de850f31cde7a3b6c77c0ccabfe0c9a7e7cdf4e08",
+    "test-document-mutations.mjs": "3422f629c06d7c7dc1eec4df73eaf6198df37301dbd9617f6678be01f30ac2af",
+    "test-document.mjs": "29aa261d927a4ebd996a234a6bd9f6162c019012917186275811bf8bc269586f",
+    "test-integrated.mjs": "bd0b3afe098469ff3a109806eeb0a85b2f80dbfff8f6e435ed534d6262d837b4",
+    "test-measure.mjs": "64f9c2abde01f13cafe8e67e7a79443dcf71e8a16813cb90564bd7887f700072",
+    "test-recovery.mjs": "e66833cd49886884a05795515b4ec6b6b2d3737b1d8cc3ab5eccc3eac41068d2",
+    "test-repairs.mjs": "2d452d47069276f897fbd1fafc8dbc3a06c1b922b495c8bd9dd10f1a7b8652fa",
+    "test-v5.mjs": "96a32a09d0d3d81de1ec3ee0b3d2e8ab61ffee67389d7607604edba452d151c1",
+    "verify.mjs": "5a54cf2f0e5f8465e3bcf02c432995560f2111941ed60be55f48a9eb0e939650"
+  },
+  "limits": [
+    "Whole-document reference, not production code",
+    "Synthetic input and Intl segmentation",
+    "Full-copy trees, not production complexity or heap proof"
+  ]
+}
