@@ -5,11 +5,12 @@ import javax.swing.SwingUtilities
 import javax.swing.UIManager
 
 fun main(args: Array<String>) {
-    if ("--check" in args) { runChecks(); return }
+    if ("--check" in args) { runChecks(); runFileChecks(); return }
+    if ("--stress" in args) { runStressChecks(); return }
     val diagnostics = args.indexOf("--diagnostics").takeIf { it >= 0 }?.let { File(args[it + 1]) }
     SwingUtilities.invokeLater {
         runCatching { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()) }
-        val window = showEditor(diagnostics)
+        val window = try { showEditor(diagnostics) } catch (failure: Throwable) { failure.printStackTrace(); kotlin.system.exitProcess(1) }
         if ("--host-check" in args) {
             var attempts = 0
             val timer = javax.swing.Timer(150, null)
@@ -17,8 +18,9 @@ fun main(args: Array<String>) {
                 val surface = findSurface(window)
                 if (surface?.view?.measure != null) {
                     timer.stop()
-                    runCatching { runHostChecks(surface) }.onFailure { it.printStackTrace() }
-                } else if (++attempts > 50) { timer.stop(); error("Editor did not produce layout for host checks") }
+                    try { runHostChecks(surface); window.dispose() }
+                    catch (failure: Throwable) { failure.printStackTrace(); window.dispose(); kotlin.system.exitProcess(1) }
+                } else if (++attempts > 50) { timer.stop(); System.err.println("Editor did not produce layout for host checks"); window.dispose(); kotlin.system.exitProcess(1) }
             }
             timer.start()
         }

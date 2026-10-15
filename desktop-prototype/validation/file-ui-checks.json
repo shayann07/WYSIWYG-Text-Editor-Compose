@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "scope": "Real Windows keyboard/mouse, Swing file dialogs, Compose rendering. No physical OS IME test.",
+  "checks": [
+    "Ctrl+S opens Save dialog",
+    "multilingual emoji file exact independent Python decoding and SHA256",
+    "dirty marker clears after save",
+    "real KEY_TYPED makes document dirty",
+    "Close prompts; Cancel preserves text",
+    "Open creates separate clean window with saved content and empty Undo",
+    "original window retains newer unsaved edit",
+    "Save-and-close writes latest text; all test windows closed normally"
+  ],
+  "keyTypedEvents": 1,
+  "finalSavedUnits": 29,
+  "fileSha256": "b9e1d26437d65e821620c3382bae1a2c46f319a76c1793ae4c9d2c9010be461e"
+}

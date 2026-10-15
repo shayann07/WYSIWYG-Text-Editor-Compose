@@ -10,7 +10,7 @@ import java.text.AttributedString
 import java.io.File
 
 fun findSurface(component: Component): EditorSurface? = if (component is EditorSurface) component else (component as? Container)?.components?.firstNotNullOfOrNull(::findSurface)
-private fun string(iterator: AttributedCharacterIterator): String = buildString { var c=iterator.first();while(c!=AttributedCharacterIterator.DONE){append(c);c=iterator.next()} }
+private fun string(iterator: AttributedCharacterIterator): String = buildString { for (index in iterator.beginIndex until iterator.endIndex) append(iterator.setIndex(index)) }
 /** Actual attached host + real Compose layout, but injected AWT IME events, not an OS IME. */
 fun runHostChecks(surface: EditorSurface) {
     val e=surface.engine
@@ -35,7 +35,15 @@ fun runHostChecks(surface: EditorSurface) {
     surface.dispatchEvent(KeyEvent(surface,KeyEvent.KEY_PRESSED,System.currentTimeMillis(),0,KeyEvent.VK_LEFT,KeyEvent.CHAR_UNDEFINED))
     event("😀",2,null);check(e.snapshot().selection.focus==3) { "User Left should snap to the emoji start, not the document start" }
     e.perform(EditAction.Undo);check(e.snapshot().visible.text.isEmpty())
-    val report="{\"status\":\"PASS\",\"committedSliceQueries\":$queries,\"imeEvents\":5,\"scope\":\"Attached AWT host and real Compose layout; synthetic IME event stream, not a physical OS IME\"}"
+    event("A\uffffZ",3,null);check(e.snapshot().visible.text=="A\uffffZ") { "U+FFFF is text, not the end of an iterator" }
+    check(string(surface.getCommittedText(0,3,null))=="A\uffffZ")
+    e.perform(EditAction.Undo);check(e.snapshot().visible.text.isEmpty())
+    val beforeInvalid=e.snapshot();event("abc",0,99);check(e.snapshot()==beforeInvalid) { "Invalid native caret must reject atomically, not silently clamp" }
+    e.replace("abc","Fixture");e.move(Selection(1,1))
+    surface.dispatchEvent(KeyEvent(surface,KeyEvent.KEY_PRESSED,System.currentTimeMillis(),KeyEvent.CTRL_DOWN_MASK or KeyEvent.ALT_DOWN_MASK or KeyEvent.ALT_GRAPH_DOWN_MASK,KeyEvent.VK_A,'a'))
+    check(e.snapshot().selection==Selection(1,1)) { "AltGr+A must not run Select All" }
+    e.perform(EditAction.Undo);check(e.snapshot().visible.text.isEmpty())
+    val report="{\"status\":\"PASS\",\"committedSliceQueries\":$queries,\"imeEvents\":7,\"rawFFFF\":\"PASS\",\"invalidCaretRejected\":\"PASS\",\"altGrShortcutIsolation\":\"PASS\",\"scope\":\"Attached AWT host and real Compose layout; synthetic IME event stream, not a physical OS IME\"}"
     File("desktop-prototype/target/host-checks.json").apply {parentFile.mkdirs();writeText(report)}
     println(report)
     surface.writeDiagnostics()

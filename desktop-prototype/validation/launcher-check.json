@@ -1,10 +1,11 @@
 {
   "status": "PASS",
-  "launcher": "run.cmd",
-  "mode": "Normal launch with runtime jars and no raw document diagnostics",
-  "observedWindow": "Astra Editor \u2014 Desktop Prototype",
+  "version": "0.2.0",
+  "command": "desktop-prototype\\run.cmd",
+  "windowTitle": "Untitled \u2014 Astra Editor",
   "process": "javaw.exe",
-  "initialDocument": "empty",
-  "initialUndoRedo": "disabled",
-  "frozenV5Modified": false
+  "windowIdAtObservation": 8980844,
+  "diagnosticsEnabled": false,
+  "observed": "Fresh empty document, Open and Save controls, no user document modified",
+  "scope": "Normal Windows launcher and rendered window"
 }

@@ -129,6 +129,8 @@ class EditorSurface(val engine: EditorEngine, val view: ViewState, private val d
     private var keyEvents = 0; private var imeEvents = 0
     private val blinkTimer = Timer(500) { if (view.focused) view.blink = !view.blink }
     var statusChanged: (EditorFrame) -> Unit = {}
+    var requestSave: (Boolean) -> Unit = {}
+    var requestOpen: () -> Unit = {}
     init {
         isOpaque = false; isFocusable = true; focusTraversalKeysEnabled = false
         cursor = Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR); enableInputMethods(true)
@@ -149,9 +151,11 @@ class EditorSurface(val engine: EditorEngine, val view: ViewState, private val d
         addInputMethodListener(object : InputMethodListener {
             override fun inputMethodTextChanged(e: InputMethodEvent) {
                 imeEvents++
-                val text = e.text?.let { iterator -> buildString { var c = iterator.first(); while (c != AttributedCharacterIterator.DONE) { append(c); c = iterator.next() } } } ?: ""
+                val text = e.text?.let { iterator -> buildString { for (index in iterator.beginIndex until iterator.endIndex) append(iterator.setIndex(index)) } } ?: ""
                 val committed = e.committedCharacterCount
-                if (committed in 0..text.length) engine.inputMethod(text, committed, e.caret?.insertionIndex?.coerceIn(0, text.length - committed))
+                val caret = e.caret?.insertionIndex
+                if (committed in 0..text.length && (caret == null || caret in 0..text.length - committed)) engine.inputMethod(text, committed, caret)
+                else runCatching { engine.onEvent("Rejected malformed native text/caret range") }
                 e.consume(); preferredX = null
             }
             override fun caretPositionChanged(e: InputMethodEvent) { e.caret?.let { engine.inputMethodCaret(it.insertionIndex) }; e.consume() }
@@ -164,8 +168,10 @@ class EditorSurface(val engine: EditorEngine, val view: ViewState, private val d
             }
             override fun keyPressed(e: KeyEvent) {
                 if (e.isConsumed) return
-                val command = e.isControlDown || e.isMetaDown
+                val command = (e.isControlDown || e.isMetaDown) && !e.isAltGraphDown
                 when {
+                    command && e.keyCode == KeyEvent.VK_S -> requestSave(e.isShiftDown)
+                    command && e.keyCode == KeyEvent.VK_O -> requestOpen()
                     command && e.keyCode == KeyEvent.VK_Z -> engine.perform(if (e.isShiftDown) EditAction.Redo else EditAction.Undo)
                     command && e.keyCode == KeyEvent.VK_Y -> engine.perform(EditAction.Redo)
                     command && e.keyCode == KeyEvent.VK_A -> engine.selectAll()
@@ -313,9 +319,11 @@ class EditorSurface(val engine: EditorEngine, val view: ViewState, private val d
     }
 }
 
-fun showEditor(diagnostics: File? = null): JFrame {
+fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList()), initialPath: java.nio.file.Path? = null): JFrame {
     check(SwingUtilities.isEventDispatchThread())
-    val engine=EditorEngine();val state=ViewState(engine.snapshot());val surface=EditorSurface(engine,state,diagnostics)
+    val engine=EditorEngine(initial);val state=ViewState(engine.snapshot());val surface=EditorSurface(engine,state,diagnostics)
+    val window=JFrame("Astra Editor — Desktop Prototype")
+    lateinit var files: WindowFiles
     val compose=ComposePanel(renderSettings=RenderSettings.SwingGraphics()).apply {isFocusable=false;setContent {DocumentCanvas(state)}}
     val layers=object:JLayeredPane(){override fun doLayout(){compose.setBounds(0,0,width,height);surface.setBounds(0,0,width,height)};override fun getPreferredSize()=Dimension(1020,640)}
     // Kotlin otherwise selects add(Component, index), not add(Component, layer).
@@ -327,18 +335,22 @@ fun showEditor(diagnostics: File? = null): JFrame {
     val titles=JPanel(GridLayout(2,1,0,3)).apply {isOpaque=false;add(title);add(subtitle)};header.add(titles,BorderLayout.WEST)
     val buttons=JPanel(FlowLayout(FlowLayout.RIGHT,8,0)).apply {isOpaque=false}
     fun button(label:String,tooltip:String,action:()->Unit)=JButton(label).apply {isFocusable=false;font=Font("Segoe UI",Font.PLAIN,13);toolTipText=tooltip;addActionListener {action();surface.requestFocusInWindow()};buttons.add(this)}
+    val open=button("Open","Open a document in a new window (Ctrl+O)"){files.open()}
+    val save=button("Save","Save document (Ctrl+S); Save As: Ctrl+Shift+S"){files.save()}
     val undo=button("Undo","Ctrl+Z"){engine.perform(EditAction.Undo)};val redo=button("Redo","Ctrl+Shift+Z or Ctrl+Y"){engine.perform(EditAction.Redo)}
     button("Copy","Copy selected text (Ctrl+C)"){surface.copySelection(false)};button("Paste","Paste plain text (Ctrl+V)"){surface.paste()};header.add(buttons,BorderLayout.EAST)
     val footer=JPanel(BorderLayout()).apply {background=bg;border=EmptyBorder(10,24,10,24)}
-    val position=JLabel();val notice=JLabel("In memory • not saved to disk");listOf(position,notice).forEach {it.font=Font("Segoe UI",Font.PLAIN,12);it.foreground=Color(0x64748b)}
+    val position=JLabel();val notice=JLabel();listOf(position,notice).forEach {it.font=Font("Segoe UI",Font.PLAIN,12);it.foreground=Color(0x64748b)}
     footer.add(position,BorderLayout.WEST);footer.add(notice,BorderLayout.EAST)
-    surface.statusChanged={f->val before=f.visible.text.take(f.selection.focus);val line=before.count {it=='\n'}+1;val col=Graphemes.stops(before.substringAfterLast('\n')).size;position.text="Line $line · Column $col"+(if(f.selection.collapsed)"" else " · ${f.selection.end-f.selection.start} selected");notice.text=if(f.notice=="Ready")"In memory • not saved to disk" else f.notice;undo.isEnabled=f.undoCount>0||f.marked!=null;redo.isEnabled=f.redoCount>0&&f.marked==null}
+    files=WindowFiles(window,engine,initialPath){surface.statusChanged(engine.snapshot())}
+    surface.requestSave={files.save(it)};surface.requestOpen={files.open()}
+    surface.statusChanged={f->val before=f.visible.text.take(f.selection.focus);val line=before.count {it=='\n'}+1;val col=Graphemes.stops(before.substringAfterLast('\n')).size;position.text="Line $line · Column $col"+(if(f.selection.collapsed)"" else " · ${f.selection.end-f.selection.start} selected");notice.text=if(f.notice=="Ready")files.status else f.notice;title.text=files.name;window.title="${files.name} — Astra Editor";open.isEnabled=!files.busy;save.isEnabled=!files.busy;undo.isEnabled=f.undoCount>0||f.marked!=null;redo.isEnabled=f.redoCount>0&&f.marked==null}
     surface.statusChanged(engine.snapshot())
-    return JFrame("Astra Editor — Desktop Prototype").apply {
-        defaultCloseOperation=JFrame.DISPOSE_ON_CLOSE;minimumSize=Dimension(620,400)
+    return window.apply {
+        minimumSize=Dimension(760,400)
         contentPane=JPanel(BorderLayout()).apply {add(header,BorderLayout.NORTH);add(layers,BorderLayout.CENTER);add(footer,BorderLayout.SOUTH)}
         pack();setLocationRelativeTo(null);isVisible=true
-        addWindowListener(object:WindowAdapter(){override fun windowClosing(e:WindowEvent){inputContext?.endComposition()};override fun windowClosed(e:WindowEvent){compose.dispose()}})
+        addWindowListener(object:WindowAdapter(){override fun windowClosed(e:WindowEvent){compose.dispose()}})
         SwingUtilities.invokeLater {surface.requestFocusInWindow();surface.writeDiagnostics()}
     }
 }

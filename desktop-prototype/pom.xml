@@ -1,5 +1,5 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
- <modelVersion>4.0.0</modelVersion><groupId>local.editor</groupId><artifactId>desktop-prototype</artifactId><version>0.1.0</version>
+ <modelVersion>4.0.0</modelVersion><groupId>local.editor</groupId><artifactId>desktop-prototype</artifactId><version>0.2.0</version>
  <properties><kotlin.version>2.2.20</kotlin.version><project.build.sourceEncoding>UTF-8</project.build.sourceEncoding></properties>
  <repositories><repository><id>google</id><url>https://dl.google.com/dl/android/maven2/</url></repository></repositories>
  <dependencyManagement><dependencies><dependency><groupId>androidx.compose.runtime</groupId><artifactId>runtime-desktop</artifactId><version>1.12.1</version></dependency><dependency><groupId>androidx.compose.runtime</groupId><artifactId>runtime-saveable-desktop</artifactId><version>1.12.1</version></dependency><dependency><groupId>androidx.compose.runtime</groupId><artifactId>runtime-retain-desktop</artifactId><version>1.12.1</version></dependency></dependencies></dependencyManagement>

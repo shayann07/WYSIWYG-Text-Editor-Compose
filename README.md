@@ -51,4 +51,4 @@ The Compose probe requires a compatible JDK/Maven setup; local Windows paths in 
 
 ## Runnable desktop prototype
 
-The first plain-text desktop slice is now in [desktop-prototype](desktop-prototype/README.md). On Windows, double-click [run.cmd](desktop-prototype/run.cmd) to build and open it. Typing, cursor/selection and engine-owned Undo/Redo are implemented. Text remains in memory; real OS IME and full v5 production qualification remain open. The frozen specification is unchanged.
+The first plain-text desktop slice is now in [desktop-prototype](desktop-prototype/README.md). On Windows, double-click [run.cmd](desktop-prototype/run.cmd) to build and open it. Typing, cursor/selection and engine-owned Undo/Redo are implemented. Save/Open now preserves `.astra` prototype documents, with an unsaved-close prompt. There is no autosave; real OS IME and full v5 production qualification remain open. The frozen specification is unchanged.

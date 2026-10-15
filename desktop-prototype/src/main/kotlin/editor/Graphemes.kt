@@ -39,6 +39,9 @@ object Graphemes {
             offset += Character.charCount(cp)
         }
         val stops = arrayListOf(0)
+        // GB12/13 counts the immediately preceding RI run, not the current grapheme.
+        // Carry parity forward instead of rescanning the entire run at every boundary.
+        var regionalRun = if (scalars.first().g == "Regional_Indicator") 1 else 0
         fun control(g: String) = g in setOf("CR", "LF", "Control")
         for (k in 1..scalars.lastIndex) {
             val l = scalars[k - 1]; val r = scalars[k]
@@ -53,8 +56,9 @@ object Graphemes {
                 else -> false
             }
             if (!join && !control(l.g) && !control(r.g) && r.pictograph && l.g == "ZWJ") { var j = k - 2; while (j >= 0 && scalars[j].g == "Extend") j--; join = j >= 0 && scalars[j].pictograph }
-            if (!join && l.g == "Regional_Indicator" && r.g == "Regional_Indicator") { var count = 0; var j = k - 1; while (j >= 0 && scalars[j].g == "Regional_Indicator") { count++; j-- }; join = count % 2 == 1 }
+            if (!join && l.g == "Regional_Indicator" && r.g == "Regional_Indicator") join = regionalRun % 2 == 1
             if (!join) stops += r.offset
+            regionalRun = if (r.g == "Regional_Indicator") regionalRun + 1 else 0
         }
         stops += text.length
         return stops

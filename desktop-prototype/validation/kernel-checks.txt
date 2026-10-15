@@ -10,6 +10,18 @@ PASS paragraph tags survive IME no-op and history; native LF is a soft break
 PASS grapheme deletion handles emoji ZWJ and isolated UTF-16
 PASS snapshot immutability and reentrant requests
 PASS invalid IME range rejects before mutation
+PASS Redo refusal during composition stays on owner and isolates observers
 PASS 1000 deterministic edits match a flat oracle and unwind exactly
 PASS official Unicode 16 GraphemeBreakTest: 1093 fixtures
-ALL 14 kernel checks passed. No real OS IME claim is made by these tests.
+ALL 15 kernel checks passed. No real OS IME claim is made by these tests.
+PASS file roundtrip preserves raw UTF-16 and hard/soft breaks, including all 65536 code units
+PASS every truncated fixture and every single-byte corruption is rejected
+PASS valid checksum cannot bypass version, length, kind or paragraph validation
+PASS save-point follows written snapshot, not later edits or selection
+PASS even unchanged preedit cannot be saved or treated as clean
+PASS opened document starts with unique identities and new independent history
+PASS atomic overwrite roundtrip and interrupted save preserve previous file
+PASS invalid save leaves previous file intact and failed replace removes temp
+PASS oversized file and oversized document reject without giant allocation
+PASS stale window cannot overwrite a newer completed save; mid-write conflict preserves newer file
+ALL 10 file checks passed. No power-loss durability or production journal claim.

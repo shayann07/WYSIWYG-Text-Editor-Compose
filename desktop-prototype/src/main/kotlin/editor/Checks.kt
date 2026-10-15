@@ -67,6 +67,15 @@ fun runChecks() {
     test("invalid IME range rejects before mutation") {
         val e = seeded("abc"); val before = e.snapshot(); check(runCatching { e.inputMethod("X", 2, 0) }.isFailure); check(e.snapshot() == before)
     }
+    test("Redo refusal during composition stays on owner and isolates observers") {
+        val e = seeded("abc"); e.inputMethod("preedit", 0, 2)
+        val before = e.snapshot().visible
+        var offOwnerRejected = false
+        val thread = Thread { offOwnerRejected = runCatching { e.perform(EditAction.Redo) }.isFailure }
+        thread.start(); thread.join(); check(offOwnerRejected)
+        e.onChange = { error("observer failure") }
+        e.perform(EditAction.Redo); check(e.snapshot().visible.same(before)); check(e.snapshot().marked != null)
+    }
     test("1000 deterministic edits match a flat oracle and unwind exactly") {
         val random = Random(501); val e = EditorEngine(); var expected = ""; val history = ArrayList<String>()
         repeat(1000) {

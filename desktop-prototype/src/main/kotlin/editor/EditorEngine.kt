@@ -26,10 +26,10 @@ sealed interface EditAction {
 
 /** Plain-text vertical slice: one owner, Dc + provisional replacement, independent history.
  * Array snapshots are intentional for this prototype, NOT the production persistent index. */
-class EditorEngine(private val now: () -> Long = { System.nanoTime() / 1_000_000 }) {
+class EditorEngine(initial: Document = Document(emptyList()), private val now: () -> Long = { System.nanoTime() / 1_000_000 }) {
     private val owner = Thread.currentThread()
     private var serial = 0L; private var historySerial = 0L
-    private var dc = Document(emptyList()); private var composition: Composition? = null
+    private var dc = Document(initial.units.map { TextUnit(++serial, it.char, it.kind) }); private var composition: Composition? = null
     private var selection = Selection(0, 0)
     private val undo = ArrayList<History>(); private val redo = ArrayList<History>()
     private val pending = ArrayList<EditAction>(); private val dispatchQueue = ArrayDeque<() -> Unit>()
@@ -111,7 +111,6 @@ class EditorEngine(private val now: () -> Long = { System.nanoTime() / 1_000_000
         return null
     }
     fun perform(action: EditAction) {
-        if (composition != null && action == EditAction.Redo) { notice = "Finish the current composition before Redo."; onChange(snapshot()); return }
         dispatch(action.javaClass.simpleName) {
             if (composition != null) {
                 if (action == EditAction.Redo) { notice = "Finish the current composition before Redo."; return@dispatch }
