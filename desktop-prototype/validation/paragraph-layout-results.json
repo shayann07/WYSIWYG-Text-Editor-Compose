@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-17T01:52:00Z",
+  "timestamp": "2026-10-17T02:11:30Z",
   "environment": {
     "os": "Windows 11",
     "architecture": "x86_64",
@@ -16,18 +16,18 @@
     "desktop-prototype/run.cmd": "c68514768c7d36dcd53fe6f6134c9302190b841641f13a5cd7c3db72b81ffb06",
     "desktop-prototype/verify.py": "38946ab0a4fa7151d7fc7f83a9cc2d6dab9f7884ce8d592d3191c1d7ff502b3b",
     "desktop-prototype/src/main/kotlin/editor/Checks.kt": "eb94187c261d7d6a4b3c3a887c5055d1454880c01687232f056a445b4bd797db",
-    "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt": "c8b9fa162b4b811eef996021c910852b0be0f78773f8af32ed7f212ed52253e8",
+    "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt": "1e7cccc7b488241ae1ec75bb48ff361fc53b3403b0a7370a40c0be8af8458e6f",
     "desktop-prototype/src/main/kotlin/editor/DocumentFiles.kt": "dbeeccaff20eae6ce875f4f65a7e399fce867a4424b279ed6a79027d9617c195",
     "desktop-prototype/src/main/kotlin/editor/EditorEngine.kt": "a34044c8575032180f2166a45f0d6cc51ef1e76fd6293efec5f5b330cb91bffe",
     "desktop-prototype/src/main/kotlin/editor/FileChecks.kt": "043e87612ecf40963de55dd2cf081a96454610da99131d9ebb2519b1360c616c",
     "desktop-prototype/src/main/kotlin/editor/FormatChecks.kt": "0c03cd09842e733f5cf3c5e74a52a9f9b1d7858b3e31623599cd2f5edd612a99",
     "desktop-prototype/src/main/kotlin/editor/Formatting.kt": "f3d0e481c245b4db321da332f3ad40490e8321fbd64edebb4b8be2e4cc20d092",
     "desktop-prototype/src/main/kotlin/editor/Graphemes.kt": "a297a5154df6a77cb1bc65115c92d5a738367671fb02f47a94c425544cb0c629",
-    "desktop-prototype/src/main/kotlin/editor/HostChecks.kt": "e5a8a90e19436c0f89f63b1ea27b93115063913aece005f36545152dc0b6dc9c",
+    "desktop-prototype/src/main/kotlin/editor/HostChecks.kt": "63362512c111d31258c652db58c4757d851c435708a42f0d8697c2e806441dda",
     "desktop-prototype/src/main/kotlin/editor/ImeTrace.kt": "153bb4b538d707cdf6c57fada2c71ff55db3445757295bc9f67612ce4e06a521",
-    "desktop-prototype/src/main/kotlin/editor/JapaneseHostChecks.kt": "01f950748002838debf77bb6284253fe5e8fbc4a93edd49c79bbc888973367cf",
+    "desktop-prototype/src/main/kotlin/editor/JapaneseHostChecks.kt": "ab3e16cb2765ebbaae697d2c69f9893c7d9e3e69e999010ad4077486be62d540",
     "desktop-prototype/src/main/kotlin/editor/Main.kt": "c3d1a40dd87a612de2e517432cbbbffd4bff6255bb3f5a2e7a2dbedbe59085b3",
-    "desktop-prototype/src/main/kotlin/editor/RtlHostChecks.kt": "14d644d38674967f9b6a9420dce4f222d4233e983cce2bebc9788460b027ddf5",
+    "desktop-prototype/src/main/kotlin/editor/RtlHostChecks.kt": "de2333bca561bcc6f052b7801bae5f315660c33387555c7cdfb4644138fde06f",
     "desktop-prototype/src/main/kotlin/editor/StressChecks.kt": "56c94d5a8f1e76230a918c23e1d9633ad42c8c2f81f4707a7d66c09e2284f091",
     "desktop-prototype/src/main/kotlin/editor/WindowFiles.kt": "62babbb3d5de30fa7c7834b2b35803524923bdaab5595de16539ac773e630d58"
   },
@@ -56,15 +56,22 @@
     "paragraphLayout": "PASS",
     "scope": "Attached AWT host and real Compose layout; synthetic IME event stream, not a physical OS IME"
   },
+  "evidenceLabels": {
+    "syntheticCallbackProcessing": "PASS (Tested via synthetic InputMethodEvent streams)",
+    "attachedComposeGeometry": "PASS (Tested with attached Compose text layout within stated offscreen and nonzero origin conditions)",
+    "actualJapaneseCandidatePopup": "BLOCKED / NOT RUN (Background execution session lacks interactive user session / foreground HWND; requires manual developer procedure)",
+    "urduArabicNativeKeystrokeObservations": "Historical smoke evidence from local trace (local-evidence/ime-1792146266448), not comprehensive qualification"
+  },
   "stage1GeometryAndInputFallback": {
     "offscreenLocation": "PASS (locationOnScreen at Point(-16000, -16000) reflected in candidate popup location)",
-    "nonShowingFallback": "PASS (IllegalComponentStateException caught; getLocationOffset returns null; getTextLocation returns Rectangle(0, 0, 0, 0))",
+    "notShowingFallback": "PASS (isShowing == false; IllegalComponentStateException caught; getLocationOffset returns null; getTextLocation returns null per AWT contract)",
+    "unavailableScreenLocationFallback": "PASS (isShowing == true but screen transform throws IllegalComponentStateException; getLocationOffset returns null; getTextLocation returns null)",
     "nonzeroComponentOrigin": "PASS (Point(250, 180) component origin reflected in screen coordinates; local coordinates (2, 4) fail hit-testing)",
-    "queuedFormattingAndUndoHistory": "PASS (Ctrl+B then Ctrl+Z during active composition settles to undoCount=2, redoCount=1; text unstyled; Redo restores bold)",
-    "settlementObservation": "PASS (onSettlementRequested observed separately; tested synchronous and delayed callbacks on Escape and focus loss)",
-    "evidenceLabels": "PASS (audited: synthetic callback processing and attached Compose candidate geometry, OS candidate qualification BLOCKED / NOT RUN)"
+    "queuedFormattingAndUndoHistory": "PASS (Ctrl+B then Ctrl+Z during active composition settles to undoCount=2, redoCount=1; text unstyled; Redo restores bold; exact step-by-step chain verified)",
+    "settlementObservation": "PASS (onEndCompositionRequested observed separately; tested synchronous, reentrant, and delayed callbacks on Escape, focus loss, and queued commands)"
   },
   "stage2ParagraphLayout": {
+    "singleLayoutDefectReproduction": "PASS (Single layout reproduces globally forced LTR direction on second Urdu paragraph with left alignment; verified independent RTL alignment under per-paragraph layout)",
     "independentBaseDirection": "PASS (Each structural paragraph measured independently with resolved TextDirection.Rtl or TextDirection.Ltr)",
     "structuralVsSoftBreak": "PASS (UnitKind.PARAGRAPH_BREAK creates independent paragraph layouts; UnitKind.TEXT soft break wraps within paragraph)",
     "directionPolicy": "PASS (Strong first character determines direction; empty and neutral-only paragraphs inherit preceding base direction, defaulting to LTR)",
@@ -73,17 +80,17 @@
     "splitAndJoin": "PASS (Enter splits paragraph; Backspace at P1 start and Delete at P0 end join paragraphs; exact Undo/Redo cycles)",
     "formattingAcrossParagraphs": "PASS (Range formatting across paragraph break applies to text units and leaves PARAGRAPH_BREAK unstyled)",
     "persistenceRoundtrip": "PASS (.astra save/open preserves structural breaks vs soft breaks, text, and formatting styles)",
-    "referenceMeasureComparison": "PASS (Reference measure matches layout structure)",
+    "referenceMeasureComparison": "PASS (Uncached reference layout comparison matches multi-paragraph layout structure)",
     "benchmarks": {
       "multiParagraph50": {
         "count": 50,
-        "durationMs": 19,
+        "durationMs": 18,
         "budgetMs": 100,
         "status": "PASS"
       },
       "longParagraph2000Words": {
         "wordCount": 2000,
-        "durationMs": 23,
+        "durationMs": 28,
         "budgetMs": 150,
         "status": "PASS"
       }

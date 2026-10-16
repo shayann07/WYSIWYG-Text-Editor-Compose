@@ -233,7 +233,32 @@ fun runRtlHostChecks(surface: EditorSurface) {
         Files.deleteIfExists(tempFile)
     }
 
-    // 10. English -> Urdu -> Arabic -> English and reverse orderings
+    // 10. Single-layout bidi defect reproduction & English -> Urdu -> Arabic -> English orderings
+    // 10a. Reproduce single-layout mixed-direction defect across both paragraphs
+    // Under a single Compose TextLayoutResult, the base direction of the entire document
+    // is globally determined by the first strong character (here 'E' in English -> LTR).
+    // As a result, Paragraph 1 ("اردو") is incorrectly resolved as LTR instead of RTL,
+    // and its text is pinned to the left margin (< maxWidth * 0.5f) instead of aligning to the right margin (> 0.9 * maxWidth).
+    val singleMeasure = checkNotNull(surface.view.singleMeasure)
+    val testMixedDoc = Document("English\nاردو".mapIndexed { i, c ->
+        TextUnit(i.toLong() + 1, c, if (c == '\n') UnitKind.PARAGRAPH_BREAK else UnitKind.TEXT)
+    })
+    val singleLayout = singleMeasure(testMixedDoc)
+    check(singleLayout.lineCount >= 2) { "Single layout must contain 2 lines" }
+    // Paragraph 0 (line 0, English): LTR, left-aligned
+    check(singleLayout.getLineForOffset(0) == 0)
+    check(singleLayout.getParagraphDirection(0) == ResolvedTextDirection.Ltr)
+    check(singleLayout.getHorizontalPosition(0, true) < 5f)
+    // Paragraph 1 (line 1, Urdu at offset 8): incorrectly forced to LTR base direction
+    check(singleLayout.getLineForOffset(8) == 1)
+    val p1SingleDir = singleLayout.getParagraphDirection(8)
+    check(p1SingleDir == ResolvedTextDirection.Ltr) { "Defect reproduced: single layout globally forces second paragraph into LTR" }
+    val p1SingleX = singleLayout.getHorizontalPosition(8, true)
+    check(p1SingleX < singleLayout.layoutInput.constraints.maxWidth * 0.5f) {
+        "Defect reproduced: single layout prevents RTL paragraph from aligning to right margin: X=$p1SingleX"
+    }
+
+    // 10b. English -> Urdu -> Arabic -> English and reverse orderings under independent paragraph layout
     val forwardMixed = "English heading\nاردو متن\nالعربية هنا\nEnglish conclusion"
     e.replace(forwardMixed, "Forward mixed fixture", paragraphBreaks = true)
     val fwdGeo = checkNotNull(surface.view.measure).invoke(e.snapshot())
@@ -421,9 +446,9 @@ fun runRtlHostChecks(surface: EditorSurface) {
     // 16. Composition geometry after scrolling
     e.replace("Paragraph 1\nParagraph 2\nParagraph 3\nParagraph 4\nParagraph 5", "Scroll test fixture", paragraphBreaks = true)
     e.move(Selection(0, 0))
-    val initialLoc = surface.getTextLocation(TextHitInfo.leading(0))
+    val initialLoc = checkNotNull(surface.getTextLocation(TextHitInfo.leading(0)))
     surface.view.scroll = 50f
-    val scrolledLoc = surface.getTextLocation(TextHitInfo.leading(0))
+    val scrolledLoc = checkNotNull(surface.getTextLocation(TextHitInfo.leading(0)))
     check(scrolledLoc.y < initialLoc.y) { "Scrolling down must shift candidate popup location upward: $scrolledLoc vs $initialLoc" }
     surface.view.scroll = 0f
     e.perform(EditAction.Undo); check(e.snapshot().visible.text.isEmpty())
@@ -445,6 +470,27 @@ fun runRtlHostChecks(surface: EditorSurface) {
     } finally {
         Files.deleteIfExists(saveDocFile)
     }
+
+    // 17b. Uncached reference layout comparison
+    val refMeasure = checkNotNull(surface.view.referenceMeasure)
+    val refDoc = Document("First paragraph English\nدوسرا پیراگراف اردو\nThird paragraph".mapIndexed { i, c ->
+        TextUnit(i.toLong() + 1, c, if (c == '\n') UnitKind.PARAGRAPH_BREAK else UnitKind.TEXT)
+    })
+    e.replace(refDoc.text, "Reference comparison fixture", paragraphBreaks = true)
+    val cachedGeo = checkNotNull(surface.view.measure).invoke(e.snapshot())
+    val refResults = refMeasure(refDoc)
+    check(cachedGeo.paragraphs.size == refResults.size) { "Paragraph counts must match between cached and reference measure" }
+    for (idx in refResults.indices) {
+        val (refSpan, refLayout) = refResults[idx]
+        val cachedPara = cachedGeo.paragraphs[idx]
+        check(refSpan.startOffset == cachedPara.startOffset)
+        check(refSpan.endOffset == cachedPara.endOffset)
+        check(refSpan.hasBreak == cachedPara.hasBreak)
+        check(refLayout.lineCount == cachedPara.layout.lineCount)
+        check(refLayout.size.height == cachedPara.layout.size.height)
+        check(refLayout.getParagraphDirection(0) == cachedPara.layout.getParagraphDirection(0))
+    }
+    e.perform(EditAction.Undo); check(e.snapshot().visible.text.isEmpty())
 
     // 18. Layout benchmark: multi-paragraph document vs one long paragraph
     val multiParaBuilder = StringBuilder()
@@ -477,9 +523,11 @@ fun runRtlHostChecks(surface: EditorSurface) {
     println("PASS Multi-line RTL wrapping, vertical navigation, cross-paragraph transitions, merge and mouse hit testing")
     println("PASS RTL bold/italic attributed styling and exact .astra persistence roundtrip")
     println("PASS $navigationChecks mixed-script caret positions: legal grapheme stops, visual direction and reversible edge traversal")
+    println("PASS Single-layout bidi defect reproduced on both paragraphs; independent paragraph layout verified")
     println("PASS Independent paragraph layout: English -> Urdu -> Arabic -> English and reverse orderings")
     println("PASS Paragraph direction policy: empty and neutral-only paragraphs inherit preceding base direction")
     println("PASS Structural break vs soft break preservation in layout and file persistence")
     println("PASS Cross-paragraph mouse selection, boundary traversal, Enter split and Backspace/Delete join")
+    println("PASS Uncached reference layout comparison matches multi-paragraph layout structure")
     println("PASS Multi-paragraph layout benchmark (50 paragraphs: ${multiDurationMs.toInt()} ms; 2,000 words: ${longDurationMs.toInt()} ms)")
 }

@@ -23,7 +23,7 @@ fun runHostChecks(surface: EditorSurface, resultFile: File = File("desktop-proto
     val context="Hllo"
     for(a in 0..context.length)for(b in a..context.length){check(string(surface.getCommittedText(a,b,null))==context.substring(a,b));queries++}
     check(surface.committedTextLength==4);check(surface.insertPositionOffset==1)
-    val start=surface.getTextLocation(TextHitInfo.leading(0));val alias=surface.getTextLocation(TextHitInfo.beforeOffset(0))
+    val start=checkNotNull(surface.getTextLocation(TextHitInfo.leading(0)));val alias=checkNotNull(surface.getTextLocation(TextHitInfo.beforeOffset(0)))
     check(start.width==0&&start.height>0);check(start.x==alias.x&&start.y==alias.y)
     event("你hao",1,1);check(e.snapshot().committed.text=="H你llo");check(e.snapshot().selection.focus==3)
     check(string(surface.getCommittedText(0,surface.committedTextLength,null))=="H你llo")
@@ -50,7 +50,7 @@ fun runHostChecks(surface: EditorSurface, resultFile: File = File("desktop-proto
     val styledLayout=checkNotNull(surface.view.measure).invoke(e.snapshot()).layout
     check(styledLayout.layoutInput.text.spanStyles.single().item.fontWeight==androidx.compose.ui.text.font.FontWeight.Bold)
     check(styledLayout.layoutInput.text.spanStyles.single().item.fontStyle==androidx.compose.ui.text.font.FontStyle.Italic)
-    check(surface.getTextLocation(null).height>0)
+    check(checkNotNull(surface.getTextLocation(null)).height > 0)
     shortcut(KeyEvent.VK_Z);check(e.snapshot().visible.units.all { it.style==TextStyleFlags(bold=true) })
     shortcut(KeyEvent.VK_Z);check(e.snapshot().visible.units.all { it.style==TextStyleFlags() })
     shortcut(KeyEvent.VK_Z);check(e.snapshot().visible.text.isEmpty())

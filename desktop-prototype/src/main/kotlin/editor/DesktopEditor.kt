@@ -190,6 +190,8 @@ class ViewState(frame: EditorFrame) {
     var ensureCaret = true
     var geometry: Geometry? = null
     var measure: ((EditorFrame) -> Geometry)? = null
+    var singleMeasure: ((Document) -> TextLayoutResult)? = null
+    var referenceMeasure: ((Document) -> List<Pair<ParagraphSpan, TextLayoutResult>>)? = null
 }
 
 fun referenceMeasure(document: Document, textWidth: Int, measurer: TextMeasurer, style: TextStyle): List<Pair<ParagraphSpan, TextLayoutResult>> {
@@ -271,6 +273,15 @@ private fun DocumentCanvas(state: ViewState) {
             )
         }
         state.measure = ::measure
+        state.singleMeasure = { doc ->
+            val annotated = attributedDisplay(doc)
+            synchronized(measurer) {
+                measurer.measure(annotated, style = style, constraints = Constraints(minWidth = textWidth, maxWidth = textWidth))
+            }
+        }
+        state.referenceMeasure = { doc ->
+            referenceMeasure(doc, textWidth, measurer, style)
+        }
         val frame = state.frame
         var geo = measure(frame)
         val contentHeight = geo.totalHeight + padding * 2 + 56.dp.toPx()
@@ -347,7 +358,7 @@ private fun DocumentCanvas(state: ViewState) {
 }
 
 /** The transparent AWT root owns input; the Compose surface underneath only renders. */
-class EditorSurface(val engine: EditorEngine, val view: ViewState, private val diagnostics: File? = null, private val trace: ImeTrace? = null) : JComponent(), InputMethodRequests {
+open class EditorSurface(val engine: EditorEngine, val view: ViewState, private val diagnostics: File? = null, private val trace: ImeTrace? = null) : JComponent(), InputMethodRequests {
     @Volatile private var published = engine.snapshot()
     private var dragAnchor = 0
     private var preferredX: Float? = null
@@ -356,6 +367,8 @@ class EditorSurface(val engine: EditorEngine, val view: ViewState, private val d
     var statusChanged: (EditorFrame) -> Unit = {}
     var requestSave: (Boolean) -> Unit = {}
     var requestOpen: () -> Unit = {}
+    var onEndCompositionRequested: () -> Unit = {}
+    fun requestEndComposition() { onEndCompositionRequested(); inputContext?.endComposition() }
     init {
         isOpaque = false; isFocusable = true; focusTraversalKeysEnabled = false
         cursor = Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR); enableInputMethods(true)
@@ -367,11 +380,11 @@ class EditorSurface(val engine: EditorEngine, val view: ViewState, private val d
                 getAccessibleContext().firePropertyChange(AccessibleContext.ACCESSIBLE_CARET_PROPERTY, old.selection.focus, f.selection.focus)
             } finally { writeDiagnostics() }
         }
-        engine.onSettlementRequested = { inputContext?.endComposition() }
+        engine.onSettlementRequested = { requestEndComposition() }
         engine.onEvent = { event -> trace?.record("engine",event,engine.snapshot()); diagnostics?.parentFile?.let { it.mkdirs(); File(it, "input-events.log").appendText("${System.currentTimeMillis()} $event\n") } }
         addFocusListener(object : FocusAdapter() {
             override fun focusGained(e: FocusEvent) { view.focused = true; view.blink = true; trace?.record("focus-gained","locale=${inputContext?.locale}",engine.snapshot()); writeDiagnostics() }
-            override fun focusLost(e: FocusEvent) { view.focused = false; trace?.record("focus-lost","temporary=${e.isTemporary}",engine.snapshot()); inputContext?.endComposition(); writeDiagnostics() }
+            override fun focusLost(e: FocusEvent) { view.focused = false; trace?.record("focus-lost","temporary=${e.isTemporary}",engine.snapshot()); requestEndComposition(); writeDiagnostics() }
         })
         addInputMethodListener(object : InputMethodListener {
             override fun inputMethodTextChanged(e: InputMethodEvent) {
@@ -411,7 +424,7 @@ class EditorSurface(val engine: EditorEngine, val view: ViewState, private val d
                     e.keyCode == KeyEvent.VK_ENTER -> engine.replace("\n", "Enter", paragraphBreaks = !e.isShiftDown)
                     e.keyCode == KeyEvent.VK_TAB -> engine.replace("\t", "Typing")
                     e.keyCode in arrayOf(KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, KeyEvent.VK_UP, KeyEvent.VK_DOWN, KeyEvent.VK_HOME, KeyEvent.VK_END) -> navigate(e.keyCode, e.isShiftDown, command)
-                    e.keyCode == KeyEvent.VK_ESCAPE && published.marked != null -> inputContext?.endComposition()
+                    e.keyCode == KeyEvent.VK_ESCAPE && published.marked != null -> requestEndComposition()
                     else -> return
                 }
                 e.consume(); writeDiagnostics()
@@ -439,6 +452,7 @@ class EditorSurface(val engine: EditorEngine, val view: ViewState, private val d
         blinkTimer.start()
     }
     override fun removeNotify() { blinkTimer.stop(); super.removeNotify() }
+    public override fun processFocusEvent(e: FocusEvent) { super.processFocusEvent(e) }
     private fun geometry(): Geometry? = view.geometry?.takeIf { it.revision == published.documentRevision && it.scroll == view.scroll } ?: view.measure?.invoke(published)?.also { view.geometry = it }
     private fun hit(point: Point): Int? {
         val g = geometry() ?: return null
@@ -521,16 +535,13 @@ class EditorSurface(val engine: EditorEngine, val view: ViewState, private val d
     override fun getInsertPositionOffset() = published.marked?.first ?: published.selection.start
     override fun getSelectedText(attributes: Array<out AttributedCharacterIterator.Attribute>?) = AttributedString(published.visible.text.substring(published.selection.start, published.selection.end)).iterator
     override fun cancelLatestCommittedText(attributes: Array<out AttributedCharacterIterator.Attribute>?): AttributedCharacterIterator? = null
-    override fun getTextLocation(offset: TextHitInfo?): Rectangle {
-        val g = geometry()
+    override fun getTextLocation(offset: TextHitInfo?): Rectangle? {
+        val g = geometry() ?: return null
         val screen = try {
             if (!isShowing) null else locationOnScreen
         } catch (_: IllegalComponentStateException) {
             null
-        }
-        if (g == null || screen == null) {
-            return Rectangle(0, 0, 0, 0)
-        }
+        } ?: return null
         val mark = published.marked; val s = published.selection
         val at = if (mark != null) mark.first + (offset?.insertionIndex ?: 0).also { require(it in 0..mark.count()) } else s.focus
         val caret = g.caret(at, if (mark != null) offset?.isLeadingEdge ?: true else s.primary)

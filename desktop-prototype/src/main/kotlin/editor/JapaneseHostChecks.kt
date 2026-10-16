@@ -72,9 +72,9 @@ fun runJapaneseHostChecks(surface: EditorSurface) {
     check(e.snapshot().committed.text.isEmpty())
 
     // Step 1e: Confirm candidate placement metrics relative to caret (getTextLocation & getLocationOffset)
-    val loc0 = surface.getTextLocation(TextHitInfo.leading(0))
-    val loc1 = surface.getTextLocation(TextHitInfo.leading(1))
-    val locEnd = surface.getTextLocation(TextHitInfo.leading(2))
+    val loc0 = checkNotNull(surface.getTextLocation(TextHitInfo.leading(0)))
+    val loc1 = checkNotNull(surface.getTextLocation(TextHitInfo.leading(1)))
+    val locEnd = checkNotNull(surface.getTextLocation(TextHitInfo.leading(2)))
     check(loc0.width == 0 && loc0.height > 0) { "Caret location must have 0 width and positive height" }
     check(loc1.width == 0 && loc1.height > 0)
     check(locEnd.width == 0 && locEnd.height > 0)
@@ -94,25 +94,46 @@ fun runJapaneseHostChecks(surface: EditorSurface) {
     check(offscreenPoint.x < -10000 && offscreenPoint.y < -10000) { "Offscreen test window must report true negative screen coordinates: $offscreenPoint" }
     check(loc0.x < -10000 && loc0.y < -10000) { "getTextLocation must incorporate true offscreen screen coordinates: $loc0" }
 
-    // (b) Component that is not showing / screen location unavailable
-    val detachedEngine = EditorEngine()
-    val detachedSurface = EditorSurface(detachedEngine, ViewState(detachedEngine.snapshot()))
+    // (b) Component that is not showing
+    val notShowingEngine = EditorEngine()
+    val notShowingSurface = EditorSurface(notShowingEngine, ViewState(notShowingEngine.snapshot()))
     try {
-        check(!detachedSurface.isShowing) { "Detached surface must report isShowing = false" }
+        check(!notShowingSurface.isShowing) { "Detached surface must report isShowing = false" }
         var threwIllegalState = false
         try {
-            detachedSurface.locationOnScreen
+            notShowingSurface.locationOnScreen
         } catch (_: java.awt.IllegalComponentStateException) {
             threwIllegalState = true
         }
         check(threwIllegalState) { "Calling locationOnScreen on non-showing component must throw IllegalComponentStateException" }
-        check(detachedSurface.getLocationOffset(100, 100) == null) { "getLocationOffset on non-showing component must return null" }
-        check(detachedSurface.getTextLocation(null) == Rectangle(0, 0, 0, 0)) { "getTextLocation on non-showing component must return empty fallback Rectangle(0, 0, 0, 0)" }
+        check(notShowingSurface.getLocationOffset(100, 100) == null) { "getLocationOffset on non-showing component must return null" }
+        check(notShowingSurface.getTextLocation(null) == null) { "getTextLocation on non-showing component must return null per AWT contract" }
     } finally {
-        detachedSurface.removeNotify()
+        notShowingSurface.removeNotify()
     }
 
-    // (c) Attached showing component with real nonzero positive component origin
+    // (c) Component whose screen location is unavailable (isShowing == true, but screen transform throws)
+    val unavailEngine = EditorEngine()
+    val unavailSurface = object : EditorSurface(unavailEngine, ViewState(unavailEngine.snapshot())) {
+        override fun isShowing(): Boolean = true
+        override fun getLocationOnScreen(): Point = throw java.awt.IllegalComponentStateException("Screen location unavailable")
+    }
+    try {
+        check(unavailSurface.isShowing) { "unavailSurface reports isShowing = true" }
+        var threwUnavail = false
+        try {
+            unavailSurface.locationOnScreen
+        } catch (_: java.awt.IllegalComponentStateException) {
+            threwUnavail = true
+        }
+        check(threwUnavail) { "Calling locationOnScreen must throw IllegalComponentStateException when screen location is unavailable" }
+        check(unavailSurface.getLocationOffset(100, 100) == null) { "getLocationOffset must return null when screen transform is unavailable" }
+        check(unavailSurface.getTextLocation(null) == null) { "getTextLocation must return null when screen transform is unavailable" }
+    } finally {
+        unavailSurface.removeNotify()
+    }
+
+    // (d) Attached showing component with real nonzero positive component origin
     val originWindow = Frame("Origin Test Frame").apply {
         setLocation(250, 180)
         size = Dimension(400, 300)
@@ -129,7 +150,7 @@ fun runJapaneseHostChecks(surface: EditorSurface) {
         check(originSurface.isShowing) { "Surface in visible test frame must be showing" }
         val originPoint = originSurface.locationOnScreen
         check(originPoint.x >= 250 && originPoint.y >= 180) { "Origin window surface must have screen location >= (250, 180), got $originPoint" }
-        val originCaretLoc = originSurface.getTextLocation(TextHitInfo.leading(0))
+        val originCaretLoc = checkNotNull(originSurface.getTextLocation(TextHitInfo.leading(0)))
         check(originCaretLoc.x >= originPoint.x && originCaretLoc.y >= originPoint.y) { "Caret location must reflect nonzero screen origin: caret=$originCaretLoc, origin=$originPoint" }
         // Passing local coordinates (e.g. (2, 4)) mistakenly as screen coordinates must fail
         val badLocalHit = originSurface.getLocationOffset(2, 4)
@@ -171,7 +192,7 @@ fun runJapaneseHostChecks(surface: EditorSurface) {
     // Move IME caret between clauses via CARET_POSITION_CHANGED
     caretEvent(2)
     check(e.snapshot().selection.focus == 2) { "IME caret event must move selection to clause boundary" }
-    val clauseCaretLoc = surface.getTextLocation(TextHitInfo.leading(2))
+    val clauseCaretLoc = checkNotNull(surface.getTextLocation(TextHitInfo.leading(2)))
     check(clauseCaretLoc.height > 0)
 
     // Partial commit: Clause 1 ("私の") committed (count = 2), Clause 2 ("名前") remains composed
@@ -191,18 +212,19 @@ fun runJapaneseHostChecks(surface: EditorSurface) {
     e.perform(EditAction.Undo)
     check(e.snapshot().visible.text.isEmpty())
 
-    // 3. Cancellation during composition (Escape key / unmark without assuming rollback)
+    // 3. Cancellation during composition (Escape key requests endComposition; synchronous terminal callback)
     e.replace("東京 ", "Prefix fixture")
     imeEvent("とうきょう", 0, 5)
     check(e.snapshot().visible.text == "東京 とうきょう")
     check(e.snapshot().marked == 3..7)
     check(e.snapshot().committed.text == "東京 ")
-    var escapeSettlementRequested = 0
-    val savedSettlementEscape = e.onSettlementRequested
-    e.onSettlementRequested = { escapeSettlementRequested++; savedSettlementEscape() }
+    var escapeEndCompositionRequested = 0
+    surface.onEndCompositionRequested = { escapeEndCompositionRequested++ }
     // User presses Escape
     key(KeyEvent.VK_ESCAPE)
-    // Synchronous/reentrant terminal callback from IME clearing composition
+    check(escapeEndCompositionRequested == 1) { "Pressing Escape during composition must request endComposition" }
+    // Test explicitly distinguishes what application requested from what test injected:
+    // Synchronous terminal callback from IME clearing composition
     imeEvent("", 0, null)
     check(e.snapshot().visible.text == "東京 ")
     check(e.snapshot().committed.text == "東京 ")
@@ -210,16 +232,40 @@ fun runJapaneseHostChecks(surface: EditorSurface) {
     check(e.snapshot().undoCount == 1) { "Escape cancellation must not create spurious history" }
     e.perform(EditAction.Undo)
     check(e.snapshot().visible.text.isEmpty())
-    e.onSettlementRequested = savedSettlementEscape
+    surface.onEndCompositionRequested = {}
+
+    // 3b. Reentrant settlement callback: native IME synchronously clears preedit inside endComposition()
+    e.replace("同期 ", "Prefix fixture")
+    imeEvent("テスト", 0, 3)
+    var reentrantCallbackRan = false
+    surface.onEndCompositionRequested = {
+        reentrantCallbackRan = true
+        // Native IME dispatches terminal event synchronously during endComposition call
+        imeEvent("完了", 2, null)
+    }
+    key(KeyEvent.VK_ESCAPE)
+    check(reentrantCallbackRan) { "Reentrant settlement callback must be observed" }
+    check(e.snapshot().visible.text == "同期 完了")
+    check(e.snapshot().marked == null)
+    e.perform(EditAction.Undo)
+    check(e.snapshot().visible.text == "同期 ")
+    e.perform(EditAction.Undo)
+    check(e.snapshot().visible.text.isEmpty())
+    surface.onEndCompositionRequested = {}
 
     // 4. Focus loss during composition with delayed callback handling
     e.replace("開始 ", "Prefix fixture")
     imeEvent("きょう", 0, 3)
     check(e.snapshot().visible.text == "開始 きょう")
     check(e.snapshot().marked == 3..5)
-    // Focus lost event dispatched to surface
-    surface.dispatchEvent(FocusEvent(surface, FocusEvent.FOCUS_LOST, false))
+    surface.processFocusEvent(FocusEvent(surface, FocusEvent.FOCUS_GAINED, false))
+    check(surface.view.focused) { "FocusEvent must set focused state" }
+    var focusLossEndCompositionRequested = 0
+    surface.onEndCompositionRequested = { focusLossEndCompositionRequested++ }
+    // Focus lost event processed by surface
+    surface.processFocusEvent(FocusEvent(surface, FocusEvent.FOCUS_LOST, false))
     check(!surface.view.focused) { "FocusEvent must clear focused state" }
+    check(focusLossEndCompositionRequested == 1) { "Focus loss during composition must request endComposition, got $focusLossEndCompositionRequested" }
     // Delayed callback: native IME commits current preedit upon focus loss
     imeEvent("今日", 2, null)
     check(e.snapshot().visible.text == "開始 今日")
@@ -230,6 +276,7 @@ fun runJapaneseHostChecks(surface: EditorSurface) {
     check(e.snapshot().visible.text == "開始 ")
     e.perform(EditAction.Undo)
     check(e.snapshot().visible.text.isEmpty())
+    surface.onEndCompositionRequested = {}
 
     // 5. Replacing selected text with Japanese composition
     e.replace("ABCD漢字EF", "Selection fixture")
@@ -273,17 +320,17 @@ fun runJapaneseHostChecks(surface: EditorSurface) {
 
     // User triggers Ctrl+B while composing
     var queuedSettlementCount = 0
-    val savedSettlementQueue = e.onSettlementRequested
-    e.onSettlementRequested = { queuedSettlementCount++; savedSettlementQueue() }
+    surface.onEndCompositionRequested = { queuedSettlementCount++ }
     key(KeyEvent.VK_B, ctrl = true)
     check(e.snapshot().waiting) { "Shortcut during composition must set waiting flag" }
-    check(queuedSettlementCount >= 1) { "Shortcut during composition must request settlement" }
+    check(queuedSettlementCount == 1) { "Shortcut during composition must request settlement" }
     check(e.snapshot().undoCount == 1)
     check(e.snapshot().redoCount == 0)
 
     // User also presses Ctrl+Z (queued Undo) while composing
     key(KeyEvent.VK_Z, ctrl = true)
     check(e.snapshot().waiting)
+    check(queuedSettlementCount == 2) { "Queued Undo during composition must request settlement" }
     check(e.snapshot().undoCount == 1)
     check(e.snapshot().redoCount == 0)
 
@@ -342,7 +389,7 @@ fun runJapaneseHostChecks(surface: EditorSurface) {
     // Cleanup back to empty
     while (e.snapshot().undoCount > 0) e.perform(EditAction.Undo)
     check(e.snapshot().visible.text.isEmpty())
-    e.onSettlementRequested = savedSettlementQueue
+    surface.onEndCompositionRequested = {}
 
     // 7. Paragraph boundary cases supported by the prototype
     // 7a. Japanese composition at line end immediately before paragraph break
@@ -370,10 +417,10 @@ fun runJapaneseHostChecks(surface: EditorSurface) {
     check(e.snapshot().visible.text.isEmpty())
 
     println("PASS Synthetic Japanese IME callback sequence (preedit -> conversion -> commit), single-group Undo/Redo")
-    println("PASS Attached Compose IME candidate geometry (getTextLocation / getLocationOffset monotonic coordinates)")
-    println("PASS Screen coordinates and unavailable geometry fallback distinction")
+    println("PASS Attached Compose IME candidate geometry (getTextLocation / getLocationOffset monotonic coordinates under stated conditions)")
+    println("PASS Screen coordinates and unavailable geometry fallback distinction (offscreen vs not-showing vs unavailable transform)")
     println("PASS Synthetic Japanese multi-clause conversion, caret traversal and partial commit")
-    println("PASS Synthetic Japanese composition Escape cancellation and focus-loss settlement")
+    println("PASS Synthetic Japanese composition Escape cancellation, focus-loss settlement, and reentrant/delayed callback handling")
     println("PASS Synthetic Japanese selection replacement with exact selection restoration on Undo")
     println("PASS Synthetic Japanese queued formatting and Undo command ordering with attributed history")
     println("PASS Synthetic Japanese paragraph-boundary composition and cross-paragraph selection replacement")
