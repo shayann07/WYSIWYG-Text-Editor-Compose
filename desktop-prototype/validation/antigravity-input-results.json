@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-16T20:47:30Z",
+  "timestamp": "2026-10-16T21:05:00Z",
   "environment": {
     "os": "Windows 11",
     "architecture": "x86_64",
@@ -11,24 +11,26 @@
     "gitBranch": "main",
     "gitBaseCommit": "db6c0e9",
     "windowsInstalledLanguages": ["en-PK", "en-US", "ja", "ur-PK", "ar-SA"],
-    "jdkAvailableLocales": ["en_PK", "en_US", "ja_JP", "ur_PK", "ar_SA"]
+    "jdkAvailableLocales": ["en_PK", "en_US", "ja_JP", "ur_PK", "ar_SA"],
+    "desktopSession": "exebox-UVRTYVPPSOL2ILNWVXXT2HRTFV (Foreground HWND: 0, UserInteractive: true)"
   },
   "sources": {
     "desktop-prototype/pom.xml": "36466c45290569fe5e541c4a14f577275395696a37e57658c8a78810802ad6e0",
     "desktop-prototype/run.cmd": "c68514768c7d36dcd53fe6f6134c9302190b841641f13a5cd7c3db72b81ffb06",
-    "desktop-prototype/verify.py": "713a761e89309a457dbb9e0b1f5711cb8b89888db54f39e34a021a321a27c62c",
+    "desktop-prototype/verify.py": "c36a3a0cad1ce38a90a09c8d55a35d37ec7d6b3303e22e4b106edcfe981f8c1a",
     "desktop-prototype/src/main/kotlin/editor/Checks.kt": "eb94187c261d7d6a4b3c3a887c5055d1454880c01687232f056a445b4bd797db",
-    "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt": "eedfe61613b05b91d2165fba532ab88522d917e2f7113da32de0a4374886e130",
+    "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt": "79c16e20b7555d181a4ffecb6f558f08bd1753aeaf89a2af96efd6cf69034200",
     "desktop-prototype/src/main/kotlin/editor/DocumentFiles.kt": "dbeeccaff20eae6ce875f4f65a7e399fce867a4424b279ed6a79027d9617c195",
     "desktop-prototype/src/main/kotlin/editor/EditorEngine.kt": "a34044c8575032180f2166a45f0d6cc51ef1e76fd6293efec5f5b330cb91bffe",
     "desktop-prototype/src/main/kotlin/editor/FileChecks.kt": "043e87612ecf40963de55dd2cf081a96454610da99131d9ebb2519b1360c616c",
     "desktop-prototype/src/main/kotlin/editor/FormatChecks.kt": "0c03cd09842e733f5cf3c5e74a52a9f9b1d7858b3e31623599cd2f5edd612a99",
     "desktop-prototype/src/main/kotlin/editor/Formatting.kt": "f3d0e481c245b4db321da332f3ad40490e8321fbd64edebb4b8be2e4cc20d092",
     "desktop-prototype/src/main/kotlin/editor/Graphemes.kt": "a297a5154df6a77cb1bc65115c92d5a738367671fb02f47a94c425544cb0c629",
-    "desktop-prototype/src/main/kotlin/editor/HostChecks.kt": "a50f6935136b24fb35befb6620ccbf6bac55b1943a7e43190a685e45e9b0fbca",
+    "desktop-prototype/src/main/kotlin/editor/HostChecks.kt": "672a4df4c32d16401172921040f719bc3176e20785ce3595a59dd5d302cdb0d1",
     "desktop-prototype/src/main/kotlin/editor/ImeTrace.kt": "153bb4b538d707cdf6c57fada2c71ff55db3445757295bc9f67612ce4e06a521",
+    "desktop-prototype/src/main/kotlin/editor/JapaneseHostChecks.kt": "c055742d4ee77542ecaad92c84fc4f1ff0f602b385c09686cddcf198d9c4235d",
     "desktop-prototype/src/main/kotlin/editor/Main.kt": "d13726eb1f5b43f5b37f31b19c61bf712ba5335d687ed538ba2cc17c28ec3ca3",
-    "desktop-prototype/src/main/kotlin/editor/RtlHostChecks.kt": "0d426a74056c1e53abdcac393ff3da9d5e6532e257132c53376eeb5c3245ea07",
+    "desktop-prototype/src/main/kotlin/editor/RtlHostChecks.kt": "969332c1ccd26ec61edd52fd64ad19b2b8f4404df64cb12229a4b72212437915",
     "desktop-prototype/src/main/kotlin/editor/StressChecks.kt": "56c94d5a8f1e76230a918c23e1d9633ad42c8c2f81f4707a7d66c09e2284f091",
     "desktop-prototype/src/main/kotlin/editor/WindowFiles.kt": "62babbb3d5de30fa7c7834b2b35803524923bdaab5595de16539ac773e630d58"
   },
@@ -71,18 +73,33 @@
         "invalidCaretRejected": "PASS",
         "altGrShortcutIsolation": "PASS",
         "formatShortcutsLayoutUndo": "PASS",
-        "urduArabicRtl": "PASS"
+        "urduArabicRtl": "PASS",
+        "japaneseImeHost": "PASS"
+      },
+      "japaneseHostCoverage": {
+        "romajiHiraganaCandidateConversion": "PASS (nihon -> にほん -> 日本 with provisional candidate marked range)",
+        "candidatePopupPlacement": "PASS (getTextLocation monotonic X progression, uniform baseline Y, positive height, zero caret width)",
+        "hitInfoOffsetResolution": "PASS (getLocationOffset inside candidate returns leading offset; outside candidate bounds returns null)",
+        "singleUndoGroup": "PASS (complete multi-phase Japanese conversion settles into exactly 1 Undo group; Undo restores empty state; Redo restores committed text)",
+        "multiClauseTraveralAndPartialCommit": "PASS (わたしのなまえ -> 私の名前, clause caret navigation via CARET_POSITION_CHANGED, partial commit of 私の, final commit of 名前 into single Undo group)",
+        "escapeCancellation": "PASS (Escape key triggers endComposition; empty IME terminal clears preedit without modifying committed text or creating spurious history)",
+        "focusLossSettlement": "PASS (Focus lost triggers endComposition; native settlement commits preedit into committed text with single-step Undo)",
+        "selectionReplacement": "PASS (Japanese composition replaces selection range; Undo restores exact original text and original selection endpoints)",
+        "queuedFormattingAndUndo": "PASS (Ctrl+B and Ctrl+Z during active composition queue on waiting engine; settle safely upon native commit)",
+        "paragraphBoundaryComposition": "PASS (Japanese composition at paragraph boundary before newline; cross-paragraph selection replacement with exact newline restoration on Undo)"
       },
       "rtlCoverage": {
         "pageMarginAlignment": "PASS (getHorizontalPosition > maxWidth * 0.9)",
         "selectionCollapseVisualEdges": "PASS (Left collapses to visual left, Right to visual right)",
-        "combiningClusters": "PASS (Shaddah + Fatha cluster deleted atomically with Backspace and restored with Undo)",
-        "medialLetterDeletion": "PASS (deleting medial joining character preserves remaining word and restores with Undo)",
+        "directionalSelection": "PASS (Shift+Left extends outward toward end; Shift+Right extends inward toward start)",
+        "combiningClusters": "PASS (Shaddah + Fatha cluster deleted atomically with both Backspace and Forward Delete, restored with Undo)",
+        "medialLetterDeletion": "PASS (deleting medial joining character preserves remaining word for both Backspace and Forward Delete, restored with Undo)",
         "easternDigitsAndPunctuation": "PASS (Arabic-Indic, Eastern Arabic-Indic digits, Arabic comma, semicolon, question mark)",
         "mixedScriptReversibleNavigation": "PASS (107 mixed-script caret positions across 6 texts: visual direction and reversible Left/Right)",
         "multiLineWrapping": "PASS (long RTL text wraps into multiple lines, VK_DOWN moves to line 1, VK_UP returns to line 0)",
         "multiParagraphNavigation": "PASS (cross-paragraph vertical navigation and Backspace paragraph merge with exact Undo)",
-        "mouseHitTesting": "PASS (clicking right boundary pos0 selects offset 0; clicking left boundary selects end of text)",
+        "paragraphCreationAndTransitions": "PASS (VK_ENTER creates RTL paragraph; subsequent LTR typing creates second paragraph; Backspace merges and Undo restores)",
+        "mouseHitTestingAndDrag": "PASS (clicking right boundary pos0 selects 0; clicking left boundary selects length; right-to-left drag selects forward; left-to-right drag selects backward)",
         "attributedFormatting": "PASS (bold and italic on Urdu words, Compose spanStyles matched, Undo/Redo cycles)",
         "persistenceRoundtrip": "PASS (.astra file write/read of RTL text, diacritics, Eastern digits and formatting)"
       }
@@ -102,7 +119,7 @@
         "status": "BLOCKED / NOT RUN",
         "evidence": "desktop-prototype/local-evidence/ime-1792160108316/events.jsonl",
         "jdkRegistration": "PASS (ja-JP accepted=true, actual=ja_JP, compositionEnabled=true)",
-        "blockerReason": "Automated qualification of physical candidate popups and romaji composition requires an interactive foreground desktop session with physical user keyboard interaction in Hiragana conversion mode. In the automated sandbox execution environment (non-interactive desktop 'exebox-...', where foreground window handle is 0 and concurrent user activity occupies the Default desktop), native IMM32/TSF candidate popups and romaji conversion cannot be driven natively without simulated keyboard injection, which is prohibited from being reported as OS IME qualification."
+        "blockerReason": "Automated qualification of physical candidate popups and romaji conversion requires an interactive foreground desktop session with physical user keyboard interaction in Hiragana conversion mode. In the automated sandbox execution environment (non-interactive desktop 'exebox-...', where foreground window handle is 0 and concurrent user activity occupies the Default desktop), native IMM32/TSF candidate popups and romaji conversion cannot be driven natively without simulated keyboard injection, which is prohibited from being reported as OS IME qualification."
       }
     }
   },
@@ -112,25 +129,32 @@
       "summary": "Short RTL paragraphs appeared at the left margin instead of the right page margin",
       "rootCause": "DocumentCanvas measurer used minWidth = 0 and only maxWidth = textWidth; short paragraphs only measured to their content width and were placed at the left margin.",
       "fix": "Set constraints minWidth = textWidth, maxWidth = textWidth in DesktopEditor.kt:82.",
-      "regression": "Verified in RtlHostChecks.kt line 14 (check(g.layout.getHorizontalPosition(0, true) > maxWidth * 0.9f))."
+      "regression": "Verified in RtlHostChecks.kt line 22 (check(g.layout.getHorizontalPosition(0, true) > maxWidth * 0.9f))."
     },
     {
       "id": "DEFECT-02",
       "summary": "Collapsing an RTL selection with Left/Right arrow used logical endpoint order rather than visual order",
       "rootCause": "Arrow navigation collapsed non-collapsed selections using s.start (logical lower offset) on Left and s.end (logical higher offset) on Right, which inverted visual direction in RTL.",
       "fix": "Filtered endpoints by primary stops and chose endpoints.first() for visual Left and endpoints.last() for visual Right in DesktopEditor.kt:261-263.",
-      "regression": "Verified in RtlHostChecks.kt lines 15-16."
+      "regression": "Verified in RtlHostChecks.kt lines 23-24."
     },
     {
       "id": "DEFECT-03",
+      "summary": "getLocationOffset threw IllegalComponentStateException when component was offscreen or unmapped",
+      "rootCause": "DesktopEditor.kt getLocationOffset called component.locationOnScreen directly without runCatching, whereas getTextLocation wrapped it in runCatching. Offscreen or unmapped testing crashed with IllegalComponentStateException.",
+      "fix": "Wrapped locationOnScreen in runCatching { locationOnScreen }.getOrDefault(Point()) in DesktopEditor.kt:311.",
+      "regression": "Verified in JapaneseHostChecks.kt line 71 (surface.getLocationOffset called in offscreen attached host test)."
+    },
+    {
+      "id": "DEFECT-04",
       "summary": "Single Compose TextLayoutResult multi-paragraph base direction limitation",
       "rootCause": "In Compose Desktop 1.12.1 (Skiko), a single TextLayoutResult measures the entire document as one Skia Paragraph. The base direction of that paragraph is determined once from the first strong character of the entire document. An RTL paragraph inside an LTR document does not establish an independent RTL base margin.",
       "fix": "Documented as a known architectural boundary for the prototype; multi-paragraph base direction isolation requires block virtualization in future milestones.",
-      "regression": "Verified in RtlHostChecks.kt line 117."
+      "regression": "Verified in RtlHostChecks.kt line 125."
     }
   ],
   "recommendation": {
     "readyToAdvance": true,
-    "verdict": "The input-validation milestone has established reliable model checks, stress validation, attached Compose/AWT host execution, RTL layout/editing/navigation, and native Urdu/Arabic keystroke input. Japanese OS IME candidate qualification remains properly bounded and documented as BLOCKED / NOT RUN in unattended automation. The team should advance to document hierarchy and block virtualization rather than expanding this single-canvas slice."
+    "verdict": "The input-validation milestone has established reliable model checks, stress validation, attached Compose/AWT host execution, comprehensive RTL layout/editing/navigation, complete Japanese IME candidate conversion lifecycle host checks, and native Urdu/Arabic keystroke input. Japanese OS IME candidate qualification remains properly bounded and documented as BLOCKED / NOT RUN in unattended automation. The team should advance to document hierarchy and block virtualization rather than expanding this single-canvas slice."
   }
 }

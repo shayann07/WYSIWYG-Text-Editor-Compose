@@ -23,7 +23,10 @@ fun runRtlHostChecks(surface: EditorSurface) {
         e.selectAll(); key(KeyEvent.VK_LEFT); check(e.snapshot().selection == Selection(text.length, text.length)) { "Left must collapse RTL selection to its visual left edge" }
         e.selectAll(); key(KeyEvent.VK_RIGHT); check(e.snapshot().selection == Selection(0, 0)) { "Right must collapse RTL selection to its visual right edge" }
         key(KeyEvent.VK_LEFT, true); check(e.snapshot().selection == Selection(0, Graphemes.stops(text)[1]))
-        e.toggleFormat(FormatKey.BOLD); check(e.snapshot().visible.units.first().style.bold)
+        val stops = Graphemes.stops(text)
+        e.move(Selection(text.length, text.length)); key(KeyEvent.VK_RIGHT, true)
+        check(e.snapshot().selection == Selection(text.length, stops[stops.size - 2])) { "Shift+Right from RTL visual left edge must extend inward: ${e.snapshot().selection}" }
+        e.toggleFormat(FormatKey.BOLD); check(e.snapshot().visible.units.last().style.bold)
         e.perform(EditAction.Undo); check(e.snapshot().visible.units.none { it.style.bold })
         e.perform(EditAction.Undo); check(e.snapshot().visible.text.isEmpty())
     }
@@ -49,6 +52,23 @@ fun runRtlHostChecks(surface: EditorSurface) {
     e.replace(medialWord, "Medial letter fixture"); e.move(Selection(2, 2))
     e.delete(true)
     check(e.snapshot().visible.text == "کاب") { "Deleting medial joining letter must preserve preceding and succeeding text" }
+    e.perform(EditAction.Undo); check(e.snapshot().visible.text == medialWord)
+    e.perform(EditAction.Undo); check(e.snapshot().visible.text.isEmpty())
+
+    // 2d. Single combining mark forward delete
+    e.replace("سَ", "RTL forward delete fixture"); e.move(Selection(0, 0)); e.delete(false); check(e.snapshot().visible.text.isEmpty())
+    e.perform(EditAction.Undo); check(e.snapshot().visible.text == "سَ")
+    e.perform(EditAction.Undo); check(e.snapshot().visible.text.isEmpty())
+
+    // 2e. Multiple combining marks forward delete: Base + Shaddah + Fatha
+    e.replace(shaddahFatha, "Shaddah+Fatha forward delete"); e.move(Selection(0, 0)); e.delete(false)
+    check(e.snapshot().visible.text == "لام") { "Forward delete of cluster with multiple marks must leave remaining characters intact" }
+    e.perform(EditAction.Undo); check(e.snapshot().visible.text == shaddahFatha)
+    e.perform(EditAction.Undo); check(e.snapshot().visible.text.isEmpty())
+
+    // 2f. Medial joining letter forward delete: "کتاب" at offset 1 deleting 'ت'
+    e.replace(medialWord, "Medial letter forward delete"); e.move(Selection(1, 1)); e.delete(false)
+    check(e.snapshot().visible.text == "کاب") { "Forward deleting medial joining letter must preserve preceding and succeeding text" }
     e.perform(EditAction.Undo); check(e.snapshot().visible.text == medialWord)
     e.perform(EditAction.Undo); check(e.snapshot().visible.text.isEmpty())
 
@@ -131,7 +151,25 @@ fun runRtlHostChecks(surface: EditorSurface) {
     e.perform(EditAction.Redo); check(e.snapshot().visible.text == "اردو عنوانEnglish paragraph\nالعربية خاتمة")
     e.perform(EditAction.Undo); e.perform(EditAction.Undo); check(e.snapshot().visible.text.isEmpty())
 
-    // 7. Mouse hit testing: right margin vs left margin in RTL
+    // 6b. Live paragraph creation via Enter in RTL and typing LTR
+    e.replace("اردو", "RTL enter fixture"); e.move(Selection(4, 4))
+    key(KeyEvent.VK_ENTER)
+    check(e.snapshot().visible.text == "اردو\n")
+    check(e.snapshot().visible.units.last().kind == UnitKind.PARAGRAPH_BREAK)
+    e.replace("English", "Typing", paragraphBreaks = false)
+    check(e.snapshot().visible.text == "اردو\nEnglish")
+    val enterGeo = checkNotNull(surface.view.measure).invoke(e.snapshot())
+    check(enterGeo.layout.lineCount >= 2)
+    check(enterGeo.layout.getParagraphDirection(0) == ResolvedTextDirection.Rtl)
+    val engStart = e.snapshot().visible.text.indexOf("English")
+    e.move(Selection(engStart, engStart))
+    key(KeyEvent.VK_BACK_SPACE)
+    check(e.snapshot().visible.text == "اردوEnglish")
+    e.perform(EditAction.Undo); check(e.snapshot().visible.text == "اردو\nEnglish")
+    while (e.snapshot().undoCount > 0) e.perform(EditAction.Undo)
+    check(e.snapshot().visible.text.isEmpty())
+
+    // 7. Mouse hit testing: right margin vs left margin in RTL and drag selection
     val mouseText = "اردو متن برائے جانچ"
     e.replace(mouseText, "Mouse hit fixture")
     val mouseGeometry = checkNotNull(surface.view.measure).invoke(e.snapshot())
@@ -144,6 +182,13 @@ fun runRtlHostChecks(surface: EditorSurface) {
     check(e.snapshot().selection.focus == 0) { "Mouse press at right margin of RTL text must place caret at offset 0 (start)" }
     surface.dispatchEvent(MouseEvent(surface, MouseEvent.MOUSE_PRESSED, System.currentTimeMillis(), 0, leftClickX, clickY, 1, false, MouseEvent.BUTTON1))
     check(e.snapshot().selection.focus == mouseText.length) { "Mouse press at left margin of RTL text must place caret at text.length (end)" }
+    // 7b. Mouse drag selection: right to left (forward: 0 -> length) and left to right (backward: length -> 0)
+    surface.dispatchEvent(MouseEvent(surface, MouseEvent.MOUSE_PRESSED, System.currentTimeMillis(), 0, rightClickX, clickY, 1, false, MouseEvent.BUTTON1))
+    surface.dispatchEvent(MouseEvent(surface, MouseEvent.MOUSE_DRAGGED, System.currentTimeMillis(), 0, leftClickX, clickY, 1, false, MouseEvent.BUTTON1))
+    check(e.snapshot().selection == Selection(0, mouseText.length)) { "Mouse drag right-to-left in RTL must select forward: ${e.snapshot().selection}" }
+    surface.dispatchEvent(MouseEvent(surface, MouseEvent.MOUSE_PRESSED, System.currentTimeMillis(), 0, leftClickX, clickY, 1, false, MouseEvent.BUTTON1))
+    surface.dispatchEvent(MouseEvent(surface, MouseEvent.MOUSE_DRAGGED, System.currentTimeMillis(), 0, rightClickX, clickY, 1, false, MouseEvent.BUTTON1))
+    check(e.snapshot().selection == Selection(mouseText.length, 0)) { "Mouse drag left-to-right in RTL must select backward: ${e.snapshot().selection}" }
     e.perform(EditAction.Undo); check(e.snapshot().visible.text.isEmpty())
 
     // 8. Attributed formatting on RTL text: Bold and Italic ranges

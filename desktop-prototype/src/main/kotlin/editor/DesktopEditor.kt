@@ -307,7 +307,8 @@ class EditorSurface(val engine: EditorEngine, val view: ViewState, private val d
         return Rectangle(screen.x + (x / g.scale).roundToInt(), screen.y + (y / g.scale).roundToInt(), 0, ((bottom - y) / g.scale).roundToInt().coerceAtLeast(1))
     }
     override fun getLocationOffset(x: Int, y: Int): TextHitInfo? {
-        val mark = published.marked ?: return null; val g = geometry() ?: return null; val screen = locationOnScreen
+        val mark = published.marked ?: return null; val g = geometry() ?: return null
+        val screen = runCatching { locationOnScreen }.getOrDefault(Point())
         val p = Offset((x - screen.x) * g.scale - g.x, (y - screen.y) * g.scale - g.y)
         if (mark.none { i -> g.layout.getBoundingBox(i).contains(p) }) return null
         val offset = g.layout.getOffsetForPosition(p).coerceIn(mark.first, mark.last + 1) - mark.first

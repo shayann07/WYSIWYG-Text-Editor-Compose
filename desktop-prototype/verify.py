@@ -57,12 +57,15 @@ def main():
         report["host"] = json.loads(host_result.read_text(encoding="utf-8"))
         if report["host"].get("urduArabicRtl") != "PASS":
             raise RuntimeError("Missing RTL host verdict")
+        if report["host"].get("japaneseImeHost") != "PASS":
+            raise RuntimeError("Missing Japanese IME host verdict")
         frozen = json.loads((ROOT / "v5-freeze-manifest.json").read_text(encoding="utf-8"))
         for path, expected in frozen["hashes"].items():
             if hashlib.sha256((ROOT / path).read_bytes()).hexdigest() != expected:
                 raise RuntimeError("Frozen file changed: " + path)
         report["frozenFilesUnchanged"] = len(frozen["hashes"])
-        report["sources"] = {p.relative_to(ROOT).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted((PROJECT / "src/main/kotlin").rglob("*.kt"))}
+        all_sources = [PROJECT / "pom.xml", PROJECT / "run.cmd", PROJECT / "verify.py"] + sorted((PROJECT / "src/main/kotlin").rglob("*.kt"))
+        report["sources"] = {p.relative_to(ROOT).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest() for p in all_sources}
         report["status"] = "PASS"
         print(f"PASS frozen v5 ({len(frozen['hashes'])} files)")
     except Exception as error:

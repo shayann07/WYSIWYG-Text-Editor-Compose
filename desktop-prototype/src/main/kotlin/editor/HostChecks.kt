@@ -55,7 +55,8 @@ fun runHostChecks(surface: EditorSurface, resultFile: File = File("desktop-proto
     shortcut(KeyEvent.VK_Z);check(e.snapshot().visible.units.all { it.style==TextStyleFlags() })
     shortcut(KeyEvent.VK_Z);check(e.snapshot().visible.text.isEmpty())
     runRtlHostChecks(surface)
-    val report="{\"status\":\"PASS\",\"committedSliceQueries\":$queries,\"imeEvents\":7,\"rawFFFF\":\"PASS\",\"invalidCaretRejected\":\"PASS\",\"altGrShortcutIsolation\":\"PASS\",\"formatShortcutsLayoutUndo\":\"PASS\",\"urduArabicRtl\":\"PASS\",\"scope\":\"Attached AWT host and real Compose layout; synthetic IME event stream, not a physical OS IME\"}"
+    runJapaneseHostChecks(surface)
+    val report="{\"status\":\"PASS\",\"committedSliceQueries\":$queries,\"imeEvents\":7,\"rawFFFF\":\"PASS\",\"invalidCaretRejected\":\"PASS\",\"altGrShortcutIsolation\":\"PASS\",\"formatShortcutsLayoutUndo\":\"PASS\",\"urduArabicRtl\":\"PASS\",\"japaneseImeHost\":\"PASS\",\"scope\":\"Attached AWT host and real Compose layout; synthetic IME event stream, not a physical OS IME\"}"
     resultFile.apply {parentFile.mkdirs();writeText(report)}
     println(report)
     surface.writeDiagnostics()
