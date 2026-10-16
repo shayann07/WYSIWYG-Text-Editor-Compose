@@ -23,7 +23,7 @@ fun main(args: Array<String>) {
                 val surface = findSurface(window)
                 if (surface?.view?.measure != null) {
                     timer.stop()
-                    try { runHostChecks(surface, hostResult); window.dispose() }
+                    try { runHostChecks(surface, hostResult); window.dispose(); kotlin.system.exitProcess(0) }
                     catch (failure: Throwable) { failure.printStackTrace(); window.dispose(); kotlin.system.exitProcess(1) }
                 } else if (++attempts > 50) { timer.stop(); System.err.println("Editor did not produce layout for host checks"); window.dispose(); kotlin.system.exitProcess(1) }
             }

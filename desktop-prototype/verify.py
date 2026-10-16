@@ -59,6 +59,8 @@ def main():
             raise RuntimeError("Missing RTL host verdict")
         if report["host"].get("japaneseImeHost") != "PASS":
             raise RuntimeError("Missing Japanese IME host verdict")
+        if report["host"].get("paragraphLayout") != "PASS":
+            raise RuntimeError("Missing paragraph layout verdict")
         frozen = json.loads((ROOT / "v5-freeze-manifest.json").read_text(encoding="utf-8"))
         for path, expected in frozen["hashes"].items():
             if hashlib.sha256((ROOT / path).read_bytes()).hexdigest() != expected:

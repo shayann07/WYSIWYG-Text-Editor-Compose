@@ -15,6 +15,7 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.ResolvedTextDirection
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
@@ -38,6 +39,20 @@ private fun displayText(text: String): String = buildString {
     while (i < text.length) { val c = text[i]; if (Character.isHighSurrogate(c) && i + 1 < text.length && Character.isLowSurrogate(text[i + 1])) { append(c); append(text[++i]) } else append(if (Character.isSurrogate(c)) '\ufffd' else c); i++ }
 }
 
+internal fun paragraphAttributedDisplay(units: List<TextUnit>): AnnotatedString = buildAnnotatedString {
+    val doc = Document(units)
+    append(displayText(doc.text))
+    val runs = displayedStyles(doc)
+    var start = 0
+    while (start < runs.size) {
+        var end = start + 1
+        while (end < runs.size && runs[end].start == runs[end - 1].end && runs[end].style == runs[start].style) end++
+        val style = runs[start].style
+        if (style.bold || style.italic) addStyle(SpanStyle(fontWeight = if (style.bold) FontWeight.Bold else FontWeight.Normal, fontStyle = if (style.italic) FontStyle.Italic else FontStyle.Normal), runs[start].start, runs[end - 1].end)
+        start = end
+    }
+}
+
 internal fun attributedDisplay(document: Document): AnnotatedString = buildAnnotatedString {
     append(displayText(document.text))
     val runs = displayedStyles(document)
@@ -50,14 +65,123 @@ internal fun attributedDisplay(document: Document): AnnotatedString = buildAnnot
         start = end
     }
 }
-data class Geometry(val layout: TextLayoutResult, val x: Float, val y: Float, val scale: Float, val revision: Long) {
-    fun caret(offset: Int, primary: Boolean = true): androidx.compose.ui.geometry.Rect {
-        val at = offset.coerceIn(0, layout.layoutInput.text.length)
-        val r = layout.getCursorRect(at)
-        val cx = layout.getHorizontalPosition(at, primary)
-        return androidx.compose.ui.geometry.Rect(x + cx, y + r.top, x + cx + scale * 1.5f, y + r.bottom)
+
+fun paragraphBaseDirection(units: List<TextUnit>, fallback: ResolvedTextDirection): ResolvedTextDirection {
+    var i = 0
+    while (i < units.size) {
+        val c = units[i].char
+        val codePoint = if (Character.isHighSurrogate(c) && i + 1 < units.size && Character.isLowSurrogate(units[i + 1].char)) {
+            Character.toCodePoint(c, units[++i].char)
+        } else c.code
+        when (Character.getDirectionality(codePoint)) {
+            Character.DIRECTIONALITY_RIGHT_TO_LEFT,
+            Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC -> return ResolvedTextDirection.Rtl
+            Character.DIRECTIONALITY_LEFT_TO_RIGHT -> return ResolvedTextDirection.Ltr
+        }
+        i++
+    }
+    return fallback
+}
+
+data class ParagraphSpan(
+    val index: Int,
+    val startOffset: Int,
+    val endOffset: Int,
+    val hasBreak: Boolean,
+    val units: List<TextUnit>
+)
+
+fun partitionParagraphs(document: Document): List<ParagraphSpan> {
+    val result = ArrayList<ParagraphSpan>()
+    val units = document.units
+    var currentStart = 0
+    var pIndex = 0
+    for (i in units.indices) {
+        if (units[i].kind == UnitKind.PARAGRAPH_BREAK) {
+            result.add(ParagraphSpan(pIndex++, currentStart, i, true, units.subList(currentStart, i)))
+            currentStart = i + 1
+        }
+    }
+    result.add(ParagraphSpan(pIndex, currentStart, units.size, false, units.subList(currentStart, units.size)))
+    return result
+}
+
+data class ParagraphLayout(
+    val index: Int,
+    val startOffset: Int,
+    val endOffset: Int,
+    val hasBreak: Boolean,
+    val text: String,
+    val annotatedString: AnnotatedString,
+    val baseDirection: ResolvedTextDirection,
+    val layout: TextLayoutResult,
+    val top: Float,
+    val height: Float,
+    val startLineIndex: Int
+) {
+    val bottom: Float get() = top + height
+    val textLength: Int get() = endOffset - startOffset
+    val totalLength: Int get() = textLength + (if (hasBreak) 1 else 0)
+    val breakOffset: Int? get() = if (hasBreak) endOffset else null
+    val lineCount: Int get() = maxOf(1, layout.lineCount)
+
+    fun toLocalOffset(documentOffset: Int): Int = (documentOffset - startOffset).coerceIn(0, textLength)
+    fun toDocumentOffset(localOffset: Int): Int = (startOffset + localOffset).coerceIn(startOffset, endOffset)
+}
+
+data class Geometry(
+    val paragraphs: List<ParagraphLayout>,
+    val totalHeight: Float,
+    val x: Float,
+    val y: Float,
+    val scale: Float,
+    val revision: Long,
+    val textWidth: Int,
+    val scroll: Float = 0f
+) {
+    val layout: TextLayoutResult get() = paragraphs.first().layout
+    val totalLineCount: Int get() = paragraphs.sumOf { it.lineCount }
+
+    fun paragraphForOffset(documentOffset: Int, leadingAffinity: Boolean = false): ParagraphLayout {
+        if (paragraphs.isEmpty()) throw IllegalStateException("Geometry has no paragraphs")
+        if (documentOffset <= 0) return paragraphs.first()
+        for (i in paragraphs.indices) {
+            val p = paragraphs[i]
+            if (p.hasBreak) {
+                if (documentOffset in p.startOffset until p.endOffset) return p
+                if (documentOffset == p.endOffset) {
+                    return if (leadingAffinity && i + 1 < paragraphs.size) paragraphs[i + 1] else p
+                }
+            } else {
+                if (documentOffset in p.startOffset..p.endOffset) return p
+            }
+        }
+        return paragraphs.last()
+    }
+
+    fun getLineForOffset(documentOffset: Int): Int {
+        val p = paragraphForOffset(documentOffset)
+        return p.startLineIndex + (if (p.textLength == 0) 0 else p.layout.getLineForOffset(p.toLocalOffset(documentOffset)))
+    }
+
+    fun getParagraphDirection(documentOffset: Int): ResolvedTextDirection = paragraphForOffset(documentOffset).baseDirection
+
+    fun getHorizontalPosition(documentOffset: Int, primary: Boolean = true): Float {
+        val p = paragraphForOffset(documentOffset)
+        return p.layout.getHorizontalPosition(p.toLocalOffset(documentOffset), primary)
+    }
+
+    fun caret(offset: Int, primary: Boolean = true, leadingAffinity: Boolean = false): androidx.compose.ui.geometry.Rect {
+        val p = paragraphForOffset(offset, leadingAffinity)
+        val local = p.toLocalOffset(offset)
+        val r = p.layout.getCursorRect(local)
+        val cx = p.layout.getHorizontalPosition(local, primary)
+        val py = y + p.top
+        val caretHeight = if (r.height > 0) r.height else p.height
+        return androidx.compose.ui.geometry.Rect(x + cx, py + r.top, x + cx + scale * 1.5f, py + r.top + caretHeight)
     }
 }
+
 class ViewState(frame: EditorFrame) {
     var frame by mutableStateOf(frame)
     var scroll by mutableStateOf(0f)
@@ -66,6 +190,23 @@ class ViewState(frame: EditorFrame) {
     var ensureCaret = true
     var geometry: Geometry? = null
     var measure: ((EditorFrame) -> Geometry)? = null
+}
+
+fun referenceMeasure(document: Document, textWidth: Int, measurer: TextMeasurer, style: TextStyle): List<Pair<ParagraphSpan, TextLayoutResult>> {
+    val spans = partitionParagraphs(document)
+    var fallback = ResolvedTextDirection.Ltr
+    return spans.map { span ->
+        val dir = paragraphBaseDirection(span.units, fallback)
+        fallback = dir
+        val annotated = paragraphAttributedDisplay(span.units)
+        val paraStyle = style.copy(
+            textDirection = if (dir == ResolvedTextDirection.Rtl) TextDirection.Rtl else TextDirection.Ltr
+        )
+        val layout = synchronized(measurer) {
+            measurer.measure(annotated, style = paraStyle, constraints = Constraints(minWidth = textWidth, maxWidth = textWidth))
+        }
+        span to layout
+    }
 }
 
 @Composable
@@ -79,13 +220,60 @@ private fun DocumentCanvas(state: ViewState) {
         val textWidth = (pageWidth - padding * 2).roundToInt().coerceAtLeast(1)
         val style = TextStyle(color = ComposeColor(0xff202b3c), fontFamily = FontFamily.SansSerif, fontSize = 18.sp, lineHeight = 30.sp, textDirection = TextDirection.Content)
         fun measure(frame: EditorFrame): Geometry {
-            val layout = synchronized(measurer) { measurer.measure(attributedDisplay(frame.visible), style = style, constraints = Constraints(minWidth = textWidth, maxWidth = textWidth)) }
-            return Geometry(layout, pageLeft + padding, 28.dp.toPx() + padding - state.scroll * scale, scale, frame.documentRevision)
+            val spans = partitionParagraphs(frame.visible)
+            var fallback = ResolvedTextDirection.Ltr
+            var currentTop = 0f
+            var startLineIndex = 0
+            val defaultLineHeight = synchronized(measurer) {
+                measurer.measure(AnnotatedString(" "), style = style, constraints = Constraints(minWidth = textWidth, maxWidth = textWidth)).size.height.toFloat()
+            }
+            val paragraphs = ArrayList<ParagraphLayout>(spans.size)
+            for (span in spans) {
+                val dir = paragraphBaseDirection(span.units, fallback)
+                fallback = dir
+                val annotated = paragraphAttributedDisplay(span.units)
+                val paraStyle = style.copy(
+                    textDirection = if (dir == ResolvedTextDirection.Rtl) TextDirection.Rtl else TextDirection.Ltr
+                )
+                val layout = synchronized(measurer) {
+                    measurer.measure(annotated, style = paraStyle, constraints = Constraints(minWidth = textWidth, maxWidth = textWidth))
+                }
+                val pHeight = if (span.units.isEmpty() && layout.size.height == 0) defaultLineHeight else max(layout.size.height.toFloat(), defaultLineHeight)
+                val rawText = span.units.joinToString("") { it.char.toString() }
+                paragraphs.add(
+                    ParagraphLayout(
+                        index = span.index,
+                        startOffset = span.startOffset,
+                        endOffset = span.endOffset,
+                        hasBreak = span.hasBreak,
+                        text = rawText,
+                        annotatedString = annotated,
+                        baseDirection = dir,
+                        layout = layout,
+                        top = currentTop,
+                        height = pHeight,
+                        startLineIndex = startLineIndex
+                    )
+                )
+                currentTop += pHeight
+                startLineIndex += maxOf(1, layout.lineCount)
+            }
+            val totalHeight = currentTop
+            return Geometry(
+                paragraphs = paragraphs,
+                totalHeight = totalHeight,
+                x = pageLeft + padding,
+                y = 28.dp.toPx() + padding - state.scroll * scale,
+                scale = scale,
+                revision = frame.documentRevision,
+                textWidth = textWidth,
+                scroll = state.scroll
+            )
         }
         state.measure = ::measure
         val frame = state.frame
         var geo = measure(frame)
-        val contentHeight = geo.layout.size.height + padding * 2 + 56.dp.toPx()
+        val contentHeight = geo.totalHeight + padding * 2 + 56.dp.toPx()
         val maxScroll = max(0f, (contentHeight - size.height) / scale)
         var scroll = state.scroll.coerceIn(0f, maxScroll)
         if (state.ensureCaret) {
@@ -99,28 +287,50 @@ private fun DocumentCanvas(state: ViewState) {
         state.geometry = geo
         drawRect(ComposeColor(0xffeef1f5))
         val pageY = 28.dp.toPx() - state.scroll * scale
-        val pageHeight = max(size.height - 56.dp.toPx(), geo.layout.size.height + padding * 2)
+        val pageHeight = max(size.height - 56.dp.toPx(), geo.totalHeight + padding * 2)
         drawRect(ComposeColor(0xffe1e6ed), Offset(pageLeft + 2.dp.toPx(), pageY + 3.dp.toPx()), androidx.compose.ui.geometry.Size(pageWidth, pageHeight))
         drawRect(ComposeColor.White, Offset(pageLeft, pageY), androidx.compose.ui.geometry.Size(pageWidth, pageHeight))
         val s = frame.selection
         if (!s.collapsed) {
-            val path = geo.layout.getPathForRange(s.start, s.end)
-            withTransform({ translate(geo.x, geo.y) }) { drawPath(path, ComposeColor(if (state.focused) 0xffc8dcff else 0xffdce3ed)) }
+            for (p in geo.paragraphs) {
+                val selStart = max(s.start, p.startOffset)
+                val selEnd = min(s.end, p.endOffset)
+                if (selStart < selEnd) {
+                    val localA = p.toLocalOffset(selStart)
+                    val localB = p.toLocalOffset(selEnd)
+                    val path = p.layout.getPathForRange(localA, localB)
+                    withTransform({ translate(geo.x, geo.y + p.top) }) {
+                        drawPath(path, ComposeColor(if (state.focused) 0xffc8dcff else 0xffdce3ed))
+                    }
+                }
+            }
         }
-        drawText(geo.layout, topLeft = Offset(geo.x, geo.y))
+        for (p in geo.paragraphs) {
+            drawText(p.layout, topLeft = Offset(geo.x, geo.y + p.top))
+        }
         if (frame.visible.text.isEmpty() && frame.marked == null) {
             val placeholder = measurer.measure(AnnotatedString("Start typing…"), style = style.copy(color = ComposeColor(0xff9aa4b2)))
             drawText(placeholder, topLeft = Offset(geo.x, geo.y))
         }
         frame.marked?.takeUnless { it.isEmpty() }?.let { range ->
-            val first = geo.layout.getLineForOffset(range.first)
-            val last = geo.layout.getLineForOffset(range.last + 1)
-            for (line in first..last) {
-                val a = max(range.first, geo.layout.getLineStart(line)); val b = min(range.last + 1, geo.layout.getLineEnd(line, true))
-                if (a <= b) {
-                    val x1 = geo.layout.getHorizontalPosition(a, true); val x2 = geo.layout.getHorizontalPosition(b, true)
-                    val y = geo.y + geo.layout.getLineBottom(line) - 2.dp.toPx()
-                    drawLine(ComposeColor(0xff3467d5), Offset(geo.x + min(x1, x2), y), Offset(geo.x + max(x1, x2), y), 1.5.dp.toPx())
+            for (p in geo.paragraphs) {
+                val markA = max(range.first, p.startOffset)
+                val markB = min(range.last + 1, p.endOffset)
+                if (markA < markB) {
+                    val localA = p.toLocalOffset(markA)
+                    val localB = p.toLocalOffset(markB)
+                    val first = p.layout.getLineForOffset(localA)
+                    val last = p.layout.getLineForOffset(localB)
+                    for (line in first..last) {
+                        val a = max(localA, p.layout.getLineStart(line))
+                        val b = min(localB, p.layout.getLineEnd(line, true))
+                        if (a <= b) {
+                            val x1 = p.layout.getHorizontalPosition(a, true)
+                            val x2 = p.layout.getHorizontalPosition(b, true)
+                            val lineY = geo.y + p.top + p.layout.getLineBottom(line) - 2.dp.toPx()
+                            drawLine(ComposeColor(0xff3467d5), Offset(geo.x + min(x1, x2), lineY), Offset(geo.x + max(x1, x2), lineY), 1.5.dp.toPx())
+                        }
+                    }
                 }
             }
         }
@@ -229,23 +439,43 @@ class EditorSurface(val engine: EditorEngine, val view: ViewState, private val d
         blinkTimer.start()
     }
     override fun removeNotify() { blinkTimer.stop(); super.removeNotify() }
-    private fun geometry(): Geometry? = view.geometry?.takeIf { it.revision == published.documentRevision } ?: view.measure?.invoke(published)?.also { view.geometry = it }
+    private fun geometry(): Geometry? = view.geometry?.takeIf { it.revision == published.documentRevision && it.scroll == view.scroll } ?: view.measure?.invoke(published)?.also { view.geometry = it }
     private fun hit(point: Point): Int? {
         val g = geometry() ?: return null
-        val at = g.layout.getOffsetForPosition(Offset(point.x * g.scale - g.x, point.y * g.scale - g.y)).coerceIn(0, published.visible.units.size)
-        val a = Graphemes.snap(published.visible.text, at, false); val b = Graphemes.snap(published.visible.text, at, true)
+        val targetY = point.y * g.scale - g.y
+        val targetX = point.x * g.scale - g.x
+        val p = when {
+            targetY <= 0 -> g.paragraphs.first()
+            targetY >= g.totalHeight -> g.paragraphs.last()
+            else -> g.paragraphs.firstOrNull { targetY in it.top..it.bottom }
+                ?: g.paragraphs.minByOrNull { abs((it.top + it.height / 2) - targetY) }
+                ?: g.paragraphs.first()
+        }
+        val localY = (targetY - p.top).coerceIn(0f, p.height)
+        val localX = targetX.coerceIn(0f, g.textWidth.toFloat())
+        val localOffset = if (p.textLength == 0) 0 else p.layout.getOffsetForPosition(Offset(localX, localY)).coerceIn(0, p.textLength)
+        val docOffset = p.toDocumentOffset(localOffset)
+        val a = Graphemes.snap(published.visible.text, docOffset, false)
+        val b = Graphemes.snap(published.visible.text, docOffset, true)
         return if (abs(g.caret(a).left - point.x * g.scale) < abs(g.caret(b).left - point.x * g.scale)) a else b
     }
     private fun pointerSide(point: Point, offset: Int): TypingSide {
         val g = geometry() ?: return TypingSide.LEFT
+        val p = g.paragraphForOffset(offset)
+        val local = p.toLocalOffset(offset)
         val rightOfCaret = point.x * g.scale >= g.caret(offset).left
-        val rtl = g.layout.getBidiRunDirection(offset) == androidx.compose.ui.text.style.ResolvedTextDirection.Rtl
+        val rtl = p.layout.getBidiRunDirection(local) == androidx.compose.ui.text.style.ResolvedTextDirection.Rtl
         return if (rightOfCaret != rtl) TypingSide.RIGHT else TypingSide.LEFT
     }
     private data class Stop(val offset: Int, val x: Float, val line: Int, val primary: Boolean)
     private fun stops(g: Geometry): List<Stop> = Graphemes.stops(published.visible.text).flatMap { offset ->
-        val line = g.layout.getLineForOffset(offset); val primary = g.layout.getHorizontalPosition(offset, true); val secondary = g.layout.getHorizontalPosition(offset, false)
-        listOf(Stop(offset, primary, line, true)) + if (abs(primary - secondary) > .5f) listOf(Stop(offset, secondary, line, false)) else emptyList()
+        val p = g.paragraphForOffset(offset)
+        val local = p.toLocalOffset(offset)
+        val localLine = if (p.textLength == 0) 0 else p.layout.getLineForOffset(local)
+        val globalLine = p.startLineIndex + localLine
+        val primary = p.layout.getHorizontalPosition(local, true)
+        val secondary = p.layout.getHorizontalPosition(local, false)
+        listOf(Stop(offset, primary, globalLine, true)) + if (abs(primary - secondary) > .5f) listOf(Stop(offset, secondary, globalLine, false)) else emptyList()
     }.sortedWith(compareBy<Stop> { it.line }.thenBy { it.x }.thenBy { it.offset })
     private fun navigate(key: Int, extend: Boolean, command: Boolean) {
         val g = geometry() ?: return; val s = published.selection; val text = published.visible.text
@@ -265,7 +495,7 @@ class EditorSurface(val engine: EditorEngine, val view: ViewState, private val d
             }
             key == KeyEvent.VK_HOME -> target = all.first { it.line == here.line }
             key == KeyEvent.VK_END -> target = all.last { it.line == here.line }
-            else -> { val x = preferredX ?: here.x.also { preferredX = it }; val line = (here.line + if (key == KeyEvent.VK_UP) -1 else 1).coerceIn(0, g.layout.lineCount - 1); target = all.filter { it.line == line }.minByOrNull { abs(it.x - x) } ?: here }
+            else -> { val x = preferredX ?: here.x.also { preferredX = it }; val line = (here.line + if (key == KeyEvent.VK_UP) -1 else 1).coerceIn(0, g.totalLineCount - 1); target = all.filter { it.line == line }.minByOrNull { abs(it.x - x) } ?: here }
         }
         if (key !in arrayOf(KeyEvent.VK_UP, KeyEvent.VK_DOWN)) preferredX = null
         engine.move(Selection(if (extend) Graphemes.snap(text, s.anchor, false) else target.offset, target.offset, target.primary), target.primary, if (target.offset < s.focus) TypingSide.RIGHT else TypingSide.LEFT)
@@ -292,27 +522,59 @@ class EditorSurface(val engine: EditorEngine, val view: ViewState, private val d
     override fun getSelectedText(attributes: Array<out AttributedCharacterIterator.Attribute>?) = AttributedString(published.visible.text.substring(published.selection.start, published.selection.end)).iterator
     override fun cancelLatestCommittedText(attributes: Array<out AttributedCharacterIterator.Attribute>?): AttributedCharacterIterator? = null
     override fun getTextLocation(offset: TextHitInfo?): Rectangle {
-        val g = geometry() ?: return Rectangle(runCatching { locationOnScreen }.getOrDefault(Point()), Dimension(0, 20))
+        val g = geometry()
+        val screen = try {
+            if (!isShowing) null else locationOnScreen
+        } catch (_: IllegalComponentStateException) {
+            null
+        }
+        if (g == null || screen == null) {
+            return Rectangle(0, 0, 0, 0)
+        }
         val mark = published.marked; val s = published.selection
         val at = if (mark != null) mark.first + (offset?.insertionIndex ?: 0).also { require(it in 0..mark.count()) } else s.focus
         val caret = g.caret(at, if (mark != null) offset?.isLeadingEdge ?: true else s.primary)
         var x = caret.left; var y = caret.top; var bottom = caret.bottom
         if (mark == null && !s.collapsed) {
-            val line = g.layout.getLineForOffset(s.end); val a = max(s.start, g.layout.getLineStart(line)); val b = min(s.end, g.layout.getLineEnd(line, true))
-            val x1 = g.layout.getHorizontalPosition(a, true); val x2 = g.layout.getHorizontalPosition(b, true)
-            x = g.x + if (g.layout.getParagraphDirection(a) == androidx.compose.ui.text.style.ResolvedTextDirection.Rtl) max(x1, x2) else min(x1, x2)
-            y = g.y + g.layout.getLineTop(line); bottom = g.y + g.layout.getLineBottom(line)
+            val p = g.paragraphForOffset(s.end)
+            val localEnd = p.toLocalOffset(s.end)
+            val line = p.layout.getLineForOffset(localEnd)
+            val a = max(s.start, p.startOffset + p.layout.getLineStart(line)); val b = min(s.end, p.startOffset + p.layout.getLineEnd(line, true))
+            val localA = p.toLocalOffset(a); val localB = p.toLocalOffset(b)
+            val x1 = p.layout.getHorizontalPosition(localA, true); val x2 = p.layout.getHorizontalPosition(localB, true)
+            x = g.x + if (p.layout.getParagraphDirection(localA) == androidx.compose.ui.text.style.ResolvedTextDirection.Rtl) max(x1, x2) else min(x1, x2)
+            y = g.y + p.top + p.layout.getLineTop(line); bottom = g.y + p.top + p.layout.getLineBottom(line)
         }
-        val screen = runCatching { locationOnScreen }.getOrDefault(Point())
         return Rectangle(screen.x + (x / g.scale).roundToInt(), screen.y + (y / g.scale).roundToInt(), 0, ((bottom - y) / g.scale).roundToInt().coerceAtLeast(1))
     }
     override fun getLocationOffset(x: Int, y: Int): TextHitInfo? {
         val mark = published.marked ?: return null; val g = geometry() ?: return null
-        val screen = runCatching { locationOnScreen }.getOrDefault(Point())
-        val p = Offset((x - screen.x) * g.scale - g.x, (y - screen.y) * g.scale - g.y)
-        if (mark.none { i -> g.layout.getBoundingBox(i).contains(p) }) return null
-        val offset = g.layout.getOffsetForPosition(p).coerceIn(mark.first, mark.last + 1) - mark.first
-        return TextHitInfo.leading(offset)
+        val screen = try {
+            if (!isShowing) return null
+            locationOnScreen
+        } catch (_: IllegalComponentStateException) {
+            return null
+        }
+        val targetX = (x - screen.x) * g.scale - g.x
+        val targetY = (y - screen.y) * g.scale - g.y
+        for (p in g.paragraphs) {
+            val markA = max(mark.first, p.startOffset)
+            val markB = min(mark.last + 1, p.endOffset)
+            if (markA < markB) {
+                val localA = p.toLocalOffset(markA)
+                val localB = p.toLocalOffset(markB)
+                val localP = Offset(targetX, targetY - p.top)
+                val inAnyBox = (localA until localB).any { i ->
+                    p.layout.getBoundingBox(i).contains(localP)
+                }
+                if (inAnyBox) {
+                    val localHit = p.layout.getOffsetForPosition(localP).coerceIn(localA, localB)
+                    val docHit = p.toDocumentOffset(localHit)
+                    return TextHitInfo.leading(docHit - mark.first)
+                }
+            }
+        }
+        return null
     }
     override fun getAccessibleContext(): AccessibleContext { if (accessibleContext == null) accessibleContext = AccessibleEditor(); return accessibleContext }
     protected inner class AccessibleEditor : AccessibleJComponent(), AccessibleText {
@@ -321,7 +583,18 @@ class EditorSurface(val engine: EditorEngine, val view: ViewState, private val d
         override fun getAccessibleDescription(): String = "Editable document. Type text; use Control Z to undo."
         override fun getAccessibleText(): AccessibleText = this
         override fun getIndexAtPoint(p: Point): Int = hit(p) ?: -1
-        override fun getCharacterBounds(i: Int): Rectangle? { val g = geometry() ?: return null; if (i !in published.visible.text.indices) return null; val r = g.layout.getBoundingBox(i); return Rectangle(((g.x+r.left)/g.scale).toInt(),((g.y+r.top)/g.scale).toInt(),(r.width/g.scale).toInt(),(r.height/g.scale).toInt()) }
+        override fun getCharacterBounds(i: Int): Rectangle? {
+            val g = geometry() ?: return null
+            if (i !in published.visible.text.indices) return null
+            val p = g.paragraphForOffset(i)
+            if (i == p.breakOffset) {
+                val r = p.layout.getCursorRect(p.textLength)
+                return Rectangle(((g.x + r.left) / g.scale).toInt(), ((g.y + p.top + r.top) / g.scale).toInt(), 0, (r.height / g.scale).toInt())
+            }
+            val local = p.toLocalOffset(i)
+            val r = p.layout.getBoundingBox(local)
+            return Rectangle(((g.x + r.left) / g.scale).toInt(), ((g.y + p.top + r.top) / g.scale).toInt(), (r.width / g.scale).toInt(), (r.height / g.scale).toInt())
+        }
         override fun getCharCount() = published.visible.text.length
         override fun getCaretPosition() = published.selection.focus
         override fun getSelectionStart() = published.selection.start
@@ -348,7 +621,7 @@ class EditorSurface(val engine: EditorEngine, val view: ViewState, private val d
     }
 }
 
-fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList()), initialPath: java.nio.file.Path? = null, trace: ImeTrace? = null, traceLanguage: String? = null, offscreenTest: Boolean = false): JFrame {
+fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList()), initialPath: java.nio.file.Path? = null, trace: ImeTrace? = null, traceLanguage: String? = null, offscreenTest: Boolean = false, windowLocation: Point? = null): JFrame {
     check(SwingUtilities.isEventDispatchThread())
     val engine=EditorEngine(initial);val state=ViewState(engine.snapshot());val surface=EditorSurface(engine,state,diagnostics,trace)
     val window=JFrame("Astra Editor — Desktop Prototype")
@@ -400,8 +673,14 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
     return window.apply {
         minimumSize=Dimension(940,400)
         contentPane=JPanel(BorderLayout()).apply {add(header,BorderLayout.NORTH);add(layers,BorderLayout.CENTER);add(footer,BorderLayout.SOUTH)}
-        pack();if(offscreenTest) {isAutoRequestFocus=false;setLocation(-16000,-16000)} else setLocationRelativeTo(null);isVisible=true
+        pack()
+        when {
+            windowLocation != null -> { isAutoRequestFocus = false; location = windowLocation }
+            offscreenTest -> { isAutoRequestFocus = false; setLocation(-16000, -16000) }
+            else -> setLocationRelativeTo(null)
+        }
+        isVisible=true
         addWindowListener(object:WindowAdapter(){override fun windowClosed(e:WindowEvent){compose.dispose()}})
-        SwingUtilities.invokeLater {if(!offscreenTest) surface.requestFocusInWindow();surface.writeDiagnostics()}
+        SwingUtilities.invokeLater {if(!offscreenTest && windowLocation == null) surface.requestFocusInWindow();surface.writeDiagnostics()}
     }
 }
