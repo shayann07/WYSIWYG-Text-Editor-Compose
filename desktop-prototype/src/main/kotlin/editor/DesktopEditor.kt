@@ -79,7 +79,7 @@ private fun DocumentCanvas(state: ViewState) {
         val textWidth = (pageWidth - padding * 2).roundToInt().coerceAtLeast(1)
         val style = TextStyle(color = ComposeColor(0xff202b3c), fontFamily = FontFamily.SansSerif, fontSize = 18.sp, lineHeight = 30.sp, textDirection = TextDirection.Content)
         fun measure(frame: EditorFrame): Geometry {
-            val layout = synchronized(measurer) { measurer.measure(attributedDisplay(frame.visible), style = style, constraints = Constraints(maxWidth = textWidth)) }
+            val layout = synchronized(measurer) { measurer.measure(attributedDisplay(frame.visible), style = style, constraints = Constraints(minWidth = textWidth, maxWidth = textWidth)) }
             return Geometry(layout, pageLeft + padding, 28.dp.toPx() + padding - state.scroll * scale, scale, frame.documentRevision)
         }
         state.measure = ::measure
@@ -137,7 +137,7 @@ private fun DocumentCanvas(state: ViewState) {
 }
 
 /** The transparent AWT root owns input; the Compose surface underneath only renders. */
-class EditorSurface(val engine: EditorEngine, val view: ViewState, private val diagnostics: File? = null) : JComponent(), InputMethodRequests {
+class EditorSurface(val engine: EditorEngine, val view: ViewState, private val diagnostics: File? = null, private val trace: ImeTrace? = null) : JComponent(), InputMethodRequests {
     @Volatile private var published = engine.snapshot()
     private var dragAnchor = 0
     private var preferredX: Float? = null
@@ -158,10 +158,10 @@ class EditorSurface(val engine: EditorEngine, val view: ViewState, private val d
             } finally { writeDiagnostics() }
         }
         engine.onSettlementRequested = { inputContext?.endComposition() }
-        engine.onEvent = { event -> diagnostics?.parentFile?.let { it.mkdirs(); File(it, "input-events.log").appendText("${System.currentTimeMillis()} $event\n") } }
+        engine.onEvent = { event -> trace?.record("engine",event,engine.snapshot()); diagnostics?.parentFile?.let { it.mkdirs(); File(it, "input-events.log").appendText("${System.currentTimeMillis()} $event\n") } }
         addFocusListener(object : FocusAdapter() {
-            override fun focusGained(e: FocusEvent) { view.focused = true; view.blink = true; writeDiagnostics() }
-            override fun focusLost(e: FocusEvent) { view.focused = false; inputContext?.endComposition(); writeDiagnostics() }
+            override fun focusGained(e: FocusEvent) { view.focused = true; view.blink = true; trace?.record("focus-gained","locale=${inputContext?.locale}",engine.snapshot()); writeDiagnostics() }
+            override fun focusLost(e: FocusEvent) { view.focused = false; trace?.record("focus-lost","temporary=${e.isTemporary}",engine.snapshot()); inputContext?.endComposition(); writeDiagnostics() }
         })
         addInputMethodListener(object : InputMethodListener {
             override fun inputMethodTextChanged(e: InputMethodEvent) {
@@ -169,11 +169,12 @@ class EditorSurface(val engine: EditorEngine, val view: ViewState, private val d
                 val text = e.text?.let { iterator -> buildString { for (index in iterator.beginIndex until iterator.endIndex) append(iterator.setIndex(index)) } } ?: ""
                 val committed = e.committedCharacterCount
                 val caret = e.caret?.insertionIndex
+                trace?.record("awt-text","text=$text; committed=$committed; caret=$caret; leading=${e.caret?.isLeadingEdge}; locale=${inputContext?.locale}",engine.snapshot())
                 if (committed in 0..text.length && (caret == null || caret in 0..text.length - committed)) engine.inputMethod(text, committed, caret)
                 else runCatching { engine.onEvent("Rejected malformed native text/caret range") }
                 e.consume(); preferredX = null
             }
-            override fun caretPositionChanged(e: InputMethodEvent) { e.caret?.let { engine.inputMethodCaret(it.insertionIndex) }; e.consume() }
+            override fun caretPositionChanged(e: InputMethodEvent) { trace?.record("awt-caret","${e.caret}",engine.snapshot()); e.caret?.let { engine.inputMethodCaret(it.insertionIndex) }; e.consume() }
         })
         addKeyListener(object : KeyAdapter() {
             override fun keyTyped(e: KeyEvent) {
@@ -183,6 +184,7 @@ class EditorSurface(val engine: EditorEngine, val view: ViewState, private val d
             }
             override fun keyPressed(e: KeyEvent) {
                 if (e.isConsumed) return
+                trace?.record("key-pressed","code=${e.keyCode}; modifiers=${e.modifiersEx}; locale=${inputContext?.locale}",engine.snapshot())
                 val command = (e.isControlDown || e.isMetaDown) && !e.isAltGraphDown
                 when {
                     command && e.keyCode == KeyEvent.VK_S -> requestSave(e.isShiftDown)
@@ -255,7 +257,10 @@ class EditorSurface(val engine: EditorEngine, val view: ViewState, private val d
             command && key == KeyEvent.VK_END -> target = all.first { it.offset == text.length }
             command && key in arrayOf(KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT) -> { val words = BreakIterator.getWordInstance().apply { setText(text) }; val p = if (key == KeyEvent.VK_LEFT) words.preceding(s.focus).let { if (it < 0) 0 else it } else words.following(s.focus).let { if (it < 0) text.length else it }; val snapped = Graphemes.snap(text, p, key == KeyEvent.VK_RIGHT); target = all.first { it.offset == snapped } }
             key == KeyEvent.VK_LEFT || key == KeyEvent.VK_RIGHT -> {
-                if (!extend && !s.collapsed) target = all.first { it.offset == if (key == KeyEvent.VK_LEFT) s.start else s.end }
+                if (!extend && !s.collapsed) {
+                    val endpoints = all.filter { it.primary && (it.offset == s.start || it.offset == s.end) }
+                    target = if (key == KeyEvent.VK_LEFT) endpoints.first() else endpoints.last()
+                }
                 else target = if (legalFocus != s.focus) all[current] else all[(current + if (key == KeyEvent.VK_LEFT) -1 else 1).coerceIn(0, all.lastIndex)]
             }
             key == KeyEvent.VK_HOME -> target = all.first { it.line == here.line }
@@ -342,9 +347,9 @@ class EditorSurface(val engine: EditorEngine, val view: ViewState, private val d
     }
 }
 
-fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList()), initialPath: java.nio.file.Path? = null): JFrame {
+fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList()), initialPath: java.nio.file.Path? = null, trace: ImeTrace? = null, traceLanguage: String? = null, offscreenTest: Boolean = false): JFrame {
     check(SwingUtilities.isEventDispatchThread())
-    val engine=EditorEngine(initial);val state=ViewState(engine.snapshot());val surface=EditorSurface(engine,state,diagnostics)
+    val engine=EditorEngine(initial);val state=ViewState(engine.snapshot());val surface=EditorSurface(engine,state,diagnostics,trace)
     val window=JFrame("Astra Editor — Desktop Prototype")
     lateinit var files: WindowFiles
     val compose=ComposePanel(renderSettings=RenderSettings.SwingGraphics()).apply {isFocusable=false;setContent {DocumentCanvas(state)}}
@@ -356,6 +361,23 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
     val title=JLabel("Untitled").apply {font=Font("Segoe UI",Font.BOLD,20);foreground=Color(0x20304a)}
     val subtitle=JLabel("Astra editor  /  Desktop prototype").apply {font=Font("Segoe UI",Font.PLAIN,12);foreground=Color(0x64748b)}
     val titles=JPanel(GridLayout(2,1,0,3)).apply {isOpaque=false;add(title);add(subtitle)};header.add(titles,BorderLayout.WEST)
+    if(trace!=null) {
+        subtitle.text="IME test: test text is logged locally"
+        val languages=linkedMapOf("English" to "en-US","Japanese" to "ja-JP","Urdu" to "ur-PK","Arabic" to "ar-SA")
+        val picker=JComboBox(languages.keys.toTypedArray())
+        val result=JLabel("Choose an installed input method; then type test text.")
+        picker.addActionListener {
+            val tag=languages.getValue(picker.selectedItem as String)
+            val accepted=surface.inputContext.selectInputMethod(java.util.Locale.forLanguageTag(tag))
+            val compositionEnabled = if(accepted && tag=="ja-JP") runCatching { surface.inputContext.isCompositionEnabled=true; surface.inputContext.isCompositionEnabled }.getOrNull() else null
+            result.text="Input: $tag — ${if(accepted)"selected" else "unavailable"}"
+            trace.record("select-input","requested=$tag; accepted=$accepted; actual=${surface.inputContext.locale}; compositionEnabled=$compositionEnabled",engine.snapshot())
+            surface.requestFocusInWindow()
+        }
+        if(traceLanguage!=null) SwingUtilities.invokeLater { picker.selectedItem=languages.entries.first { it.value==traceLanguage }.key }
+        header.add(JPanel(FlowLayout(FlowLayout.LEFT)).apply {isOpaque=false;add(picker);add(result)},BorderLayout.SOUTH)
+        trace.record("session-start","Live input test mode; no synthetic injection. OS=${System.getProperty("os.name")}; Java=${System.getProperty("java.version")}",engine.snapshot())
+    }
     val buttons=JPanel(FlowLayout(FlowLayout.RIGHT,8,0)).apply {isOpaque=false}
     fun button(label:String,tooltip:String,action:()->Unit)=JButton(label).apply {isFocusable=false;font=Font("Segoe UI",Font.PLAIN,13);toolTipText=tooltip;addActionListener {action();surface.requestFocusInWindow()};buttons.add(this)}
     val open=button("Open","Open a document in a new window (Ctrl+O)"){files.open()}
@@ -377,8 +399,8 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
     return window.apply {
         minimumSize=Dimension(940,400)
         contentPane=JPanel(BorderLayout()).apply {add(header,BorderLayout.NORTH);add(layers,BorderLayout.CENTER);add(footer,BorderLayout.SOUTH)}
-        pack();setLocationRelativeTo(null);isVisible=true
+        pack();if(offscreenTest) {isAutoRequestFocus=false;setLocation(-16000,-16000)} else setLocationRelativeTo(null);isVisible=true
         addWindowListener(object:WindowAdapter(){override fun windowClosed(e:WindowEvent){compose.dispose()}})
-        SwingUtilities.invokeLater {surface.requestFocusInWindow();surface.writeDiagnostics()}
+        SwingUtilities.invokeLater {if(!offscreenTest) surface.requestFocusInWindow();surface.writeDiagnostics()}
     }
 }

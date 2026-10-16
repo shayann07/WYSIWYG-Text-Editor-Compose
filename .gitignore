@@ -19,6 +19,7 @@
 *.zip
 *.pyc
 # Local editor/OS state and credentials
+/desktop-prototype/local-evidence/
 .vscode/
 .idea/
 .DS_Store

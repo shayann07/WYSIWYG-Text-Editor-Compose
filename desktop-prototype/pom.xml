@@ -1,6 +1,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
  <modelVersion>4.0.0</modelVersion><groupId>local.editor</groupId><artifactId>desktop-prototype</artifactId><version>0.3.0</version>
- <properties><kotlin.version>2.2.20</kotlin.version><project.build.sourceEncoding>UTF-8</project.build.sourceEncoding></properties>
+ <properties><kotlin.version>2.2.20</kotlin.version><project.build.sourceEncoding>UTF-8</project.build.sourceEncoding><editor.build.directory>${project.basedir}/target</editor.build.directory></properties>
  <repositories><repository><id>google</id><url>https://dl.google.com/dl/android/maven2/</url></repository></repositories>
  <dependencyManagement><dependencies><dependency><groupId>androidx.compose.runtime</groupId><artifactId>runtime-desktop</artifactId><version>1.12.1</version></dependency><dependency><groupId>androidx.compose.runtime</groupId><artifactId>runtime-saveable-desktop</artifactId><version>1.12.1</version></dependency><dependency><groupId>androidx.compose.runtime</groupId><artifactId>runtime-retain-desktop</artifactId><version>1.12.1</version></dependency></dependencies></dependencyManagement>
  <dependencies>
@@ -10,7 +10,7 @@
   <dependency><groupId>org.jetbrains.skiko</groupId><artifactId>skiko-awt-runtime-windows-x64</artifactId><version>0.150.1</version><scope>runtime</scope></dependency>
   <dependency><groupId>org.jetbrains.kotlin</groupId><artifactId>kotlin-compose-compiler-plugin-embeddable</artifactId><version>${kotlin.version}</version><scope>provided</scope></dependency>
  </dependencies>
- <build><sourceDirectory>src/main/kotlin</sourceDirectory><plugins>
+ <build><directory>${editor.build.directory}</directory><sourceDirectory>src/main/kotlin</sourceDirectory><plugins>
   <plugin><groupId>org.jetbrains.kotlin</groupId><artifactId>kotlin-maven-plugin</artifactId><version>${kotlin.version}</version><executions><execution><id>compile</id><phase>compile</phase><goals><goal>compile</goal></goals></execution></executions><configuration><jvmTarget>17</jvmTarget><args><arg>-Xplugin=${settings.localRepository}/org/jetbrains/kotlin/kotlin-compose-compiler-plugin-embeddable/${kotlin.version}/kotlin-compose-compiler-plugin-embeddable-${kotlin.version}.jar</arg></args></configuration></plugin>
   <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-dependency-plugin</artifactId><version>3.8.1</version></plugin>
  </plugins></build>

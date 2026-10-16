@@ -12,7 +12,7 @@ import java.io.File
 fun findSurface(component: Component): EditorSurface? = if (component is EditorSurface) component else (component as? Container)?.components?.firstNotNullOfOrNull(::findSurface)
 private fun string(iterator: AttributedCharacterIterator): String = buildString { for (index in iterator.beginIndex until iterator.endIndex) append(iterator.setIndex(index)) }
 /** Actual attached host + real Compose layout, but injected AWT IME events, not an OS IME. */
-fun runHostChecks(surface: EditorSurface) {
+fun runHostChecks(surface: EditorSurface, resultFile: File = File("desktop-prototype/target/host-checks.json")) {
     val e=surface.engine
     check((surface.parent as javax.swing.JLayeredPane).getLayer(surface)==100)
     check(surface.parent.findComponentAt(200,100)===surface) { "Pointer events must reach the input host, not the render layer" }
@@ -54,8 +54,9 @@ fun runHostChecks(surface: EditorSurface) {
     shortcut(KeyEvent.VK_Z);check(e.snapshot().visible.units.all { it.style==TextStyleFlags(bold=true) })
     shortcut(KeyEvent.VK_Z);check(e.snapshot().visible.units.all { it.style==TextStyleFlags() })
     shortcut(KeyEvent.VK_Z);check(e.snapshot().visible.text.isEmpty())
-    val report="{\"status\":\"PASS\",\"committedSliceQueries\":$queries,\"imeEvents\":7,\"rawFFFF\":\"PASS\",\"invalidCaretRejected\":\"PASS\",\"altGrShortcutIsolation\":\"PASS\",\"formatShortcutsLayoutUndo\":\"PASS\",\"scope\":\"Attached AWT host and real Compose layout; synthetic IME event stream, not a physical OS IME\"}"
-    File("desktop-prototype/target/host-checks.json").apply {parentFile.mkdirs();writeText(report)}
+    runRtlHostChecks(surface)
+    val report="{\"status\":\"PASS\",\"committedSliceQueries\":$queries,\"imeEvents\":7,\"rawFFFF\":\"PASS\",\"invalidCaretRejected\":\"PASS\",\"altGrShortcutIsolation\":\"PASS\",\"formatShortcutsLayoutUndo\":\"PASS\",\"urduArabicRtl\":\"PASS\",\"scope\":\"Attached AWT host and real Compose layout; synthetic IME event stream, not a physical OS IME\"}"
+    resultFile.apply {parentFile.mkdirs();writeText(report)}
     println(report)
     surface.writeDiagnostics()
 }

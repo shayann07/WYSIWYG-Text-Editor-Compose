@@ -13,6 +13,7 @@ set "CLASSPATH=%~dp0target\classes;%~dp0target\lib\*"
 if /I "%~1"=="--check" goto check
 if /I "%~1"=="--stress" goto check
 if /I "%~1"=="--host-check" goto check
+if /I "%~1"=="--ime-check" goto check
 start "" javaw.exe editor.MainKt
 if errorlevel 1 goto failed
 goto done
