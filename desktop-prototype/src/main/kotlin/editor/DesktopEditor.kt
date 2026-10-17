@@ -522,6 +522,25 @@ data class RecoveryReport(
             }
 }
 
+data class UnresolvedContextObligation(
+    val context: java.awt.im.InputContext,
+    val host: EditorSurface,
+    var detached: Boolean = false,
+    var disposed: Boolean = false
+)
+
+class RecoverySession(
+    initialPreimage: RetainedCompositionPreimage? = null
+) {
+    val unresolvedContexts: MutableList<UnresolvedContextObligation> = java.util.concurrent.CopyOnWriteArrayList()
+    val quarantinedCallbacks: MutableList<QuarantinedCallback> = java.util.concurrent.CopyOnWriteArrayList()
+    var retainedPreimage: RetainedCompositionPreimage? = initialPreimage
+    var isolationFenceEstablished: Boolean = false
+
+    val hasUnresolvedObligations: Boolean
+        get() = unresolvedContexts.isNotEmpty() && !isolationFenceEstablished
+}
+
 private val NOOP_UNIT: () -> Unit = {}
 private val NOOP_BOOL: (Boolean) -> Unit = {}
 private val NOOP_FRAME: (EditorFrame) -> Unit = {}
@@ -533,7 +552,8 @@ open class EditorSurface @JvmOverloads constructor(
     val view: ViewState,
     val diagnostics: File? = null,
     val trace: ImeTrace? = null,
-    var recoveryHooks: RecoveryHooks = RecoveryHooks()
+    var recoveryHooks: RecoveryHooks = RecoveryHooks(),
+    var recoverySession: RecoverySession = RecoverySession()
 ) : JComponent(), InputMethodRequests {
 
     data class RecoveryHooks(
@@ -543,7 +563,7 @@ open class EditorSurface @JvmOverloads constructor(
         val disableInputMethods: (EditorSurface) -> Unit = { it.enableInputMethods(false) },
         val createInputContext: () -> java.awt.im.InputContext? = { java.awt.im.InputContext.getInstance() },
         val createReplacement: (EditorSurface) -> EditorSurface = { prev ->
-            EditorSurface(prev.engine, prev.view, prev.diagnostics, prev.trace, prev.recoveryHooks)
+            EditorSurface(prev.engine, prev.view, prev.diagnostics, prev.trace, prev.recoveryHooks, prev.recoverySession)
         },
         val attachReplacement: (Container, EditorSurface, EditorSurface) -> Unit = { parentContainer, oldHost, newHost ->
             if (parentContainer is JLayeredPane) {
@@ -654,9 +674,25 @@ open class EditorSurface @JvmOverloads constructor(
     var admissionAllowed = false; private set
     var recoveryStatus: RecoveryStatus = RecoveryStatus.ACTIVE_INITIAL; private set
     val recoveryFailures: MutableList<String> = java.util.concurrent.CopyOnWriteArrayList()
-    val quarantinedCallbacks: MutableList<QuarantinedCallback> = java.util.concurrent.CopyOnWriteArrayList()
-    var retainedPreimage: RetainedCompositionPreimage? = null; private set
-    var unresolvedContext: java.awt.im.InputContext? = null; private set
+    val quarantinedCallbacks: MutableList<QuarantinedCallback>
+        get() = recoverySession.quarantinedCallbacks
+    var retainedPreimage: RetainedCompositionPreimage?
+        get() = recoverySession.retainedPreimage
+        set(value) { recoverySession.retainedPreimage = value }
+    var unresolvedContext: java.awt.im.InputContext?
+        get() = recoverySession.unresolvedContexts.firstOrNull { it.host === this }?.context
+            ?: recoverySession.unresolvedContexts.firstOrNull()?.context
+        set(value) {
+            if (value == null) {
+                recoverySession.unresolvedContexts.removeIf { it.host === this }
+            } else {
+                if (!recoverySession.unresolvedContexts.any { it.context === value }) {
+                    recoverySession.unresolvedContexts.add(
+                        UnresolvedContextObligation(value, this, hasCountedContextDetach, hasCountedContextDispose)
+                    )
+                }
+            }
+        }
     var lastRecoveryReport: RecoveryReport? = null; private set
     var preferredLocale: java.util.Locale? = null; private set
     var preferredCompositionEnabled: Boolean? = null; private set
@@ -759,6 +795,7 @@ open class EditorSurface @JvmOverloads constructor(
                 }
             }
             if (detachOk) {
+                recoverySession.unresolvedContexts.firstOrNull { it.context === oldContext }?.detached = true
                 val disposeOk = runStep("cleanupDisposeContext", failures) {
                     recoveryHooks.disposeContext(oldContext)
                     if (!hasCountedContextDispose) {
@@ -816,44 +853,52 @@ open class EditorSurface @JvmOverloads constructor(
 
     fun retryCleanup(): Boolean {
         var allOk = true
-        val ctx = unresolvedContext
-        if (ctx != null) {
-            if (!hasCountedContextDetach) {
+        for (ob in recoverySession.unresolvedContexts.toList()) {
+            val ctx = ob.context
+            val comp = ob.host
+            if (!ob.detached) {
                 try {
-                    recoveryHooks.removeNotifyContext(ctx, this)
-                    hasCountedContextDetach = true
-                    LifecycleCounters.inputContextsDetached.incrementAndGet()
+                    recoveryHooks.removeNotifyContext(ctx, comp)
+                    ob.detached = true
+                    if (!comp.hasCountedContextDetach) {
+                        comp.hasCountedContextDetach = true
+                        LifecycleCounters.inputContextsDetached.incrementAndGet()
+                    }
                 } catch (_: Throwable) {
                     allOk = false
                 }
             }
-            if (!hasCountedContextDispose) {
+            if (ob.detached && !ob.disposed) {
                 try {
                     recoveryHooks.disposeContext(ctx)
-                    hasCountedContextDispose = true
-                    LifecycleCounters.inputContextsDisposed.incrementAndGet()
-                    unresolvedContext = null
+                    ob.disposed = true
+                    if (!comp.hasCountedContextDispose) {
+                        comp.hasCountedContextDispose = true
+                        LifecycleCounters.inputContextsDisposed.incrementAndGet()
+                    }
                 } catch (_: Throwable) {
                     allOk = false
                 }
             }
+            if (ob.detached && ob.disposed) {
+                recoverySession.unresolvedContexts.remove(ob)
+            }
         }
-        return allOk
+        return allOk && !recoverySession.hasUnresolvedObligations
     }
 
     fun recoverExplicitly(admitQuarantined: Boolean = false): Boolean {
         if (admissionAllowed) return true
-        retryCleanup()
+        val cleanupOk = retryCleanup()
+        val boundarySatisfied = (cleanupOk && !recoverySession.hasUnresolvedObligations) || recoverySession.isolationFenceEstablished
+        if (!boundarySatisfied) {
+            recordDiagnosticEvent("recoverExplicitly rejected: unresolved context obligations remain attached to session; isolation boundary not established")
+            writeDiagnostics()
+            statusChanged(engine.snapshot())
+            return false
+        }
         val canRecover = ownInputContext != null && contextBindFailure == null && !disposed && !retired
         if (canRecover) {
-            if (admitQuarantined && quarantinedCallbacks.isNotEmpty()) {
-                for (q in quarantinedCallbacks) {
-                    if (q.committed in 0..q.text.length && (q.caret == null || q.caret in 0..q.text.length - q.committed)) {
-                        engine.inputMethod(q.text, q.committed, q.caret)
-                    }
-                }
-            }
-            quarantinedCallbacks.clear()
             admissionAllowed = true
             setupSucceeded = true
             contextQualified = true
@@ -865,9 +910,45 @@ open class EditorSurface @JvmOverloads constructor(
         return false
     }
 
+    fun inspectRetainedDraft(): String? = retainedPreimage?.draftText
+
+    fun exportRetainedDraft(file: File): Boolean {
+        val draft = retainedPreimage?.draftText ?: return false
+        file.parentFile?.mkdirs()
+        file.writeText(draft, Charsets.UTF_8)
+        return true
+    }
+
+    fun applyRecoveredDraft(): Boolean {
+        val draft = retainedPreimage?.draftText?.takeIf { it.isNotEmpty() } ?: return false
+        engine.perform(EditAction.Replace(engine.capture(), draft, kind = "RecoveredDraft"))
+        recoverySession.retainedPreimage = null
+        writeDiagnostics()
+        statusChanged(engine.snapshot())
+        return true
+    }
+
+    fun discardRecoveredDraft() {
+        recoverySession.retainedPreimage = null
+        writeDiagnostics()
+        statusChanged(engine.snapshot())
+    }
+
     fun discardQuarantinedCallbacks() {
         quarantinedCallbacks.clear()
         writeDiagnostics()
+        statusChanged(engine.snapshot())
+    }
+
+    fun discardRecoverySession() {
+        discardRecoveredDraft()
+        discardQuarantinedCallbacks()
+    }
+
+    fun establishSafeIsolationFence() {
+        recoverySession.isolationFenceEstablished = true
+        writeDiagnostics()
+        statusChanged(engine.snapshot())
     }
 
     fun retryRecovery(): EditorSurface? {
@@ -926,7 +1007,7 @@ open class EditorSurface @JvmOverloads constructor(
                 committedTextBefore = snapBeforeAbort.committed.text,
                 epoch = activeImeEpoch
             )
-        } else null
+        } else this.retainedPreimage
         this.retainedPreimage = preimage
 
         retired = true
@@ -950,6 +1031,7 @@ open class EditorSurface @JvmOverloads constructor(
                 }
             }
             if (detachOk) {
+                recoverySession.unresolvedContexts.firstOrNull { it.context === oldContext }?.detached = true
                 val disposeOk = runStep("disposeContext", failures) {
                     recoveryHooks.disposeContext(oldContext)
                     if (!hasCountedContextDispose) {
@@ -995,6 +1077,7 @@ open class EditorSurface @JvmOverloads constructor(
             clearCallbacks()
             runStep("replacementCreation", failures) {
                 replacement = recoveryHooks.createReplacement(this).also { next ->
+                    next.recoverySession = this.recoverySession
                     next.previousRetiredHost = this
                     next.keyEvents = keyEvents
                     next.imeEvents = imeEvents
@@ -1085,7 +1168,7 @@ open class EditorSurface @JvmOverloads constructor(
 
         if (replaceHost && !removedDuringTeardown) {
             val boundOk = activeReplacement != null && activeReplacement.ownInputContext != null && activeReplacement.contextBindFailure == null && !activeReplacement.retired
-            if (failures.isEmpty() && documentAbortedCleanly && containerAttachedOk && boundOk) {
+            if (failures.isEmpty() && documentAbortedCleanly && containerAttachedOk && boundOk && !recoverySession.hasUnresolvedObligations) {
                 finalStatus = RecoveryStatus.RECOVERED_QUALIFIED
                 finalQualified = true
                 finalSetupSucceeded = true
@@ -1357,6 +1440,7 @@ open class EditorSurface @JvmOverloads constructor(
                 }
             }
             if (detachOk) {
+                recoverySession.unresolvedContexts.firstOrNull { it.context === oldContext }?.detached = true
                 val disposeOk = runStep("disposeContext", failures) {
                     recoveryHooks.disposeContext(oldContext)
                     if (!hasCountedContextDispose) {
@@ -1369,6 +1453,9 @@ open class EditorSurface @JvmOverloads constructor(
                 }
             }
             runStep("disableInputMethods", failures) { recoveryHooks.disableInputMethods(this) }
+        }
+        if (recoverySession.unresolvedContexts.isNotEmpty()) {
+            retryCleanup()
         }
         if (failures.isNotEmpty()) {
             contextQualified = false
@@ -1630,7 +1717,14 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
     check(SwingUtilities.isEventDispatchThread())
     val engine=EditorEngine(initial);val state=ViewState(engine.snapshot());var surface=EditorSurface(engine,state,diagnostics,trace)
     var recoverBtn: JButton? = null
-    surface.onHostReplaced={surface=it; recoverBtn?.isVisible = !surface.admissionAllowed}
+    var applyDraftBtn: JButton? = null
+    var discardDraftBtn: JButton? = null
+    surface.onHostReplaced={
+        surface=it
+        recoverBtn?.isVisible = !surface.admissionAllowed
+        applyDraftBtn?.isVisible = surface.inspectRetainedDraft() != null
+        discardDraftBtn?.isVisible = surface.inspectRetainedDraft() != null
+    }
     val window=JFrame("Astra Editor — Desktop Prototype")
     lateinit var files: WindowFiles
     val compose=ComposePanel(renderSettings=RenderSettings.SwingGraphics()).apply {isFocusable=false;setContent {DocumentCanvas(state)}}
@@ -1670,8 +1764,14 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
     button("Copy","Copy selected text (Ctrl+C)"){surface.copySelection(false)}
     val pasteBtn=button("Paste","Paste plain text (Ctrl+V)"){surface.paste()}
     val rBtn = button("Recover","Recover editor input after failure"){surface.recoverExplicitly(false)}
+    val aBtn = button("Apply Draft", "Apply retained recovered draft text to document") { surface.applyRecoveredDraft() }
+    val dBtn = button("Discard Draft", "Discard retained recovered draft text") { surface.discardRecoveredDraft() }
     rBtn.isVisible = !surface.admissionAllowed
+    aBtn.isVisible = surface.inspectRetainedDraft() != null
+    dBtn.isVisible = surface.inspectRetainedDraft() != null
     recoverBtn = rBtn
+    applyDraftBtn = aBtn
+    discardDraftBtn = dBtn
     header.add(buttons,BorderLayout.EAST)
     val footer=JPanel(BorderLayout()).apply {background=bg;border=EmptyBorder(10,24,10,24)}
     val position=JLabel();val notice=JLabel();listOf(position,notice).forEach {it.font=Font("Segoe UI",Font.PLAIN,12);it.foreground=Color(0x64748b)}
@@ -1680,6 +1780,8 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
     surface.requestSave={files.save(it)};surface.requestOpen={files.open()}
     surface.statusChanged={f->val before=f.visible.text.take(f.selection.focus);val line=before.count {it=='\n'}+1;val col=Graphemes.stops(before.substringAfterLast('\n')).size;position.text="Line $line · Column $col"+(if(f.selection.collapsed)"" else " · ${f.selection.end-f.selection.start} selected")
         recoverBtn?.isVisible = !surface.admissionAllowed
+        applyDraftBtn?.isVisible = surface.inspectRetainedDraft() != null
+        discardDraftBtn?.isVisible = surface.inspectRetainedDraft() != null
         val degradedNote = if (!surface.admissionAllowed && surface.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED) " · Input paused (degraded recovery) — Save available" else ""
         notice.text=files.status+(if(f.notice=="Ready")"" else " · ${f.notice}")+degradedNote;title.text=files.name;window.title="${files.name} — Astra Editor";open.isEnabled=!files.busy;save.isEnabled=!files.busy;undo.isEnabled=f.undoCount>0||f.marked!=null;redo.isEnabled=f.redoCount>0&&f.marked==null
         pasteBtn.isEnabled = !files.busy && surface.admissionAllowed

@@ -1080,6 +1080,8 @@ private fun runHostReplacementFailurePathChecks() {
             // Explicit recovery action
             val recovered = next.recoverExplicitly(admitQuarantined = false)
             check(recovered && next.admissionAllowed && next.recoveryStatus == RecoveryStatus.RECOVERED_QUALIFIED)
+            check(next.quarantinedCallbacks.size == 1 && next.quarantinedCallbacks[0].text == "LATE")
+            next.discardQuarantinedCallbacks()
             check(next.quarantinedCallbacks.isEmpty())
             // Now subsequent typing is admitted cleanly
             next.dispatchEvent(InputMethodEvent(next, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("OK").iterator, 2, null, null))
@@ -1315,11 +1317,32 @@ private fun runHostReplacementFailurePathChecks() {
             val next2 = checkNotNull(next1.abortAndRetireComposition(replaceHost = true))
             check(next2.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED && !next2.admissionAllowed)
             check(next2.engine.snapshot().committed.text == "Baseline")
+            check(next2.quarantinedCallbacks.size == 1 && next2.quarantinedCallbacks[0].text == "保留")
+            check(next2.retainedPreimage?.draftText == "ドラフト")
 
             // Third retry with clean hooks succeeds
             next2.recoveryHooks = EditorSurface.RecoveryHooks()
             val next3 = checkNotNull(next2.abortAndRetireComposition(replaceHost = true))
             check(next3.recoveryStatus == RecoveryStatus.RECOVERED_QUALIFIED && next3.admissionAllowed && next3.contextQualified)
+            check(next3.quarantinedCallbacks.size == 1 && next3.quarantinedCallbacks[0].text == "保留")
+            check(next3.inspectRetainedDraft() == "ドラフト")
+
+            // Inspect and export draft without mutating current document
+            val exportFile = tempDir.resolve("exported-draft.txt").toFile()
+            check(next3.exportRetainedDraft(exportFile))
+            check(exportFile.readText() == "ドラフト")
+            check(next3.engine.snapshot().committed.text == "Baseline")
+
+            // Explicitly apply recovered draft with attributed Undo/Redo
+            check(next3.applyRecoveredDraft())
+            check(next3.engine.snapshot().committed.text == "Baselineドラフト")
+            next3.engine.perform(EditAction.Undo)
+            check(next3.engine.snapshot().committed.text == "Baseline")
+            next3.engine.perform(EditAction.Redo)
+            check(next3.engine.snapshot().committed.text == "Baselineドラフト")
+            next3.engine.perform(EditAction.Undo)
+            next3.discardQuarantinedCallbacks()
+            check(next3.quarantinedCallbacks.isEmpty())
 
             // Subsequent input works cleanly
             next3.dispatchEvent(InputMethodEvent(next3, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("成功").iterator, 2, null, null))
@@ -1369,6 +1392,201 @@ private fun runHostReplacementFailurePathChecks() {
             next.removeNotify()
             check(next.disposed && !next.isTimerRunning && next.inputContext == null)
         }
+
+        // 11. Unresolved context obligation blocks admission across host replacement (Codex reproducer regression)
+        var detachCallCount = 0
+        withTestHost(
+            EditorSurface.RecoveryHooks(
+                removeNotifyContext = { ctx, comp ->
+                    detachCallCount++
+                    ctx.removeNotify(comp)
+                },
+                disposeContext = { ctx ->
+                    throw RuntimeException("dispose failed before release")
+                }
+            )
+        ) { _, oldSurface, _ ->
+            oldSurface.engine.inputMethod("draft", 0, 5)
+            val next = checkNotNull(oldSurface.abortAndRetireComposition(replaceHost = true))
+
+            // Ordinary callback route: callback is quarantined, not admitted
+            next.dispatchEvent(InputMethodEvent(next, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("Q").iterator, 1, null, null))
+            check(oldSurface.unresolvedContext != null) { "Old context must remain tracked as unresolved obligation" }
+            check(next.unresolvedContext != null) { "Replacement host must retain unresolved context obligation attached to recovery session" }
+            check(next.quarantinedCallbacks.size == 1 && next.quarantinedCallbacks[0].text == "Q")
+            check(next.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED)
+            check(!next.admissionAllowed)
+
+            // Repeated failure testing: multiple user recovery attempts MUST fail while obligation is unresolved
+            for (attempt in 1..3) {
+                val recoverResult = next.recoverExplicitly(false)
+                check(!recoverResult) { "recoverExplicitly MUST return false on attempt $attempt when unresolved cleanup fails" }
+                check(!next.admissionAllowed) { "Admission must NOT be allowed on attempt $attempt when unresolved cleanup fails" }
+                check(next.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED)
+                check(next.quarantinedCallbacks.size == 1) { "Quarantined data must NOT be silently cleared on attempt $attempt" }
+            }
+
+            // Detachment idempotency: detach was executed cleanly during initial abort, so retryCleanup should not re-detach
+            check(detachCallCount == 1) { "detachContext should not be called redundantly once marked detached: expected 1, got $detachCallCount" }
+
+            // Ambiguous late native callback dispatched during degraded state must NOT mutate committed document
+            next.dispatchEvent(InputMethodEvent(next, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("LATE").iterator, 4, null, null))
+            check(oldSurface.engine.snapshot().committed.text == "Baseline") {
+                "Committed text must not be corrupted by ambiguous native callback while unresolved cleanup exists"
+            }
+            check(next.quarantinedCallbacks.size == 2) { "Both ambiguous callbacks must remain quarantined" }
+
+            // Inspect retained draft preimage before application
+            check(next.inspectRetainedDraft() == "draft") { "Draft preimage must be preserved across failed recovery attempts" }
+
+            // Later successful cleanup: repair hooks and explicitly recover
+            val cleanHooks = EditorSurface.RecoveryHooks()
+            next.recoveryHooks = cleanHooks
+            oldSurface.recoveryHooks = cleanHooks
+            val cleanRecoverResult = next.recoverExplicitly(false)
+            check(cleanRecoverResult) { "recoverExplicitly must succeed once cleanup successfully resolves obligations" }
+            check(next.admissionAllowed) { "Admission must be enabled after successful cleanup" }
+            check(next.recoveryStatus == RecoveryStatus.RECOVERED_QUALIFIED)
+            check(oldSurface.unresolvedContext == null) { "Unresolved context must be resolved after clean recovery" }
+            check(next.unresolvedContext == null)
+
+            // Quarantined callbacks preserved for explicit inspection or discard
+            check(next.quarantinedCallbacks.size == 2)
+            next.discardQuarantinedCallbacks()
+            check(next.quarantinedCallbacks.isEmpty())
+
+            // Explicitly apply recovered draft with attributed Undo/Redo
+            check(next.applyRecoveredDraft()) { "applyRecoveredDraft must succeed when draft is retained" }
+            check(next.engine.snapshot().committed.text == "Baselinedraft")
+            next.engine.perform(EditAction.Undo)
+            check(next.engine.snapshot().committed.text == "Baseline") { "Undo must revert applied draft" }
+            next.engine.perform(EditAction.Redo)
+            check(next.engine.snapshot().committed.text == "Baselinedraft") { "Redo must reapply draft" }
+            next.engine.perform(EditAction.Undo)
+
+            // Subsequent normal input admitted cleanly
+            next.dispatchEvent(InputMethodEvent(next, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("OK").iterator, 2, null, null))
+            check(next.engine.snapshot().committed.text == "BaselineOK")
+        }
+
+        // 11b. Safe isolation fence enables admission when cleanup cannot succeed
+        withTestHost(
+            EditorSurface.RecoveryHooks(
+                disposeContext = { _ ->
+                    throw RuntimeException("Permanent native handle leak / hang")
+                }
+            )
+        ) { _, oldSurface, _ ->
+            oldSurface.engine.inputMethod("fencedDraft", 0, 11)
+            val next = checkNotNull(oldSurface.abortAndRetireComposition(replaceHost = true))
+            check(!next.admissionAllowed && next.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED)
+
+            // Without safe isolation boundary, recovery fails
+            check(!next.recoverExplicitly(false))
+            check(!next.admissionAllowed)
+
+            // Establish safe isolation fence
+            next.establishSafeIsolationFence()
+            check(next.recoverySession.isolationFenceEstablished)
+
+            // Explicit recovery now succeeds because isolation boundary is established
+            val fencedRecover = next.recoverExplicitly(false)
+            check(fencedRecover) { "recoverExplicitly must succeed when safe isolation fence is established" }
+            check(next.admissionAllowed && next.recoveryStatus == RecoveryStatus.RECOVERED_QUALIFIED)
+
+            // Explicitly discard draft
+            check(next.inspectRetainedDraft() == "fencedDraft")
+            next.discardRecoveredDraft()
+            check(next.inspectRetainedDraft() == null)
+
+            // Normal typing admitted
+            next.dispatchEvent(InputMethodEvent(next, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("FENCE_OK").iterator, 8, null, null))
+            check(next.engine.snapshot().committed.text == "BaselineFENCE_OK")
+        }
+
+        // 12. Actual mounted Recover button and draft controls regression in live UI hierarchy
+        val runBlock = {
+            val diagFile = tempDir.resolve("ui-recover-diag.json").toFile()
+            val failingHooks = EditorSurface.RecoveryHooks(
+                disposeContext = { ctx ->
+                    throw RuntimeException("Injected window disposeContext failure")
+                }
+            )
+            val win = showEditor(diagFile, offscreenTest = true)
+            try {
+                val surf = checkNotNull(findSurface(win))
+                surf.recoveryHooks = failingHooks
+                surf.engine.replace("Mounted", "Init")
+                surf.engine.inputMethod("uncommitted", 0, 11)
+
+                val nextHost = checkNotNull(surf.abortAndRetireComposition(replaceHost = true))
+                check(nextHost.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED && !nextHost.admissionAllowed)
+
+                fun findButtonByText(container: java.awt.Container, text: String): javax.swing.JButton? {
+                    for (comp in container.components) {
+                        if (comp is javax.swing.JButton && comp.text == text) return comp
+                        if (comp is java.awt.Container) {
+                            val f = findButtonByText(comp, text)
+                            if (f != null) return f
+                        }
+                    }
+                    return null
+                }
+
+                val recoverBtn = checkNotNull(findButtonByText(win.contentPane, "Recover")) {
+                    "Mounted Recover button must be present in the UI when degraded"
+                }
+                val applyDraftBtn = checkNotNull(findButtonByText(win.contentPane, "Apply Draft")) {
+                    "Mounted Apply Draft button must be present when draft exists"
+                }
+                val discardDraftBtn = checkNotNull(findButtonByText(win.contentPane, "Discard Draft")) {
+                    "Mounted Discard Draft button must be present when draft exists"
+                }
+                check(recoverBtn.isVisible) { "Recover button must be visible when admission is blocked" }
+                check(applyDraftBtn.isVisible) { "Apply Draft button must be visible when draft is retained" }
+                check(discardDraftBtn.isVisible) { "Discard Draft button must be visible when draft is retained" }
+
+                // Click the actual Recover button repeatedly: must fail while disposeContext throws
+                recoverBtn.doClick()
+                check(!nextHost.admissionAllowed) { "Clicking Recover button must NOT enable admission while cleanup fails" }
+                check(recoverBtn.isVisible) { "Recover button must remain visible when recovery fails" }
+                recoverBtn.doClick()
+                check(!nextHost.admissionAllowed) { "Repeated Recover click must also fail" }
+
+                // Send ordinary callback while degraded: must be quarantined
+                nextHost.dispatchEvent(InputMethodEvent(nextHost, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("BLOCK").iterator, 5, null, null))
+                check(nextHost.engine.snapshot().committed.text == "Mounted") { "Blocked callback must not enter committed text" }
+                check(nextHost.quarantinedCallbacks.any { it.text == "BLOCK" })
+
+                // Now restore clean hooks
+                val cleanHooks = EditorSurface.RecoveryHooks()
+                nextHost.recoveryHooks = cleanHooks
+                surf.recoveryHooks = cleanHooks
+
+                // Click the actual Recover button again: now it succeeds!
+                recoverBtn.doClick()
+                check(nextHost.admissionAllowed) { "Clicking Recover button after cleanup must enable admission" }
+                check(!recoverBtn.isVisible) { "Recover button must be hidden after successful recovery" }
+
+                // Retained draft button remains visible until explicitly applied or discarded
+                check(applyDraftBtn.isVisible)
+                applyDraftBtn.doClick()
+                check(nextHost.engine.snapshot().committed.text == "Mounteduncommitted") { "Apply Draft button must apply draft text" }
+                check(!applyDraftBtn.isVisible) { "Apply Draft button must be hidden after application" }
+
+                // Undo reverts applied draft
+                nextHost.engine.perform(EditAction.Undo)
+                check(nextHost.engine.snapshot().committed.text == "Mounted")
+
+                // Subsequent typing works
+                nextHost.dispatchEvent(InputMethodEvent(nextHost, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("DONE").iterator, 4, null, null))
+                check(nextHost.engine.snapshot().committed.text == "MountedDONE")
+            } finally {
+                win.dispose()
+            }
+        }
+        if (javax.swing.SwingUtilities.isEventDispatchThread()) runBlock()
+        else javax.swing.SwingUtilities.invokeAndWait(runBlock)
     } finally {
         tempDir.toFile().deleteRecursively()
     }
