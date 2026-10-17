@@ -2,15 +2,16 @@
   "milestone": "argon-critical-correctness-repair",
   "status": "PASS",
   "reviewedBaselineCommit": "75f5cb4",
-  "followupReviewedCommit": "0616a1e",
+  "followupReviewedCommit": "1e42b2a",
   "implementationCommits": [
     "0e1d1e5",
     "762485c",
     "dfcf5ee",
     "0616a1e",
-    "7a4e888"
+    "7a4e888",
+    "1e42b2a"
   ],
-  "isolatedEvidenceRun": "desktop-prototype/local-evidence/batch-20261017-164106-29004",
+  "isolatedEvidenceRun": "desktop-prototype/local-evidence/batch-20261017-190900-7776",
   "environment": {
     "os": "Windows 10/11 (win32)",
     "java": "OpenJDK 64-Bit Server VM (Temurin 21.0.8+9-LTS)",
@@ -18,19 +19,19 @@
     "kotlin": "2.0.21",
     "verificationCommand": "python desktop-prototype/verify.py"
   },
-  "scope": "Deterministic kernel, file, formatting, stress, attached-host AWT/Compose tests, and compiled Argon regression probes against the isolated build; not physical OS IME qualification",
+  "scope": "Deterministic kernel, file, formatting, stress, attached-host AWT/Compose tests (including 100x mounted host replacement and fault injection), and compiled Argon regression probes against the isolated build; not physical OS IME qualification",
   "steps": [
     {
       "name": "build",
       "passed": true,
       "exitCode": 0,
-      "seconds": 23.015
+      "seconds": 28.016
     },
     {
       "name": "kernel-files-formatting",
       "passed": true,
       "exitCode": 0,
-      "seconds": 6.829,
+      "seconds": 6.531,
       "details": {
         "kernelChecks": 18,
         "fileChecks": 12,
@@ -42,7 +43,7 @@
       "name": "stress",
       "passed": true,
       "exitCode": 0,
-      "seconds": 1.265,
+      "seconds": 1.562,
       "details": {
         "generatedCompositionSessions": 2000,
         "randomizedRangeFormattingOps": 12000,
@@ -53,18 +54,20 @@
       "name": "attached-host",
       "passed": true,
       "exitCode": 0,
-      "seconds": 2.235,
+      "seconds": 3.719,
       "details": {
         "hostChecks": "PASS",
         "rtlHostChecksSections": 19,
-        "japaneseHostChecksSections": 10
+        "japaneseHostChecksSections": 12,
+        "hostReplacementLifecycle100x": "PASS",
+        "hostReplacementFailurePaths": "PASS"
       }
     },
     {
       "name": "argon-regression-probes",
       "passed": true,
       "exitCode": 0,
-      "seconds": 18.078,
+      "seconds": 18.594,
       "probes": [
         {
           "id": "probe_a3_partial_commit_data_loss.py",
@@ -315,6 +318,36 @@
       "disposition": "DOCUMENTED_POLICY_PRESERVED",
       "evidenceClass": "compiled_regression_assertion",
       "verification": "Preserved VK_LEFT/navigation during composition (HostChecks.kt:35) while routing Escape to requestEndComposition() (and abortAndRetireComposition() when waiting/timed out)"
+    },
+    {
+      "id": "HOST-REPLACEMENT-QUALIFICATION",
+      "title": "Qualification of dedicated InputContext + EditorSurface host replacement lifecycle and failure paths",
+      "disposition": "GAPS_CONFIRMED_AND_CLOSED_SYNTHETIC_ONLY",
+      "evidenceClass": "compiled_regression_assertion_with_fault_injection",
+      "baselineOutcome": {
+        "1e42b2a": "abortAndRetireComposition/removeNotify swallowed teardown failures with runCatching and always reported a successful replacement; retired hosts still processed focus/key events; locale/compositionEnabled not carried to replacement; no lifecycle counters; replacement chain retained predecessors; abortComposition() left settlement state set when composition was already null"
+      },
+      "repairedOutcome": {
+        "teardown": "Every teardown/binding step runs through runStep/recordStepFailure; failures are listed in RecoveryReport.failures and diagnostics (recoveryStatus, contextQualified, recoveryFailures, activeImeEpoch)",
+        "statuses": "RecoveryStatus ACTIVE_INITIAL | RECOVERED_QUALIFIED | CONSERVATIVE_ABORT_ONLY | DEGRADED_RECOVERY_FAILED; a context is never marked qualified and recovery never reported succeeded when any teardown or binding step failed",
+        "conservativeMode": "abortCompositionConservatively() / abortAndRetireComposition(replaceHost = false) aborts the document composition without claiming a qualified replacement",
+        "documentState": "engine.abortComposition() always runs and leaves the document clean and saveable in every injected failure case",
+        "oldHostRejection": "Retired/disposed hosts consume INPUT_METHOD_TEXT_CHANGED, CARET_POSITION_CHANGED, KEY_TYPED, KEY_PRESSED, FOCUS_GAINED and FOCUS_LOST",
+        "inputPreferences": "selectInputLocale(locale, compositionEnabled) preferences are reapplied to each replacement where InputContext.selectInputMethod/setCompositionEnabled permit",
+        "counters": "EditorSurface.LifecycleCounters track hosts, timers and InputContexts created/retired/disposed; these are lifecycle counters, not a heap-leak proof"
+      },
+      "tests": {
+        "JapaneseHostChecks.section11_mountedLifecycle": "100 replacements on the mounted showEditor window; exactly one EditorSurface at JLayeredPane layer 100; old-host rejection of text/caret/key/focus; repeated identical text on current host; toolbar Bold/Italic/Undo/Redo/Copy/Paste, Save/Open, accessibility property events, diagnostics and engine observers target the current host; partial commit + attributed Undo/Redo; ordinary close, discard-close and removal during replacement",
+        "JapaneseHostChecks.section12_failurePaths": "Injected failures in endComposition, removeNotifyContext, disposeContext, disableInputMethods, createInputContext (null and throw), createReplacement and attachReplacement; plus explicit conservative recovery",
+        "probe_a1_settlement_wedge.step4": "Injected teardown failure yields DEGRADED_RECOVERY_FAILED with contextQualified=false and a clean aborted document"
+      },
+      "filesModified": [
+        "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
+        "desktop-prototype/src/main/kotlin/editor/EditorEngine.kt",
+        "desktop-prototype/src/main/kotlin/editor/HostChecks.kt",
+        "desktop-prototype/src/main/kotlin/editor/JapaneseHostChecks.kt",
+        "reviews/argon-critical-path/experiments/probe_a1_settlement_wedge.py"
+      ]
     }
   ],
   "frozenFilesUnchanged": 45,
@@ -323,19 +356,47 @@
     "desktop-prototype/run.cmd": "c68514768c7d36dcd53fe6f6134c9302190b841641f13a5cd7c3db72b81ffb06",
     "desktop-prototype/verify.py": "0fbcbc195a7a1fd1329fef823858e2aae2e3b299352d419efe41790bd75d40e1",
     "desktop-prototype/src/main/kotlin/editor/Checks.kt": "0712bc134c86e4cea2f8305d01ff84b5f7a492a31207fe717e18b33d83222ad1",
-    "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt": "444371d81933d791c6887175233791e8847f91fdf8dcf012f0dbeb0b294fc65f",
+    "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt": "0c3cd1a12cbcfecbd0fc774ec0c66cd2a753f40f51a6d02eb5bfa36ee2dc77a1",
     "desktop-prototype/src/main/kotlin/editor/DocumentFiles.kt": "39d6b97af698f5a96ad940aea02150953398a4dd6f9a1266f69e4088ccc75e25",
-    "desktop-prototype/src/main/kotlin/editor/EditorEngine.kt": "7568d75cbd4cfc2544cf04c8df19770d2e9db97f9855cfcc91d90513b4428f7a",
+    "desktop-prototype/src/main/kotlin/editor/EditorEngine.kt": "b6a5b687c3a78d3f07c7a03e7e51cfd8c49132f0e072a869c323ee90b4a8920f",
     "desktop-prototype/src/main/kotlin/editor/FileChecks.kt": "4d3142000a3759cfcfd58dbf8abc4ed6d61fa98c501022696faf3c16fd50cb69",
     "desktop-prototype/src/main/kotlin/editor/FormatChecks.kt": "d0d86cb6b8c85097385957afb088e8f0293b6524bb20a32a2ca6d1d0a93af8c5",
     "desktop-prototype/src/main/kotlin/editor/Formatting.kt": "f3d0e481c245b4db321da332f3ad40490e8321fbd64edebb4b8be2e4cc20d092",
     "desktop-prototype/src/main/kotlin/editor/Graphemes.kt": "a297a5154df6a77cb1bc65115c92d5a738367671fb02f47a94c425544cb0c629",
-    "desktop-prototype/src/main/kotlin/editor/HostChecks.kt": "7966e82811619bd1673e96a7caca98d1af0f747c39a093f57411e4ec82141ee3",
+    "desktop-prototype/src/main/kotlin/editor/HostChecks.kt": "210f422453a0df2400e235fc26175c198fc719dc636c02231863f83dece93eab",
     "desktop-prototype/src/main/kotlin/editor/ImeTrace.kt": "153bb4b538d707cdf6c57fada2c71ff55db3445757295bc9f67612ce4e06a521",
-    "desktop-prototype/src/main/kotlin/editor/JapaneseHostChecks.kt": "6175ac0f6f57f0c3ccc7c860b397253ced623b4d9fa749c116abe7536065dc81",
+    "desktop-prototype/src/main/kotlin/editor/JapaneseHostChecks.kt": "e3a644235eb6df4ade400798229c958d61afffba3842464709a6a6d583d4cef5",
     "desktop-prototype/src/main/kotlin/editor/Main.kt": "c3d1a40dd87a612de2e517432cbbbffd4bff6255bb3f5a2e7a2dbedbe59085b3",
     "desktop-prototype/src/main/kotlin/editor/RtlHostChecks.kt": "e150c53d8c2544d1d0420d26ef6c007bc0f8f23812c61c0a13bb45b5b08b0ef1",
     "desktop-prototype/src/main/kotlin/editor/StressChecks.kt": "d5084fb3df4e97b424c09ddbb628ffb953ea8ca1c7ea683eb56e21801ac5ca15",
     "desktop-prototype/src/main/kotlin/editor/WindowFiles.kt": "2e680bbef72c0e19c42022a02eb364885a5e3af803f5d386cafa9437c4a13bb4"
+  },
+  "recoveryAuditRerun": {
+    "reproducer": "desktop-prototype/local-evidence/batch-20261017-160830-20212/RecoveryAudit.java",
+    "against": "desktop-prototype/local-evidence/batch-20261017-190900-7776",
+    "ORDINARY_LATE_CALLBACK_AFTER_ABORT": "",
+    "REENTRANT_COMMIT_DURING_ABORT": "",
+    "AFTER_CANDIDATE_UPDATE_TIMEOUT": "true WAITING=false DEADLINE_START=null",
+    "scope": "Synthetic events with source = oldSurface; proves only the application's old-source guard"
+  },
+  "hostReplacementVerdicts": {
+    "applicationPathIsolation": "PASS",
+    "lifecycleAndFailurePathTests": "PASS",
+    "realNativeQualification": "NOT RUN",
+    "realNativeReason": "Driving Microsoft Japanese IME (TSF) romaji composition and candidate windows requires foreground focus on the user's interactive desktop; it was not run unattended. English remains the default input language.",
+    "platformGuaranteeBasis": {
+      "publicApi": [
+        "InputContext.getInstance() returns a new context not shared with other components",
+        "InputContext.removeNotify(Component): pending input from input methods for this component is discarded",
+        "InputContext.dispose() releases resources; OpenJDK throws IllegalStateException if the context is still active",
+        "Component.enableInputMethods(false) clears INPUT_METHOD_EVENT_MASK"
+      ],
+      "openJdkInternalsInspected": [
+        "sun.awt.im.InputContext.removeNotify -> deactivateInputMethod(false), inputMethod.removeNotify(), currentClientComponent = null",
+        "sun.awt.windows.WInputMethod.removeNotify -> endCompositionNative(context, false) and clears focused component",
+        "WInputMethod.sendInputMethodEvent returns without posting when getClientComponent() == null; events posted before detachment carry source = old component"
+      ],
+      "notGuaranteed": "Public AWT does not guarantee that no already-queued native WM_IME_* message is delivered after removeNotify; the application-level old-source guard covers events whose source is the retired surface. Live TSF focus-handoff routing on the shared top-level HWND is unqualified."
+    }
   }
 }

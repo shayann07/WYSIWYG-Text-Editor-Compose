@@ -56,7 +56,7 @@ fun runHostChecks(surface: EditorSurface, resultFile: File = File("desktop-proto
     shortcut(KeyEvent.VK_Z);check(e.snapshot().visible.text.isEmpty())
     runRtlHostChecks(surface)
     val finalSurface = runJapaneseHostChecks(surface)
-    val report="{\"status\":\"PASS\",\"committedSliceQueries\":$queries,\"imeEvents\":7,\"rawFFFF\":\"PASS\",\"invalidCaretRejected\":\"PASS\",\"altGrShortcutIsolation\":\"PASS\",\"formatShortcutsLayoutUndo\":\"PASS\",\"urduArabicRtl\":\"PASS\",\"japaneseImeHost\":\"PASS\",\"paragraphLayout\":\"PASS\",\"scope\":\"Attached AWT host and real Compose layout; synthetic IME event stream, not a physical OS IME\"}"
+    val report="{\"status\":\"PASS\",\"committedSliceQueries\":$queries,\"imeEvents\":7,\"rawFFFF\":\"PASS\",\"invalidCaretRejected\":\"PASS\",\"altGrShortcutIsolation\":\"PASS\",\"formatShortcutsLayoutUndo\":\"PASS\",\"urduArabicRtl\":\"PASS\",\"japaneseImeHost\":\"PASS\",\"paragraphLayout\":\"PASS\",\"hostReplacementLifecycle100x\":\"PASS\",\"hostReplacementFailurePaths\":\"PASS\",\"scope\":\"Attached AWT host and real Compose layout; synthetic IME event stream, not a physical OS IME\"}"
     resultFile.apply {parentFile.mkdirs();writeText(report)}
     println(report)
     finalSurface.writeDiagnostics()

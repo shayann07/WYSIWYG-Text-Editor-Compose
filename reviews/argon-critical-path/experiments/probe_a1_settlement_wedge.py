@@ -96,9 +96,35 @@ public class ProbeA1Runner {
         check(timedOut && !waitingAfter && deadlineAfter == null, "Expected timeout=true waiting=false deadline=null");
         check(e3.getSettlementTimedOut() && e3.snapshot().getMarked() != null, "Watchdog must not silently auto-commit preedit");
 
+        // 4. Failure path must never mark contextQualified or report succeeded
+        EditorEngine e4 = new EditorEngine(new Document(new ArrayList<>()), () -> 0L);
+        EditorSurface.RecoveryHooks defaultHooks = new EditorSurface.RecoveryHooks();
+        EditorSurface.RecoveryHooks failingHooks = new EditorSurface.RecoveryHooks(
+            ctx -> { throw new RuntimeException("Simulated endComposition failure"); },
+            defaultHooks.getRemoveNotifyContext(),
+            defaultHooks.getDisposeContext(),
+            defaultHooks.getDisableInputMethods(),
+            defaultHooks.getCreateInputContext(),
+            defaultHooks.getCreateReplacement(),
+            defaultHooks.getAttachReplacement()
+        );
+        EditorSurface s4 = new EditorSurface(e4, new ViewState(e4.snapshot()), null, null, failingHooks);
+        e4.inputMethod("Z", 0, 1);
+        EditorSurface s4Next = s4.abortAndRetireComposition(true);
+        RecoveryReport rep4 = s4.getLastRecoveryReport();
+        check(rep4 != null && !rep4.getSucceeded() && !rep4.getContextQualified() && rep4.getStatus() == RecoveryStatus.DEGRADED_RECOVERY_FAILED,
+            "Teardown failure must mark report DEGRADED_RECOVERY_FAILED and contextQualified=false");
+        check(s4Next != null && !s4Next.getContextQualified() && s4Next.getRecoveryStatus() == RecoveryStatus.DEGRADED_RECOVERY_FAILED,
+            "Replacement host must never be marked contextQualified when teardown failed");
+        check("".equals(e4.snapshot().getCommitted().getText()) && e4.snapshot().getMarked() == null,
+            "Document must still abort cleanly despite teardown failure");
+        s4Next.removeNotify();
+        s4.removeNotify();
+
         System.out.println("ORDINARY_LATE_CALLBACK_AFTER_ABORT=" + lateResult);
         System.out.println("REENTRANT_COMMIT_DURING_ABORT=" + reentrantResult);
         System.out.println("AFTER_CANDIDATE_UPDATE_TIMEOUT=" + timedOut + " WAITING=" + waitingAfter + " DEADLINE_START=" + deadlineAfter);
+        System.out.println("FAILURE_PATH_DEGRADED_QUALIFIED=" + s4Next.getContextQualified() + " STATUS=" + rep4.getStatus());
         System.out.println("EVIDENCE_CLASS=compiled_regression_assertion");
         System.out.println("WINDOWS_OS_CALLBACK_LOSS_PROVEN=false (headless probe tests bounded watchdog & host retirement, not OS IME failure)");
         System.out.println("WATCHDOG_CANCELLED_PENDING_WITHOUT_AUTOCOMMIT=true");

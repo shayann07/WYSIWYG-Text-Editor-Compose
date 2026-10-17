@@ -473,93 +473,562 @@ private fun DocumentCanvas(state: ViewState) {
     }
 }
 
+enum class RecoveryStatus {
+    ACTIVE_INITIAL,
+    RECOVERED_QUALIFIED,
+    CONSERVATIVE_ABORT_ONLY,
+    DEGRADED_RECOVERY_FAILED
+}
+
+data class RecoveryReport(
+    val epoch: Int,
+    val replaceRequested: Boolean,
+    val status: RecoveryStatus,
+    val contextQualified: Boolean,
+    val documentAbortedCleanly: Boolean,
+    val replacementCreated: Boolean,
+    val containerAttached: Boolean,
+    val removedDuringTeardown: Boolean,
+    val failures: List<String>,
+    val preservedLocale: java.util.Locale?,
+    val preservedCompositionEnabled: Boolean?
+) {
+    val succeeded: Boolean
+        get() = documentAbortedCleanly && failures.isEmpty() &&
+            if (replaceRequested && !removedDuringTeardown) {
+                status == RecoveryStatus.RECOVERED_QUALIFIED && contextQualified && replacementCreated && containerAttached
+            } else {
+                status == RecoveryStatus.CONSERVATIVE_ABORT_ONLY && !contextQualified && !replacementCreated
+            }
+}
+
+private val NOOP_UNIT: () -> Unit = {}
+private val NOOP_BOOL: (Boolean) -> Unit = {}
+private val NOOP_FRAME: (EditorFrame) -> Unit = {}
+private val NOOP_SURFACE: (EditorSurface) -> Unit = {}
+
 /** The transparent AWT root owns input; the Compose surface underneath only renders. */
-open class EditorSurface(val engine: EditorEngine, val view: ViewState, private val diagnostics: File? = null, private val trace: ImeTrace? = null) : JComponent(), InputMethodRequests {
+open class EditorSurface @JvmOverloads constructor(
+    val engine: EditorEngine,
+    val view: ViewState,
+    val diagnostics: File? = null,
+    val trace: ImeTrace? = null,
+    var recoveryHooks: RecoveryHooks = RecoveryHooks()
+) : JComponent(), InputMethodRequests {
+
+    data class RecoveryHooks(
+        val endComposition: (java.awt.im.InputContext) -> Unit = { it.endComposition() },
+        val removeNotifyContext: (java.awt.im.InputContext, Component) -> Unit = { ctx, comp -> ctx.removeNotify(comp) },
+        val disposeContext: (java.awt.im.InputContext) -> Unit = { it.dispose() },
+        val disableInputMethods: (EditorSurface) -> Unit = { it.enableInputMethods(false) },
+        val createInputContext: () -> java.awt.im.InputContext? = { java.awt.im.InputContext.getInstance() },
+        val createReplacement: (EditorSurface) -> EditorSurface = { prev ->
+            EditorSurface(prev.engine, prev.view, prev.diagnostics, prev.trace, prev.recoveryHooks)
+        },
+        val attachReplacement: (Container, EditorSurface, EditorSurface) -> Unit = { parentContainer, oldHost, newHost ->
+            if (parentContainer is JLayeredPane) {
+                val layer = JLayeredPane.getLayer(oldHost)
+                parentContainer.remove(oldHost)
+                parentContainer.add(newHost)
+                parentContainer.setLayer(newHost, layer)
+            } else {
+                val idx = parentContainer.components.indexOf(oldHost)
+                parentContainer.remove(oldHost)
+                if (idx >= 0) parentContainer.add(newHost, idx) else parentContainer.add(newHost)
+            }
+            parentContainer.revalidate()
+            parentContainer.repaint()
+        }
+    )
+
+    data class CounterSnapshot(
+        val hostsCreated: Int,
+        val hostsRetired: Int,
+        val hostsDisposed: Int,
+        val timersStarted: Int,
+        val timersStopped: Int,
+        val inputContextsCreated: Int,
+        val inputContextsDetached: Int,
+        val inputContextsDisposed: Int,
+        val recoveryAttempts: Int,
+        val recoverySucceededCount: Int,
+        val recoveryConservativeCount: Int,
+        val recoveryDegradedCount: Int,
+        val teardownFailuresCount: Int
+    ) {
+        val activeHosts: Int get() = hostsCreated - hostsDisposed
+        val activeTimers: Int get() = timersStarted - timersStopped
+        val activeInputContexts: Int get() = inputContextsCreated - inputContextsDisposed
+    }
+
+    object LifecycleCounters {
+        val hostsCreated = java.util.concurrent.atomic.AtomicInteger(0)
+        val hostsRetired = java.util.concurrent.atomic.AtomicInteger(0)
+        val hostsDisposed = java.util.concurrent.atomic.AtomicInteger(0)
+        val timersStarted = java.util.concurrent.atomic.AtomicInteger(0)
+        val timersStopped = java.util.concurrent.atomic.AtomicInteger(0)
+        val inputContextsCreated = java.util.concurrent.atomic.AtomicInteger(0)
+        val inputContextsDetached = java.util.concurrent.atomic.AtomicInteger(0)
+        val inputContextsDisposed = java.util.concurrent.atomic.AtomicInteger(0)
+        val recoveryAttempts = java.util.concurrent.atomic.AtomicInteger(0)
+        val recoverySucceededCount = java.util.concurrent.atomic.AtomicInteger(0)
+        val recoveryConservativeCount = java.util.concurrent.atomic.AtomicInteger(0)
+        val recoveryDegradedCount = java.util.concurrent.atomic.AtomicInteger(0)
+        val teardownFailuresCount = java.util.concurrent.atomic.AtomicInteger(0)
+
+        fun snapshot(): CounterSnapshot = CounterSnapshot(
+            hostsCreated = hostsCreated.get(),
+            hostsRetired = hostsRetired.get(),
+            hostsDisposed = hostsDisposed.get(),
+            timersStarted = timersStarted.get(),
+            timersStopped = timersStopped.get(),
+            inputContextsCreated = inputContextsCreated.get(),
+            inputContextsDetached = inputContextsDetached.get(),
+            inputContextsDisposed = inputContextsDisposed.get(),
+            recoveryAttempts = recoveryAttempts.get(),
+            recoverySucceededCount = recoverySucceededCount.get(),
+            recoveryConservativeCount = recoveryConservativeCount.get(),
+            recoveryDegradedCount = recoveryDegradedCount.get(),
+            teardownFailuresCount = teardownFailuresCount.get()
+        )
+
+        fun reset() {
+            hostsCreated.set(0)
+            hostsRetired.set(0)
+            hostsDisposed.set(0)
+            timersStarted.set(0)
+            timersStopped.set(0)
+            inputContextsCreated.set(0)
+            inputContextsDetached.set(0)
+            inputContextsDisposed.set(0)
+            recoveryAttempts.set(0)
+            recoverySucceededCount.set(0)
+            recoveryConservativeCount.set(0)
+            recoveryDegradedCount.set(0)
+            teardownFailuresCount.set(0)
+        }
+    }
+
     @Volatile private var published = engine.snapshot()
     private var dragAnchor = 0
     private var preferredX: Float? = null
-    private var keyEvents = 0; private var imeEvents = 0
-    private var ownInputContext: java.awt.im.InputContext? = java.awt.im.InputContext.getInstance()
+    private var keyEvents = 0
+    private var imeEvents = 0
+    private var hasCountedRetire = false
+    private var hasCountedDispose = false
+    private var hasCountedTimerStart = false
+    private var hasCountedTimerStop = false
+    private var hasCountedContextCreation = false
+    private var hasCountedContextDetach = false
+    private var hasCountedContextDispose = false
+    private var contextBindFailure: String? = null
+    private var previousRetiredHost: EditorSurface? = null
+    private var ownInputContext: java.awt.im.InputContext? = null
+
     var activeImeEpoch = 0; private set
     var retired = false; private set
     var disposed = false; private set
+    var contextQualified = false; private set
+    var recoveryStatus: RecoveryStatus = RecoveryStatus.ACTIVE_INITIAL; private set
+    val recoveryFailures: MutableList<String> = java.util.concurrent.CopyOnWriteArrayList()
+    var lastRecoveryReport: RecoveryReport? = null; private set
+    var preferredLocale: java.util.Locale? = null; private set
+    var preferredCompositionEnabled: Boolean? = null; private set
+    var lastLocaleTransferSupported: Boolean? = null; private set
+    var lastCompositionTransferSupported: Boolean? = null; private set
     var replacementSurface: EditorSurface? = null; private set
-    var onHostReplaced: (EditorSurface) -> Unit = {}
+    var onHostReplaced: (EditorSurface) -> Unit = NOOP_SURFACE
+
     private val blinkTimer = Timer(500) {
         if (!retired && !disposed) {
             if (view.focused) view.blink = !view.blink
             engine.checkSettlementWatchdog()
         }
     }
-    var statusChanged: (EditorFrame) -> Unit = {}
-    var requestSave: (Boolean) -> Unit = {}
-    var requestOpen: () -> Unit = {}
-    var onEndCompositionRequested: () -> Unit = {}
+
+    val isTimerRunning: Boolean get() = blinkTimer.isRunning
+    val hasRetainedCallbacks: Boolean
+        get() = blinkTimer.actionListeners.isNotEmpty() ||
+            onEndCompositionRequested !== NOOP_UNIT ||
+            statusChanged !== NOOP_FRAME ||
+            requestSave !== NOOP_BOOL ||
+            requestOpen !== NOOP_UNIT ||
+            onHostReplaced !== NOOP_SURFACE
+
+    var statusChanged: (EditorFrame) -> Unit = NOOP_FRAME
+    var requestSave: (Boolean) -> Unit = NOOP_BOOL
+    var requestOpen: () -> Unit = NOOP_UNIT
+    var onEndCompositionRequested: () -> Unit = NOOP_UNIT
+
     override fun getInputContext(): java.awt.im.InputContext? = if (retired || disposed) null else ownInputContext
+
+    private fun recordDiagnosticEvent(message: String) {
+        runCatching { engine.onEvent(message) }
+        trace?.record("recovery", message, engine.snapshot())
+    }
+
+    private fun recordStepFailure(stepName: String, failure: Throwable, failures: MutableList<String>) {
+        val desc = "$stepName: ${failure.javaClass.simpleName}: ${failure.message ?: "failed"}"
+        failures.add(desc)
+        recoveryFailures.add(desc)
+        LifecycleCounters.teardownFailuresCount.incrementAndGet()
+        recordDiagnosticEvent("IME recovery failure [$desc]")
+    }
+
+    private inline fun runStep(stepName: String, failures: MutableList<String>, block: () -> Unit): Boolean {
+        return try {
+            block()
+            true
+        } catch (t: Throwable) {
+            recordStepFailure(stepName, t, failures)
+            false
+        }
+    }
+
+    private fun stopBlinkTimer() {
+        blinkTimer.stop()
+        for (listener in blinkTimer.actionListeners) {
+            blinkTimer.removeActionListener(listener)
+        }
+        if (hasCountedTimerStart && !hasCountedTimerStop) {
+            hasCountedTimerStop = true
+            LifecycleCounters.timersStopped.incrementAndGet()
+        }
+    }
+
+    private fun markDisposed() {
+        disposed = true
+        if (!hasCountedDispose) {
+            hasCountedDispose = true
+            LifecycleCounters.hostsDisposed.incrementAndGet()
+        }
+    }
+
+    private fun clearCallbacks() {
+        previousRetiredHost?.replacementSurface = null
+        previousRetiredHost = null
+        onEndCompositionRequested = NOOP_UNIT
+        statusChanged = NOOP_FRAME
+        requestSave = NOOP_BOOL
+        requestOpen = NOOP_UNIT
+        onHostReplaced = NOOP_SURFACE
+    }
+
+    private fun cleanupFailedAttachment(failures: MutableList<String>) {
+        val oldContext = ownInputContext
+        retired = true
+        if (!hasCountedRetire) {
+            hasCountedRetire = true
+            LifecycleCounters.hostsRetired.incrementAndGet()
+        }
+        ownInputContext = null
+        stopBlinkTimer()
+        if (oldContext != null) {
+            runStep("cleanupRemoveNotifyContext", failures) {
+                recoveryHooks.removeNotifyContext(oldContext, this)
+                if (!hasCountedContextDetach) {
+                    hasCountedContextDetach = true
+                    LifecycleCounters.inputContextsDetached.incrementAndGet()
+                }
+            }
+            runStep("cleanupDisposeContext", failures) {
+                recoveryHooks.disposeContext(oldContext)
+                if (!hasCountedContextDispose) {
+                    hasCountedContextDispose = true
+                    LifecycleCounters.inputContextsDisposed.incrementAndGet()
+                }
+            }
+        }
+        runStep("cleanupDisableInputMethods", failures) { recoveryHooks.disableInputMethods(this) }
+        clearCallbacks()
+        markDisposed()
+        contextQualified = false
+        recoveryStatus = RecoveryStatus.DEGRADED_RECOVERY_FAILED
+    }
+
+    fun selectInputLocale(locale: java.util.Locale, compositionEnabled: Boolean? = null): Boolean {
+        if (retired || disposed) return false
+        preferredLocale = locale
+        if (compositionEnabled != null) {
+            preferredCompositionEnabled = compositionEnabled
+        }
+        val ctx = ownInputContext ?: return false
+        val accepted = try {
+            ctx.selectInputMethod(locale)
+        } catch (t: Throwable) {
+            val failures = ArrayList<String>()
+            recordStepFailure("selectInputMethod", t, failures)
+            false
+        }
+        lastLocaleTransferSupported = accepted
+        if (compositionEnabled != null) {
+            lastCompositionTransferSupported = try {
+                ctx.isCompositionEnabled = compositionEnabled
+                ctx.isCompositionEnabled == compositionEnabled
+            } catch (_: UnsupportedOperationException) {
+                false
+            } catch (t: Throwable) {
+                val failures = ArrayList<String>()
+                recordStepFailure("setCompositionEnabled", t, failures)
+                false
+            }
+        } else {
+            try {
+                preferredCompositionEnabled = ctx.isCompositionEnabled
+            } catch (_: UnsupportedOperationException) {
+            } catch (_: RuntimeException) {
+            }
+        }
+        return accepted
+    }
+
     fun requestEndComposition() {
         if (retired || disposed) return
-        onEndCompositionRequested()
-        ownInputContext?.endComposition()
+        val failures = ArrayList<String>()
+        runStep("onEndCompositionRequested", failures) { onEndCompositionRequested() }
+        val ctx = ownInputContext
+        if (ctx != null) {
+            runStep("endComposition", failures) { recoveryHooks.endComposition(ctx) }
+        }
     }
+
+    fun abortCompositionConservatively(): RecoveryReport {
+        abortAndRetireComposition(replaceHost = false)
+        return checkNotNull(lastRecoveryReport)
+    }
+
     fun abortAndRetireComposition() {
         abortAndRetireComposition(replaceHost = true)
     }
+
     fun abortAndRetireComposition(replaceHost: Boolean): EditorSurface? {
         if (retired) return replacementSurface
+        LifecycleCounters.recoveryAttempts.incrementAndGet()
+        val failures = ArrayList<String>()
         val wasFocused = isFocusOwner
-        val parentContainer = parent
+        val initialParent = parent
+        val wasAttached = initialParent != null
+        val wasDisplayable = isDisplayable
         val oldContext = ownInputContext
+        val observedLocale = preferredLocale ?: runCatching { oldContext?.locale }.getOrNull()
+        val observedCompositionEnabled = preferredCompositionEnabled ?: try {
+            oldContext?.isCompositionEnabled
+        } catch (_: UnsupportedOperationException) {
+            null
+        } catch (_: RuntimeException) {
+            null
+        }
+
         retired = true
+        if (!hasCountedRetire) {
+            hasCountedRetire = true
+            LifecycleCounters.hostsRetired.incrementAndGet()
+        }
         activeImeEpoch++
         ownInputContext = null
-        blinkTimer.stop()
-        runCatching { onEndCompositionRequested() }
-        runCatching { oldContext?.endComposition() }
-        runCatching { oldContext?.removeNotify(this) }
-        runCatching { oldContext?.dispose() }
-        runCatching { enableInputMethods(false) }
-        val replacement = if (replaceHost && !disposed) {
-            EditorSurface(engine, view, diagnostics, trace).also { next ->
-                next.keyEvents = keyEvents
-                next.imeEvents = imeEvents
-                next.activeImeEpoch = activeImeEpoch
-                next.statusChanged = statusChanged
-                next.requestSave = requestSave
-                next.requestOpen = requestOpen
-                next.onHostReplaced = onHostReplaced
-                next.bounds = bounds
+        stopBlinkTimer()
+
+        runStep("onEndCompositionRequested", failures) { onEndCompositionRequested() }
+        if (oldContext != null) {
+            runStep("endComposition", failures) { recoveryHooks.endComposition(oldContext) }
+            runStep("removeNotifyContext", failures) {
+                recoveryHooks.removeNotifyContext(oldContext, this)
+                if (!hasCountedContextDetach) {
+                    hasCountedContextDetach = true
+                    LifecycleCounters.inputContextsDetached.incrementAndGet()
+                }
             }
-        } else null
+            runStep("disposeContext", failures) {
+                recoveryHooks.disposeContext(oldContext)
+                if (!hasCountedContextDispose) {
+                    hasCountedContextDispose = true
+                    LifecycleCounters.inputContextsDisposed.incrementAndGet()
+                }
+            }
+        }
+        runStep("disableInputMethods", failures) { recoveryHooks.disableInputMethods(this) }
+
+        var documentAbortedCleanly = false
+        runStep("engineAbortComposition", failures) {
+            engine.abortComposition()
+            val afterAbort = engine.snapshot()
+            check(afterAbort.marked == null && !afterAbort.waiting && !engine.settlementTimedOut) {
+                "Engine remained in composing/waiting state after abortComposition"
+            }
+            documentAbortedCleanly = true
+        }
+
+        val removedDuringTeardown = disposed || (wasAttached && (parent !== initialParent || (wasDisplayable && !initialParent.isDisplayable)))
+        if (removedDuringTeardown && replaceHost) {
+            recordDiagnosticEvent("IME recovery: host removed or disposed during teardown; skipping replacement creation")
+        }
+
+        val savedStatusChanged = statusChanged
+        val savedRequestSave = requestSave
+        val savedRequestOpen = requestOpen
+        val savedOnHostReplaced = onHostReplaced
+        val savedBounds = bounds
+
+        previousRetiredHost?.replacementSurface = null
+        previousRetiredHost = null
+        onEndCompositionRequested = NOOP_UNIT
+
+        var replacement: EditorSurface? = null
+        var containerAttachedOk = !wasAttached
+        if (replaceHost && !removedDuringTeardown) {
+            clearCallbacks()
+            runStep("replacementCreation", failures) {
+                replacement = recoveryHooks.createReplacement(this).also { next ->
+                    next.previousRetiredHost = this
+                    next.keyEvents = keyEvents
+                    next.imeEvents = imeEvents
+                    next.activeImeEpoch = activeImeEpoch
+                    next.preferredLocale = observedLocale
+                    next.preferredCompositionEnabled = observedCompositionEnabled
+                    next.statusChanged = savedStatusChanged
+                    next.requestSave = savedRequestSave
+                    next.requestOpen = savedRequestOpen
+                    next.onHostReplaced = savedOnHostReplaced
+                    next.bounds = savedBounds
+                }
+            }
+            val created = replacement
+            if (created != null) {
+                if (created.ownInputContext == null || created.contextBindFailure != null) {
+                    val reason = created.contextBindFailure ?: "InputContext is null"
+                    recordStepFailure("contextBinding", IllegalStateException(reason), failures)
+                }
+                if (initialParent != null) {
+                    val attachStepOk = runStep("containerAttachment", failures) {
+                        recoveryHooks.attachReplacement(initialParent, this, created)
+                        check(this.parent == null) { "Retired host remained attached to parent container" }
+                        check(created.parent === initialParent) { "Replacement host was not attached to parent container" }
+                    }
+                    if (this.parent === initialParent) {
+                        runCatching { initialParent.remove(this) }
+                    }
+                    containerAttachedOk = attachStepOk && created.parent === initialParent && this.parent == null
+                    if (!containerAttachedOk && created.parent !== initialParent) {
+                        created.cleanupFailedAttachment(failures)
+                        // Re-bind engine observer fallback so document edits/Undo remain observable even after attachment failure
+                        engine.onChange = { f ->
+                            published = f
+                            view.frame = f
+                            savedStatusChanged(f)
+                            writeDiagnostics()
+                        }
+                    }
+                }
+                if (containerAttachedOk && !created.disposed) {
+                    val newCtx = created.ownInputContext
+                    if (newCtx != null) {
+                        if (observedLocale != null) {
+                            created.lastLocaleTransferSupported = try {
+                                newCtx.selectInputMethod(observedLocale)
+                            } catch (t: Throwable) {
+                                recordStepFailure("restoreLocale", t, failures)
+                                false
+                            }
+                        }
+                        if (observedCompositionEnabled != null) {
+                            created.lastCompositionTransferSupported = try {
+                                newCtx.isCompositionEnabled = observedCompositionEnabled
+                                newCtx.isCompositionEnabled == observedCompositionEnabled
+                            } catch (_: UnsupportedOperationException) {
+                                false
+                            } catch (t: Throwable) {
+                                recordStepFailure("restoreCompositionEnabled", t, failures)
+                                false
+                            }
+                        }
+                    }
+                    if (wasFocused && created.parent != null) {
+                        created.requestFocusInWindow()
+                    }
+                }
+            } else {
+                containerAttachedOk = false
+            }
+            markDisposed()
+        } else {
+            containerAttachedOk = false
+            if (!wasAttached || parent == null) {
+                clearCallbacks()
+                markDisposed()
+            }
+        }
+
+        val activeReplacement = replacement?.takeIf { !it.disposed && (!wasAttached || it.parent === initialParent) }
         replacementSurface = replacement
-        engine.abortComposition()
+
+        val finalStatus: RecoveryStatus
+        val finalQualified: Boolean
+        if (replaceHost && !removedDuringTeardown) {
+            val boundOk = activeReplacement != null && activeReplacement.ownInputContext != null && activeReplacement.contextBindFailure == null && !activeReplacement.retired
+            if (failures.isEmpty() && documentAbortedCleanly && containerAttachedOk && boundOk) {
+                finalStatus = RecoveryStatus.RECOVERED_QUALIFIED
+                finalQualified = true
+                LifecycleCounters.recoverySucceededCount.incrementAndGet()
+            } else {
+                finalStatus = RecoveryStatus.DEGRADED_RECOVERY_FAILED
+                finalQualified = false
+                LifecycleCounters.recoveryDegradedCount.incrementAndGet()
+            }
+        } else {
+            if (failures.isEmpty() && documentAbortedCleanly) {
+                finalStatus = RecoveryStatus.CONSERVATIVE_ABORT_ONLY
+                finalQualified = false
+                LifecycleCounters.recoveryConservativeCount.incrementAndGet()
+            } else {
+                finalStatus = RecoveryStatus.DEGRADED_RECOVERY_FAILED
+                finalQualified = false
+                LifecycleCounters.recoveryDegradedCount.incrementAndGet()
+            }
+        }
+
+        contextQualified = false
+        recoveryStatus = finalStatus
+        recoveryFailures.clear()
+        recoveryFailures.addAll(failures)
+
+        val report = RecoveryReport(
+            epoch = activeImeEpoch,
+            replaceRequested = replaceHost,
+            status = finalStatus,
+            contextQualified = finalQualified,
+            documentAbortedCleanly = documentAbortedCleanly,
+            replacementCreated = replacement != null,
+            containerAttached = containerAttachedOk && activeReplacement != null,
+            removedDuringTeardown = removedDuringTeardown,
+            failures = failures.toList(),
+            preservedLocale = observedLocale,
+            preservedCompositionEnabled = observedCompositionEnabled
+        )
+        lastRecoveryReport = report
+
+        replacement?.let { next ->
+            next.contextQualified = finalQualified
+            next.recoveryStatus = finalStatus
+            next.recoveryFailures.clear()
+            next.recoveryFailures.addAll(failures)
+            next.lastRecoveryReport = report
+        }
+
         val snap = engine.snapshot()
         published = snap
         view.frame = snap
-        if (replacement != null && parentContainer != null) {
-            if (parentContainer is JLayeredPane) {
-                val layer = JLayeredPane.getLayer(this)
-                parentContainer.remove(this)
-                parentContainer.add(replacement)
-                parentContainer.setLayer(replacement, layer)
-            } else {
-                val idx = parentContainer.components.indexOf(this)
-                parentContainer.remove(this)
-                if (idx >= 0) parentContainer.add(replacement, idx) else parentContainer.add(replacement)
-            }
-            parentContainer.revalidate()
-            parentContainer.repaint()
-            if (wasFocused) replacement.requestFocusInWindow()
-        }
-        if (replacement != null) {
-            onHostReplaced(replacement)
-            replacement.statusChanged(snap)
-            replacement.writeDiagnostics()
+
+        if (activeReplacement != null) {
+            savedOnHostReplaced(activeReplacement)
+            activeReplacement.statusChanged(snap)
+            activeReplacement.writeDiagnostics()
         } else {
-            statusChanged(snap)
+            savedStatusChanged(snap)
             writeDiagnostics()
         }
-        return replacement
+        return activeReplacement
     }
+
     fun dispatchInputMethodEventWithEpoch(e: InputMethodEvent, epoch: Int) {
         if (retired || disposed || epoch != activeImeEpoch) {
             e.consume()
@@ -567,11 +1036,37 @@ open class EditorSurface(val engine: EditorEngine, val view: ViewState, private 
         }
         processInputMethodEvent(e)
     }
+
     init {
+        LifecycleCounters.hostsCreated.incrementAndGet()
         isOpaque = false; isFocusable = true; focusTraversalKeysEnabled = false
         cursor = Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR); enableInputMethods(true)
+        ownInputContext = try {
+            recoveryHooks.createInputContext()?.also {
+                hasCountedContextCreation = true
+                LifecycleCounters.inputContextsCreated.incrementAndGet()
+            }
+        } catch (t: Throwable) {
+            contextBindFailure = "${t.javaClass.simpleName}: ${t.message ?: "failed"}"
+            null
+        }
+        if (ownInputContext == null && contextBindFailure == null) {
+            contextBindFailure = "InputContext.getInstance() returned null"
+        }
+        if (ownInputContext != null && contextBindFailure == null) {
+            contextQualified = true
+            recoveryStatus = RecoveryStatus.ACTIVE_INITIAL
+        } else {
+            contextQualified = false
+            recoveryStatus = RecoveryStatus.DEGRADED_RECOVERY_FAILED
+            val desc = "contextBinding: $contextBindFailure"
+            recoveryFailures.add(desc)
+            LifecycleCounters.teardownFailuresCount.incrementAndGet()
+            runCatching { recoveryHooks.disableInputMethods(this) }
+            recordDiagnosticEvent("Initial InputContext binding failed [$desc]")
+        }
         engine.onChange = { f ->
-            if (!retired && !disposed) {
+            if (!disposed && (!retired || replacementSurface == null)) {
                 val old = published; published = f; view.frame = f; view.blink = true; view.ensureCaret = true
                 statusChanged(f); repaint()
                 try {
@@ -619,12 +1114,14 @@ open class EditorSurface(val engine: EditorEngine, val view: ViewState, private 
         })
         addKeyListener(object : KeyAdapter() {
             override fun keyTyped(e: KeyEvent) {
-                if (retired || disposed || e.isConsumed || published.marked != null) return
+                if (retired || disposed) { e.consume(); return }
+                if (e.isConsumed || published.marked != null) return
                 if ((e.isControlDown || e.isMetaDown || e.isAltDown) && !e.isAltGraphDown) return
                 if (e.keyChar >= ' ' && e.keyChar != '\u007f' && e.keyChar != KeyEvent.CHAR_UNDEFINED) { keyEvents++; engine.replace(e.keyChar.toString()); preferredX = null; e.consume() }
             }
             override fun keyPressed(e: KeyEvent) {
-                if (retired || disposed || e.isConsumed) return
+                if (retired || disposed) { e.consume(); return }
+                if (e.isConsumed) return
                 trace?.record("key-pressed","code=${e.keyCode}; modifiers=${e.modifiersEx}; locale=${inputContext?.locale}",engine.snapshot())
                 val command = (e.isControlDown || e.isMetaDown) && !e.isAltGraphDown
                 when {
@@ -676,21 +1173,64 @@ open class EditorSurface(val engine: EditorEngine, val view: ViewState, private 
             view.ensureCaret = false; view.scroll = max(0f, view.scroll + e.preciseWheelRotation.toFloat() * 56)
         }
         blinkTimer.start()
+        hasCountedTimerStart = true
+        LifecycleCounters.timersStarted.incrementAndGet()
     }
+
     override fun removeNotify() {
         val oldContext = ownInputContext
-        disposed = true
+        val wasRetired = retired
         ownInputContext = null
-        blinkTimer.stop()
-        runCatching { oldContext?.removeNotify(this) }
-        runCatching { oldContext?.dispose() }
-        runCatching { enableInputMethods(false) }
-        if (!retired) {
+        stopBlinkTimer()
+        val failures = ArrayList<String>()
+        if (oldContext != null) {
+            runStep("removeNotifyContext", failures) {
+                recoveryHooks.removeNotifyContext(oldContext, this)
+                if (!hasCountedContextDetach) {
+                    hasCountedContextDetach = true
+                    LifecycleCounters.inputContextsDetached.incrementAndGet()
+                }
+            }
+            runStep("disposeContext", failures) {
+                recoveryHooks.disposeContext(oldContext)
+                if (!hasCountedContextDispose) {
+                    hasCountedContextDispose = true
+                    LifecycleCounters.inputContextsDisposed.incrementAndGet()
+                }
+            }
+            runStep("disableInputMethods", failures) { recoveryHooks.disableInputMethods(this) }
+        }
+        if (failures.isNotEmpty()) {
+            contextQualified = false
+            recoveryStatus = RecoveryStatus.DEGRADED_RECOVERY_FAILED
+        }
+        clearCallbacks()
+        markDisposed()
+        if (!wasRetired) {
             engine.cancelPendingOnTeardown()
         }
         super.removeNotify()
     }
-    public override fun processFocusEvent(e: FocusEvent) { super.processFocusEvent(e) }
+
+    public override fun processFocusEvent(e: FocusEvent) {
+        if (retired || disposed) return
+        super.processFocusEvent(e)
+    }
+    public override fun processInputMethodEvent(e: InputMethodEvent) {
+        if (retired || disposed) {
+            trace?.record("awt-ime-ignored", "id=${e.id}; retired=$retired; disposed=$disposed", engine.snapshot())
+            e.consume()
+            return
+        }
+        super.processInputMethodEvent(e)
+    }
+    public override fun processKeyEvent(e: KeyEvent) {
+        if (retired || disposed) {
+            e.consume()
+            return
+        }
+        super.processKeyEvent(e)
+    }
     fun geometry(): Geometry? {
         if (width > 0 && height > 0) {
             view.hostWidth = width
@@ -895,9 +1435,15 @@ open class EditorSurface(val engine: EditorEngine, val view: ViewState, private 
         fun quoted(s: String) = "\"" + s.flatMap { c -> when (c) { '\\' -> "\\\\"; '"' -> "\\\""; '\n' -> "\\n"; '\r' -> "\\r"; '\t' -> "\\t"; else -> if (c.code < 32 || Character.isSurrogate(c)) "\\u%04x".format(c.code) else c.toString() }.toList() }.joinToString("") + "\""
         val s=engine.snapshot()
         published=s
-        f.writeText("{\"text\":${quoted(s.visible.text)},\"anchor\":${s.selection.anchor},\"focus\":${s.selection.focus},\"undo\":${s.undoCount},\"redo\":${s.redoCount},\"documentRevision\":${s.documentRevision},\"sessionRevision\":${s.sessionRevision},\"composing\":${s.marked!=null},\"waiting\":${s.waiting},\"focused\":$isFocusOwner,\"keyTypedEvents\":$keyEvents,\"imeTextEvents\":$imeEvents,\"notice\":${quoted(s.notice)}}")
+        val failuresJson = recoveryFailures.joinToString(",") { quoted(it) }
+        f.writeText("{\"text\":${quoted(s.visible.text)},\"anchor\":${s.selection.anchor},\"focus\":${s.selection.focus},\"undo\":${s.undoCount},\"redo\":${s.redoCount},\"documentRevision\":${s.documentRevision},\"sessionRevision\":${s.sessionRevision},\"composing\":${s.marked!=null},\"waiting\":${s.waiting},\"focused\":$isFocusOwner,\"keyTypedEvents\":$keyEvents,\"imeTextEvents\":$imeEvents,\"activeImeEpoch\":$activeImeEpoch,\"recoveryStatus\":${quoted(recoveryStatus.name)},\"contextQualified\":$contextQualified,\"recoveryFailures\":[$failuresJson],\"notice\":${quoted(s.notice)}}")
     }
 }
+
+fun windowFiles(window: JFrame): WindowFiles? = window.rootPane?.getClientProperty("editor.files") as? WindowFiles
+fun windowLayeredPane(window: JFrame): JLayeredPane? = window.rootPane?.getClientProperty("editor.layers") as? JLayeredPane
+@Suppress("UNCHECKED_CAST")
+fun windowCurrentSurface(window: JFrame): EditorSurface? = (window.rootPane?.getClientProperty("editor.surfaceGetter") as? (() -> EditorSurface))?.invoke()
 
 fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList()), initialPath: java.nio.file.Path? = null, trace: ImeTrace? = null, traceLanguage: String? = null, offscreenTest: Boolean = false, windowLocation: Point? = null): JFrame {
     check(SwingUtilities.isEventDispatchThread())
@@ -921,9 +1467,9 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
         val result=JLabel("Choose an installed input method; then type test text.")
         picker.addActionListener {
             val tag=languages.getValue(picker.selectedItem as String)
+            val accepted=surface.selectInputLocale(java.util.Locale.forLanguageTag(tag), compositionEnabled = if (tag == "ja-JP") true else null)
             val ctx=surface.inputContext
-            val accepted=ctx?.selectInputMethod(java.util.Locale.forLanguageTag(tag)) ?: false
-            val compositionEnabled = if(accepted && tag=="ja-JP") runCatching { ctx?.isCompositionEnabled=true; ctx?.isCompositionEnabled }.getOrNull() else null
+            val compositionEnabled = if(accepted && tag=="ja-JP") runCatching { ctx?.isCompositionEnabled }.getOrNull() else null
             result.text="Input: $tag — ${if(accepted)"selected" else "unavailable"}"
             trace.record("select-input","requested=$tag; accepted=$accepted; actual=${ctx?.locale}; compositionEnabled=$compositionEnabled",engine.snapshot())
             surface.requestFocusInWindow()
@@ -950,6 +1496,10 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
         bold.text=label("Bold",FormatKey.BOLD);italic.text=label("Italic",FormatKey.ITALIC)
     }
     surface.statusChanged(engine.snapshot())
+    val surfaceGetter: () -> EditorSurface = { surface }
+    window.rootPane.putClientProperty("editor.files", files)
+    window.rootPane.putClientProperty("editor.layers", layers)
+    window.rootPane.putClientProperty("editor.surfaceGetter", surfaceGetter)
     return window.apply {
         minimumSize=Dimension(940,400)
         contentPane=JPanel(BorderLayout()).apply {add(header,BorderLayout.NORTH);add(layers,BorderLayout.CENTER);add(footer,BorderLayout.SOUTH)}
@@ -960,7 +1510,8 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
             else -> setLocationRelativeTo(null)
         }
         isVisible=true
-        addWindowListener(object:WindowAdapter(){override fun windowClosed(e:WindowEvent){compose.dispose()}})
+        addWindowListener(object:WindowAdapter(){override fun windowClosed(e:WindowEvent){if (!surface.disposed) surface.removeNotify(); compose.dispose()}})
         SwingUtilities.invokeLater {if(!offscreenTest && windowLocation == null) surface.requestFocusInWindow();surface.writeDiagnostics()}
     }
 }
+

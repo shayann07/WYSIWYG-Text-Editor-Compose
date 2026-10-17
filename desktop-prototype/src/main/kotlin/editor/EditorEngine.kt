@@ -577,10 +577,16 @@ class EditorEngine @JvmOverloads constructor(initial: Document = Document(emptyL
     /** Explicit application abort, exercised by kernel tests; not guessed from AWT unmark. */
     fun abortComposition() {
         dispatch("Application abort") {
-            composition?.let { s ->
+            val s = composition
+            if (s != null) {
                 selection = if (s.before.document.same(dc)) s.before.selection
                             else Selection(s.segments.first().dcStart, s.segments.first().dcStart)
                 finish(s, "Composition", aborted = true)
+            } else {
+                settlementRequestedAt = null
+                settlementTimedOut = false
+                pending.clear()
+                if (notice.startsWith("Composing") || notice.startsWith("Waiting")) notice = "Ready"
             }
         }
     }

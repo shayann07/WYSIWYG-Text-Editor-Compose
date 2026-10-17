@@ -14,9 +14,9 @@ All repairs preserve the 45 frozen v5 specification files (`v5-freeze-manifest.j
 - **OS**: Windows 10/11 (`win32`, 64-bit)
 - **JDK**: OpenJDK 64-Bit Server VM (Temurin 21.0.8+9-LTS)
 - **Kotlin / Compose Desktop**: Kotlin `2.0.21`, Compose Multiplatform Desktop `1.7.3`
-- **Baseline Commit**: `75f5cb4` (with follow-up audit against `0616a1e`)
-- **Implementation Commits**: `0e1d1e5`, `762485c`, `dfcf5ee`, `0616a1e`, `7a4e888`
-- **Isolated Verification Evidence**: `desktop-prototype/local-evidence/batch-20261017-164106-29004`
+- **Baseline Commit**: `75f5cb4` (follow-up audits against `0616a1e` and `1e42b2a`)
+- **Implementation Commits**: `0e1d1e5`, `762485c`, `dfcf5ee`, `0616a1e`, `7a4e888`, `1e42b2a`, plus the host-replacement qualification commit that adds this revision
+- **Isolated Verification Evidence**: `desktop-prototype/local-evidence/batch-20261017-190900-7776`
 
 ### 2.2 Reproducible Verification Commands
 Run the complete isolated build and verification pipeline from the repository root:
@@ -26,7 +26,7 @@ python desktop-prototype/verify.py
 `verify.py` builds into an isolated directory under `desktop-prototype/local-evidence/batch-<timestamp>-<pid>`, compiles the sources via Maven, runs:
 1. `editor.ChecksKt` (18 kernel checks, 12 file checks, 17 formatting checks, 1,093 Unicode 16 grapheme fixtures)
 2. `editor.StressChecksKt` (2,000 generated composition sessions against `RefOverlayModel`, 12,000 randomized range-format operations, GB12/13 regional-indicator stress)
-3. `editor.HostChecksKt` (attached AWT + Compose host checks, 19 `RtlHostChecks` sections, 10 `JapaneseHostChecks` sections)
+3. `editor.HostChecksKt` (attached AWT + Compose host checks, 19 `RtlHostChecks` sections, 12 `JapaneseHostChecks` sections including the 100x mounted host-replacement loop and fault injection)
 4. All 8 executable Argon regression probes in `reviews/argon-critical-path/experiments/` against the isolated compiled classes
 5. SHA-256 verification of all 45 frozen v5 specification files against `v5-freeze-manifest.json`
 
@@ -38,16 +38,16 @@ python desktop-prototype/verify.py
 | `desktop-prototype/run.cmd` | `c68514768c7d36dcd53fe6f6134c9302190b841641f13a5cd7c3db72b81ffb06` |
 | `desktop-prototype/verify.py` | `0fbcbc195a7a1fd1329fef823858e2aae2e3b299352d419efe41790bd75d40e1` |
 | `desktop-prototype/src/main/kotlin/editor/Checks.kt` | `0712bc134c86e4cea2f8305d01ff84b5f7a492a31207fe717e18b33d83222ad1` |
-| `desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt` | `444371d81933d791c6887175233791e8847f91fdf8dcf012f0dbeb0b294fc65f` |
+| `desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt` | `0c3cd1a12cbcfecbd0fc774ec0c66cd2a753f40f51a6d02eb5bfa36ee2dc77a1` |
 | `desktop-prototype/src/main/kotlin/editor/DocumentFiles.kt` | `39d6b97af698f5a96ad940aea02150953398a4dd6f9a1266f69e4088ccc75e25` |
-| `desktop-prototype/src/main/kotlin/editor/EditorEngine.kt` | `7568d75cbd4cfc2544cf04c8df19770d2e9db97f9855cfcc91d90513b4428f7a` |
+| `desktop-prototype/src/main/kotlin/editor/EditorEngine.kt` | `b6a5b687c3a78d3f07c7a03e7e51cfd8c49132f0e072a869c323ee90b4a8920f` |
 | `desktop-prototype/src/main/kotlin/editor/FileChecks.kt` | `4d3142000a3759cfcfd58dbf8abc4ed6d61fa98c501022696faf3c16fd50cb69` |
 | `desktop-prototype/src/main/kotlin/editor/FormatChecks.kt` | `d0d86cb6b8c85097385957afb088e8f0293b6524bb20a32a2ca6d1d0a93af8c5` |
 | `desktop-prototype/src/main/kotlin/editor/Formatting.kt` | `f3d0e481c245b4db321da332f3ad40490e8321fbd64edebb4b8be2e4cc20d092` |
 | `desktop-prototype/src/main/kotlin/editor/Graphemes.kt` | `a297a5154df6a77cb1bc65115c92d5a738367671fb02f47a94c425544cb0c629` |
-| `desktop-prototype/src/main/kotlin/editor/HostChecks.kt` | `7966e82811619bd1673e96a7caca98d1af0f747c39a093f57411e4ec82141ee3` |
+| `desktop-prototype/src/main/kotlin/editor/HostChecks.kt` | `210f422453a0df2400e235fc26175c198fc719dc636c02231863f83dece93eab` |
 | `desktop-prototype/src/main/kotlin/editor/ImeTrace.kt` | `153bb4b538d707cdf6c57fada2c71ff55db3445757295bc9f67612ce4e06a521` |
-| `desktop-prototype/src/main/kotlin/editor/JapaneseHostChecks.kt` | `6175ac0f6f57f0c3ccc7c860b397253ced623b4d9fa749c116abe7536065dc81` |
+| `desktop-prototype/src/main/kotlin/editor/JapaneseHostChecks.kt` | `e3a644235eb6df4ade400798229c958d61afffba3842464709a6a6d583d4cef5` |
 | `desktop-prototype/src/main/kotlin/editor/Main.kt` | `c3d1a40dd87a612de2e517432cbbbffd4bff6255bb3f5a2e7a2dbedbe59085b3` |
 | `desktop-prototype/src/main/kotlin/editor/RtlHostChecks.kt` | `e150c53d8c2544d1d0420d26ef6c007bc0f8f23812c61c0a13bb45b5b08b0ef1` |
 | `desktop-prototype/src/main/kotlin/editor/StressChecks.kt` | `d5084fb3df4e97b424c09ddbb628ffb953ea8ca1c7ea683eb56e21801ac5ca15` |
@@ -190,6 +190,66 @@ python desktop-prototype/verify.py
   - `JapaneseHostChecks.kt` Sections 9–10 (ordinary AWT `dispatchEvent` across retired/replacement hosts in `JLayeredPane` layer 100, reentrant abort, partial-commit recovery, and candidate-update watchdog timeout + Escape recovery).
   - `reviews/argon-critical-path/experiments/probe_a1_settlement_wedge.py`.
 
+### 3.11 Host Replacement Lifecycle & Failure-Path Qualification (follow-up to `1e42b2a`)
+
+**Scope.** Establish what the dedicated `InputContext` + `EditorSurface` replacement introduced in `7a4e888` actually guarantees, and make failures explicit. No new editor features, storage, or pagination work.
+
+**Gaps confirmed at `1e42b2a` (source inspection + new failing assertions before repair):**
+1. `abortAndRetireComposition()` and `removeNotify()` wrapped `endComposition`, `removeNotify(Component)`, `dispose()` and `enableInputMethods(false)` in `runCatching`, discarded failures, and always reported a successful replacement.
+2. A retired host still processed `FOCUS_GAINED`/`FOCUS_LOST` and `KEY_PRESSED`/`KEY_TYPED` through Swing's normal pipeline (only `inputMethodTextChanged` was guarded).
+3. The selected input locale and composition-enabled state were not carried to the replacement host.
+4. Replacement surfaces kept a reference chain to predecessors; callbacks were not cleared on retirement.
+5. `EditorEngine.abortComposition()` returned early when `composition == null`, leaving `settlementRequestedAt`/`settlementTimedOut`/`pending` set.
+6. No lifecycle counters existed, so timers/contexts/hosts could not be audited.
+
+**Repairs:**
+- `EditorEngine.abortComposition()` now clears settlement state and `pending` unconditionally.
+- `DesktopEditor.kt`:
+  - `RecoveryStatus` = `ACTIVE_INITIAL | RECOVERED_QUALIFIED | CONSERVATIVE_ABORT_ONLY | DEGRADED_RECOVERY_FAILED`, and `RecoveryReport` (`status`, `succeeded`, `failures`, `contextQualified`).
+  - Every teardown and binding step runs through `runStep`/`recordStepFailure`; failures appear in the report and in diagnostics JSON (`activeImeEpoch`, `recoveryStatus`, `contextQualified`, `recoveryFailures`). A new context is **never** marked qualified, and recovery is never reported successful, if any teardown or binding step failed.
+  - `engine.abortComposition()` always runs, so the document is clean and saveable in every failure case.
+  - Conservative mode: `abortCompositionConservatively()` / `abortAndRetireComposition(replaceHost = false)` aborts the composition without claiming a qualified replacement.
+  - `processFocusEvent`, `processKeyEvent` and `processInputMethodEvent` consume events on retired/disposed hosts.
+  - `selectInputLocale(locale, compositionEnabled)` records preferences that each replacement reapplies through `InputContext.selectInputMethod`/`setCompositionEnabled`, where the public API permits it.
+  - Removal during teardown (`removedDuringTeardown`), cleanup of unattached replacements (`cleanupFailedAttachment`), predecessor chain breaking, and `clearCallbacks()` on retirement.
+  - `EditorSurface.LifecycleCounters` (hosts created/retired/disposed, timers started/stopped, InputContexts created/detached/disposed, recovery attempts by outcome, teardown failures) and `RecoveryHooks` for deterministic fault injection.
+  - `@JvmOverloads` keeps the 4-argument constructor used by `RecoveryAudit.java` and `ProbeA1Runner`.
+
+**Executable evidence (synthetic, attached AWT/Compose):**
+- `JapaneseHostChecks` Section 11. On the mounted `showEditor` window: 100 host replacements using fixture text; exactly one `EditorSurface` at `JLayeredPane` layer 100 after each; old hosts reject text, caret, key and focus callbacks; the current host accepts repeated identical text; toolbar Bold/Italic/Undo/Redo/Copy/Paste, Save/Open, accessibility text/caret property events, diagnostics and engine observers all target the current host; partial commit with attributed Undo/Redo; ordinary close, discard-close and removal during replacement. Counter assertions: across the loop, exactly 100 hosts, timers and InputContexts were created, and exactly 100 were retired/stopped/detached/disposed; there were 100 successful recoveries with 0 degraded and 0 teardown failures, and the active host/timer/context counts stayed constant. After the close, discard and removal tests, and again after Section 12, the active counts return to baseline. These are lifecycle counters, **not** a heap-leak proof.
+- `JapaneseHostChecks` Section 12. Injected failures in `endComposition`, `removeNotifyContext`, `disposeContext`, `disableInputMethods`, `createInputContext` (returning `null` and throwing), `createReplacement` and `attachReplacement`. In every case the outcome is `DEGRADED_RECOVERY_FAILED`, `contextQualified = false`, the failure is recorded in diagnostics, and the document is clean, saveable and still editable. The section also covers explicit conservative recovery.
+- `probe_a1_settlement_wedge.py` Step 4: an injected teardown failure is reported as degraded and the document is still aborted cleanly.
+- `RecoveryAudit.java` rerun against this build: `ORDINARY_LATE_CALLBACK_AFTER_ABORT=` (empty), `REENTRANT_COMMIT_DURING_ABORT=` (empty), `AFTER_CANDIDATE_UPDATE_TIMEOUT=true WAITING=false DEADLINE_START=null`.
+
+**Platform guarantees and what synthetic tests prove:**
+
+| Layer | Behavior | Basis |
+| :--- | :--- | :--- |
+| Public `java.awt.im.InputContext` | `getInstance()` returns a context not shared with other components; `removeNotify(Component)` discards pending input from input methods for that component; `dispose()` releases resources | Javadoc (public contract) |
+| Public `java.awt.Component` | `enableInputMethods(false)` disables input-method event delivery to the component | Javadoc |
+| OpenJDK `sun.awt.im.InputContext` | `removeNotify` → `deactivateInputMethod(false)`, `inputMethod.removeNotify()`, `currentClientComponent = null`; `dispose()` throws `IllegalStateException` while still active | `javap -c -p` inspection (implementation detail, not a contract) |
+| OpenJDK `sun.awt.windows.WInputMethod` | `removeNotify` → `endCompositionNative(context, false)` (cancel on the old HIMC); `sendInputMethodEvent` returns without posting when `getClientComponent() == null`; events posted earlier carry `source = old component` | `javap -c -p` inspection (implementation detail) |
+| Not guaranteed | No public contract says that a native `WM_IME_*` message already queued before `removeNotify` cannot be delivered afterward, or how TSF routes messages during a live focus handoff on the shared top-level HWND | Gap |
+
+Synthetic events built as `new InputMethodEvent(oldSurface, ...)` set `source = oldSurface`. They therefore prove only the application's old-source guard, not native IMM32/TSF routing.
+
+**Separate verdicts:**
+
+| Verdict | Result |
+| :--- | :--- |
+| Application-path isolation | **PASS** |
+| Lifecycle / failure-path tests | **PASS** |
+| Real native qualification (Windows TSF context replacement) | **NOT RUN** |
+
+**Real native smoke test: NOT RUN.** Driving Microsoft Japanese IME romaji composition and its candidate window needs foreground focus on the user's interactive desktop, so it was not run unattended. English remains the default input language. Manual procedure:
+1. `python desktop-prototype/verify.py`, then launch `editor.MainKt --ime-check --ime-language=ja-JP` from the produced isolated classpath.
+2. Select Japanese (Microsoft IME, hiragana mode). Type `nihongo` to get provisional underlined text, press Space to show the candidate window, and confirm it appears at the caret.
+3. While composing, press Escape twice to wait-timeout/abort (or trigger the diagnostics "Recover input" action). Confirm the provisional text is removed and diagnostics show `RECOVERED_QUALIFIED`, `contextQualified=true`, and a new `activeImeEpoch`.
+4. Immediately type `nihongo` + Space + Enter again. Confirm one committed string on the new host, no duplicate of the aborted text, and a single Undo group (Undo, then Redo).
+5. Repeat steps 3–4 with an Urdu keyboard (`ur-PK`), then Arabic (`ar-SA`). Confirm the keyboard selection persists across replacement.
+6. Switch focus to another window mid-composition and back. Record whether the IME commits or cancels; do not assume either.
+7. Record OS build, JDK, IME version and diagnostics JSON in ignored `local-evidence/`. Commit only sanitized fixture results.
+
 ---
 
 ## 4. Refuted / Withdrawn Claims & Preserved Policies
@@ -205,16 +265,17 @@ python desktop-prototype/verify.py
 
 ---
 
-## 5. Summary of Test Results (`batch-20261017-164106-29004`)
+## 5. Summary of Test Results (`batch-20261017-190900-7776`)
 
 | Verification Step | Status | Duration | Coverage Summary |
 | :--- | :--- | :--- | :--- |
-| `build` | **PASS** (`exitCode: 0`) | `23.015s` | Clean isolated Maven compile and dependency copy |
-| `kernel-files-formatting` | **PASS** (`exitCode: 0`) | `6.829s` | 18 kernel checks, 12 file checks (`.astra` v1/v2/v3), 17 formatting checks, 1,093 Unicode 16 grapheme fixtures |
-| `stress` | **PASS** (`exitCode: 0`) | `1.265s` | 2,000 generated composition sessions vs `RefOverlayModel`, 12,000 randomized range-format commands, GB12/13 regional-indicator stress |
-| `attached-host` | **PASS** (`exitCode: 0`) | `2.235s` | `HostChecks`, `RtlHostChecks` (19 sections), `JapaneseHostChecks` (10 sections) |
-| `argon-regression-probes` | **PASS** (`exitCode: 0`) | `18.078s` | All 8 executable Argon regression probes in `reviews/argon-critical-path/experiments/` |
+| `build` | **PASS** (`exitCode: 0`) | `28.016s` | Clean isolated Maven compile and dependency copy |
+| `kernel-files-formatting` | **PASS** (`exitCode: 0`) | `6.531s` | 18 kernel checks, 12 file checks (`.astra` v1/v2/v3), 17 formatting checks, 1,093 Unicode 16 grapheme fixtures |
+| `stress` | **PASS** (`exitCode: 0`) | `1.562s` | 2,000 generated composition sessions vs `RefOverlayModel`, 12,000 randomized range-format commands, GB12/13 regional-indicator stress |
+| `attached-host` | **PASS** (`exitCode: 0`) | `3.719s` | `HostChecks`, `RtlHostChecks` (19 sections), `JapaneseHostChecks` (12 sections: `hostReplacementLifecycle100x` PASS, `hostReplacementFailurePaths` PASS) |
+| `argon-regression-probes` | **PASS** (`exitCode: 0`) | `18.594s` | All 8 executable Argon regression probes, including `probe_a1` Step 4 (degraded recovery) |
 | `frozen v5` | **PASS** | — | All 45 frozen v5 specification files unchanged |
+| `RecoveryAudit.java` (rerun) | **PASS** | — | Late ordinary and reentrant commits rejected; watchdog fires after candidate updates |
 
 ---
 

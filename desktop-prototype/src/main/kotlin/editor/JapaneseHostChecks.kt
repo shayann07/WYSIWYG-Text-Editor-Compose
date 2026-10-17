@@ -8,6 +8,7 @@ import java.awt.event.FocusEvent
 import java.awt.event.InputMethodEvent
 import java.awt.event.KeyEvent
 import java.awt.font.TextHitInfo
+import java.io.File
 import java.text.AttributedString
 import javax.swing.JPanel
 
@@ -519,6 +520,12 @@ fun runJapaneseHostChecks(surface: EditorSurface): EditorSurface {
     check(e.snapshot().marked == null) { "Escape must abort timed-out composition" }
     check(e.snapshot().visible.text.isEmpty() && e.snapshot().committed.text.isEmpty())
 
+    // 11. 100-Iteration Mounted Editor Host Replacement Lifecycle Qualification
+    activeSurface = runMountedHostReplacementLifecycleChecks(activeSurface)
+
+    // 12. Failure-Path Injection & Conservative Recovery Qualification
+    runHostReplacementFailurePathChecks()
+
     println("PASS Synthetic Japanese IME callback sequence (preedit -> conversion -> commit), single-group Undo/Redo")
     println("PASS Attached Compose IME candidate geometry (getTextLocation / getLocationOffset monotonic coordinates under stated conditions)")
     println("PASS Screen coordinates and unavailable geometry fallback distinction (offscreen vs not-showing vs unavailable transform)")
@@ -528,5 +535,689 @@ fun runJapaneseHostChecks(surface: EditorSurface): EditorSurface {
     println("PASS Synthetic Japanese queued formatting and Undo command ordering with attributed history")
     println("PASS Synthetic Japanese paragraph-boundary composition and cross-paragraph selection replacement")
     println("PASS Synthetic Japanese duplicate terminal callbacks, ordinary AWT host retirement/replacement and watchdog timeout across candidate updates")
+    println("PASS 100-iteration mounted editor host replacement lifecycle (layer 100 invariant, callback isolation, locale/composition preservation, timers/contexts/callbacks counters, toolbar/Save/Open/a11y/diagnostics routing, close/discard/removal during replacement)")
+    println("PASS Host replacement failure-path injection (endComposition, removeNotify, dispose, replacement creation, context binding, container attachment) and conservative recovery mode")
     return activeSurface
 }
+
+private fun findButtons(component: java.awt.Component): List<javax.swing.JButton> {
+    if (component is javax.swing.JButton) return listOf(component)
+    val container = component as? java.awt.Container ?: return emptyList()
+    return container.components.flatMap(::findButtons)
+}
+
+private fun runMountedHostReplacementLifecycleChecks(initialSurface: EditorSurface): EditorSurface {
+    var activeSurface = initialSurface
+    val e = activeSurface.engine
+    val mainWindow = checkNotNull(javax.swing.SwingUtilities.getWindowAncestor(activeSurface) as? javax.swing.JFrame) {
+        "Active EditorSurface must be mounted inside showEditor JFrame"
+    }
+    val mainLayers = checkNotNull(windowLayeredPane(mainWindow)) { "showEditor must expose JLayeredPane" }
+    check(windowCurrentSurface(mainWindow) === activeSurface)
+    check(findSurface(mainWindow) === activeSurface)
+
+    fun imeEvent(text: String, committedCount: Int, caret: Int?, target: EditorSurface = activeSurface): InputMethodEvent {
+        val iterator = if (text.isEmpty()) null else AttributedString(text).iterator
+        val ev = InputMethodEvent(target, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, iterator, committedCount, caret?.let(TextHitInfo::leading), null)
+        target.dispatchEvent(ev)
+        return ev
+    }
+
+    fun caretEvent(caret: Int, target: EditorSurface = activeSurface): InputMethodEvent {
+        val ev = InputMethodEvent(target, InputMethodEvent.CARET_POSITION_CHANGED, null, 0, TextHitInfo.leading(caret), null)
+        target.dispatchEvent(ev)
+        return ev
+    }
+
+    fun keyPress(code: Int, ctrl: Boolean = false, shift: Boolean = false, target: EditorSurface = activeSurface): KeyEvent {
+        var mod = 0
+        if (ctrl) mod = mod or KeyEvent.CTRL_DOWN_MASK
+        if (shift) mod = mod or KeyEvent.SHIFT_DOWN_MASK
+        val ev = KeyEvent(target, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), mod, code, KeyEvent.CHAR_UNDEFINED)
+        target.dispatchEvent(ev)
+        return ev
+    }
+
+    fun keyType(ch: Char, target: EditorSurface = activeSurface): KeyEvent {
+        val ev = KeyEvent(target, KeyEvent.KEY_TYPED, System.currentTimeMillis(), 0, KeyEvent.VK_UNDEFINED, ch)
+        target.dispatchEvent(ev)
+        return ev
+    }
+
+    e.replace("", "Reset before 100x lifecycle")
+    while (e.snapshot().undoCount > 0) e.perform(EditAction.Undo)
+    check(e.snapshot().visible.text.isEmpty())
+
+    val countersBefore = EditorSurface.LifecycleCounters.snapshot()
+    check(countersBefore.activeHosts >= 1 && countersBefore.activeTimers >= 1 && countersBefore.activeInputContexts >= 1)
+
+    val retiredHosts = ArrayList<EditorSurface>(100)
+    val locales = listOf(
+        java.util.Locale.forLanguageTag("en-US") to false,
+        java.util.Locale.forLanguageTag("ja-JP") to true,
+        java.util.Locale.forLanguageTag("ur-PK") to false,
+        java.util.Locale.forLanguageTag("ar-SA") to false
+    )
+
+    for (i in 0 until 100) {
+        val (targetLocale, targetCompEnabled) = locales[i % locales.size]
+        activeSurface.selectInputLocale(targetLocale, compositionEnabled = targetCompEnabled)
+        check(activeSurface.preferredLocale == targetLocale)
+        check(activeSurface.preferredCompositionEnabled == targetCompEnabled)
+
+        val oldHost = activeSurface
+        val epochBefore = oldHost.activeImeEpoch
+
+        when (i % 4) {
+            0 -> {
+                // Standard preedit -> abort & replace
+                val baseline = e.snapshot().committed.text
+                imeEvent("仮$i", 0, 2, target = oldHost)
+                check(e.snapshot().marked != null)
+                val next = oldHost.abortAndRetireComposition(replaceHost = true)
+                activeSurface = checkNotNull(next) { "Iteration $i must produce replacement surface" }
+                check(e.snapshot().committed.text == baseline && e.snapshot().visible.text == baseline && e.snapshot().marked == null)
+            }
+            1 -> {
+                // Partial commit + remaining preedit -> abort & replace
+                val prefixBefore = e.snapshot().committed.text
+                e.replace("ab", "Seed-$i")
+                e.move(Selection(prefixBefore.length, prefixBefore.length + 2))
+                imeEvent("X${i % 10}b", 1, 2, target = oldHost) // 'X' committed, digit provisional, 'b' retained
+                val next = oldHost.abortAndRetireComposition(replaceHost = true)
+                activeSurface = checkNotNull(next) { "Iteration $i must produce replacement surface" }
+                check(e.snapshot().visible.text == "${prefixBefore}Xb" && e.snapshot().committed.text == "${prefixBefore}Xb")
+                // Undo partial commit + Undo seed to keep fixture bounded
+                e.perform(EditAction.Undo)
+                check(e.snapshot().visible.text == "${prefixBefore}ab")
+                e.perform(EditAction.Undo)
+                check(e.snapshot().visible.text == prefixBefore)
+            }
+            2 -> {
+                // Reentrant ordinary AWT commit/caret during onEndCompositionRequested -> abort & replace
+                val baseline = e.snapshot().committed.text
+                imeEvent("再入$i", 0, 3, target = oldHost)
+                oldHost.onEndCompositionRequested = {
+                    imeEvent("再入$i", 3, null, target = oldHost)
+                    caretEvent(0, target = oldHost)
+                }
+                val next = oldHost.abortAndRetireComposition(replaceHost = true)
+                activeSurface = checkNotNull(next) { "Iteration $i must produce replacement surface" }
+                check(e.snapshot().committed.text == baseline && e.snapshot().visible.text == baseline)
+            }
+            else -> {
+                // Watchdog timeout with queued command -> Escape triggers abortAndRetireComposition
+                val baseline = e.snapshot().committed.text
+                imeEvent("待$i", 0, 2, target = oldHost)
+                keyPress(KeyEvent.VK_B, ctrl = true, target = oldHost)
+                check(e.snapshot().waiting)
+                check(e.checkSettlementWatchdog(timeoutMs = 0L))
+                check(e.settlementTimedOut && !e.snapshot().waiting && e.snapshot().marked != null)
+                keyPress(KeyEvent.VK_ESCAPE, target = oldHost)
+                activeSurface = checkNotNull(oldHost.replacementSurface) { "Escape after watchdog timeout at iteration $i must install replacement" }
+                check(e.snapshot().committed.text == baseline && e.snapshot().visible.text == baseline && e.snapshot().marked == null)
+            }
+        }
+
+        retiredHosts.add(oldHost)
+
+        // Verify RecoveryReport and qualification state
+        val report = checkNotNull(oldHost.lastRecoveryReport) { "Retired host $i must record RecoveryReport" }
+        check(report.succeeded) { "Iteration $i recovery must succeed: $report" }
+        check(report.status == RecoveryStatus.RECOVERED_QUALIFIED)
+        check(report.contextQualified)
+        check(report.documentAbortedCleanly)
+        check(report.replacementCreated && report.containerAttached && !report.removedDuringTeardown)
+        check(report.failures.isEmpty())
+        check(report.preservedLocale == targetLocale)
+        check(report.preservedCompositionEnabled == targetCompEnabled)
+
+        check(activeSurface.contextQualified) { "Active replacement $i must be contextQualified" }
+        check(activeSurface.recoveryStatus == RecoveryStatus.RECOVERED_QUALIFIED)
+        check(activeSurface.activeImeEpoch == epochBefore + 1)
+        check(activeSurface.preferredLocale == targetLocale) { "Locale preference must transfer at iteration $i" }
+        check(activeSurface.preferredCompositionEnabled == targetCompEnabled) { "CompositionEnabled preference must transfer at iteration $i" }
+        if (activeSurface.lastLocaleTransferSupported == true) {
+            check(activeSurface.inputContext?.locale?.language == targetLocale.language) {
+                "Accepted locale must match ${targetLocale.language}, got ${activeSurface.inputContext?.locale}"
+            }
+        }
+        if (activeSurface.lastCompositionTransferSupported == true) {
+            val actualComp = runCatching { activeSurface.inputContext?.isCompositionEnabled }.getOrNull()
+            check(actualComp == targetCompEnabled) { "Accepted compositionEnabled must match $targetCompEnabled, got $actualComp" }
+        }
+
+        // Verify container & layer 100 invariants
+        val surfacesInLayers = mainLayers.components.filterIsInstance<EditorSurface>()
+        check(surfacesInLayers.size == 1 && surfacesInLayers.single() === activeSurface) {
+            "Exactly one EditorSurface must remain in JLayeredPane at iteration $i, found ${surfacesInLayers.size}"
+        }
+        check(javax.swing.JLayeredPane.getLayer(activeSurface) == 100) {
+            "Active EditorSurface must remain at layer 100 at iteration $i"
+        }
+        val layer100Components = mainLayers.getComponentsInLayer(100).toList()
+        check(layer100Components.size == 1 && layer100Components.single() === activeSurface) {
+            "Layer 100 must contain only the active EditorSurface at iteration $i"
+        }
+        check(windowCurrentSurface(mainWindow) === activeSurface) { "showEditor surface reference must track activeSurface at iteration $i" }
+        check(findSurface(mainWindow) === activeSurface)
+
+        // Verify retired host state & predecessor chain breaking
+        check(oldHost.retired && oldHost.disposed) { "Old host $i must be retired and disposed" }
+        check(!oldHost.contextQualified) { "Retired host $i must not remain contextQualified" }
+        check(oldHost.parent == null) { "Old host $i must be detached from parent container" }
+        check(oldHost.inputContext == null) { "Old host $i must return null inputContext" }
+        check(!oldHost.isTimerRunning) { "Old host $i blinkTimer must be stopped" }
+        check(!oldHost.hasRetainedCallbacks) { "Old host $i must clear all callback closures and timer listeners" }
+        if (i >= 1) {
+            check(retiredHosts[i - 1].replacementSurface == null) {
+                "Predecessor retired host ${i - 1} replacementSurface link must be broken when host $i retires"
+            }
+        }
+
+        // Verify old host rejects ordinary text, caret, key, and focus callbacks
+        activeSurface.processFocusEvent(FocusEvent(activeSurface, FocusEvent.FOCUS_GAINED, false))
+        check(activeSurface.view.focused)
+        val snapBeforeStale = e.snapshot()
+        val staleText = imeEvent("STALE_$i", 6, null, target = oldHost)
+        val staleCaret = caretEvent(0, target = oldHost)
+        val staleKeyTyped = keyType('Z', target = oldHost)
+        val staleKeyPressed = keyPress(KeyEvent.VK_B, ctrl = true, target = oldHost)
+        val directKeyTyped = KeyEvent(oldHost, KeyEvent.KEY_TYPED, System.currentTimeMillis(), 0, KeyEvent.VK_UNDEFINED, 'Z')
+        val directKeyPressed = KeyEvent(oldHost, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), KeyEvent.CTRL_DOWN_MASK, KeyEvent.VK_B, KeyEvent.CHAR_UNDEFINED)
+        oldHost.processKeyEvent(directKeyTyped)
+        oldHost.processKeyEvent(directKeyPressed)
+        oldHost.processFocusEvent(FocusEvent(oldHost, FocusEvent.FOCUS_LOST, false))
+        check(staleText.isConsumed && staleCaret.isConsumed && directKeyTyped.isConsumed && directKeyPressed.isConsumed) {
+            "Old host $i must consume/reject ordinary text, caret, and key events"
+        }
+        check(activeSurface.view.focused) { "FOCUS_LOST on retired host $i must not clear active focus state" }
+        activeSurface.processFocusEvent(FocusEvent(activeSurface, FocusEvent.FOCUS_LOST, false))
+        check(!activeSurface.view.focused)
+        oldHost.processFocusEvent(FocusEvent(oldHost, FocusEvent.FOCUS_GAINED, false))
+        check(!activeSurface.view.focused) { "FOCUS_GAINED on retired host $i must not set active focus state" }
+        check(e.snapshot() == snapBeforeStale) { "Events on retired host $i must not mutate engine state" }
+
+        // Verify current host receives subsequent input, including repeated identical text
+        imeEvent("同", 0, 1, target = activeSurface)
+        imeEvent("同", 1, null, target = activeSurface)
+        imeEvent("同", 0, 1, target = activeSurface)
+        imeEvent("同", 1, null, target = activeSurface)
+        check(e.snapshot().committed.text.endsWith("同同")) { "Current host $i must accept repeated identical text" }
+        e.perform(EditAction.Undo)
+        e.perform(EditAction.Undo)
+        val snapAfterUndo = e.snapshot()
+        check(
+            snapAfterUndo.committed.same(snapBeforeStale.committed) &&
+                snapAfterUndo.visible.same(snapBeforeStale.visible) &&
+                snapAfterUndo.selection == snapBeforeStale.selection &&
+                snapAfterUndo.undoCount == snapBeforeStale.undoCount
+        ) { "Undoing repeated identical text at iteration $i must restore prior document and selection" }
+    }
+
+    // Check explicit lifecycle counters after 100 replacements
+    val countersAfter = EditorSurface.LifecycleCounters.snapshot()
+    check(countersAfter.hostsCreated - countersBefore.hostsCreated == 100) {
+        "Expected 100 hosts created, got ${countersAfter.hostsCreated - countersBefore.hostsCreated}"
+    }
+    check(countersAfter.hostsRetired - countersBefore.hostsRetired == 100) {
+        "Expected 100 hosts retired, got ${countersAfter.hostsRetired - countersBefore.hostsRetired}"
+    }
+    check(countersAfter.hostsDisposed - countersBefore.hostsDisposed == 100) {
+        "Expected 100 hosts disposed, got ${countersAfter.hostsDisposed - countersBefore.hostsDisposed}"
+    }
+    check(countersAfter.timersStarted - countersBefore.timersStarted == 100) {
+        "Expected 100 timers started, got ${countersAfter.timersStarted - countersBefore.timersStarted}"
+    }
+    check(countersAfter.timersStopped - countersBefore.timersStopped == 100) {
+        "Expected 100 timers stopped, got ${countersAfter.timersStopped - countersBefore.timersStopped}"
+    }
+    check(countersAfter.inputContextsCreated - countersBefore.inputContextsCreated == 100) {
+        "Expected 100 InputContexts created, got ${countersAfter.inputContextsCreated - countersBefore.inputContextsCreated}"
+    }
+    check(countersAfter.inputContextsDetached - countersBefore.inputContextsDetached == 100) {
+        "Expected 100 InputContexts detached, got ${countersAfter.inputContextsDetached - countersBefore.inputContextsDetached}"
+    }
+    check(countersAfter.inputContextsDisposed - countersBefore.inputContextsDisposed == 100) {
+        "Expected 100 InputContexts disposed, got ${countersAfter.inputContextsDisposed - countersBefore.inputContextsDisposed}"
+    }
+    check(countersAfter.recoveryAttempts - countersBefore.recoveryAttempts == 100)
+    check(countersAfter.recoverySucceededCount - countersBefore.recoverySucceededCount == 100)
+    check(countersAfter.recoveryDegradedCount - countersBefore.recoveryDegradedCount == 0)
+    check(countersAfter.teardownFailuresCount - countersBefore.teardownFailuresCount == 0)
+    check(countersAfter.activeHosts == countersBefore.activeHosts) {
+        "Active host count must remain constant (${countersBefore.activeHosts}), got ${countersAfter.activeHosts}"
+    }
+    check(countersAfter.activeTimers == countersBefore.activeTimers) {
+        "Active timer count must remain constant (${countersBefore.activeTimers}), got ${countersAfter.activeTimers}"
+    }
+    check(countersAfter.activeInputContexts == countersBefore.activeInputContexts) {
+        "Active InputContext count must remain constant (${countersBefore.activeInputContexts}), got ${countersAfter.activeInputContexts}"
+    }
+
+    // Verify all 100 retired hosts have zero retained callbacks and only the 99th holds a direct reference to activeSurface
+    for (idx in retiredHosts.indices) {
+        val h = retiredHosts[idx]
+        check(h.retired && h.disposed && h.parent == null && h.inputContext == null && !h.isTimerRunning && !h.hasRetainedCallbacks)
+        if (idx < retiredHosts.lastIndex) {
+            check(h.replacementSurface == null) { "Retired host $idx must not retain replacementSurface reference" }
+        } else {
+            check(h.replacementSurface === activeSurface)
+        }
+    }
+
+    // Verify Save/Open callbacks, toolbar actions, accessibility notifications, diagnostics, and engine observers target activeSurface
+    val sampleOldHost = retiredHosts.last()
+    val origSave = activeSurface.requestSave
+    val origOpen = activeSurface.requestOpen
+    var saveCalls = 0
+    var saveAsCalls = 0
+    var openCalls = 0
+    try {
+        activeSurface.requestSave = { asNew -> if (asNew) saveAsCalls++ else saveCalls++ }
+        activeSurface.requestOpen = { openCalls++ }
+        keyPress(KeyEvent.VK_S, ctrl = true, target = sampleOldHost)
+        keyPress(KeyEvent.VK_O, ctrl = true, target = sampleOldHost)
+        check(saveCalls == 0 && openCalls == 0) { "Save/Open shortcuts on retired host must be ignored" }
+        keyPress(KeyEvent.VK_S, ctrl = true, target = activeSurface)
+        keyPress(KeyEvent.VK_S, ctrl = true, shift = true, target = activeSurface)
+        keyPress(KeyEvent.VK_O, ctrl = true, target = activeSurface)
+        check(saveCalls == 1 && saveAsCalls == 1 && openCalls == 1) {
+            "Save/SaveAs/Open shortcuts on active host must invoke current callbacks: save=$saveCalls, saveAs=$saveAsCalls, open=$openCalls"
+        }
+    } finally {
+        activeSurface.requestSave = origSave
+        activeSurface.requestOpen = origOpen
+    }
+
+    // Accessibility notifications on activeSurface vs retiredHost
+    var activeTextNotifications = 0
+    var activeCaretNotifications = 0
+    var oldTextNotifications = 0
+    var oldCaretNotifications = 0
+    val activeA11yListener = java.beans.PropertyChangeListener { evt ->
+        if (evt.propertyName == javax.accessibility.AccessibleContext.ACCESSIBLE_TEXT_PROPERTY) activeTextNotifications++
+        if (evt.propertyName == javax.accessibility.AccessibleContext.ACCESSIBLE_CARET_PROPERTY) activeCaretNotifications++
+    }
+    val oldA11yListener = java.beans.PropertyChangeListener { evt ->
+        if (evt.propertyName == javax.accessibility.AccessibleContext.ACCESSIBLE_TEXT_PROPERTY) oldTextNotifications++
+        if (evt.propertyName == javax.accessibility.AccessibleContext.ACCESSIBLE_CARET_PROPERTY) oldCaretNotifications++
+    }
+    activeSurface.accessibleContext.addPropertyChangeListener(activeA11yListener)
+    sampleOldHost.accessibleContext.addPropertyChangeListener(oldA11yListener)
+    try {
+        keyType('A', target = activeSurface)
+        keyType('B', target = activeSurface)
+        check(e.snapshot().visible.text == "AB")
+        check(activeTextNotifications >= 2 && activeCaretNotifications >= 2) {
+            "Active host AccessibleContext must fire text/caret notifications ($activeTextNotifications, $activeCaretNotifications)"
+        }
+        check(oldTextNotifications == 0 && oldCaretNotifications == 0) {
+            "Retired host AccessibleContext must not fire notifications ($oldTextNotifications, $oldCaretNotifications)"
+        }
+    } finally {
+        activeSurface.accessibleContext.removePropertyChangeListener(activeA11yListener)
+        sampleOldHost.accessibleContext.removePropertyChangeListener(oldA11yListener)
+    }
+
+    // Toolbar actions in showEditor window targeting current host
+    val buttons = findButtons(mainWindow.contentPane)
+    fun buttonNamed(prefix: String) = checkNotNull(buttons.firstOrNull { it.text == prefix || it.text.startsWith("$prefix ") }) {
+        "Missing toolbar button '$prefix' in ${buttons.map { it.text }}"
+    }
+    e.selectAll()
+    buttonNamed("Bold").doClick()
+    check(e.snapshot().visible.units.all { it.style.bold }) { "Toolbar Bold button must format selection on current host" }
+    check(buttonNamed("Bold").text == "Bold on") { "Current host statusChanged must update Bold button text to 'Bold on'" }
+    buttonNamed("Italic").doClick()
+    check(e.snapshot().visible.units.all { it.style.bold && it.style.italic })
+    check(buttonNamed("Italic").text == "Italic on")
+    buttonNamed("Undo").doClick()
+    check(e.snapshot().visible.units.all { it.style.bold && !it.style.italic })
+    buttonNamed("Redo").doClick()
+    check(e.snapshot().visible.units.all { it.style.bold && it.style.italic })
+    buttonNamed("Undo").doClick()
+    buttonNamed("Undo").doClick()
+    buttonNamed("Undo").doClick()
+    check(e.snapshot().visible.text.isEmpty())
+
+    // Partial commit + attributed Undo/Redo across host replacement
+    e.replace("ABCD", "StyledFixture")
+    e.move(Selection(0, 2))
+    e.toggleFormat(FormatKey.BOLD)
+    e.move(Selection(2, 4))
+    e.toggleFormat(FormatKey.ITALIC)
+    check(e.snapshot().visible.text == "ABCD")
+    check(e.snapshot().visible.units[0].style == TextStyleFlags(bold = true))
+    check(e.snapshot().visible.units[2].style == TextStyleFlags(italic = true))
+    e.selectAll()
+    val preAttribHost = activeSurface
+    imeEvent("XYCD", 1, 3, target = preAttribHost) // 'X' committed (inherits Bold), 'Y' provisional, "CD" retained (Italic)
+    activeSurface = checkNotNull(preAttribHost.abortAndRetireComposition(replaceHost = true))
+    check(e.snapshot().visible.text == "XCD" && e.snapshot().committed.text == "XCD")
+    check(e.snapshot().visible.units[0].char == 'X' && e.snapshot().visible.units[0].style == TextStyleFlags(bold = true))
+    check(e.snapshot().visible.units[1].char == 'C' && e.snapshot().visible.units[1].style == TextStyleFlags(italic = true))
+    check(e.snapshot().visible.units[2].char == 'D' && e.snapshot().visible.units[2].style == TextStyleFlags(italic = true))
+    e.perform(EditAction.Undo)
+    check(e.snapshot().visible.text == "ABCD" && e.snapshot().selection == Selection(0, 4))
+    check(e.snapshot().visible.units[0].style == TextStyleFlags(bold = true) && e.snapshot().visible.units[2].style == TextStyleFlags(italic = true))
+    e.perform(EditAction.Redo)
+    check(e.snapshot().visible.text == "XCD" && e.snapshot().selection == Selection(1, 1))
+    check(e.snapshot().visible.units[0].style == TextStyleFlags(bold = true) && e.snapshot().visible.units[1].style == TextStyleFlags(italic = true))
+    while (e.snapshot().undoCount > 0) e.perform(EditAction.Undo)
+    check(e.snapshot().visible.text.isEmpty())
+
+    // Mounted lifecycle tests for: (a) Ordinary close, (b) Discard-close, (c) Removal during replacement
+    val lifecycleBaseline = EditorSurface.LifecycleCounters.snapshot()
+
+    // (a) Ordinary close after replacements and diagnostics verification
+    val tempDir = java.nio.file.Files.createTempDirectory("astra-lifecycle-check")
+    try {
+        val diagFile = tempDir.resolve("diag.json").toFile()
+        val savedPath = tempDir.resolve("doc.astra")
+        val cleanDoc = Document("Clean doc".mapIndexed { i, c -> TextUnit(i + 1L, c) })
+        DocumentFiles.write(savedPath, cleanDoc, null)
+        val winOrdinary = showEditor(diagnostics = diagFile, initial = cleanDoc, initialPath = savedPath, offscreenTest = true)
+        var surfOrdinary = checkNotNull(windowCurrentSurface(winOrdinary))
+        surfOrdinary = checkNotNull(surfOrdinary.abortAndRetireComposition(replaceHost = true))
+        surfOrdinary = checkNotNull(surfOrdinary.abortAndRetireComposition(replaceHost = true))
+        surfOrdinary.writeDiagnostics()
+        val diagJson = diagFile.readText()
+        check("\"recoveryStatus\":\"RECOVERED_QUALIFIED\"" in diagJson) { "Diagnostics must record RECOVERED_QUALIFIED: $diagJson" }
+        check("\"contextQualified\":true" in diagJson) { "Diagnostics must record contextQualified=true: $diagJson" }
+        check("\"activeImeEpoch\":2" in diagJson) { "Diagnostics must record activeImeEpoch=2: $diagJson" }
+        val filesOrdinary = checkNotNull(windowFiles(winOrdinary))
+        filesOrdinary.close()
+        check(!winOrdinary.isDisplayable) { "Ordinary close on clean document must dispose window" }
+        check(surfOrdinary.disposed && !surfOrdinary.isTimerRunning && surfOrdinary.inputContext == null)
+
+        // (b) Discard-close while composing
+        val winDiscard = showEditor(offscreenTest = true)
+        val surfDiscard = checkNotNull(windowCurrentSurface(winDiscard))
+        val engDiscard = surfDiscard.engine
+        engDiscard.replace("Committed ", "Seed")
+        surfDiscard.dispatchEvent(InputMethodEvent(surfDiscard, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("未確定").iterator, 0, TextHitInfo.leading(3), null))
+        check(engDiscard.snapshot().marked != null)
+        val filesDiscard = checkNotNull(windowFiles(winDiscard))
+        filesDiscard.close(choice = 1) // Discard
+        val discardReport = checkNotNull(surfDiscard.lastRecoveryReport) { "Discard-close with active preedit must run conservative abort" }
+        check(discardReport.status == RecoveryStatus.CONSERVATIVE_ABORT_ONLY)
+        check(!discardReport.contextQualified && !discardReport.replacementCreated && discardReport.succeeded)
+        check(engDiscard.snapshot().marked == null && engDiscard.snapshot().committed.text == "Committed ")
+        check(!winDiscard.isDisplayable && surfDiscard.retired && surfDiscard.disposed && !surfDiscard.isTimerRunning)
+
+        // (c) Removal during replacement (component removed from parent during onEndCompositionRequested)
+        val winRemoval = showEditor(offscreenTest = true)
+        try {
+            val surfRemoval = checkNotNull(windowCurrentSurface(winRemoval))
+            val layersRemoval = checkNotNull(windowLayeredPane(winRemoval))
+            val engRemoval = surfRemoval.engine
+            engRemoval.replace("KeepMe", "Seed")
+            surfRemoval.dispatchEvent(InputMethodEvent(surfRemoval, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("消える").iterator, 0, TextHitInfo.leading(3), null))
+            check(engRemoval.snapshot().marked != null)
+            surfRemoval.onEndCompositionRequested = {
+                layersRemoval.remove(surfRemoval)
+            }
+            val replacementOnRemoved = surfRemoval.abortAndRetireComposition(replaceHost = true)
+            check(replacementOnRemoved == null) { "Host removed during teardown must NOT create or re-attach a replacement surface" }
+            check(layersRemoval.components.none { it is EditorSurface }) { "No EditorSurface should remain in container after removal during replacement" }
+            val removalReport = checkNotNull(surfRemoval.lastRecoveryReport)
+            check(removalReport.removedDuringTeardown) { "RecoveryReport must flag removedDuringTeardown=true" }
+            check(removalReport.status == RecoveryStatus.CONSERVATIVE_ABORT_ONLY)
+            check(!removalReport.contextQualified && !removalReport.replacementCreated && !removalReport.containerAttached)
+            check(removalReport.documentAbortedCleanly && engRemoval.snapshot().marked == null && engRemoval.snapshot().committed.text == "KeepMe")
+        } finally {
+            winRemoval.dispose()
+        }
+    } finally {
+        tempDir.toFile().deleteRecursively()
+    }
+
+    val afterCloseSnap = EditorSurface.LifecycleCounters.snapshot()
+    check(afterCloseSnap.activeHosts == lifecycleBaseline.activeHosts) {
+        "All temporary windows/surfaces must be disposed after close/discard/removal tests: expected ${lifecycleBaseline.activeHosts}, got ${afterCloseSnap.activeHosts}"
+    }
+    check(afterCloseSnap.activeTimers == lifecycleBaseline.activeTimers) {
+        "All temporary timers must be stopped: expected ${lifecycleBaseline.activeTimers}, got ${afterCloseSnap.activeTimers}"
+    }
+    check(afterCloseSnap.activeInputContexts == lifecycleBaseline.activeInputContexts) {
+        "All temporary InputContexts must be disposed: expected ${lifecycleBaseline.activeInputContexts}, got ${afterCloseSnap.activeInputContexts}"
+    }
+
+    return activeSurface
+}
+
+private fun runHostReplacementFailurePathChecks() {
+    val baselineCounters = EditorSurface.LifecycleCounters.snapshot()
+    val tempDir = java.nio.file.Files.createTempDirectory("astra-failure-paths")
+    try {
+        // Helper to mount a standalone container + EditorSurface with diagnostics and verify document recoverability
+        fun withTestHost(
+            hooks: EditorSurface.RecoveryHooks,
+            block: (javax.swing.JLayeredPane, EditorSurface, File) -> Unit
+        ) {
+            val diagFile = tempDir.resolve("diag-${System.nanoTime()}.json").toFile()
+            val engine = EditorEngine()
+            engine.replace("Baseline", "Init")
+            val view = ViewState(engine.snapshot())
+            val layers = javax.swing.JLayeredPane()
+            val surface = EditorSurface(engine, view, diagnostics = diagFile, recoveryHooks = hooks)
+            layers.add(surface)
+            layers.setLayer(surface, 100)
+            try {
+                block(layers, surface, diagFile)
+            } finally {
+                for (comp in layers.components.toList()) {
+                    layers.remove(comp)
+                }
+                if (!surface.disposed) surface.removeNotify()
+                surface.replacementSurface?.let { if (!it.disposed) it.removeNotify() }
+            }
+        }
+
+        // 1. Failure in endComposition (context completion)
+        withTestHost(
+            EditorSurface.RecoveryHooks(
+                endComposition = { ctx ->
+                    ctx.endComposition()
+                    throw IllegalStateException("Injected endComposition failure")
+                }
+            )
+        ) { _, surface, diagFile ->
+            surface.dispatchEvent(InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("未完").iterator, 0, TextHitInfo.leading(2), null))
+            val next = surface.abortAndRetireComposition(replaceHost = true)
+            val report = checkNotNull(surface.lastRecoveryReport)
+            check(!report.succeeded) { "Recovery must NOT report success when endComposition failed" }
+            check(report.status == RecoveryStatus.DEGRADED_RECOVERY_FAILED)
+            check(!report.contextQualified) { "RecoveryReport must NOT mark contextQualified when endComposition failed" }
+            check(report.documentAbortedCleanly)
+            check(report.failures.any { "endComposition: IllegalStateException: Injected endComposition failure" in it })
+            check(next != null && !next.contextQualified && next.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED) {
+                "Replacement surface must NEVER be marked contextQualified when old context teardown failed"
+            }
+            check(surface.engine.snapshot().visible.text == "Baseline" && surface.engine.snapshot().marked == null)
+            val diagText = diagFile.readText()
+            check("\"recoveryStatus\":\"DEGRADED_RECOVERY_FAILED\"" in diagText && "\"contextQualified\":false" in diagText)
+            check("Injected endComposition failure" in diagText)
+            val saveFile = tempDir.resolve("recovered-1.astra")
+            DocumentFiles.write(saveFile, surface.engine.snapshot().committed, null)
+            check(DocumentFiles.read(saveFile).text == "Baseline")
+        }
+
+        // 2. Failure in removeNotifyContext (context removal)
+        var capturedContextForCleanup: java.awt.im.InputContext? = null
+        var capturedCompForCleanup: java.awt.Component? = null
+        withTestHost(
+            EditorSurface.RecoveryHooks(
+                removeNotifyContext = { ctx, comp ->
+                    capturedContextForCleanup = ctx
+                    capturedCompForCleanup = comp
+                    throw RuntimeException("Injected removeNotify failure")
+                }
+            )
+        ) { _, surface, _ ->
+            try {
+                surface.dispatchEvent(InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("未完").iterator, 0, TextHitInfo.leading(2), null))
+                val next = surface.abortAndRetireComposition(replaceHost = true)
+                val report = checkNotNull(surface.lastRecoveryReport)
+                check(!report.succeeded && report.status == RecoveryStatus.DEGRADED_RECOVERY_FAILED && !report.contextQualified)
+                check(report.failures.any { "removeNotifyContext: RuntimeException: Injected removeNotify failure" in it })
+                check(next != null && !next.contextQualified && next.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED)
+                check(surface.engine.snapshot().visible.text == "Baseline" && surface.engine.snapshot().marked == null)
+            } finally {
+                // Clean up the intentionally un-detached context so global counters stay balanced after fault injection
+                val ctx = capturedContextForCleanup
+                val comp = capturedCompForCleanup
+                if (ctx != null && comp != null) {
+                    runCatching {
+                        ctx.removeNotify(comp)
+                        EditorSurface.LifecycleCounters.inputContextsDetached.incrementAndGet()
+                    }
+                }
+            }
+        }
+
+        // 3. Failure in disposeContext and disableInputMethods (context disposal)
+        withTestHost(
+            EditorSurface.RecoveryHooks(
+                disposeContext = { ctx ->
+                    ctx.dispose()
+                    EditorSurface.LifecycleCounters.inputContextsDisposed.incrementAndGet()
+                    throw RuntimeException("Injected disposeContext failure")
+                },
+                disableInputMethods = { surf ->
+                    surf.enableInputMethods(false)
+                    throw RuntimeException("Injected disableInputMethods failure")
+                }
+            )
+        ) { _, surface, _ ->
+            surface.dispatchEvent(InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("未完").iterator, 0, TextHitInfo.leading(2), null))
+            val next = surface.abortAndRetireComposition(replaceHost = true)
+            val report = checkNotNull(surface.lastRecoveryReport)
+            check(!report.succeeded && report.status == RecoveryStatus.DEGRADED_RECOVERY_FAILED && !report.contextQualified)
+            check(report.failures.any { "disposeContext: RuntimeException: Injected disposeContext failure" in it })
+            check(report.failures.any { "disableInputMethods: RuntimeException: Injected disableInputMethods failure" in it })
+            check(next != null && !next.contextQualified && next.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED)
+            check(surface.engine.snapshot().visible.text == "Baseline" && surface.engine.snapshot().marked == null)
+        }
+
+        // 4. Failure in replacement creation
+        withTestHost(
+            EditorSurface.RecoveryHooks(
+                createReplacement = { throw IllegalStateException("Injected replacement creation failure") }
+            )
+        ) { _, surface, _ ->
+            surface.dispatchEvent(InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("未完").iterator, 0, TextHitInfo.leading(2), null))
+            val next = surface.abortAndRetireComposition(replaceHost = true)
+            val report = checkNotNull(surface.lastRecoveryReport)
+            check(next == null)
+            check(!report.succeeded && report.status == RecoveryStatus.DEGRADED_RECOVERY_FAILED && !report.contextQualified)
+            check(!report.replacementCreated && !report.containerAttached)
+            check(report.failures.any { "replacementCreation: IllegalStateException: Injected replacement creation failure" in it })
+            check(surface.engine.snapshot().visible.text == "Baseline" && surface.engine.snapshot().marked == null)
+        }
+
+        // 5a. Failure in replacement InputContext binding (returns null)
+        var nullOnReplacement = false
+        withTestHost(
+            EditorSurface.RecoveryHooks(
+                createInputContext = {
+                    if (nullOnReplacement) null else java.awt.im.InputContext.getInstance()
+                }
+            )
+        ) { _, surface, _ ->
+            nullOnReplacement = true
+            surface.dispatchEvent(InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("未完").iterator, 0, TextHitInfo.leading(2), null))
+            val next = surface.abortAndRetireComposition(replaceHost = true)
+            val report = checkNotNull(surface.lastRecoveryReport)
+            check(!report.succeeded && report.status == RecoveryStatus.DEGRADED_RECOVERY_FAILED && !report.contextQualified)
+            check(report.failures.any { "contextBinding:" in it && "returned null" in it })
+            check(next != null && next.inputContext == null && !next.contextQualified && next.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED)
+            check(surface.engine.snapshot().visible.text == "Baseline" && surface.engine.snapshot().marked == null)
+        }
+
+        // 5b. Failure in replacement InputContext binding (throws exception)
+        var throwOnReplacement = false
+        withTestHost(
+            EditorSurface.RecoveryHooks(
+                createInputContext = {
+                    if (throwOnReplacement) throw RuntimeException("Injected InputContext binding exception")
+                    else java.awt.im.InputContext.getInstance()
+                }
+            )
+        ) { _, surface, _ ->
+            throwOnReplacement = true
+            surface.dispatchEvent(InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("未完").iterator, 0, TextHitInfo.leading(2), null))
+            val next = surface.abortAndRetireComposition(replaceHost = true)
+            val report = checkNotNull(surface.lastRecoveryReport)
+            check(!report.succeeded && report.status == RecoveryStatus.DEGRADED_RECOVERY_FAILED && !report.contextQualified)
+            check(report.failures.any { "contextBinding:" in it && "Injected InputContext binding exception" in it })
+            check(next != null && next.inputContext == null && !next.contextQualified && next.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED)
+            check(surface.engine.snapshot().visible.text == "Baseline" && surface.engine.snapshot().marked == null)
+        }
+
+        // 6. Failure in container attachment (throws without attaching newHost)
+        withTestHost(
+            EditorSurface.RecoveryHooks(
+                attachReplacement = { parentContainer, oldHost, _ ->
+                    parentContainer.remove(oldHost)
+                    throw IllegalStateException("Injected container attachment failure")
+                }
+            )
+        ) { _, surface, diagFile ->
+            surface.dispatchEvent(InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("未完").iterator, 0, TextHitInfo.leading(2), null))
+            val next = surface.abortAndRetireComposition(replaceHost = true)
+            val report = checkNotNull(surface.lastRecoveryReport)
+            check(next == null) { "abortAndRetireComposition must return null when replacement failed to attach" }
+            check(!report.succeeded && report.status == RecoveryStatus.DEGRADED_RECOVERY_FAILED && !report.contextQualified)
+            check(report.replacementCreated && !report.containerAttached)
+            check(report.failures.any { "containerAttachment: IllegalStateException: Injected container attachment failure" in it })
+            val orphaned = checkNotNull(surface.replacementSurface)
+            check(orphaned.disposed && !orphaned.isTimerRunning && orphaned.inputContext == null && !orphaned.contextQualified) {
+                "Unattached replacement host must be cleaned up immediately so its Timer and InputContext do not leak"
+            }
+            check(surface.engine.snapshot().visible.text == "Baseline" && surface.engine.snapshot().marked == null)
+            // Verify engine Undo still updates view.frame and diagnostics via fallback observer
+            surface.engine.perform(EditAction.Undo)
+            check(surface.view.frame.visible.text.isEmpty())
+            check("\"text\":\"\"" in diagFile.readText())
+        }
+
+        // 7. Explicit conservative recovery (abortCompositionConservatively / replaceHost = false)
+        withTestHost(EditorSurface.RecoveryHooks()) { _, surface, diagFile ->
+            surface.dispatchEvent(InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("保守").iterator, 0, TextHitInfo.leading(2), null))
+            check(surface.engine.snapshot().marked != null)
+            val report = surface.abortCompositionConservatively()
+            check(report.succeeded)
+            check(!report.replaceRequested && report.status == RecoveryStatus.CONSERVATIVE_ABORT_ONLY)
+            check(!report.contextQualified && !report.replacementCreated)
+            check(surface.retired && surface.inputContext == null && !surface.contextQualified)
+            check(surface.recoveryStatus == RecoveryStatus.CONSERVATIVE_ABORT_ONLY)
+            // Late IME event on conservatively retired surface must be rejected
+            val lateEv = InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("保守").iterator, 2, null, null)
+            surface.dispatchEvent(lateEv)
+            check(lateEv.isConsumed && surface.engine.snapshot().visible.text == "Baseline")
+            // Document state remains clean, undoable, and saveable
+            val savePath = tempDir.resolve("conservative.astra")
+            DocumentFiles.write(savePath, surface.engine.snapshot().committed, null)
+            check(DocumentFiles.read(savePath).text == "Baseline")
+            surface.engine.perform(EditAction.Undo)
+            check(surface.view.frame.visible.text.isEmpty())
+            check("\"recoveryStatus\":\"CONSERVATIVE_ABORT_ONLY\"" in diagFile.readText())
+        }
+    } finally {
+        tempDir.toFile().deleteRecursively()
+    }
+
+    val afterCounters = EditorSurface.LifecycleCounters.snapshot()
+    check(afterCounters.activeHosts == baselineCounters.activeHosts) {
+        "Failure-path tests must not leak active hosts: expected ${baselineCounters.activeHosts}, got ${afterCounters.activeHosts}"
+    }
+    check(afterCounters.activeTimers == baselineCounters.activeTimers) {
+        "Failure-path tests must not leak active timers: expected ${baselineCounters.activeTimers}, got ${afterCounters.activeTimers}"
+    }
+    check(afterCounters.activeInputContexts == baselineCounters.activeInputContexts) {
+        "Failure-path tests must not leak active InputContexts: expected ${baselineCounters.activeInputContexts}, got ${afterCounters.activeInputContexts}"
+    }
+}
+
