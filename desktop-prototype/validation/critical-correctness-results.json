@@ -2,12 +2,15 @@
   "milestone": "argon-critical-correctness-repair",
   "status": "PASS",
   "reviewedBaselineCommit": "75f5cb4",
+  "followupReviewedCommit": "0616a1e",
   "implementationCommits": [
     "0e1d1e5",
     "762485c",
-    "dfcf5ee"
+    "dfcf5ee",
+    "0616a1e",
+    "7a4e888"
   ],
-  "isolatedEvidenceRun": "desktop-prototype/local-evidence/batch-20261017-155258-12840",
+  "isolatedEvidenceRun": "desktop-prototype/local-evidence/batch-20261017-164106-29004",
   "environment": {
     "os": "Windows 10/11 (win32)",
     "java": "OpenJDK 64-Bit Server VM (Temurin 21.0.8+9-LTS)",
@@ -21,15 +24,15 @@
       "name": "build",
       "passed": true,
       "exitCode": 0,
-      "seconds": 30.796
+      "seconds": 23.015
     },
     {
       "name": "kernel-files-formatting",
       "passed": true,
       "exitCode": 0,
-      "seconds": 6.891,
+      "seconds": 6.829,
       "details": {
-        "kernelChecks": 16,
+        "kernelChecks": 18,
         "fileChecks": 12,
         "formattingChecks": 17,
         "unicodeGraphemeFixtures": 1093
@@ -39,7 +42,7 @@
       "name": "stress",
       "passed": true,
       "exitCode": 0,
-      "seconds": 1.344,
+      "seconds": 1.265,
       "details": {
         "generatedCompositionSessions": 2000,
         "randomizedRangeFormattingOps": 12000,
@@ -50,18 +53,18 @@
       "name": "attached-host",
       "passed": true,
       "exitCode": 0,
-      "seconds": 2.39,
+      "seconds": 2.235,
       "details": {
         "hostChecks": "PASS",
         "rtlHostChecksSections": 19,
-        "japaneseHostChecksSections": 9
+        "japaneseHostChecksSections": 10
       }
     },
     {
       "name": "argon-regression-probes",
       "passed": true,
       "exitCode": 0,
-      "seconds": 17.188,
+      "seconds": 18.078,
       "probes": [
         {
           "id": "probe_a3_partial_commit_data_loss.py",
@@ -242,16 +245,32 @@
     },
     {
       "id": "A-1 / A-2 / Lifecycle",
-      "title": "Unbounded waiting wedge on missing terminal IME callback, late/duplicate callbacks, and close/save with active composition",
+      "title": "Concrete AWT host & InputContext retirement/replacement, settlement watchdog deadline preservation across candidate updates, and close/save hardening",
       "disposition": "CONFIRMED_AND_FIXED",
       "evidenceClass": "compiled_regression_assertion",
-      "baselineOutcome": "waiting had no timeout/recovery; late IME callbacks lacked epoch retirement; WindowFiles.close() ignored active composition when dc == savedSnapshot; save(closeAfter=true) did not re-check active composition/revisions after write",
-      "repairedOutcome": "Added bounded checkSettlementWatchdog (cancels pending queue without auto-committing preedit), abortAndRetireComposition() with activeImeEpoch/imeEpoch rejection of late callbacks, and hardened WindowFiles.close() and WindowFiles.save(closeAfter=true)",
+      "baselineOutcome": {
+        "75f5cb4": "waiting had no timeout/recovery; late IME callbacks lacked retirement; WindowFiles.close() ignored active composition when dc == savedSnapshot; save(closeAfter=true) did not re-check active composition/revisions after write",
+        "0616a1e_RecoveryAudit": {
+          "ORDINARY_LATE_CALLBACK_AFTER_ABORT": "X",
+          "REENTRANT_COMMIT_DURING_ABORT": "Y",
+          "AFTER_CANDIDATE_UPDATE_TIMEOUT": "false WAITING=true DEADLINE_START=null"
+        }
+      },
+      "repairedOutcome": {
+        "7a4e888_RecoveryAudit": {
+          "ORDINARY_LATE_CALLBACK_AFTER_ABORT": "",
+          "REENTRANT_COMMIT_DURING_ABORT": "",
+          "AFTER_CANDIDATE_UPDATE_TIMEOUT": "true WAITING=false DEADLINE_START=null"
+        },
+        "summary": "EditorSurface owns a dedicated InputContext, sets retired=true and detaches/disposes InputContext BEFORE endComposition() and engine.abortComposition() (rejecting both reentrant and delayed ordinary AWT InputMethodEvents), swaps in a fresh replacementSurface for subsequent input (including identical text), guards removeNotify() disposal, and preserves settlementRequestedAt across non-terminal candidate updates while pending commands remain"
+      },
       "filesModified": [
         "desktop-prototype/src/main/kotlin/editor/EditorEngine.kt",
         "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
         "desktop-prototype/src/main/kotlin/editor/WindowFiles.kt",
+        "desktop-prototype/src/main/kotlin/editor/Checks.kt",
         "desktop-prototype/src/main/kotlin/editor/FileChecks.kt",
+        "desktop-prototype/src/main/kotlin/editor/HostChecks.kt",
         "desktop-prototype/src/main/kotlin/editor/JapaneseHostChecks.kt"
       ]
     },
@@ -302,18 +321,18 @@
   "sources": {
     "desktop-prototype/pom.xml": "36466c45290569fe5e541c4a14f577275395696a37e57658c8a78810802ad6e0",
     "desktop-prototype/run.cmd": "c68514768c7d36dcd53fe6f6134c9302190b841641f13a5cd7c3db72b81ffb06",
-    "desktop-prototype/verify.py": "46a2d9bebc97f766bee54b7bc4e6d68219f156edef496e3ad79cc7347a0c073e",
-    "desktop-prototype/src/main/kotlin/editor/Checks.kt": "d9339d2d78d525119924f640dd097b3506386e0c4c736379d4e59361d4868928",
-    "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt": "5bc1fe4be6ec59c339b325ff31675ba45ebf181d784027ec9e47eee8531f64fb",
+    "desktop-prototype/verify.py": "0fbcbc195a7a1fd1329fef823858e2aae2e3b299352d419efe41790bd75d40e1",
+    "desktop-prototype/src/main/kotlin/editor/Checks.kt": "0712bc134c86e4cea2f8305d01ff84b5f7a492a31207fe717e18b33d83222ad1",
+    "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt": "444371d81933d791c6887175233791e8847f91fdf8dcf012f0dbeb0b294fc65f",
     "desktop-prototype/src/main/kotlin/editor/DocumentFiles.kt": "39d6b97af698f5a96ad940aea02150953398a4dd6f9a1266f69e4088ccc75e25",
-    "desktop-prototype/src/main/kotlin/editor/EditorEngine.kt": "071e511496eca1c82065fe99dd15adabc9105bf7d57cc63c08f3eb84549eea89",
-    "desktop-prototype/src/main/kotlin/editor/FileChecks.kt": "ec25092614029983b1d9b135b4116722aac1942dd12af90305670c1a7bf8518e",
+    "desktop-prototype/src/main/kotlin/editor/EditorEngine.kt": "7568d75cbd4cfc2544cf04c8df19770d2e9db97f9855cfcc91d90513b4428f7a",
+    "desktop-prototype/src/main/kotlin/editor/FileChecks.kt": "4d3142000a3759cfcfd58dbf8abc4ed6d61fa98c501022696faf3c16fd50cb69",
     "desktop-prototype/src/main/kotlin/editor/FormatChecks.kt": "d0d86cb6b8c85097385957afb088e8f0293b6524bb20a32a2ca6d1d0a93af8c5",
     "desktop-prototype/src/main/kotlin/editor/Formatting.kt": "f3d0e481c245b4db321da332f3ad40490e8321fbd64edebb4b8be2e4cc20d092",
     "desktop-prototype/src/main/kotlin/editor/Graphemes.kt": "a297a5154df6a77cb1bc65115c92d5a738367671fb02f47a94c425544cb0c629",
-    "desktop-prototype/src/main/kotlin/editor/HostChecks.kt": "63362512c111d31258c652db58c4757d851c435708a42f0d8697c2e806441dda",
+    "desktop-prototype/src/main/kotlin/editor/HostChecks.kt": "7966e82811619bd1673e96a7caca98d1af0f747c39a093f57411e4ec82141ee3",
     "desktop-prototype/src/main/kotlin/editor/ImeTrace.kt": "153bb4b538d707cdf6c57fada2c71ff55db3445757295bc9f67612ce4e06a521",
-    "desktop-prototype/src/main/kotlin/editor/JapaneseHostChecks.kt": "9d41d25b91cca843cca7c60e87b0026134ac98c3aebe6bf7076b8d421ea800f9",
+    "desktop-prototype/src/main/kotlin/editor/JapaneseHostChecks.kt": "6175ac0f6f57f0c3ccc7c860b397253ced623b4d9fa749c116abe7536065dc81",
     "desktop-prototype/src/main/kotlin/editor/Main.kt": "c3d1a40dd87a612de2e517432cbbbffd4bff6255bb3f5a2e7a2dbedbe59085b3",
     "desktop-prototype/src/main/kotlin/editor/RtlHostChecks.kt": "e150c53d8c2544d1d0420d26ef6c007bc0f8f23812c61c0a13bb45b5b08b0ef1",
     "desktop-prototype/src/main/kotlin/editor/StressChecks.kt": "d5084fb3df4e97b424c09ddbb628ffb953ea8ca1c7ea683eb56e21801ac5ca15",

@@ -14,20 +14,20 @@ All repairs preserve the 45 frozen v5 specification files (`v5-freeze-manifest.j
 - **OS**: Windows 10/11 (`win32`, 64-bit)
 - **JDK**: OpenJDK 64-Bit Server VM (Temurin 21.0.8+9-LTS)
 - **Kotlin / Compose Desktop**: Kotlin `2.0.21`, Compose Multiplatform Desktop `1.7.3`
-- **Baseline Commit**: `75f5cb4`
-- **Implementation Commits**: `0e1d1e5`, `762485c`, `dfcf5ee`
-- **Isolated Verification Evidence**: `desktop-prototype/local-evidence/batch-20261017-155258-12840`
+- **Baseline Commit**: `75f5cb4` (with follow-up audit against `0616a1e`)
+- **Implementation Commits**: `0e1d1e5`, `762485c`, `dfcf5ee`, `0616a1e`, `7a4e888`
+- **Isolated Verification Evidence**: `desktop-prototype/local-evidence/batch-20261017-164106-29004`
 
 ### 2.2 Reproducible Verification Commands
 Run the complete isolated build and verification pipeline from the repository root:
 ```powershell
 python desktop-prototype/verify.py
 ```
-`verify.py` copies the workspace into an isolated directory under `desktop-prototype/local-evidence/batch-<timestamp>-<pid>`, compiles the sources via Maven, runs:
-1. `editor.ChecksKt` (16 kernel checks, 12 file checks, 17 formatting checks, 1,093 Unicode 16 grapheme fixtures)
+`verify.py` builds into an isolated directory under `desktop-prototype/local-evidence/batch-<timestamp>-<pid>`, compiles the sources via Maven, runs:
+1. `editor.ChecksKt` (18 kernel checks, 12 file checks, 17 formatting checks, 1,093 Unicode 16 grapheme fixtures)
 2. `editor.StressChecksKt` (2,000 generated composition sessions against `RefOverlayModel`, 12,000 randomized range-format operations, GB12/13 regional-indicator stress)
-3. `editor.HostChecksKt` (attached AWT + Compose host checks, 19 `RtlHostChecks` sections, 9 `JapaneseHostChecks` sections)
-4. All 7 executable Argon regression probes in `reviews/argon-critical-path/experiments/` against the isolated compiled classes
+3. `editor.HostChecksKt` (attached AWT + Compose host checks, 19 `RtlHostChecks` sections, 10 `JapaneseHostChecks` sections)
+4. All 8 executable Argon regression probes in `reviews/argon-critical-path/experiments/` against the isolated compiled classes
 5. SHA-256 verification of all 45 frozen v5 specification files against `v5-freeze-manifest.json`
 
 ### 2.3 Verified Source Hash Manifest (SHA-256)
@@ -36,18 +36,18 @@ python desktop-prototype/verify.py
 | :--- | :--- |
 | `desktop-prototype/pom.xml` | `36466c45290569fe5e541c4a14f577275395696a37e57658c8a78810802ad6e0` |
 | `desktop-prototype/run.cmd` | `c68514768c7d36dcd53fe6f6134c9302190b841641f13a5cd7c3db72b81ffb06` |
-| `desktop-prototype/verify.py` | `46a2d9bebc97f766bee54b7bc4e6d68219f156edef496e3ad79cc7347a0c073e` |
-| `desktop-prototype/src/main/kotlin/editor/Checks.kt` | `d9339d2d78d525119924f640dd097b3506386e0c4c736379d4e59361d4868928` |
-| `desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt` | `5bc1fe4be6ec59c339b325ff31675ba45ebf181d784027ec9e47eee8531f64fb` |
+| `desktop-prototype/verify.py` | `0fbcbc195a7a1fd1329fef823858e2aae2e3b299352d419efe41790bd75d40e1` |
+| `desktop-prototype/src/main/kotlin/editor/Checks.kt` | `0712bc134c86e4cea2f8305d01ff84b5f7a492a31207fe717e18b33d83222ad1` |
+| `desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt` | `444371d81933d791c6887175233791e8847f91fdf8dcf012f0dbeb0b294fc65f` |
 | `desktop-prototype/src/main/kotlin/editor/DocumentFiles.kt` | `39d6b97af698f5a96ad940aea02150953398a4dd6f9a1266f69e4088ccc75e25` |
-| `desktop-prototype/src/main/kotlin/editor/EditorEngine.kt` | `071e511496eca1c82065fe99dd15adabc9105bf7d57cc63c08f3eb84549eea89` |
-| `desktop-prototype/src/main/kotlin/editor/FileChecks.kt` | `ec25092614029983b1d9b135b4116722aac1942dd12af90305670c1a7bf8518e` |
+| `desktop-prototype/src/main/kotlin/editor/EditorEngine.kt` | `7568d75cbd4cfc2544cf04c8df19770d2e9db97f9855cfcc91d90513b4428f7a` |
+| `desktop-prototype/src/main/kotlin/editor/FileChecks.kt` | `4d3142000a3759cfcfd58dbf8abc4ed6d61fa98c501022696faf3c16fd50cb69` |
 | `desktop-prototype/src/main/kotlin/editor/FormatChecks.kt` | `d0d86cb6b8c85097385957afb088e8f0293b6524bb20a32a2ca6d1d0a93af8c5` |
 | `desktop-prototype/src/main/kotlin/editor/Formatting.kt` | `f3d0e481c245b4db321da332f3ad40490e8321fbd64edebb4b8be2e4cc20d092` |
 | `desktop-prototype/src/main/kotlin/editor/Graphemes.kt` | `a297a5154df6a77cb1bc65115c92d5a738367671fb02f47a94c425544cb0c629` |
-| `desktop-prototype/src/main/kotlin/editor/HostChecks.kt` | `63362512c111d31258c652db58c4757d851c435708a42f0d8697c2e806441dda` |
+| `desktop-prototype/src/main/kotlin/editor/HostChecks.kt` | `7966e82811619bd1673e96a7caca98d1af0f747c39a093f57411e4ec82141ee3` |
 | `desktop-prototype/src/main/kotlin/editor/ImeTrace.kt` | `153bb4b538d707cdf6c57fada2c71ff55db3445757295bc9f67612ce4e06a521` |
-| `desktop-prototype/src/main/kotlin/editor/JapaneseHostChecks.kt` | `9d41d25b91cca843cca7c60e87b0026134ac98c3aebe6bf7076b8d421ea800f9` |
+| `desktop-prototype/src/main/kotlin/editor/JapaneseHostChecks.kt` | `6175ac0f6f57f0c3ccc7c860b397253ced623b4d9fa749c116abe7536065dc81` |
 | `desktop-prototype/src/main/kotlin/editor/Main.kt` | `c3d1a40dd87a612de2e517432cbbbffd4bff6255bb3f5a2e7a2dbedbe59085b3` |
 | `desktop-prototype/src/main/kotlin/editor/RtlHostChecks.kt` | `e150c53d8c2544d1d0420d26ef6c007bc0f8f23812c61c0a13bb45b5b08b0ef1` |
 | `desktop-prototype/src/main/kotlin/editor/StressChecks.kt` | `d5084fb3df4e97b424c09ddbb628ffb953ea8ca1c7ea683eb56e21801ac5ca15` |
@@ -155,15 +155,40 @@ python desktop-prototype/verify.py
 - **Executable Regressions**:
   - `RtlHostChecks.kt` Section 19 and `probe_b1_soft_wrap_end_key.py`.
 
-### 3.10 `A-1` / `A-2` / Lifecycle — Settlement Watchdog, IME Epoch Retirement, and Close/Save Hardening
-- **Requirement**: Prevent permanent editor wedging if a native IME fails to deliver a terminal callback after `endComposition()`, reject late/duplicate callbacks from retired IME epochs, and protect unsaved active composition during window close and save-then-close flows.
-- **Repair**:
-  - Added `checkSettlementWatchdog(nowMs, timeoutMs = 2_000L)` in `EditorEngine.kt:401-416`, which cancels the pending command queue and sets a diagnostic notice while keeping the uncommitted composition intact (never silently auto-committing preedit).
-  - Added `abortAndRetireComposition()` and `activeImeEpoch` / `imeEpoch` tracking in `EditorEngine.kt` and `DesktopEditor.kt` so late or duplicate native `InputMethodEvent` callbacks from a retired epoch are ignored.
-  - Hardened `WindowFiles.close()` (`WindowFiles.kt:71-118`) to prompt when `state.marked != null` even if `dc == savedSnapshot`; choosing `Cancel` leaves the active composition untouched, while `Discard` invokes `onDiscardComposition`.
-  - Hardened `WindowFiles.save(closeAfter = true)` (`WindowFiles.kt:18-56`) to refuse window disposal if `marked != null`, `waiting`, or document/overlay revisions advanced during the save flow.
+### 3.10 `A-1` / `A-2` / Lifecycle — Concrete AWT Host & `InputContext` Retirement/Replacement, Settlement Watchdog Deadline Preservation, and Close/Save Hardening
+- **Requirement**: Prevent permanent editor wedging if a native IME fails to deliver a terminal callback after `endComposition()`, preserve the settlement deadline across non-terminal candidate updates while commands remain queued, isolate the document against both synchronous/reentrant and delayed ordinary AWT `InputMethodEvent` callbacks after abort/disposal without relying on synthetic epoch parameters, and protect unsaved active composition during window close and save-then-close flows.
+- **Minimal Reproduction (`RecoveryAudit.java` against `0616a1e`, synthetic events on production path)**:
+  1. **Ordinary delayed AWT callback after abort**:
+     - `e.inputMethod("X", 0, 1); s.abortAndRetireComposition(); commit(s, "X")` (via `s.dispatchEvent(new InputMethodEvent(s, ...))`):
+     - **Observed at `0616a1e`**: `ORDINARY_LATE_CALLBACK_AFTER_ABORT=X` (ordinary `inputMethodTextChanged` bypassed `dispatchInputMethodEventWithEpoch`).
+     - **Repaired at `7a4e888`**: `ORDINARY_LATE_CALLBACK_AFTER_ABORT=` (`""`).
+  2. **Reentrant commit during `abortAndRetireComposition`**:
+     - `e2.inputMethod("Y", 0, 1); s2.setOnEndCompositionRequested(() -> commit(s2, "Y")); s2.abortAndRetireComposition()`:
+     - **Observed at `0616a1e`**: `REENTRANT_COMMIT_DURING_ABORT=Y` (`requestEndComposition()` ran after `engine.abortComposition()` on an un-retired listener).
+     - **Repaired at `7a4e888`**: `REENTRANT_COMMIT_DURING_ABORT=` (`""`).
+  3. **Watchdog deadline cleared by non-terminal candidate update**:
+     - `e3.inputMethod("a", 0, 1); e3.toggleFormat(FormatKey.BOLD); clock.set(1000); e3.inputMethod("ab", 0, 2); clock.set(10000); e3.checkSettlementWatchdog(2000)`:
+     - **Observed at `0616a1e`**: `AFTER_CANDIDATE_UPDATE_TIMEOUT=false WAITING=true DEADLINE_START=null` (`inputMethod` unconditionally reset `settlementRequestedAt = null` even when `committedCount < text.length` and `pending.isNotEmpty()`).
+     - **Repaired at `7a4e888`**: `AFTER_CANDIDATE_UPDATE_TIMEOUT=true WAITING=false DEADLINE_START=null`.
+- **OpenJDK AWT / `InputContext` Contract Analysis & Repair**:
+  - Bytecode inspection of `sun.awt.windows.WInputMethod.sendInputMethodEvent` and `java.awt.Component.processEvent` shows that native/AWT `InputMethodEvent`s carry no native epoch token—only `event.getSource()` (`Component`), and are posted to `EventQueue` targeting that `Component` directly (bypassing `InputContext.dispatchEvent`).
+  - **Concrete Host & `InputContext` Retirement/Replacement (`DesktopEditor.kt`)**:
+    - Each `EditorSurface` owns a dedicated `ownInputContext: InputContext? = InputContext.getInstance()` (`override fun getInputContext() = if (retired || disposed) null else ownInputContext`).
+    - In `abortAndRetireComposition(replaceHost: Boolean)`:
+      1. **Synchronization boundary BEFORE rollback or native notification**: sets `retired = true`, `activeImeEpoch++`, `ownInputContext = null`, and stops `blinkTimer` first.
+      2. **Old context teardown**: invokes `onEndCompositionRequested()`, `oldContext?.endComposition()`, `oldContext?.removeNotify(this)`, `oldContext?.dispose()`, and `enableInputMethods(false)`. Any synchronous/reentrant `InputMethodEvent` (`INPUT_METHOD_TEXT_CHANGED` or `CARET_POSITION_CHANGED`) fired during `endComposition()` is immediately consumed and ignored by `EditorSurface`'s listeners because `retired == true`.
+      3. **Replacement host & rollback**: constructs a fresh `replacementSurface = EditorSurface(engine, view, diagnostics, trace)` (when `replaceHost && !disposed`), runs `engine.abortComposition()` (preserving any accepted partial commits and their Undo history), swaps `this` for `replacementSurface` in the parent container (preserving `JLayeredPane` layer 100 and focus), and notifies `onHostReplaced`.
+      4. **Disposal guards (`removeNotify()`)**: sets `disposed = true` and detaches/disposes `ownInputContext` before `super.removeNotify()`, cancelling any pending engine wait via `engine.cancelPendingOnTeardown()`, so callbacks during or after component/window disposal never mutate the document.
+  - **Watchdog Deadline Preservation (`EditorEngine.kt`)**:
+    - Removed the unconditional `settlementRequestedAt = null` at the start of `inputMethod`.
+    - When `committedCount < text.length` and `pending.isNotEmpty()`, `inputMethod` preserves the existing `settlementRequestedAt` deadline (`if (settlementRequestedAt == null) settlementRequestedAt = now()`).
+    - Terminal settlement (`committedCount == text.length` -> `finish(...)`) drains `pending` once and resets `settlementRequestedAt = null` and `settlementTimedOut = false`.
+    - `checkSettlementWatchdog(timeoutMs)` fires once when `composition != null && pending.isNotEmpty() && (now() - req) >= timeoutMs`, clearing `pending` and `settlementRequestedAt = null` and setting `settlementTimedOut = true` so cancelled commands never execute if the composition later commits, while allowing a subsequent `perform(action)` to start a new deadline.
 - **Executable Regressions**:
-  - `FileChecks.kt` Check 12, `JapaneseHostChecks.kt` Section 9, and `probe_a1_settlement_wedge.py`.
+  - `Checks.kt` Checks 17–18 (candidate-update watchdog deadline preservation + ordinary AWT callback retirement, reentrant abort/settlement, stale caret, identical `"X"` in consecutive sessions on `replacementSurface`, partial-commit recovery `"abcd"` -> `"Xcd"`, and disposal guards).
+  - `FileChecks.kt` Check 7 (`WindowFiles.close()` Discard with attached `EditorSurface` rejecting reentrant and post-dispose ordinary AWT commits).
+  - `JapaneseHostChecks.kt` Sections 9–10 (ordinary AWT `dispatchEvent` across retired/replacement hosts in `JLayeredPane` layer 100, reentrant abort, partial-commit recovery, and candidate-update watchdog timeout + Escape recovery).
+  - `reviews/argon-critical-path/experiments/probe_a1_settlement_wedge.py`.
 
 ---
 
@@ -180,15 +205,15 @@ python desktop-prototype/verify.py
 
 ---
 
-## 5. Summary of Test Results (`batch-20261017-155258-12840`)
+## 5. Summary of Test Results (`batch-20261017-164106-29004`)
 
 | Verification Step | Status | Duration | Coverage Summary |
 | :--- | :--- | :--- | :--- |
-| `build` | **PASS** (`exitCode: 0`) | `30.796s` | Clean isolated Maven compile and dependency copy |
-| `kernel-files-formatting` | **PASS** (`exitCode: 0`) | `6.891s` | 16 kernel checks, 12 file checks (`.astra` v1/v2/v3), 17 formatting checks, 1,093 Unicode 16 grapheme fixtures |
-| `stress` | **PASS** (`exitCode: 0`) | `1.344s` | 2,000 generated composition sessions vs `RefOverlayModel`, 12,000 randomized range-format commands, GB12/13 regional-indicator stress |
-| `attached-host` | **PASS** (`exitCode: 0`) | `2.390s` | `HostChecks`, `RtlHostChecks` (19 sections), `JapaneseHostChecks` (9 sections) |
-| `argon-regression-probes` | **PASS** (`exitCode: 0`) | `17.188s` | All 7 executable Argon regression probes in `reviews/argon-critical-path/experiments/` |
+| `build` | **PASS** (`exitCode: 0`) | `23.015s` | Clean isolated Maven compile and dependency copy |
+| `kernel-files-formatting` | **PASS** (`exitCode: 0`) | `6.829s` | 18 kernel checks, 12 file checks (`.astra` v1/v2/v3), 17 formatting checks, 1,093 Unicode 16 grapheme fixtures |
+| `stress` | **PASS** (`exitCode: 0`) | `1.265s` | 2,000 generated composition sessions vs `RefOverlayModel`, 12,000 randomized range-format commands, GB12/13 regional-indicator stress |
+| `attached-host` | **PASS** (`exitCode: 0`) | `2.235s` | `HostChecks`, `RtlHostChecks` (19 sections), `JapaneseHostChecks` (10 sections) |
+| `argon-regression-probes` | **PASS** (`exitCode: 0`) | `18.078s` | All 8 executable Argon regression probes in `reviews/argon-critical-path/experiments/` |
 | `frozen v5` | **PASS** | — | All 45 frozen v5 specification files unchanged |
 
 ---
