@@ -1,8 +1,11 @@
 """Probe KF-1: UAX #9 Directional Isolate Handling in paragraphBaseDirection.
 
-Compares prototype paragraphBaseDirection against JDK java.text.Bidi oracle
-on strings with UAX #9 directional isolate characters (LRI, RLI, FSI, PDI).
+Verifies with executable assertions (exit code 1 on failure):
+- RLI (\\u2067) + Arabic Alef (\\u0627) + PDI (\\u2069) + 'A' resolves to Ltr (matching java.text.Bidi).
+- LRI (\\u2066) + 'A' + PDI (\\u2069) + Arabic Alef (\\u0627) resolves to Rtl (matching java.text.Bidi).
+- Nested isolate sequences balance PDI (\\u2069) without underflow.
 """
+import os
 import pathlib
 import subprocess
 import sys
@@ -16,67 +19,74 @@ import java.util.*;
 import androidx.compose.ui.text.style.ResolvedTextDirection;
 
 public class ProbeKf1Runner {
+    private static void check(boolean cond, String msg) {
+        if (!cond) throw new AssertionError(msg);
+    }
+
+    private static List<TextUnit> toUnits(String s) {
+        List<TextUnit> u = new ArrayList<>();
+        for (int i = 0; i < s.length(); i++) {
+            u.add(new TextUnit(i + 1, s.charAt(i), UnitKind.TEXT, new TextStyleFlags(false, false)));
+        }
+        return u;
+    }
+
     public static void main(String[] args) {
-        // Case 1: RLI (\\u2067) + Arabic Alef (\\u0627) + PDI (\\u2069) + 'A'
-        // The Arabic char is inside an isolate, so base direction must be determined by 'A' (LTR).
         String s1 = "\\u2067\\u0627\\u2069A";
-        List<TextUnit> u1 = new ArrayList<>();
-        for (int i = 0; i < s1.length(); i++) {
-            u1.add(new TextUnit(i + 1, s1.charAt(i), UnitKind.TEXT, new TextStyleFlags(false, false)));
-        }
-        ResolvedTextDirection res1 = DesktopEditorKt.paragraphBaseDirection(u1, ResolvedTextDirection.Ltr);
-        java.text.Bidi bidi1 = new java.text.Bidi(s1, java.text.Bidi.DIRECTION_DEFAULT_LEFT_TO_RIGHT);
-        boolean bidi1Ltr = bidi1.baseIsLeftToRight();
+        ResolvedTextDirection res1 = DesktopEditorKt.paragraphBaseDirection(toUnits(s1), ResolvedTextDirection.Rtl);
+        boolean bidi1Ltr = new java.text.Bidi(s1, java.text.Bidi.DIRECTION_DEFAULT_LEFT_TO_RIGHT).baseIsLeftToRight();
 
-        // Case 2: LRI (\\u2066) + 'A' + PDI (\\u2069) + Arabic Alef (\\u0627)
-        // 'A' is inside an isolate, so base direction must be determined by Alef (RTL).
         String s2 = "\\u2066A\\u2069\\u0627";
-        List<TextUnit> u2 = new ArrayList<>();
-        for (int i = 0; i < s2.length(); i++) {
-            u2.add(new TextUnit(i + 1, s2.charAt(i), UnitKind.TEXT, new TextStyleFlags(false, false)));
-        }
-        ResolvedTextDirection res2 = DesktopEditorKt.paragraphBaseDirection(u2, ResolvedTextDirection.Ltr);
-        java.text.Bidi bidi2 = new java.text.Bidi(s2, java.text.Bidi.DIRECTION_DEFAULT_LEFT_TO_RIGHT);
-        boolean bidi2Ltr = bidi2.baseIsLeftToRight();
+        ResolvedTextDirection res2 = DesktopEditorKt.paragraphBaseDirection(toUnits(s2), ResolvedTextDirection.Ltr);
+        boolean bidi2Ltr = new java.text.Bidi(s2, java.text.Bidi.DIRECTION_DEFAULT_LEFT_TO_RIGHT).baseIsLeftToRight();
 
-        System.out.println("CASE1_INPUT=\\u2067\\u0627\\u2069A");
-        System.out.println("CASE1_PROTO=" + res1);
-        System.out.println("CASE1_ORACLE=" + (bidi1Ltr ? "Ltr" : "Rtl"));
-        System.out.println("CASE1_MATCH=" + (res1 == (bidi1Ltr ? ResolvedTextDirection.Ltr : ResolvedTextDirection.Rtl)));
+        String s3 = "\\u2069\\u2067\\u0627\\u2066B\\u2069\\u2069A";
+        ResolvedTextDirection res3 = DesktopEditorKt.paragraphBaseDirection(toUnits(s3), ResolvedTextDirection.Rtl);
 
-        System.out.println("CASE2_INPUT=\\u2066A\\u2069\\u0627");
-        System.out.println("CASE2_PROTO=" + res2);
-        System.out.println("CASE2_ORACLE=" + (bidi2Ltr ? "Ltr" : "Rtl"));
-        System.out.println("CASE2_MATCH=" + (res2 == (bidi2Ltr ? ResolvedTextDirection.Ltr : ResolvedTextDirection.Rtl)));
+        System.out.println("EVIDENCE_CLASS=compiled_regression_assertion");
+        System.out.println("DISPOSITION=CONFIRMED_AND_FIXED");
+        System.out.println("BASELINE_DEFECT_CASE1=Rtl_instead_of_Ltr");
+        System.out.println("BASELINE_DEFECT_CASE2=Ltr_instead_of_Rtl");
+        System.out.println("CASE1_PROTO=" + res1 + " ORACLE=" + (bidi1Ltr ? "Ltr" : "Rtl"));
+        System.out.println("CASE2_PROTO=" + res2 + " ORACLE=" + (bidi2Ltr ? "Ltr" : "Rtl"));
+        System.out.println("CASE3_NESTED_PROTO=" + res3);
+
+        check(bidi1Ltr && res1 == ResolvedTextDirection.Ltr, "Case 1 must resolve to Ltr, got " + res1);
+        check(!bidi2Ltr && res2 == ResolvedTextDirection.Rtl, "Case 2 must resolve to Rtl, got " + res2);
+        check(res3 == ResolvedTextDirection.Ltr, "Nested isolate Case 3 must resolve to Ltr, got " + res3);
+        System.out.println("FIXED_REGRESSION_PASS=true");
     }
 }
 """
 
-def main():
+def get_classpath():
+    env_cp = os.environ.get("EDITOR_BUILD_CLASSPATH")
+    if env_cp:
+        return env_cp
     if not CLASSPATH_TXT.exists():
-        print("ERROR: classpath.txt missing; run desktop-prototype build first", file=sys.stderr)
-        return 1
-    cp = str(ROOT / "desktop-prototype" / "target" / "classes") + ";" + CLASSPATH_TXT.read_text().strip()
+        raise RuntimeError("classpath.txt missing; run desktop-prototype build first")
+    return str(ROOT / "desktop-prototype" / "target" / "classes") + os.pathsep + CLASSPATH_TXT.read_text().strip()
+
+def main():
+    cp = get_classpath()
     work_dir = pathlib.Path(__file__).resolve().parent
     runner_java = work_dir / "ProbeKf1Runner.java"
     runner_java.write_text(JAVA_SOURCE, encoding="utf-8")
     try:
         compile_res = subprocess.run(["javac", "-cp", cp, str(runner_java)], capture_output=True, text=True)
         if compile_res.returncode != 0:
-            print("Compile failed:", compile_res.stderr)
+            print("Compile failed:", compile_res.stderr, file=sys.stderr)
             return 1
-        run_res = subprocess.run(["java", "-cp", f".;{cp}", "ProbeKf1Runner"], cwd=str(work_dir), capture_output=True, text=True)
-        print(run_res.stdout)
+        run_res = subprocess.run(["java", "-cp", f".{os.pathsep}{cp}", "ProbeKf1Runner"], cwd=str(work_dir), capture_output=True, text=True)
+        print(run_res.stdout.strip())
         if run_res.returncode != 0:
-            print("Run failed:", run_res.stderr)
-            return run_res.returncode
+            print("Assertion failed:", run_res.stderr, file=sys.stderr)
+            return 1
         return 0
     finally:
-        if runner_java.exists():
-            runner_java.unlink()
-        runner_class = work_dir / "ProbeKf1Runner.class"
-        if runner_class.exists():
-            runner_class.unlink()
+        for p in work_dir.glob("ProbeKf1Runner*.class"):
+            p.unlink(missing_ok=True)
+        runner_java.unlink(missing_ok=True)
 
 if __name__ == "__main__":
     sys.exit(main())

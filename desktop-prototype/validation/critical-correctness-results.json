@@ -1,0 +1,322 @@
+{
+  "milestone": "argon-critical-correctness-repair",
+  "status": "PASS",
+  "reviewedBaselineCommit": "75f5cb4",
+  "implementationCommits": [
+    "0e1d1e5",
+    "762485c",
+    "dfcf5ee"
+  ],
+  "isolatedEvidenceRun": "desktop-prototype/local-evidence/batch-20261017-155258-12840",
+  "environment": {
+    "os": "Windows 10/11 (win32)",
+    "java": "OpenJDK 64-Bit Server VM (Temurin 21.0.8+9-LTS)",
+    "composeDesktop": "1.7.3",
+    "kotlin": "2.0.21",
+    "verificationCommand": "python desktop-prototype/verify.py"
+  },
+  "scope": "Deterministic kernel, file, formatting, stress, attached-host AWT/Compose tests, and compiled Argon regression probes against the isolated build; not physical OS IME qualification",
+  "steps": [
+    {
+      "name": "build",
+      "passed": true,
+      "exitCode": 0,
+      "seconds": 30.796
+    },
+    {
+      "name": "kernel-files-formatting",
+      "passed": true,
+      "exitCode": 0,
+      "seconds": 6.891,
+      "details": {
+        "kernelChecks": 16,
+        "fileChecks": 12,
+        "formattingChecks": 17,
+        "unicodeGraphemeFixtures": 1093
+      }
+    },
+    {
+      "name": "stress",
+      "passed": true,
+      "exitCode": 0,
+      "seconds": 1.344,
+      "details": {
+        "generatedCompositionSessions": 2000,
+        "randomizedRangeFormattingOps": 12000,
+        "regionalIndicatorStress": "PASS"
+      }
+    },
+    {
+      "name": "attached-host",
+      "passed": true,
+      "exitCode": 0,
+      "seconds": 2.39,
+      "details": {
+        "hostChecks": "PASS",
+        "rtlHostChecksSections": 19,
+        "japaneseHostChecksSections": 9
+      }
+    },
+    {
+      "name": "argon-regression-probes",
+      "passed": true,
+      "exitCode": 0,
+      "seconds": 17.188,
+      "probes": [
+        {
+          "id": "probe_a3_partial_commit_data_loss.py",
+          "passed": true,
+          "exitCode": 0,
+          "disposition": "CONFIRMED_AND_FIXED"
+        },
+        {
+          "id": "probe_kf1_isolate_bidi.py",
+          "passed": true,
+          "exitCode": 0,
+          "disposition": "CONFIRMED_AND_FIXED"
+        },
+        {
+          "id": "probe_kf2_kf3_break_geometry.py",
+          "passed": true,
+          "exitCode": 0,
+          "disposition": "CONFIRMED_AND_FIXED"
+        },
+        {
+          "id": "probe_kf4_kf5_kf6_audit_gaps.py",
+          "passed": true,
+          "exitCode": 0,
+          "disposition": "CONFIRMED_AND_FIXED_AND_REFUTED_CLAIMS_VERIFIED"
+        },
+        {
+          "id": "probe_b1_soft_wrap_end_key.py",
+          "passed": true,
+          "exitCode": 0,
+          "disposition": "CONFIRMED_AND_FIXED"
+        },
+        {
+          "id": "probe_a1_settlement_wedge.py",
+          "passed": true,
+          "exitCode": 0,
+          "disposition": "CONFIRMED_AND_FIXED_WITH_HEADLESS_CLAIM_WITHDRAWN"
+        },
+        {
+          "id": "probe_c1_direction_cascade.py",
+          "passed": true,
+          "exitCode": 0,
+          "disposition": "DOCUMENTED_POLICY_PRESERVED"
+        },
+        {
+          "id": "probe_c2_keystroke_scaling.py",
+          "passed": true,
+          "exitCode": 0,
+          "disposition": "DOCUMENTED_PROTOTYPE_LIMITATION"
+        }
+      ]
+    }
+  ],
+  "findingsDispositions": [
+    {
+      "id": "A-3",
+      "title": "Partial-commit composition abort data loss on retained original segments",
+      "disposition": "CONFIRMED_AND_FIXED",
+      "evidenceClass": "compiled_regression_assertion",
+      "baselineOutcome": {
+        "abcd_Xcd_1_2_abort": "X",
+        "abcd_abX_1_2_abort": "a"
+      },
+      "repairedOutcome": {
+        "abcd_Xcd_1_2_abort": "Xcd",
+        "abcd_abX_1_2_abort": "abcd",
+        "abcd_aXcd_1_1_then_Ycd_1_2_abort": "aYcd"
+      },
+      "filesModified": [
+        "desktop-prototype/src/main/kotlin/editor/EditorEngine.kt",
+        "desktop-prototype/src/main/kotlin/editor/Checks.kt",
+        "desktop-prototype/src/main/kotlin/editor/StressChecks.kt"
+      ]
+    },
+    {
+      "id": "A-4",
+      "title": "Empty-paragraph typing style stored on PARAGRAPH_BREAK inline style flags",
+      "disposition": "CONFIRMED_AND_FIXED",
+      "evidenceClass": "compiled_regression_assertion",
+      "baselineOutcome": "PARAGRAPH_BREAK.style held inline bold/italic flags for empty-paragraph typing metadata",
+      "repairedOutcome": "PARAGRAPH_BREAK.style is invariant TextStyleFlags(bold=false, italic=false); paragraph-level typing style is stored in TextUnit.paragraphStyle and persisted in .astra v3 with v1/v2 migration",
+      "filesModified": [
+        "desktop-prototype/src/main/kotlin/editor/EditorEngine.kt",
+        "desktop-prototype/src/main/kotlin/editor/DocumentFiles.kt",
+        "desktop-prototype/src/main/kotlin/editor/Checks.kt",
+        "desktop-prototype/src/main/kotlin/editor/FileChecks.kt",
+        "desktop-prototype/src/main/kotlin/editor/FormatChecks.kt"
+      ]
+    },
+    {
+      "id": "KF-1",
+      "title": "paragraphBaseDirection ignored UAX #9 directional isolate scopes (LRI/RLI/FSI..PDI)",
+      "disposition": "CONFIRMED_AND_FIXED",
+      "evidenceClass": "compiled_regression_assertion",
+      "baselineOutcome": {
+        "\\u2067\\u0627\\u2069A": "Rtl (disagreed with java.text.Bidi Ltr)",
+        "\\u2066A\\u2069\\u0627": "Ltr (disagreed with java.text.Bidi Rtl)"
+      },
+      "repairedOutcome": {
+        "\\u2067\\u0627\\u2069A": "Ltr (matches java.text.Bidi)",
+        "\\u2066A\\u2069\\u0627": "Rtl (matches java.text.Bidi)"
+      },
+      "filesModified": [
+        "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
+        "desktop-prototype/src/main/kotlin/editor/RtlHostChecks.kt"
+      ]
+    },
+    {
+      "id": "KF-2",
+      "title": "Selection across only a PARAGRAPH_BREAK or empty paragraph rendered zero highlight rects",
+      "disposition": "CONFIRMED_AND_FIXED",
+      "evidenceClass": "compiled_regression_assertion",
+      "baselineOutcome": "0 highlight rectangles drawn for Selection(2, 3) on 'ab\\ncd' or Selection(2, 3) on 'ab\\n\\ncd'",
+      "repairedOutcome": "Geometry.breakAndEmptySelectionRects renders directional 8px*scale selection strips at the trailing edge of selected breaks and leading edge of selected empty paragraphs",
+      "filesModified": [
+        "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
+        "desktop-prototype/src/main/kotlin/editor/RtlHostChecks.kt"
+      ]
+    },
+    {
+      "id": "KF-3",
+      "title": "Geometry.paragraphForOffset(offset, leadingAffinity=true) crossed separator and clamped negative local offset",
+      "disposition": "CONFIRMED_AND_FIXED",
+      "evidenceClass": "compiled_regression_assertion",
+      "baselineOutcome": "At separator start offset 2 in 'ab\\ncd', leadingAffinity=true jumped to paragraph 1 (startOffset=3) and clamped (2 - 3).coerceIn(0, 2) to local offset 0",
+      "repairedOutcome": "Geometry.paragraphForOffset(documentOffset) deterministically maps p.endOffset to paragraph p at local offset p.textLength without cross-separator jumping",
+      "filesModified": [
+        "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
+        "desktop-prototype/src/main/kotlin/editor/RtlHostChecks.kt"
+      ]
+    },
+    {
+      "id": "KF-4",
+      "title": "referenceMeasure reused production partitionParagraphs, paragraphBaseDirection, and paragraphAttributedDisplay",
+      "disposition": "CONFIRMED_AND_FIXED",
+      "evidenceClass": "compiled_regression_assertion",
+      "baselineOutcome": "referenceMeasure delegated to production helpers and only swapped TextMeasurer",
+      "repairedOutcome": "referenceMeasure independently splits on '\\n', resolves UAX #9 base direction via java.text.Bidi, builds independent SpanStyle runs, and uses an uncached TextMeasurer(cacheSize = 0); RtlHostChecks also checks hardcoded independent expectations",
+      "filesModified": [
+        "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
+        "desktop-prototype/src/main/kotlin/editor/RtlHostChecks.kt"
+      ]
+    },
+    {
+      "id": "KF-5",
+      "title": "Claimed scrolling-composition test had no active composition (marked == null)",
+      "disposition": "CONFIRMED_AND_FIXED",
+      "evidenceClass": "compiled_regression_assertion",
+      "baselineOutcome": "Section 16 of RtlHostChecks scrolled committed text without active composition",
+      "repairedOutcome": "RtlHostChecks Section 16 injects an active Urdu composition (marked != null) and verifies both getTextLocation and getLocationOffset shift by exact scroll delta (-40px) and hit-test inside the active preedit",
+      "filesModified": [
+        "desktop-prototype/src/main/kotlin/editor/RtlHostChecks.kt"
+      ]
+    },
+    {
+      "id": "KF-6",
+      "title": "EditorSurface.geometry() returned stale cached layout after surface.setSize() before Compose repaint",
+      "disposition": "CONFIRMED_AND_FIXED",
+      "evidenceClass": "compiled_regression_assertion",
+      "baselineOutcome": "Calling surface.setSize(newW, newH) and querying surface.geometry() before a Compose paint pass returned cached Geometry for old dimensions",
+      "repairedOutcome": "Geometry and ViewState track logical hostWidth and hostHeight; surface.geometry() invalidates and re-measures immediately when surface.width or surface.height changes",
+      "filesModified": [
+        "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
+        "desktop-prototype/src/main/kotlin/editor/RtlHostChecks.kt"
+      ]
+    },
+    {
+      "id": "B-1 / B-2 / B-3",
+      "title": "Soft-wrap boundary affinity missing; VK_END on wrapped line without spaces stopped at k-1",
+      "disposition": "CONFIRMED_AND_FIXED",
+      "evidenceClass": "compiled_regression_assertion",
+      "baselineOutcome": "Selection lacked soft-wrap affinity; ParagraphLayout.getLineForOffset(k) resolved soft-wrap boundary k to line l+1, forcing EditorSurface.stops(g) to omit k on line l and land VK_END at k-1",
+      "repairedOutcome": "Selection carries WrapAffinity (DOWNSTREAM | UPSTREAM); EditorSurface.stops(g) emits (k, WrapAffinity.UPSTREAM) at soft-wrap boundaries; Geometry.getLineForOffset and caret keep (k, UPSTREAM) on line l at its visual trailing edge",
+      "filesModified": [
+        "desktop-prototype/src/main/kotlin/editor/EditorEngine.kt",
+        "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
+        "desktop-prototype/src/main/kotlin/editor/RtlHostChecks.kt"
+      ]
+    },
+    {
+      "id": "A-1 / A-2 / Lifecycle",
+      "title": "Unbounded waiting wedge on missing terminal IME callback, late/duplicate callbacks, and close/save with active composition",
+      "disposition": "CONFIRMED_AND_FIXED",
+      "evidenceClass": "compiled_regression_assertion",
+      "baselineOutcome": "waiting had no timeout/recovery; late IME callbacks lacked epoch retirement; WindowFiles.close() ignored active composition when dc == savedSnapshot; save(closeAfter=true) did not re-check active composition/revisions after write",
+      "repairedOutcome": "Added bounded checkSettlementWatchdog (cancels pending queue without auto-committing preedit), abortAndRetireComposition() with activeImeEpoch/imeEpoch rejection of late callbacks, and hardened WindowFiles.close() and WindowFiles.save(closeAfter=true)",
+      "filesModified": [
+        "desktop-prototype/src/main/kotlin/editor/EditorEngine.kt",
+        "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
+        "desktop-prototype/src/main/kotlin/editor/WindowFiles.kt",
+        "desktop-prototype/src/main/kotlin/editor/FileChecks.kt",
+        "desktop-prototype/src/main/kotlin/editor/JapaneseHostChecks.kt"
+      ]
+    },
+    {
+      "id": "C-3",
+      "title": "Claim that paragraphAttributedDisplay emits one SpanStyle per character without coalescing",
+      "disposition": "REFUTED_WITHDRAWN",
+      "evidenceClass": "source_inspection_and_compiled_assertion",
+      "verification": "DesktopEditor.kt:47-53 loops `while (j < end && units[j].style == style) j++`, emitting 1 SpanStyle for 50 contiguous bold characters"
+    },
+    {
+      "id": "B-4",
+      "title": "Claim that Graphemes.stops omits caret stops for empty paragraphs",
+      "disposition": "REFUTED_WITHDRAWN",
+      "evidenceClass": "source_inspection_and_compiled_assertion",
+      "verification": "BreakIterator.getCharacterInstance produces boundaries after every '\\n'; Graphemes.stops(\"a\\n\\nb\") returns [0, 1, 2, 3, 4], including offset 2 for the empty paragraph"
+    },
+    {
+      "id": "A-6",
+      "title": "Claim that WindowFiles.open() replaces the current EditorEngine in place and orphans active composition",
+      "disposition": "REFUTED_WITHDRAWN",
+      "evidenceClass": "source_inspection",
+      "verification": "WindowFiles.kt:59 opens a separate window via showEditor(initial = doc, initialPath = chosen) and never mutates the existing window's EditorEngine"
+    },
+    {
+      "id": "A-1-OS-CLAIM",
+      "title": "Claim that a headless queue-filling probe proved Windows WInputMethod.endComposition() drops terminal callbacks",
+      "disposition": "REFUTED_WITHDRAWN",
+      "evidenceClass": "methodology_correction",
+      "verification": "Withdrawn: calling engine.command() 260 times in a headless test without delivering an InputMethodEvent only tests pendingQueue bounds, not Windows IMM32/TSF callback behavior"
+    },
+    {
+      "id": "C-1",
+      "title": "Neutral/empty paragraph base-direction inheritance across paragraphs",
+      "disposition": "DOCUMENTED_POLICY_PRESERVED",
+      "evidenceClass": "documented_policy_verification",
+      "verification": "Preserved per the Stage 2 contract and RtlHostChecks.kt:292-336 so pressing Enter or typing digits/punctuation after an Urdu/Arabic paragraph stays right-aligned"
+    },
+    {
+      "id": "A-5",
+      "title": "Handling of non-character keyPressed events during active composition",
+      "disposition": "DOCUMENTED_POLICY_PRESERVED",
+      "evidenceClass": "compiled_regression_assertion",
+      "verification": "Preserved VK_LEFT/navigation during composition (HostChecks.kt:35) while routing Escape to requestEndComposition() (and abortAndRetireComposition() when waiting/timed out)"
+    }
+  ],
+  "frozenFilesUnchanged": 45,
+  "sources": {
+    "desktop-prototype/pom.xml": "36466c45290569fe5e541c4a14f577275395696a37e57658c8a78810802ad6e0",
+    "desktop-prototype/run.cmd": "c68514768c7d36dcd53fe6f6134c9302190b841641f13a5cd7c3db72b81ffb06",
+    "desktop-prototype/verify.py": "46a2d9bebc97f766bee54b7bc4e6d68219f156edef496e3ad79cc7347a0c073e",
+    "desktop-prototype/src/main/kotlin/editor/Checks.kt": "d9339d2d78d525119924f640dd097b3506386e0c4c736379d4e59361d4868928",
+    "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt": "5bc1fe4be6ec59c339b325ff31675ba45ebf181d784027ec9e47eee8531f64fb",
+    "desktop-prototype/src/main/kotlin/editor/DocumentFiles.kt": "39d6b97af698f5a96ad940aea02150953398a4dd6f9a1266f69e4088ccc75e25",
+    "desktop-prototype/src/main/kotlin/editor/EditorEngine.kt": "071e511496eca1c82065fe99dd15adabc9105bf7d57cc63c08f3eb84549eea89",
+    "desktop-prototype/src/main/kotlin/editor/FileChecks.kt": "ec25092614029983b1d9b135b4116722aac1942dd12af90305670c1a7bf8518e",
+    "desktop-prototype/src/main/kotlin/editor/FormatChecks.kt": "d0d86cb6b8c85097385957afb088e8f0293b6524bb20a32a2ca6d1d0a93af8c5",
+    "desktop-prototype/src/main/kotlin/editor/Formatting.kt": "f3d0e481c245b4db321da332f3ad40490e8321fbd64edebb4b8be2e4cc20d092",
+    "desktop-prototype/src/main/kotlin/editor/Graphemes.kt": "a297a5154df6a77cb1bc65115c92d5a738367671fb02f47a94c425544cb0c629",
+    "desktop-prototype/src/main/kotlin/editor/HostChecks.kt": "63362512c111d31258c652db58c4757d851c435708a42f0d8697c2e806441dda",
+    "desktop-prototype/src/main/kotlin/editor/ImeTrace.kt": "153bb4b538d707cdf6c57fada2c71ff55db3445757295bc9f67612ce4e06a521",
+    "desktop-prototype/src/main/kotlin/editor/JapaneseHostChecks.kt": "9d41d25b91cca843cca7c60e87b0026134ac98c3aebe6bf7076b8d421ea800f9",
+    "desktop-prototype/src/main/kotlin/editor/Main.kt": "c3d1a40dd87a612de2e517432cbbbffd4bff6255bb3f5a2e7a2dbedbe59085b3",
+    "desktop-prototype/src/main/kotlin/editor/RtlHostChecks.kt": "e150c53d8c2544d1d0420d26ef6c007bc0f8f23812c61c0a13bb45b5b08b0ef1",
+    "desktop-prototype/src/main/kotlin/editor/StressChecks.kt": "d5084fb3df4e97b424c09ddbb628ffb953ea8ca1c7ea683eb56e21801ac5ca15",
+    "desktop-prototype/src/main/kotlin/editor/WindowFiles.kt": "2e680bbef72c0e19c42022a02eb364885a5e3af803f5d386cafa9437c4a13bb4"
+  }
+}

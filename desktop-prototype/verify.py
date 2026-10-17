@@ -49,8 +49,9 @@ def main():
         java = shutil.which("java")
         if not java:
             raise RuntimeError("Java is not on PATH")
-        base = [java, "-cp", str(build / "classes") + os.pathsep + str(build / "lib/*"), "editor.MainKt"]
-        run("kernel-files-formatting", base + ["--check"], 120, "ALL 16 formatting checks passed")
+        cp = str(build / "classes") + os.pathsep + str(build / "lib/*")
+        base = [java, "-cp", cp, "editor.MainKt"]
+        run("kernel-files-formatting", base + ["--check"], 120, "ALL 17 formatting checks passed")
         run("stress", base + ["--stress"], 120, "PASS 12000 randomized range-format commands")
         host_result = output / "host-checks.json"
         run("attached-host", base + ["--host-check", "--host-result=" + str(host_result)], 90, '"status":"PASS"')
@@ -61,6 +62,10 @@ def main():
             raise RuntimeError("Missing Japanese IME host verdict")
         if report["host"].get("paragraphLayout") != "PASS":
             raise RuntimeError("Missing paragraph layout verdict")
+        probes_runner = ROOT / "reviews" / "argon-critical-path" / "experiments" / "run_all_probes.py"
+        if probes_runner.exists():
+            os.environ["EDITOR_BUILD_CLASSPATH"] = cp
+            run("argon-regression-probes", [sys.executable, str(probes_runner)], 120, "All probes completed")
         frozen = json.loads((ROOT / "v5-freeze-manifest.json").read_text(encoding="utf-8"))
         for path, expected in frozen["hashes"].items():
             if hashlib.sha256((ROOT / path).read_bytes()).hexdigest() != expected:

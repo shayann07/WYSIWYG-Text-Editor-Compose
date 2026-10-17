@@ -1,14 +1,12 @@
-"""Probe B-1: Soft-wrap boundary offset conflation and VK_END caret truncation.
+"""Probe B-1, B-2, B-3: Soft-Wrap Boundary Affinity in Attached Compose Layout and EditorSurface.
 
-Demonstrates:
-- On soft-wrapped lines, the wrap boundary offset k belongs to line L (end of line)
-  AND line L+1 (start of line).
-- Compose/Skia and standard line-based engines assign wrap boundary offset k exclusively to line L+1.
-- Because EditorSurface.stops(g) builds exactly one Stop per offset using getLineForOffset(offset),
-  line L has NO stop at offset k.
-- Consequently, pressing VK_END on line L (target = all.last { it.line == here.line }) places the caret
-  at k - 1 (before the last character on unspaced/CJK text).
+Replaces the prior AWT LineBreakMeasurer simulation with real attached Compose + EditorSurface assertions:
+- On wrapped unspaced CJK text ("あいうえおかきくけこ" x 12), pressing VK_END from offset 0 places the caret
+  at the exact line-0 wrap boundary offset k (not k - 1) with WrapAffinity.UPSTREAM.
+- Geometry.getLineForOffset(k, UPSTREAM) == 0 while Geometry.getLineForOffset(k, DOWNSTREAM) == 1.
+- Caret rectangle with UPSTREAM affinity renders on line 0 at the right edge of line 0.
 """
+import os
 import pathlib
 import subprocess
 import sys
@@ -19,99 +17,112 @@ CLASSPATH_TXT = ROOT / "desktop-prototype" / "target" / "classpath.txt"
 JAVA_SOURCE = """
 import editor.*;
 import java.util.*;
-import java.awt.Font;
-import java.awt.font.FontRenderContext;
-import java.awt.font.LineBreakMeasurer;
-import java.awt.font.TextLayout;
-import java.text.AttributedString;
+import java.awt.Point;
+import java.awt.event.KeyEvent;
+import javax.swing.JFrame;
+import javax.swing.SwingUtilities;
 
 public class ProbeB1Runner {
-    public static void main(String[] args) {
-        // Construct a wrapped CJK string of 120 characters without spaces
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 12; i++) {
-            sb.append("\\u3042\\u3044\\u3046\\u3048\\u304a\\u304b\\u304d\\u304f\\u3051\\u3053");
+    private static void check(boolean cond, String msg) {
+        if (!cond) throw new AssertionError(msg);
+    }
+
+    public static void main(String[] args) throws Exception {
+        final JFrame[] holder = new JFrame[1];
+        SwingUtilities.invokeAndWait(() -> {
+            holder[0] = DesktopEditorKt.showEditor(null, new Document(Collections.emptyList()), null, null, null, true, new Point(-16000, -16000));
+        });
+        try {
+            Thread.sleep(250);
+            SwingUtilities.invokeAndWait(() -> {
+                EditorSurface surface = findSurface(holder[0]);
+                check(surface != null, "EditorSurface must exist");
+                EditorEngine e = surface.getEngine();
+
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < 12; i++) {
+                    sb.append("\\u3042\\u3044\\u3046\\u3048\\u304a\\u304b\\u304d\\u304f\\u3051\\u3053");
+                }
+                e.replace(sb.toString(), "CJK wrap fixture", false, e.snapshot().getSelection(), null);
+                Geometry geo = surface.geometry();
+                check(geo != null && geo.getTotalLineCount() >= 2, "CJK fixture must wrap across at least 2 lines");
+
+                int wrapBoundary = geo.getParagraphs().get(0).getLayout().getLineEnd(0, false);
+                e.move(new Selection(0, 0), true, TypingSide.LEFT, WrapAffinity.DOWNSTREAM);
+                surface.dispatchEvent(new KeyEvent(surface, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, KeyEvent.VK_END, KeyEvent.CHAR_UNDEFINED));
+
+                Selection endSel = e.snapshot().getSelection();
+                int lineUpstream = geo.getLineForOffset(endSel.getFocus(), WrapAffinity.UPSTREAM);
+                int lineDownstream = geo.getLineForOffset(endSel.getFocus(), WrapAffinity.DOWNSTREAM);
+                androidx.compose.ui.geometry.Rect caretUp = geo.caret(endSel.getFocus(), endSel.getPrimary(), WrapAffinity.UPSTREAM);
+                androidx.compose.ui.geometry.Rect caretDown = geo.caret(endSel.getFocus(), endSel.getPrimary(), WrapAffinity.DOWNSTREAM);
+
+                System.out.println("EVIDENCE_CLASS=compiled_regression_assertion");
+                System.out.println("DISPOSITION=CONFIRMED_AND_FIXED");
+                System.out.println("BASELINE_DEFECT=VK_END_stopped_at_k_minus_1_without_UPSTREAM_wrap_affinity");
+                System.out.println("LINE_0_WRAP_BOUNDARY=" + wrapBoundary);
+                System.out.println("VK_END_FOCUS_OFFSET=" + endSel.getFocus());
+                System.out.println("VK_END_WRAP_AFFINITY=" + endSel.getWrapAffinity());
+                System.out.println("LINE_FOR_UPSTREAM=" + lineUpstream + " LINE_FOR_DOWNSTREAM=" + lineDownstream);
+
+                check(endSel.getFocus() == wrapBoundary,
+                    "VK_END on line 0 must land at wrapBoundary " + wrapBoundary + ", got " + endSel.getFocus());
+                check(endSel.getWrapAffinity() == WrapAffinity.UPSTREAM,
+                    "VK_END at soft wrap boundary must set WrapAffinity.UPSTREAM");
+                check(lineUpstream == 0 && lineDownstream == 1,
+                    "UPSTREAM must map to line 0 and DOWNSTREAM to line 1");
+                check(caretDown.getTop() > caretUp.getTop() + 5f,
+                    "UPSTREAM caret must be on line 0 while DOWNSTREAM caret is on line 1");
+                System.out.println("FIXED_REGRESSION_PASS=true");
+            });
+        } finally {
+            SwingUtilities.invokeAndWait(() -> {
+                if (holder[0] != null) holder[0].dispose();
+            });
         }
-        String text = sb.toString();
+    }
 
-        // Break into lines with width limit using standard AWT LineBreakMeasurer
-        AttributedString as = new AttributedString(text);
-        Font font = new Font("SansSerif", Font.PLAIN, 14);
-        as.addAttribute(java.awt.font.TextAttribute.FONT, font);
-        FontRenderContext frc = new FontRenderContext(null, true, true);
-        LineBreakMeasurer lbm = new LineBreakMeasurer(as.getIterator(), frc);
-        
-        // Wrap width corresponding to roughly 51 characters
-        float wrappingWidth = 51 * 14.0f; // approx width
-        List<int[]> lineRanges = new ArrayList<>();
-        int prev = 0;
-        while (lbm.getPosition() < text.length()) {
-            TextLayout tl = lbm.nextLayout(wrappingWidth);
-            int next = lbm.getPosition();
-            lineRanges.add(new int[]{prev, next});
-            prev = next;
-        }
-
-        int line0Start = lineRanges.get(0)[0];
-        int line0End = lineRanges.get(0)[1];
-        int line0VisibleChars = line0End - line0Start;
-        int wrapBoundaryOffset = line0End;
-
-        // In line-indexed layout (Skiko SkiaParagraph and DesktopEditor.kt:488):
-        // getLineForOffset(offset) returns:
-        // offset < line0End -> 0
-        // offset >= line0End -> 1
-        // Simulating DesktopEditor.kt:485-493 stops(g):
-        List<Integer> allOffsets = Graphemes.INSTANCE.stops(text);
-        Map<Integer, Integer> offsetToLine = new HashMap<>();
-        for (int offset : allOffsets) {
-            int line = (offset < line0End) ? 0 : (offset < lineRanges.get(1)[1] ? 1 : 2);
-            offsetToLine.put(offset, line);
-        }
-
-        // VK_END on line 0 (DesktopEditor.kt:511: target = all.last { it.line == here.line }):
-        int line0MaxStop = -1;
-        for (int offset : allOffsets) {
-            if (offsetToLine.get(offset) == 0) {
-                if (offset > line0MaxStop) line0MaxStop = offset;
+    private static EditorSurface findSurface(java.awt.Container root) {
+        for (java.awt.Component c : root.getComponents()) {
+            if (c instanceof EditorSurface) return (EditorSurface) c;
+            if (c instanceof java.awt.Container) {
+                EditorSurface found = findSurface((java.awt.Container) c);
+                if (found != null) return found;
             }
         }
-
-        System.out.println("LINE_0_VISIBLE_CHARS=" + line0VisibleChars + " (indices 0.." + (line0End - 1) + ")");
-        System.out.println("LINE_0_WRAP_BOUNDARY_OFFSET=" + wrapBoundaryOffset);
-        System.out.println("PROTOTYPE_LINE_0_MAX_STOP_OFFSET=" + line0MaxStop);
-        boolean missingLast = (line0MaxStop == wrapBoundaryOffset - 1);
-        System.out.println("MISSING_LAST_CHAR_ON_LINE_0=" + missingLast);
-        System.out.println("DEFECT_CONFIRMED=" + (line0MaxStop < wrapBoundaryOffset));
+        return null;
     }
 }
 """
 
-def main():
+def get_classpath():
+    env_cp = os.environ.get("EDITOR_BUILD_CLASSPATH")
+    if env_cp:
+        return env_cp
     if not CLASSPATH_TXT.exists():
-        print("ERROR: classpath.txt missing; run desktop-prototype build first", file=sys.stderr)
-        return 1
-    cp = str(ROOT / "desktop-prototype" / "target" / "classes") + ";" + CLASSPATH_TXT.read_text().strip()
+        raise RuntimeError("classpath.txt missing; run desktop-prototype build first")
+    return str(ROOT / "desktop-prototype" / "target" / "classes") + os.pathsep + CLASSPATH_TXT.read_text().strip()
+
+def main():
+    cp = get_classpath()
     work_dir = pathlib.Path(__file__).resolve().parent
     runner_java = work_dir / "ProbeB1Runner.java"
     runner_java.write_text(JAVA_SOURCE, encoding="utf-8")
     try:
         compile_res = subprocess.run(["javac", "-cp", cp, str(runner_java)], capture_output=True, text=True)
         if compile_res.returncode != 0:
-            print("Compile failed:", compile_res.stderr)
+            print("Compile failed:", compile_res.stderr, file=sys.stderr)
             return 1
-        run_res = subprocess.run(["java", "-cp", f".;{cp}", "ProbeB1Runner"], cwd=str(work_dir), capture_output=True, text=True)
-        print(run_res.stdout)
+        run_res = subprocess.run(["java", "-cp", f".{os.pathsep}{cp}", "ProbeB1Runner"], cwd=str(work_dir), capture_output=True, text=True)
+        print(run_res.stdout.strip())
         if run_res.returncode != 0:
-            print("Run failed:", run_res.stderr)
-            return run_res.returncode
+            print("Assertion failed:", run_res.stderr, file=sys.stderr)
+            return 1
         return 0
     finally:
-        if runner_java.exists():
-            runner_java.unlink()
-        runner_class = work_dir / "ProbeB1Runner.class"
-        if runner_class.exists():
-            runner_class.unlink()
+        for p in work_dir.glob("ProbeB1Runner*.class"):
+            p.unlink(missing_ok=True)
+        runner_java.unlink(missing_ok=True)
 
 if __name__ == "__main__":
     sys.exit(main())
