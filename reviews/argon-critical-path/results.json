@@ -1,0 +1,226 @@
+{
+  "investigation": "argon-critical-path",
+  "commit": "773bc068cd87cd83d1289bdb5e46e8ab6552869d",
+  "timestamp": "2026-10-17T07:12:00Z",
+  "environment": {
+    "os": "Windows 11 (AMD64)",
+    "java": "OpenJDK 23.0.2 Temurin (build 23.0.2+7)",
+    "python": "3.12.10",
+    "node": "v24.20.0",
+    "maven": "Apache Maven 3.9.9"
+  },
+  "frozen_v5_verification": {
+    "manifest": "v5-freeze-manifest.json",
+    "total_files": 45,
+    "matched_hashes": 45,
+    "mutations_detected": 0,
+    "status": "UNTOUCHED_VERIFIED"
+  },
+  "existing_prototype_suites": {
+    "command": "powershell -ExecutionPolicy Bypass -File desktop-prototype\\run.ps1 -Check -SkipBuild",
+    "kernel_checks": 15,
+    "file_checks": 10,
+    "format_checks": 16,
+    "status": "PASS",
+    "limitation": "Synthetic test suites pass on happy paths, but test suites conceal coordinate, bidi, IME settlement, and layout invalidation defects."
+  },
+  "known_findings_triage": [
+    {
+      "id": "KF-1",
+      "title": "UAX #9 P2/P3 directional isolate failure in paragraphBaseDirection",
+      "file": "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
+      "lines": "69-84",
+      "status": "CONFIRMED_PRESENT",
+      "severity": "HIGH",
+      "invariant": "I12",
+      "evidence": "paragraphBaseDirection(\"\\u2067\\u0627\\u2069A\", Ltr) returns Rtl while java.text.Bidi baseLevel is 0 (LTR); paragraphBaseDirection(\"\\u2066A\\u2069\\u0627\", Ltr) returns Ltr while java.text.Bidi baseLevel is 1 (RTL).",
+      "probe": "reviews/argon-critical-path/experiments/probe_kf1_isolate_bidi.py"
+    },
+    {
+      "id": "KF-2",
+      "title": "Break-only selection hides caret and renders zero highlight",
+      "file": "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
+      "lines": "94-107, 305-318, 348",
+      "status": "CONFIRMED_PRESENT",
+      "severity": "HIGH",
+      "invariant": "I02",
+      "evidence": "Selection(2, 3) on 'ab\\ncd' clips to 2..2 on Para 0 and 3..3 on Para 1. Both selStart < selEnd checks are false. DocumentCanvas draws 0 path and suppresses caret because !s.collapsed.",
+      "probe": "reviews/argon-critical-path/experiments/probe_kf2_kf3_break_geometry.py"
+    },
+    {
+      "id": "KF-3",
+      "title": "paragraphForOffset(leadingAffinity=true) crosses 1-unit separator and clamps negative local offset (-1 -> 0)",
+      "file": "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
+      "lines": "128, 145-160",
+      "status": "CONFIRMED_PRESENT",
+      "severity": "HIGH",
+      "invariant": "I02, I10",
+      "evidence": "paragraphForOffset(2, leadingAffinity = true) jumps to Para 1 (startOffset = 3), where toLocalOffset(2) computes (2 - 3).coerceIn(0, 2) = 0, placing caret at start of Para 1 instead of end of Para 0.",
+      "probe": "reviews/argon-critical-path/experiments/probe_kf2_kf3_break_geometry.py"
+    },
+    {
+      "id": "KF-4",
+      "title": "referenceMeasure reuses production helpers and warm TextMeasurer cache",
+      "file": "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
+      "lines": "197-212, 282-284, RtlHostChecks.kt:474-493",
+      "status": "CONFIRMED_PRESENT",
+      "severity": "MEDIUM",
+      "invariant": "I11",
+      "evidence": "referenceMeasure is a 3-line wrapper calling production measureParagraphs with the exact same warm rememberTextMeasurer() instance, testing identity against itself rather than an independent oracle."
+    },
+    {
+      "id": "KF-5",
+      "title": "Scrolling composition test has no active composition (marked == null)",
+      "file": "desktop-prototype/src/main/kotlin/editor/RtlHostChecks.kt",
+      "lines": "446-454",
+      "status": "CONFIRMED_PRESENT",
+      "severity": "MEDIUM",
+      "invariant": "R8",
+      "evidence": "Section 16 in RtlHostChecks.kt replaces text and moves cursor but never initiates an IME session. Surface getTextLocation ignores TextHitInfo and queries caret(s.focus)."
+    },
+    {
+      "id": "KF-6",
+      "title": "Resize invalidation omits width/scale and view.measure captures stale draw-pass width",
+      "file": "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
+      "lines": "275, 455-458",
+      "status": "CONFIRMED_PRESENT",
+      "severity": "HIGH",
+      "invariant": "I11",
+      "evidence": "geometry() returns cached geometry keyed only on revision and scroll. view.measure closure captures old canvas size.width and textWidth from previous draw pass."
+    }
+  ],
+  "deep_risk_findings": [
+    {
+      "id": "A-1",
+      "risk_area": "Risk A: Native Input Feasibility & Settlement",
+      "title": "Unbounded composition lock / permanent editor wedge when endComposition() emits no InputMethodEvent",
+      "file": "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
+      "lines": "371, 387, 398, 404, 427",
+      "severity": "CRITICAL",
+      "invariant": "I15",
+      "evidence": "When composition != null, keyTyped is dropped and edits are queued into pending up to 256 items. When pending reaches 256, all further edits are rejected with 'Finish composing before another command.' If OS IME does not emit InputMethodEvent, editor is wedged forever.",
+      "probe": "reviews/argon-critical-path/experiments/probe_a1_settlement_wedge.py"
+    },
+    {
+      "id": "A-2",
+      "risk_area": "Risk A: Native Input Feasibility & Settlement",
+      "title": "VK_ESCAPE calls endComposition() which sends CPS_COMPLETE (commit) on Windows AWT",
+      "file": "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
+      "lines": "387",
+      "severity": "HIGH",
+      "invariant": "I07",
+      "evidence": "WInputMethod.endCompositionNative receives haveActiveClient() == true, triggering Win32 CPS_COMPLETE which commits preedit text into document instead of cancelling/reverting to baseline."
+    },
+    {
+      "id": "A-3",
+      "risk_area": "Risk A: Native Input Feasibility & Settlement",
+      "title": "Partial IME commit overwrites session.baseline with temporary marked units, destroying PARAGRAPH_BREAK and silently deleting retained text on abort",
+      "file": "desktop-prototype/src/main/kotlin/editor/EditorEngine.kt",
+      "lines": "199-203, 245",
+      "severity": "CRITICAL",
+      "invariant": "I07, I08",
+      "evidence": "Selection(0, 4) on 'abcd' + inputMethod('Xcd', committedCount=1, caret=2) splices dc over [0, 4) with 'X'. Calling abortComposition() yields 'X', permanently deleting retained suffix 'cd'.",
+      "probe": "reviews/argon-critical-path/experiments/probe_a3_partial_commit_data_loss.py"
+    },
+    {
+      "id": "A-4",
+      "risk_area": "Risk A: Native Input Feasibility & Settlement",
+      "title": "PARAGRAPH_BREAK style contamination and emptyParagraphStyleIndex mutation",
+      "file": "desktop-prototype/src/main/kotlin/editor/EditorEngine.kt",
+      "lines": "53, 55-61, 138-140, 223-224",
+      "severity": "CRITICAL",
+      "invariant": "plan-v5.md:335",
+      "evidence": "Pressing Enter while Bold is active creates a PARAGRAPH_BREAK unit stamped with bold=true. When downstream text is deleted, emptyParagraphStyleIndex reads this leftover style, resurrecting bold unintentionally.",
+      "probe": "reviews/argon-critical-path/experiments/probe_a3_partial_commit_data_loss.py"
+    },
+    {
+      "id": "A-5",
+      "risk_area": "Risk A: Native Input Feasibility & Settlement",
+      "title": "Cross-platform native input protocol mismatches (Android batch edit/setComposingRegion, iOS UITextInput re-entrancy)",
+      "file": "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
+      "lines": "372-575",
+      "severity": "HIGH",
+      "invariant": "I06, I15",
+      "evidence": "Android InputConnection and iOS UITextInput settle compositions in-place without separate callbacks and execute multi-step mutations inside batch wrappers that must not fire re-entrant layout/delegate notifications."
+    },
+    {
+      "id": "B-1",
+      "risk_area": "Risk B: Coordinates, Bidi & Visual Editing",
+      "title": "Soft-wrap boundary offset assigned exclusively to next line, breaking VK_END and wrap-end caret placement",
+      "file": "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
+      "lines": "162-172, 485-493, 504-516",
+      "severity": "CRITICAL",
+      "invariant": "I09, I10",
+      "evidence": "Compose/Skia getLineForOffset(wrapOffset) returns line L+1. stops(g) builds exactly one stop per offset on line L+1, leaving line L with no stop at the wrap boundary. Pressing END on line L stops at wrapOffset - 1, short of the line end on unspaced/CJK text.",
+      "probe": "reviews/argon-critical-path/experiments/probe_b1_soft_wrap_end_key.py"
+    },
+    {
+      "id": "B-2",
+      "risk_area": "Risk B: Coordinates, Bidi & Visual Editing",
+      "title": "getTextLocation conflates AWT TextHitInfo.isLeadingEdge with Compose bidi primary direction flag",
+      "file": "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
+      "lines": "546-547",
+      "severity": "HIGH",
+      "invariant": "I09, R8",
+      "evidence": "TextHitInfo.leading(k) and afterOffset(k-1) represent the exact same insertion offset, but isLeadingEdge toggles usePrimaryDirection, returning different X coordinates at bidi run boundaries."
+    },
+    {
+      "id": "B-3",
+      "risk_area": "Risk B: Coordinates, Bidi & Visual Editing",
+      "title": "getTextLocation(null) anchors on unselected next paragraph when selection ends at paragraph boundary",
+      "file": "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
+      "lines": "549-558",
+      "severity": "HIGH",
+      "invariant": "I10",
+      "evidence": "Selection(0, 3) on 'ab\\n' ends at 3. paragraphForOffset(3) resolves to empty Para 1, returning candidate box at y=215 instead of Para 0 line at y=185."
+    },
+    {
+      "id": "B-4",
+      "risk_area": "Risk B: Coordinates, Bidi & Visual Editing",
+      "title": "Vertical caret navigation (moveVertical) resets target X on every step and collapses across empty paragraphs",
+      "file": "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
+      "lines": "475-483",
+      "severity": "MEDIUM",
+      "invariant": "plan-v5.md:97",
+      "evidence": "moveVertical has no preferredX sticky coordinate. Probing by +/- 6px lands on inter-paragraph spacing boundary and gets trapped."
+    },
+    {
+      "id": "C-1",
+      "risk_area": "Risk C: Transition from Prototype to Scalable Editor",
+      "title": "Nonlocal preceding-paragraph direction inheritance causes O(P) downstream cache invalidation on 1-char edit",
+      "file": "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
+      "lines": "199-202, 226, 234-235",
+      "severity": "CRITICAL",
+      "invariant": "I11, I12",
+      "evidence": "Editing Para 0 from LTR to RTL propagates fallback=Rtl across all subsequent neutral paragraphs, flipping their base direction and invalidating their ParagraphCacheKey entries.",
+      "probe": "reviews/argon-critical-path/experiments/probe_c1_direction_cascade.py"
+    },
+    {
+      "id": "C-2",
+      "risk_area": "Risk C: Transition from Prototype to Scalable Editor",
+      "title": "O(N) per-keystroke full-document string cloning, full-document grapheme snapping, and O(N * P) stops scan per arrow key",
+      "file": "desktop-prototype/src/main/kotlin/editor/EditorEngine.kt",
+      "lines": "16, 129-131, DesktopEditor.kt:485-493",
+      "severity": "CRITICAL",
+      "invariant": "I11, I15",
+      "evidence": "Document.text allocates a new full-document String on every read (6+ times per keystroke). stops(g) runs over all graphemes in the document with an O(P) paragraph lookup per grapheme.",
+      "probe": "reviews/argon-critical-path/experiments/probe_c2_keystroke_scaling.py"
+    },
+    {
+      "id": "C-3",
+      "risk_area": "Risk C: Transition from Prototype to Scalable Editor",
+      "title": "Uncoalesced per-character SpanStyle allocations severely inflate Skia run-segmentation and TextMeasurer key hashing",
+      "file": "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
+      "lines": "86-92",
+      "severity": "HIGH",
+      "invariant": "plan-v5.md:676",
+      "evidence": "paragraphAttributedDisplay emits 1-character SpanStyle for every styled character instead of coalescing contiguous identical TextStyleFlags into single ranges."
+    }
+  ],
+  "probes_summary": {
+    "total_run": 7,
+    "total_passed": 7,
+    "runner": "reviews/argon-critical-path/experiments/run_all_probes.py",
+    "details_file": "reviews/argon-critical-path/experiments/probe_results_summary.json"
+  }
+}
