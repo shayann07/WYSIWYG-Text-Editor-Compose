@@ -220,7 +220,15 @@ fun runRtlHostChecks(surface: EditorSurface) {
     try {
         val complexDocUnits = mutableListOf<TextUnit>()
         var uId = 1L
-        for (c in "English title\n") complexDocUnits.add(TextUnit(uId++, c, if (c == '\n') UnitKind.PARAGRAPH_BREAK else UnitKind.TEXT, TextStyleFlags(bold = true)))
+        for (c in "English title\n") complexDocUnits.add(
+            TextUnit(
+                uId++,
+                c,
+                if (c == '\n') UnitKind.PARAGRAPH_BREAK else UnitKind.TEXT,
+                style = if (c == '\n') TextStyleFlags() else TextStyleFlags(bold = true),
+                paragraphStyle = if (c == '\n') TextStyleFlags(bold = true) else TextStyleFlags()
+            )
+        )
         for (c in "سَّلام: ۱۲۳۔") complexDocUnits.add(TextUnit(uId++, c, UnitKind.TEXT, TextStyleFlags(italic = true)))
         val complexDoc = Document(complexDocUnits, startStyle = TextStyleFlags())
         val encoded = DocumentFiles.encode(complexDoc)
@@ -450,7 +458,14 @@ fun runRtlHostChecks(surface: EditorSurface) {
     surface.view.scroll = 50f
     val scrolledLoc = checkNotNull(surface.getTextLocation(TextHitInfo.leading(0)))
     check(scrolledLoc.y < initialLoc.y) { "Scrolling down must shift candidate popup location upward: $scrolledLoc vs $initialLoc" }
+    // Test active composition while scrolled
+    e.inputMethod("active preedit", 0, 6)
+    val compLocScrolled = checkNotNull(surface.getTextLocation(TextHitInfo.leading(0)))
+    check(compLocScrolled.y < initialLoc.y) { "Active preedit popup location must incorporate current scroll offset: $compLocScrolled vs $initialLoc" }
     surface.view.scroll = 0f
+    val compLocUnscrolled = checkNotNull(surface.getTextLocation(TextHitInfo.leading(0)))
+    check(compLocUnscrolled.y > compLocScrolled.y) { "Resetting scroll must move preedit popup downward" }
+    e.abortComposition()
     e.perform(EditAction.Undo); check(e.snapshot().visible.text.isEmpty())
 
     // 17. Save/Open preserves text, styles and structural-break distinctions
@@ -458,8 +473,27 @@ fun runRtlHostChecks(surface: EditorSurface) {
     try {
         val testUnits = mutableListOf<TextUnit>()
         var uid = 1L
-        for (c in "English bold\n") testUnits.add(TextUnit(uid++, c, if (c == '\n') UnitKind.PARAGRAPH_BREAK else UnitKind.TEXT, TextStyleFlags(bold = true)))
-        for (c in "اردو soft\nbreak\n") testUnits.add(TextUnit(uid++, c, if (c == '\n' && uid == 23L) UnitKind.PARAGRAPH_BREAK else UnitKind.TEXT, TextStyleFlags(italic = true)))
+        for (c in "English bold\n") testUnits.add(
+            TextUnit(
+                uid++,
+                c,
+                if (c == '\n') UnitKind.PARAGRAPH_BREAK else UnitKind.TEXT,
+                style = if (c == '\n') TextStyleFlags() else TextStyleFlags(bold = true),
+                paragraphStyle = if (c == '\n') TextStyleFlags(bold = true) else TextStyleFlags()
+            )
+        )
+        for (c in "اردو soft\nbreak\n") {
+            val isParaBreak = (c == '\n' && uid == 23L)
+            testUnits.add(
+                TextUnit(
+                    uid++,
+                    c,
+                    if (isParaBreak) UnitKind.PARAGRAPH_BREAK else UnitKind.TEXT,
+                    style = if (isParaBreak) TextStyleFlags() else TextStyleFlags(italic = true),
+                    paragraphStyle = if (isParaBreak) TextStyleFlags(italic = true) else TextStyleFlags()
+                )
+            )
+        }
         val docToSave = Document(testUnits)
         DocumentFiles.write(saveDocFile, docToSave)
         val loadedDoc = DocumentFiles.read(saveDocFile)
@@ -471,15 +505,20 @@ fun runRtlHostChecks(surface: EditorSurface) {
         Files.deleteIfExists(saveDocFile)
     }
 
-    // 17b. Uncached reference layout comparison
+    // 17b. Independent fixture expectations and uncached reference layout comparison (KF-4)
     val refMeasure = checkNotNull(surface.view.referenceMeasure)
     val refDoc = Document("First paragraph English\nدوسرا پیراگراف اردو\nThird paragraph".mapIndexed { i, c ->
         TextUnit(i.toLong() + 1, c, if (c == '\n') UnitKind.PARAGRAPH_BREAK else UnitKind.TEXT)
     })
     e.replace(refDoc.text, "Reference comparison fixture", paragraphBreaks = true)
     val cachedGeo = checkNotNull(surface.view.measure).invoke(e.snapshot())
+    // Independent hardcoded fixture expectations (not derived from referenceMeasure or measureParagraphs)
+    check(cachedGeo.paragraphs.size == 3)
+    check(cachedGeo.paragraphs[0].startOffset == 0 && cachedGeo.paragraphs[0].endOffset == 23 && cachedGeo.paragraphs[0].hasBreak && cachedGeo.paragraphs[0].baseDirection == ResolvedTextDirection.Ltr)
+    check(cachedGeo.paragraphs[1].startOffset == 24 && cachedGeo.paragraphs[1].endOffset == 43 && cachedGeo.paragraphs[1].hasBreak && cachedGeo.paragraphs[1].baseDirection == ResolvedTextDirection.Rtl)
+    check(cachedGeo.paragraphs[2].startOffset == 44 && cachedGeo.paragraphs[2].endOffset == 59 && !cachedGeo.paragraphs[2].hasBreak && cachedGeo.paragraphs[2].baseDirection == ResolvedTextDirection.Ltr)
     val refResults = refMeasure(refDoc)
-    check(cachedGeo.paragraphs.size == refResults.size) { "Paragraph counts must match between cached and reference measure" }
+    check(cachedGeo.paragraphs.size == refResults.size) { "Paragraph counts must match between cached and uncached reference measure" }
     for (idx in refResults.indices) {
         val (refSpan, refLayout) = refResults[idx]
         val cachedPara = cachedGeo.paragraphs[idx]
@@ -518,6 +557,75 @@ fun runRtlHostChecks(surface: EditorSurface) {
     check(benchLongGeo.totalLineCount >= 50) { "Long paragraph must wrap across many lines" }
     e.perform(EditAction.Undo); check(e.snapshot().visible.text.isEmpty())
 
+    // 19a. UAX #9 Directional Isolates in paragraphBaseDirection (KF-1)
+    val isoCase1 = "\u2067\u0627\u2069A"
+    val isoUnits1 = isoCase1.mapIndexed { idx, ch -> TextUnit(idx.toLong() + 1, ch) }
+    check(paragraphBaseDirection(isoUnits1, ResolvedTextDirection.Rtl) == ResolvedTextDirection.Ltr) {
+        "RLI..PDI isolate around Arabic followed by Latin 'A' must resolve to Ltr"
+    }
+    check(java.text.Bidi(isoCase1, java.text.Bidi.DIRECTION_DEFAULT_LEFT_TO_RIGHT).baseIsLeftToRight())
+
+    val isoCase2 = "\u2066A\u2069\u0627"
+    val isoUnits2 = isoCase2.mapIndexed { idx, ch -> TextUnit(idx.toLong() + 1, ch) }
+    check(paragraphBaseDirection(isoUnits2, ResolvedTextDirection.Ltr) == ResolvedTextDirection.Rtl) {
+        "LRI..PDI isolate around Latin followed by Arabic Alef must resolve to Rtl"
+    }
+    check(!java.text.Bidi(isoCase2, java.text.Bidi.DIRECTION_DEFAULT_LEFT_TO_RIGHT).baseIsLeftToRight())
+
+    // 19b. Structural-break-only & empty-paragraph selection geometry (KF-2) and paragraphForOffset boundary stability (KF-3)
+    e.replace("ab\n\ncd", "Break and empty selection fixture", paragraphBreaks = true)
+    val kfGeo = checkNotNull(surface.view.measure).invoke(e.snapshot())
+    check(kfGeo.paragraphs.size == 3)
+    // KF-3: Offset 2 is the end/break of paragraph 0; must never jump to paragraph 1
+    val pAt2 = kfGeo.paragraphForOffset(2)
+    check(pAt2.index == 0 && pAt2.toLocalOffset(2) == 2) { "paragraphForOffset(2) must stay in paragraph 0 at local offset 2" }
+    val pAt3 = kfGeo.paragraphForOffset(3)
+    check(pAt3.index == 1 && pAt3.toLocalOffset(3) == 0) { "paragraphForOffset(3) must map to empty paragraph 1 at local offset 0" }
+    // KF-2: Selecting only the break at [2, 3) or the empty paragraph at [3, 4) produces visible selection rects
+    val breakRects = kfGeo.breakAndEmptySelectionRects(Selection(2, 3))
+    check(breakRects.size == 1 && breakRects[0].width > 0f && breakRects[0].height > 0f) { "Break-only selection [2,3) must produce visible highlight rect" }
+    check(kfGeo.hasRenderedSelection(Selection(2, 3)))
+    val emptyParaRects = kfGeo.breakAndEmptySelectionRects(Selection(3, 4))
+    check(emptyParaRects.size == 1 && emptyParaRects[0].width > 0f && emptyParaRects[0].height > 0f) { "Empty-paragraph selection [3,4) must produce visible highlight rect" }
+    check(kfGeo.hasRenderedSelection(Selection(3, 4)))
+    e.perform(EditAction.Undo); check(e.snapshot().visible.text.isEmpty())
+
+    // 19c. Component resize before repaint (KF-6) and wrapped line VK_END soft-wrap affinity (B-1/B-2/B-3)
+    val cjkWrapText = "あいうえおかきくけこ".repeat(12)
+    e.replace(cjkWrapText, "CJK wrap fixture")
+    val initialW = surface.width
+    val initialH = surface.height
+    val geoBefore = checkNotNull(surface.geometry())
+    check(geoBefore.hostWidth == initialW)
+
+    val newW = 500
+    val newH = initialH
+    surface.setSize(newW, newH)
+    // Query EditorSurface.geometry() immediately BEFORE any Compose repaint pass
+    val geoResized = checkNotNull(surface.geometry())
+    check(geoResized.hostWidth == newW) { "EditorSurface.geometry() must invalidate on component width change before repaint" }
+    check(geoResized.textWidth < geoBefore.textWidth) { "Resized geometry must recompute textWidth immediately" }
+    check(geoResized.totalLineCount >= 2) { "CJK fixture must wrap across at least 2 lines" }
+
+    val line0WrapBoundary = geoResized.paragraphs[0].layout.getLineEnd(0, false)
+    e.move(Selection(0, 0))
+    key(KeyEvent.VK_END)
+    val endSel = e.snapshot().selection
+    check(endSel.focus == line0WrapBoundary) { "VK_END on wrapped line 0 must land on exact wrap boundary $line0WrapBoundary, got ${endSel.focus}" }
+    check(endSel.wrapAffinity == WrapAffinity.UPSTREAM) { "VK_END at soft wrap boundary must adopt UPSTREAM affinity" }
+    check(geoResized.getLineForOffset(endSel.focus, WrapAffinity.UPSTREAM) == 0) { "UPSTREAM affinity at wrap boundary must stay on line 0" }
+    check(geoResized.getLineForOffset(endSel.focus, WrapAffinity.DOWNSTREAM) == 1) { "DOWNSTREAM affinity at wrap boundary must map to line 1" }
+    val caretUpstream = geoResized.caret(endSel.focus, endSel.primary, WrapAffinity.UPSTREAM)
+    val caretDownstream = geoResized.caret(endSel.focus, endSel.primary, WrapAffinity.DOWNSTREAM)
+    val caretLine0Start = geoResized.caret(0)
+    check(kotlin.math.abs(caretUpstream.top - caretLine0Start.top) < 1f) { "UPSTREAM caret must render on line 0" }
+    check(caretUpstream.left > caretLine0Start.left + geoResized.textWidth * 0.4f) { "UPSTREAM caret must render at right edge of line 0" }
+    check(caretDownstream.top > caretUpstream.top + 5f) { "DOWNSTREAM caret at same offset must render on line 1" }
+
+    surface.setSize(initialW, initialH)
+    check(checkNotNull(surface.geometry()).hostWidth == initialW)
+    e.perform(EditAction.Undo); check(e.snapshot().visible.text.isEmpty())
+
     println("PASS Urdu/Arabic RTL page alignment, visual selection collapse, Shift+Left, format/Undo and diacritic deletion")
     println("PASS Urdu/Arabic multi-mark combining clusters, medial letter deletion, Eastern digits and punctuation")
     println("PASS Multi-line RTL wrapping, vertical navigation, cross-paragraph transitions, merge and mouse hit testing")
@@ -530,4 +638,5 @@ fun runRtlHostChecks(surface: EditorSurface) {
     println("PASS Cross-paragraph mouse selection, boundary traversal, Enter split and Backspace/Delete join")
     println("PASS Uncached reference layout comparison matches multi-paragraph layout structure")
     println("PASS Multi-paragraph layout benchmark (50 paragraphs: ${multiDurationMs.toInt()} ms; 2,000 words: ${longDurationMs.toInt()} ms)")
+    println("PASS UAX #9 directional isolates (KF-1), break/empty selection rects (KF-2), paragraphForOffset stability (KF-3), resize invalidation (KF-6) and soft-wrap VK_END affinity (B-1/B-2/B-3)")
 }
