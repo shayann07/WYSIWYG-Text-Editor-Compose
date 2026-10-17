@@ -416,6 +416,50 @@ fun runJapaneseHostChecks(surface: EditorSurface) {
     e.perform(EditAction.Undo)
     check(e.snapshot().visible.text.isEmpty())
 
+    // 8. Duplicate terminal callbacks
+    imeEvent("テスト", 0, 3)
+    imeEvent("テスト", 3, null)
+    check(e.snapshot().marked == null)
+    check(e.snapshot().visible.text == "テスト")
+    val snapBeforeDup = e.snapshot()
+    imeEvent("", 0, null)
+    check(e.snapshot() == snapBeforeDup) { "Duplicate terminal clear must be an idempotent no-op" }
+    e.perform(EditAction.Undo)
+    check(e.snapshot().visible.text.isEmpty())
+
+    // 9. Explicit native context retirement and late callback rejection via activeImeEpoch
+    imeEvent("あ", 0, 1)
+    val retiredEpoch = surface.activeImeEpoch
+    surface.abortAndRetireComposition()
+    check(surface.activeImeEpoch == retiredEpoch + 1)
+    check(e.snapshot().marked == null)
+    check(e.snapshot().visible.text.isEmpty())
+    val lateEvent = InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("遅い").iterator, 2, null, null)
+    surface.dispatchInputMethodEventWithEpoch(lateEvent, retiredEpoch)
+    check(lateEvent.isConsumed) { "Late callback targeting retired epoch must be consumed and discarded" }
+    check(e.snapshot().visible.text.isEmpty()) { "Late callback must not affect engine state" }
+    val validEvent = InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("有効").iterator, 2, null, null)
+    surface.dispatchInputMethodEventWithEpoch(validEvent, surface.activeImeEpoch)
+    check(e.snapshot().visible.text == "有効")
+    e.perform(EditAction.Undo)
+    check(e.snapshot().visible.text.isEmpty())
+
+    // 10. Watchdog timeout and cancellation without auto-commit
+    imeEvent("とうきょう", 0, 5)
+    check(e.snapshot().marked != null)
+    check(!e.snapshot().waiting)
+    key(KeyEvent.VK_B, ctrl = true)
+    check(e.snapshot().waiting) { "Shortcut during composition must set waiting flag" }
+    check(!e.settlementTimedOut)
+    val timedOut = e.checkSettlementWatchdog(timeoutMs = 0L)
+    check(timedOut) { "Watchdog must report timeout" }
+    check(e.settlementTimedOut)
+    check(!e.snapshot().waiting) { "Watchdog timeout must cancel pending queue so editor is not wedged" }
+    check(e.snapshot().marked != null) { "Watchdog timeout must NOT auto-commit unaccepted text" }
+    key(KeyEvent.VK_ESCAPE)
+    check(e.snapshot().marked == null) { "Escape must abort timed-out composition" }
+    check(e.snapshot().visible.text.isEmpty())
+
     println("PASS Synthetic Japanese IME callback sequence (preedit -> conversion -> commit), single-group Undo/Redo")
     println("PASS Attached Compose IME candidate geometry (getTextLocation / getLocationOffset monotonic coordinates under stated conditions)")
     println("PASS Screen coordinates and unavailable geometry fallback distinction (offscreen vs not-showing vs unavailable transform)")
@@ -424,4 +468,5 @@ fun runJapaneseHostChecks(surface: EditorSurface) {
     println("PASS Synthetic Japanese selection replacement with exact selection restoration on Undo")
     println("PASS Synthetic Japanese queued formatting and Undo command ordering with attributed history")
     println("PASS Synthetic Japanese paragraph-boundary composition and cross-paragraph selection replacement")
+    println("PASS Synthetic Japanese duplicate terminal callbacks, retirement epoch isolation and watchdog timeout without auto-commit")
 }

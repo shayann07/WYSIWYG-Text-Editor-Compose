@@ -9,9 +9,11 @@ import javax.swing.filechooser.FileNameExtensionFilter
 
 /** Swing shell only. Disk work is off the editing thread; results publish on the EDT. */
 class WindowFiles(
-    private val window: JFrame,
+    val window: JFrame,
     private val engine: EditorEngine,
     initialPath: Path?,
+    var promptCloseChoice: ((String) -> Int)? = null,
+    var onDiscardComposition: () -> Unit = { engine.abortComposition() },
     private val refresh: () -> Unit
 ) {
     var path: Path? = initialPath; private set
@@ -76,19 +78,45 @@ class WindowFiles(
         val written = try { savePoint.capture(engine.snapshot()) } catch (failure: Exception) { error(failure); return }
         val target = destination!!
         val expected = if (!asNew && target == path) diskDocument else null
+        val capturedDocRev = engine.snapshot().documentRevision
+        val capturedSessionRev = engine.snapshot().sessionRevision
         work({ DocumentFiles.write(target, written, expected) }) {
             path = target; diskDocument = written; savePoint.acknowledge(written)
-            // Typing while the write runs stays dirty. Never close over those newer edits.
-            if (closeAfter && !dirty) window.dispose()
+            // Typing while the write runs stays dirty. Never close over newer edits or active preedit.
+            if (closeAfter) {
+                val currentSnap = engine.snapshot()
+                if (!dirty && currentSnap.marked == null && !currentSnap.waiting &&
+                    currentSnap.documentRevision == capturedDocRev && currentSnap.sessionRevision == capturedSessionRev) {
+                    window.dispose()
+                }
+            }
         }
     }
 
-    private fun close() {
+    fun close(choice: Int? = null) {
         if (busy) { ToolkitFeedback.beep(); return }
-        if (!dirty) { window.dispose(); return }
-        when (JOptionPane.showOptionDialog(window, "Save changes to ${path?.fileName ?: "Untitled"}?", "Unsaved document", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, arrayOf("Save", "Discard", "Cancel"), "Save")) {
+        val snap = engine.snapshot()
+        val hasPreedit = snap.marked != null || snap.waiting
+        if (!dirty && !hasPreedit) { window.dispose(); return }
+        val docName = path?.fileName?.toString() ?: "Untitled"
+        val option = choice ?: promptCloseChoice?.invoke(docName) ?: JOptionPane.showOptionDialog(
+            window,
+            "Save changes to $docName?",
+            "Unsaved document",
+            JOptionPane.DEFAULT_OPTION,
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            arrayOf("Save", "Discard", "Cancel"),
+            "Save"
+        )
+        when (option) {
             0 -> save(closeAfter = true)
-            1 -> window.dispose()
+            1 -> {
+                if (hasPreedit) {
+                    onDiscardComposition()
+                }
+                window.dispose()
+            }
         }
     }
 }

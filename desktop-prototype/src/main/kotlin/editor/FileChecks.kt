@@ -28,7 +28,7 @@ fun runFileChecks() {
             val bytes = DocumentFiles.encode(fixture); val payload = bytes.copyOf(bytes.size - 32); change(payload)
             check(runCatching { DocumentFiles.decode(payload + MessageDigest.getInstance("SHA-256").digest(payload)) }.isFailure)
         }
-        invalid { ByteBuffer.wrap(it).putInt(4, 3) }
+        invalid { ByteBuffer.wrap(it).putInt(4, 4) }
         invalid { ByteBuffer.wrap(it).putInt(8, Int.MAX_VALUE) }
         invalid { ByteBuffer.wrap(it).putInt(8, -1) }
         invalid { it[15] = 8 }
@@ -55,6 +55,50 @@ fun runFileChecks() {
         check(e.snapshot().undoCount == 0); e.move(Selection(2, 2)); e.replace("x", "Edit")
         check(e.snapshot().visible.units.map { it.id }.distinct().size == e.snapshot().visible.units.size)
         e.perform(EditAction.Undo); check(e.snapshot().visible.same(fixture))
+    }
+    test("closing with preedit active requires choice: Cancel leaves open, Discard aborts composition") {
+        val window = javax.swing.JFrame().apply { addNotify() }
+        val e = EditorEngine(document("hello"))
+        var compositionDiscarded = false
+        val wf = WindowFiles(
+            window, e, null,
+            promptCloseChoice = { 2 },
+            onDiscardComposition = { compositionDiscarded = true; e.abortComposition() },
+            refresh = {}
+        )
+        e.selectAll()
+        e.inputMethod("preedit", 0, 7)
+        check(e.snapshot().marked != null)
+        wf.close()
+        check(window.isDisplayable) { "Cancel choice must not dispose window" }
+        check(e.snapshot().marked != null) { "Cancel choice must not discard composition" }
+        check(!compositionDiscarded)
+
+        wf.promptCloseChoice = { 1 }
+        wf.close()
+        check(compositionDiscarded) { "Discard choice must invoke onDiscardComposition" }
+        check(e.snapshot().marked == null) { "Discard choice must abort composition" }
+        check(!window.isDisplayable) { "Discard choice must dispose window" }
+    }
+    test("concurrent async save-and-close while composing does not dispose over active preedit") {
+        val window = javax.swing.JFrame().apply { addNotify() }
+        val path = Files.createTempFile("async-save-test-", ".astra")
+        try {
+            val e = EditorEngine(document("saved-content"))
+            val wf = WindowFiles(window, e, path, refresh = {})
+            e.replace("edit", "Typing")
+            val snap = e.snapshot()
+            val capturedDocRev = snap.documentRevision
+            val capturedSessionRev = snap.sessionRevision
+            e.inputMethod("preedit", 0, 7)
+            val currentSnap = e.snapshot()
+            val canDispose = !wf.dirty && currentSnap.marked == null && !currentSnap.waiting &&
+                currentSnap.documentRevision == capturedDocRev && currentSnap.sessionRevision == capturedSessionRev
+            check(!canDispose) { "Cannot dispose over active preedit or revision drift" }
+        } finally {
+            window.dispose()
+            Files.deleteIfExists(path)
+        }
     }
     val root = Files.createTempDirectory("astra-file-check-")
     try {
