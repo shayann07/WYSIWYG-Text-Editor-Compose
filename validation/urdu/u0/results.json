@@ -1,0 +1,75 @@
+{
+  "schemaVersion": "1.0.0",
+  "gate": "U0",
+  "status": "QUALIFIED_SYNTHETIC",
+  "timestamp": "2026-10-17T23:18:00+05:00",
+  "environment": {
+    "os": "win32",
+    "pythonVersion": "3.12.10",
+    "fontToolsVersion": "4.64.0"
+  },
+  "qualificationHonestyNotice": {
+    "syntheticCorpusQualified": true,
+    "candidateFontBytesPinned": true,
+    "humanLinguisticReviewStatus": "OPEN",
+    "nativeHostInputAndGeometryQualification": "OPEN",
+    "notes": "Gate U0 establishes the pinned font binaries, open-source licensing metadata, and 257 deterministic synthetic fixtures across 9 required categories. Per URDU-ACCEPTANCE.md, human linguistic evaluation by proficient Urdu readers and native OS/IME integration qualification remain OPEN for subsequent gates U1 through U5."
+  },
+  "fontVerification": [
+    {
+      "familyName": "Noto Nastaliq Urdu",
+      "fileName": "NotoNastaliqUrdu[wght].ttf",
+      "style": "Nastaliq",
+      "role": "PRIMARY_CANDIDATE",
+      "sizeBytes": 690304,
+      "sha256": "98a4787f34eb6fde57fb9a1121a8f216301196ab0da98ea110cad581be8abbcd",
+      "fsType": "0x0",
+      "installableEmbedding": true,
+      "hasCursiveAttachment": true,
+      "verified": true
+    },
+    {
+      "familyName": "Gulzar",
+      "fileName": "Gulzar-Regular.ttf",
+      "style": "Nastaliq",
+      "role": "SECONDARY_CANDIDATE",
+      "sizeBytes": 963496,
+      "sha256": "246337973ac64e8b70fe611405dcf32a395a8885c4497dc45dbc4975d3ac0831",
+      "fsType": "0x0",
+      "installableEmbedding": true,
+      "hasCursiveAttachment": true,
+      "verified": true
+    },
+    {
+      "familyName": "Noto Sans Arabic",
+      "fileName": "NotoSansArabic[wdth,wght].ttf",
+      "style": "Naskh",
+      "role": "FALLBACK",
+      "sizeBytes": 844676,
+      "sha256": "63111b5b2e074dd48cc67692e0a2726d86ee94c1c37fe8598257b7b4e87e869e",
+      "fsType": "0x0",
+      "installableEmbedding": true,
+      "hasCursiveAttachment": false,
+      "verified": true
+    }
+  ],
+  "corpusVerification": {
+    "totalFixtures": 257,
+    "categoryCounts": {
+      "common_prose": 28,
+      "letter_distinctions": 33,
+      "marks_and_joining": 30,
+      "mixed_scripts_and_numbers": 30,
+      "bidi_controls": 26,
+      "nastaliq_geometry": 28,
+      "spacing_and_justification": 26,
+      "structure": 28,
+      "input_and_mutation": 28
+    },
+    "firstId": "UTXT-001",
+    "lastId": "UTXT-257",
+    "allSequential": true,
+    "allFieldsPresent": true,
+    "fidelityVerified": true
+  }
+}

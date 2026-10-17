@@ -1,0 +1,92 @@
+{
+  "schemaVersion": "1.0.0",
+  "gate": "U0",
+  "description": "Urdu acceptance candidate fonts and fallback manifest for U0 gate qualification.",
+  "candidateFonts": [
+    {
+      "familyName": "Noto Nastaliq Urdu",
+      "fileName": "NotoNastaliqUrdu[wght].ttf",
+      "style": "Nastaliq",
+      "role": "PRIMARY_CANDIDATE",
+      "version": "3.009",
+      "sizeBytes": 690304,
+      "sha256": "98a4787f34eb6fde57fb9a1121a8f216301196ab0da98ea110cad581be8abbcd",
+      "upstreamUrl": "https://raw.githubusercontent.com/google/fonts/main/ofl/notonastaliqurdu/NotoNastaliqUrdu%5Bwght%5D.ttf",
+      "license": "SIL Open Font License, Version 1.1",
+      "licenseUrl": "http://scripts.sil.org/OFL",
+      "fsType": "0x0000",
+      "embeddingRights": "Installable embedding (fsType 0x0000), permitted under SIL OFL 1.1",
+      "axes": [
+        {
+          "tag": "wght",
+          "name": "Weight",
+          "minValue": 400.0,
+          "defaultValue": 400.0,
+          "maxValue": 700.0
+        }
+      ],
+      "openTypeFeatures": {
+        "gsub": ["aalt", "ccmp", "fina", "init", "isol", "locl", "medi", "ordn", "rlig"],
+        "gpos": ["curs", "kern", "mark", "mkmk"]
+      },
+      "evaluationNotes": "Noto Nastaliq Urdu implements the sloping Nastaliq baseline via cursive attachment (curs table in GPOS), with mark-to-base and mark-to-mark positioning. Features variable weight support (400..700)."
+    },
+    {
+      "familyName": "Gulzar",
+      "fileName": "Gulzar-Regular.ttf",
+      "style": "Nastaliq",
+      "role": "SECONDARY_CANDIDATE",
+      "version": "1.000;[7b34f74]; ttfautohint (v1.8.4)",
+      "sizeBytes": 963496,
+      "sha256": "246337973ac64e8b70fe611405dcf32a395a8885c4497dc45dbc4975d3ac0831",
+      "upstreamUrl": "https://raw.githubusercontent.com/google/fonts/main/ofl/gulzar/Gulzar-Regular.ttf",
+      "license": "SIL Open Font License, Version 1.1",
+      "licenseUrl": "http://scripts.sil.org/OFL",
+      "fsType": "0x0000",
+      "embeddingRights": "Installable embedding (fsType 0x0000), permitted under SIL OFL 1.1",
+      "axes": [],
+      "openTypeFeatures": {
+        "gsub": ["ccmp", "fina", "init", "isol", "jalt", "liga", "medi", "onum", "rlig", "ss01", "ss02", "ss03", "ss04", "swsh", "tnum"],
+        "gpos": ["curs", "kern", "mark", "mkmk", "rlig"]
+      },
+      "evaluationNotes": "Designed by Tiro Typeworks specifically for Urdu publishing and poetry. Features advanced Nastaliq ligature substitution, swashes (swsh), stylistic alternates (ss01-ss04), justification alternates (jalt), and cursive attachment (curs)."
+    }
+  ],
+  "fallbackFonts": [
+    {
+      "familyName": "Noto Sans Arabic",
+      "fileName": "NotoSansArabic[wdth,wght].ttf",
+      "style": "Naskh",
+      "role": "FALLBACK",
+      "version": "2.012",
+      "sizeBytes": 844676,
+      "sha256": "63111b5b2e074dd48cc67692e0a2726d86ee94c1c37fe8598257b7b4e87e869e",
+      "upstreamUrl": "https://raw.githubusercontent.com/google/fonts/main/ofl/notosansarabic/NotoSansArabic%5Bwdth%2Cwght%5D.ttf",
+      "license": "SIL Open Font License, Version 1.1",
+      "licenseUrl": "http://scripts.sil.org/OFL",
+      "fsType": "0x0000",
+      "embeddingRights": "Installable embedding (fsType 0x0000), permitted under SIL OFL 1.1",
+      "axes": [
+        {
+          "tag": "wdth",
+          "name": "Width",
+          "minValue": 62.5,
+          "defaultValue": 100.0,
+          "maxValue": 100.0
+        },
+        {
+          "tag": "wght",
+          "name": "Weight",
+          "minValue": 100.0,
+          "defaultValue": 400.0,
+          "maxValue": 900.0
+        }
+      ],
+      "openTypeFeatures": {
+        "gsub": ["aalt", "ccmp", "dlig", "fina", "init", "liga", "locl", "medi", "ordn", "pnum", "rlig", "rtlm", "tnum"],
+        "gpos": ["kern", "mark", "mkmk"]
+      },
+      "evaluationNotes": "Noto Sans Arabic uses a flat linear Naskh baseline and lacks cursive attachment (curs). Per URDU-ACCEPTANCE.md, Naskh/fallback support cannot substitute for qualified Nastaliq in the Urdu application; it serves strictly as an emergency glyph fallback when Nastaliq fonts lack coverage."
+    }
+  ]
+}
