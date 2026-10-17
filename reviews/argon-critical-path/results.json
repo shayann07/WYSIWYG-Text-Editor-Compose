@@ -1,7 +1,7 @@
 {
   "investigation": "argon-critical-path",
   "commit": "773bc068cd87cd83d1289bdb5e46e8ab6552869d",
-  "timestamp": "2026-10-17T07:40:00Z",
+  "timestamp": "2026-10-17T07:45:00Z",
   "environment": {
     "os": "Windows 11 (AMD64)",
     "java": "OpenJDK 23.0.2 Temurin (build 23.0.2+7)",
@@ -99,6 +99,7 @@
       "title": "Unbounded composition lock / permanent editor wedge when endComposition() emits no InputMethodEvent",
       "file": "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
       "lines": "371, 387, 398, 404, 427, EditorEngine.kt:164-170",
+      "status": "CONFIRMED_PRESENT",
       "severity": "CRITICAL",
       "invariant": "I09, I10, plan-v5.md §4.5, §5.1 (Bounded Settlement Fence & Liveness)",
       "evidence": "When composition != null, keyTyped is dropped and edits are queued into pending up to 256 items. When pending reaches 256, all further edits are rejected with 'Finish composing before another command.' If OS IME does not emit InputMethodEvent, editor is wedged forever.",
@@ -110,6 +111,7 @@
       "title": "VK_ESCAPE calls endComposition() which sends CPS_COMPLETE (commit) on Windows AWT",
       "file": "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
       "lines": "387, 427",
+      "status": "CONFIRMED_PRESENT",
       "severity": "HIGH",
       "invariant": "I07, plan-v5.md §4.5 (Atomic composition rollback to baseline on cancellation)",
       "evidence": "WInputMethod.endCompositionNative receives haveActiveClient() == true, triggering Win32 CPS_COMPLETE which commits preedit text into document instead of cancelling/reverting to baseline.",
@@ -121,6 +123,7 @@
       "title": "Partial IME commit overwrites session.baseline with temporary marked units, destroying PARAGRAPH_BREAK and silently deleting retained text on abort",
       "file": "desktop-prototype/src/main/kotlin/editor/EditorEngine.kt",
       "lines": "199-203, 245",
+      "status": "CONFIRMED_PRESENT",
       "severity": "CRITICAL",
       "invariant": "I07, I08, plan-v5.md §4.5 (Partial-Commit Prefix Freeze & Overlay Segment Preservation)",
       "evidence": "Selection(0, 4) on 'abcd' + inputMethod('Xcd', committedCount=1, caret=2) splices dc over [0, 4) with 'X'. Calling abortComposition() yields 'X', permanently deleting retained suffix 'cd'.",
@@ -132,6 +135,7 @@
       "title": "PARAGRAPH_BREAK style contamination and emptyParagraphStyleIndex mutation",
       "file": "desktop-prototype/src/main/kotlin/editor/EditorEngine.kt",
       "lines": "53, 55-61, 138-140, 223-224",
+      "status": "CONFIRMED_PRESENT",
       "severity": "CRITICAL",
       "invariant": "I06, plan-v5.md §4.5, §4.10, line 335 (Unstyled structural breaks)",
       "evidence": "Pressing Enter while Bold is active creates a PARAGRAPH_BREAK unit stamped with bold=true. When downstream text is deleted, emptyParagraphStyleIndex reads this leftover style, resurrecting bold unintentionally.",
@@ -142,10 +146,11 @@
       "risk_area": "Risk A: Native Input Feasibility & Settlement",
       "title": "DesktopEditor.keyPressed lacks published.marked != null guard, queueing duplicate mutations with temporary preedit PointAnchor IDs into pending",
       "file": "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
-      "lines": "408-431, EditorEngine.kt:100-103, 164-170",
+      "lines": "408-431, EditorEngine.kt:100-103, 164-173",
+      "status": "CONFIRMED_PRESENT",
       "severity": "HIGH",
       "invariant": "I01, I09, I10, plan-v5.md §4.5, §5.1 (IME Mutation Ownership & Ephemeral Anchor Protection)",
-      "evidence": "DesktopEditor.keyPressed lacks a marked != null guard on VK_BACK_SPACE, VK_DELETE, VK_ENTER, VK_TAB, and navigation keys. It calls engine.delete() or replace(), capturing temporary preedit PointAnchor IDs from visible().units and appending to pending. On settlement or abort, these IDs no longer exist in the document, corrupting pending replay."
+      "evidence": "DesktopEditor.keyPressed lacks a marked != null guard on VK_BACK_SPACE, VK_DELETE, VK_ENTER, VK_TAB, and navigation keys. It calls engine.delete() or replace(), capturing temporary preedit PointAnchor IDs from visible().units and appending to pending. Because composition != null, EditorEngine.perform triggers onSettlementRequested(), calling requestEndComposition() while leaving unresolvable ephemeral anchor IDs in pending. On subsequent settlement or abort, these IDs no longer exist in the document, corrupting pending replay."
     },
     {
       "id": "A-6",
@@ -153,9 +158,10 @@
       "title": "WindowFiles.newDocument() and WindowFiles.open() bypass confirmDiscard() during active composition, replacing EditorEngine while native OS IME holds active context",
       "file": "desktop-prototype/src/main/kotlin/editor/WindowFiles.kt",
       "lines": "54-60, 86-93 (and Main.kt:350-388)",
+      "status": "CONFIRMED_PRESENT",
       "severity": "HIGH",
       "invariant": "I07, I09, plan-v5.md §4.5, §5.1 (Active Composition Lifecycle & Document Replacement Safety)",
-      "evidence": "WindowFiles.open() and newDocument() lack checks for engine.snapshot().marked != null or waiting, and lack confirmDiscard() prompts when dirty == false during preedit, allowing EditorEngine replacement while Windows HIMC or Cocoa NSTextInputContext holds active native composition."
+      "evidence": "WindowFiles.open(), newDocument(), and close() lack checks for engine.snapshot().marked != null or waiting, and lack confirmDiscard() prompts when dirty == false during preedit (since uncommitted preedit only mutates composition, leaving dirty == false). This allows EditorEngine replacement while Windows HIMC or Cocoa NSTextInputContext holds active native composition, leaking OS input context and discarding preedit without user confirmation."
     },
     {
       "id": "B-1",
@@ -163,6 +169,7 @@
       "title": "Soft-wrap boundary offset assigned exclusively to next line, breaking VK_END and wrap-end caret placement",
       "file": "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
       "lines": "162-172, 485-493, 504-516",
+      "status": "CONFIRMED_PRESENT",
       "severity": "CRITICAL",
       "invariant": "I09, I10, plan-v5.md §2.3, §4.12 (Soft-Wrap Line Affinity: Upstream vs Downstream)",
       "evidence": "Compose/Skia getLineForOffset(wrapOffset) returns line L+1. stops(g) builds exactly one stop per offset on line L+1, leaving line L with no stop at the wrap boundary. Pressing END on line L stops at wrapOffset - 1, short of the line end on unspaced/CJK text.",
@@ -174,6 +181,7 @@
       "title": "getTextLocation conflates AWT TextHitInfo.isLeadingEdge with Compose bidi primary direction flag",
       "file": "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
       "lines": "546-547",
+      "status": "CONFIRMED_PRESENT",
       "severity": "HIGH",
       "invariant": "I09, plan-v5.md §4.12, §5.1 (AWT TextHitInfo Edge vs Bidi Run Direction)",
       "evidence": "TextHitInfo.leading(k) and afterOffset(k-1) represent the exact same insertion offset, but isLeadingEdge toggles usePrimaryDirection, returning different X coordinates at bidi run boundaries."
@@ -184,6 +192,7 @@
       "title": "getTextLocation(null) anchors on unselected next paragraph when selection ends at paragraph boundary",
       "file": "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
       "lines": "549-558",
+      "status": "CONFIRMED_PRESENT",
       "severity": "HIGH",
       "invariant": "I10, plan-v5.md §4.12 (Boundary Anchor On Covered Units vs Next Paragraph)",
       "evidence": "Selection(0, 3) on 'ab\\n' ends at 3. paragraphForOffset(3) resolves to empty Para 1, returning candidate box at y=215 instead of Para 0 line at y=185."
@@ -194,6 +203,7 @@
       "title": "Vertical navigation traps caret across empty paragraphs due to stops(g) text-only generation",
       "file": "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
       "lines": "485-493, 512-514",
+      "status": "CONFIRMED_PRESENT",
       "severity": "MEDIUM",
       "invariant": "plan-v5.md §2.3, §4.12 (Vertical Visual Navigation Across Structural Breaks)",
       "evidence": "stops(g) builds stops only from Graphemes.stops(text). On empty paragraphs (textLength == 0), no stops exist on that line. When navigating Up/Down into an empty paragraph, all.filter { it.line == line } is empty, minByOrNull is null, and ?: here traps the caret on the current line."
@@ -204,6 +214,7 @@
       "title": "Nonlocal preceding-paragraph direction inheritance causes O(P) downstream cache invalidation on 1-char edit",
       "file": "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
       "lines": "199-202, 226, 234-235",
+      "status": "CONFIRMED_PRESENT",
       "severity": "CRITICAL",
       "invariant": "I11, plan-v5.md §5.2, §5.3 (Paragraph Direction Isolation vs Downstream Cache Cascade)",
       "evidence": "Editing Para 0 from LTR to RTL propagates fallback=Rtl across all subsequent neutral paragraphs, flipping their base direction and invalidating their ParagraphCacheKey entries.",
@@ -215,6 +226,7 @@
       "title": "O(N) per-keystroke full-document string cloning, full-document grapheme snapping, and O(N * P) stops scan per arrow key",
       "file": "desktop-prototype/src/main/kotlin/editor/EditorEngine.kt",
       "lines": "16, 129-131, DesktopEditor.kt:485-493",
+      "status": "CONFIRMED_PRESENT",
       "severity": "CRITICAL",
       "invariant": "I15 (No Whole-Document Flatten/Serialize on Local Edit)",
       "evidence": "Document.text allocates a new full-document String on every read (6+ times per keystroke). stops(g) runs over all graphemes in the document with an O(P) paragraph lookup per grapheme.",
@@ -226,6 +238,7 @@
       "title": "Uncoalesced per-character SpanStyle allocations severely inflate Skia run-segmentation and TextMeasurer key hashing",
       "file": "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
       "lines": "86-92",
+      "status": "CONFIRMED_PRESENT",
       "severity": "HIGH",
       "invariant": "I11, plan-v5.md §5.3 (SpanStyle Run Coalescing vs Per-Character Explosion)",
       "evidence": "paragraphAttributedDisplay emits 1-character SpanStyle for every styled character instead of coalescing contiguous identical TextStyleFlags into single ranges."

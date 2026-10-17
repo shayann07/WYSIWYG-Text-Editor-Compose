@@ -88,15 +88,16 @@ This document specifies the exact implementation tasks for engineering teams, or
 
 ### Task 5: Safe Document Lifecycle & Native IME Context Teardown (`A-6`)
 - **Severity**: High (Native Context Leak; Unsaved Preedit Discard Without Confirmation).
-- **Affected Files**: [`desktop-prototype/src/main/kotlin/editor/WindowFiles.kt`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/WindowFiles.kt), [`desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt).
+- **Affected Files**: [`desktop-prototype/src/main/kotlin/editor/WindowFiles.kt`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/WindowFiles.kt), [`desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt), [`desktop-prototype/src/main/kotlin/editor/Main.kt`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/Main.kt).
 - **Required Changes**:
-  1. **Block Document Replacement During Composition (`A-6`)**:
-     - In `WindowFiles.open()`, `WindowFiles.newDocument()` (and `WindowFiles.close()`), check:
+  1. **Block Document Replacement During Active Composition (`A-6`)**:
+     - In `WindowFiles.open()`, `WindowFiles.newDocument()` (and `WindowFiles.close()`), add explicit pre-flight guards:
        `if (engine.snapshot().marked != null || engine.snapshot().waiting) { error(IllegalStateException("Finish composing before opening or closing a document.")); return }`
-  2. **Confirm Discard on Document Re-init**:
-     - Ensure `confirmDiscard()` is invoked before replacing `EditorEngine` whenever changes or active compositions are present, ensuring the OS IME's native context (`HIMC` on Win32, `NSTextInputContext` on Cocoa) is safely settled/released before surface teardown.
+  2. **Ensure `confirmDiscard()` Is Not Bypassed During Preedit**:
+     - When `engine.dirty == false` during active composition (since uncommitted preedit only mutates `composition`, leaving `savePoint.dirty` as `false`), ensure `confirmDiscard()` is still invoked before replacing `EditorEngine` or disposing the window.
+     - Ensure the OS IME's native context (`HIMC` on Win32, `NSTextInputContext` on Cocoa) is safely aborted/released via `abortComposition()` before surface and engine teardown.
 - **Acceptance Tests**:
-  - Attempting to open or close a document during active composition must block and display error dialog without leaking native IME state.
+  - Attempting to open, create, or close a document during active composition must block and display error feedback without leaking native IME state.
 - **Dependencies**: Task 4.
 
 ---

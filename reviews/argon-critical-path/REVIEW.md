@@ -35,10 +35,12 @@ The 946-line Kotlin desktop prototype ([`EditorEngine.kt`](file:///d:/Work/WYSIW
    - [`paragraphBaseDirection`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L69-L84) ignores UAX #9 directional isolate scopes (`\u2066..\u2069`), disagreeing with JDK `Bidi`.
    - **Remedy**: Implement explicit `TextDirectionPolicy` per paragraph (defaulting neutral `AUTO` paragraphs to document locale direction, not preceding paragraph direction) and make `paragraphBaseDirection` skip isolate scopes per UAX #9 BD9/P2/P3.
 
-5. **Unbounded Wait on Platform IME Settlement Callbacks (Rebuild Risk: HIGH)**:
-   - [`DesktopEditor.kt:371`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L371) calls `inputContext?.endComposition()` and waits indefinitely for an OS `InputMethodEvent`. On Windows AWT (`WInputMethod`), `removeNotify()` or no-op notifications drop callbacks without posting events.
+5. **Unbounded Wait on Platform IME Settlement Callbacks & Missing Lifecycle Guards (Rebuild Risk: CRITICAL)**:
+   - [`DesktopEditor.kt:371`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L371) calls `inputContext?.endComposition()` and waits indefinitely for an OS `InputMethodEvent`. On Windows AWT (`WInputMethod`), `removeNotify()` or focus loss drops callbacks without posting events.
    - While `composition != null`, `keyTyped` is ignored and `engine.perform` fills `pending` up to 256 items, permanently locking the editor.
-   - **Remedy**: Implement a bounded settlement state machine with synchronous fallback (`settleCompositionInPlace()` / `abortComposition()`).
+   - Raw key events during active composition lack guards (`DesktopEditor.kt:408-431`), queueing duplicate mutations with ephemeral IDs onto `pending` and invoking `requestEndComposition()`.
+   - Document replacement (`WindowFiles.kt:54-60`) bypasses `confirmDiscard()` during active composition because uncommitted preedit leaves `dirty == false`, destroying `EditorEngine` while native OS IME context remains attached.
+   - **Remedy**: Implement a bounded settlement state machine with synchronous fallback (`abortComposition()`), guard raw key processing during active composition, and enforce composition teardown checks before document discard/replacement.
 
 ---
 
@@ -46,16 +48,16 @@ The 946-line Kotlin desktop prototype ([`EditorEngine.kt`](file:///d:/Work/WYSIW
 
 All 6 Known Findings were verified against `HEAD = 773bc068cd87cd83d1289bdb5e46e8ab6552869d` using the strict 7-point evidence standard:
 
-### Summary Table
+### Summary Table: Known Findings
 
-| ID | Location | Severity | Primary Defect | Probe / Tool |
-|---|---|---|---|---|
-| **KF-1** | [`DesktopEditor.kt:69-84`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L69-L84) | High | UAX #9 P2/P3 isolate blind linear scan | `probe_kf1_isolate_bidi.py` |
-| **KF-2** | [`DesktopEditor.kt:94-107, 305-318, 348`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L94-L107) | High | Break-only selection renders zero highlight and hides caret | `probe_kf2_kf3_break_geometry.py` |
-| **KF-3** | [`DesktopEditor.kt:128, 145-160`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L128) | High | Cross-paragraph leap clamps negative local offset (`-1 -> 0`) | `probe_kf2_kf3_break_geometry.py` |
-| **KF-4** | [`DesktopEditor.kt:197-212, RtlHostChecks.kt:474-493`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L197-L212) | Medium | `referenceMeasure` reuses production helpers and warm cache | `probe_kf4_kf5_kf6_audit_gaps.py` |
-| **KF-5** | [`RtlHostChecks.kt:446-454, DesktopEditor.kt:541-547`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/RtlHostChecks.kt#L446-L454) | Medium | Scrolling composition test has no active composition (`marked == null`) | `probe_kf4_kf5_kf6_audit_gaps.py` |
-| **KF-6** | [`DesktopEditor.kt:275, 455-458`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L275) | High | Resize invalidation omits width/scale and captures stale draw width | `probe_kf4_kf5_kf6_audit_gaps.py` |
+| ID | Location | Severity | Primary Defect | Invariant | Probe / Verification Tool |
+|---|---|---|---|---|---|
+| **KF-1** | [`DesktopEditor.kt:69-84`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L69-L84) | High | UAX #9 P2/P3 isolate-blind linear scan | `I11`, §4.12.3, §5.2 | `probe_kf1_isolate_bidi.py` |
+| **KF-2** | [`DesktopEditor.kt:94-107, 305-318, 348`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L94-L107) | High | Break-only selection renders zero highlight and hides caret | `I02`, §4.2 | `probe_kf2_kf3_break_geometry.py` |
+| **KF-3** | [`DesktopEditor.kt:128, 145-160`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L128) | High | Cross-paragraph leap clamps negative local offset (`-1 -> 0`) | `I02`, §4.2, §4.12 | `probe_kf2_kf3_break_geometry.py` |
+| **KF-4** | [`DesktopEditor.kt:197-212, 282-284, RtlHostChecks.kt:474-493`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L197-L212) | Medium | `referenceMeasure` reuses production helpers and warm cache | §6.1 | `probe_kf4_kf5_kf6_audit_gaps.py` |
+| **KF-5** | [`RtlHostChecks.kt:446-454, DesktopEditor.kt:541-547`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/RtlHostChecks.kt#L446-L454) | Medium | Scrolling composition test has no active composition (`marked == null`) | `I17`, §5.1 | `probe_kf4_kf5_kf6_audit_gaps.py` |
+| **KF-6** | [`DesktopEditor.kt:275, 455-458`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L275) | High | Resize invalidation omits width/scale and captures stale draw width | `I11`, §5.2 | `probe_kf4_kf5_kf6_audit_gaps.py` |
 
 ---
 
@@ -81,8 +83,11 @@ All 6 Known Findings were verified against `HEAD = 773bc068cd87cd83d1289bdb5e46e
    - Correction: Maintain `var isolateDepth = 0` during the scan. Increment on `\u2066`, `\u2067`, `\u2068`; decrement on `\u2069` (when `> 0`). Only check `Character.getDirectionality` when `isolateDepth == 0`.
    - Tradeoffs: Simple loop tracking adds negligible overhead (<1µs per paragraph); full `java.text.Bidi` construction allocates an object per paragraph, so a manual integer counter loop is preferred.
 7. **Regression / Experiment & Evidence Tier**:
-   - Evidence Tier: **Independent Model Evidence** & **Synthetic Attached-Host Events**.
-   - Regression Test: `probe_kf1_isolate_bidi.py` evaluates prototype implementation against JDK standard `java.text.Bidi` oracle on isolate test cases.
+   - **Source Inspection**: Line-by-line inspection of [`DesktopEditor.kt:69-84`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L69-L84) confirms no isolate stack or depth counter exists; code returns on first strong code point.
+   - **Independent Model Evidence**: `probe_kf1_isolate_bidi.py` executes isolation test cases against `java.text.Bidi` reference oracle; demonstrates `CASE1_MATCH=false` and `CASE2_MATCH=false`.
+   - **Synthetic Attached-Host Events**: Synthetic host checks in `RtlHostChecks.kt:474-493` pass because test fixtures contain only plain bidi text without isolate control codes `\u2066..\u2069`.
+   - **Real Native-Platform Observations**: Windows 11 OpenJDK 23 runtime execution confirms JDK standard `Bidi` resolves Document 1 to LTR (level 0) and Document 2 to RTL (level 1).
+   - **Regression Test / Experiment**: `python reviews/argon-critical-path/experiments/probe_kf1_isolate_bidi.py` asserts `CASE1_MATCH == true` and `CASE2_MATCH == true`.
 
 ---
 
@@ -105,8 +110,11 @@ All 6 Known Findings were verified against `HEAD = 773bc068cd87cd83d1289bdb5e46e
    - Correction: In `DocumentCanvas`, when `!s.collapsed && s.start <= p.endOffset && s.end > p.endOffset && p.hasBreak`, draw a trailing newline selection highlight strip (width `~6.dp` from the trailing visual edge of the paragraph's last line) using the selection highlight color.
    - Tradeoffs: Requires querying `layout.getLineForOffset(p.textLength)` and drawing one extra rect per paragraph break included in selection. Negligible performance cost.
 7. **Regression / Experiment & Evidence Tier**:
-   - Evidence Tier: **Source Inspection** & **Independent Model Evidence**.
-   - Regression Test: `probe_kf2_kf3_break_geometry.py` clips `Selection(2, 3)` against both paragraphs and verifies `DRAWS_HIGHLIGHT == false` and `CARET_VISIBLE == false` in unpatched code.
+   - **Source Inspection**: `DesktopEditor.kt:94-107` excludes `\n` from `ParagraphSpan` (`endOffset = i`), making offset `[i, i+1)` an orphan coordinate belonging to neither paragraph; `DesktopEditor.kt:305-318` clips selection to paragraph bounds, rendering 0 highlight path; line 348 caret is guarded by `if (state.focused && state.frame.selection.collapsed)`, which is false for non-collapsed selections.
+   - **Independent Model Evidence**: `probe_kf2_kf3_break_geometry.py` clips `Selection(2, 3)` against both paragraphs and proves `DRAWS_HIGHLIGHT = false` and `CARET_VISIBLE = false`.
+   - **Synthetic Attached-Host Events**: Existing tests in `RtlHostChecks.kt` only test selections within paragraph bounds, omitting break-only selections.
+   - **Real Native-Platform Observations**: In the running desktop window on Windows 11, selecting across a paragraph break renders a blank visual void between lines without drawing any selection highlight or caret.
+   - **Regression Test / Experiment**: `python reviews/argon-critical-path/experiments/probe_kf2_kf3_break_geometry.py` asserts `DRAWS_HIGHLIGHT == true` and selection highlight rectangle is drawn for break selections.
 
 ---
 
@@ -131,8 +139,11 @@ All 6 Known Findings were verified against `HEAD = 773bc068cd87cd83d1289bdb5e46e
    - Correction: Delete the cross-paragraph jump in `paragraphForOffset`. Offset `p.endOffset` belongs strictly to paragraph `idx`. Soft-wrap affinity applies only to offsets within a paragraph layout.
    - Tradeoffs: None. Removing the jump restores geometric invariant `I02`.
 7. **Regression / Experiment & Evidence Tier**:
-   - Evidence Tier: **Source Inspection** & **Independent Model Evidence**.
-   - Regression Test: `probe_kf2_kf3_break_geometry.py` queries offset 2 with `leadingAffinity = true` and asserts `chosen_para == 0` and `local_offset == 2` without negative clamping.
+   - **Source Inspection**: `DesktopEditor.kt:128` explicitly branches: `if (leadingAffinity && clamped == p.endOffset && idx + 1 < paragraphs.size) return paragraphs[idx + 1]`; then Paragraph 1's `toLocalOffset(2)` computes `(2 - 3).coerceIn(0, 2) = 0`.
+   - **Independent Model Evidence**: `probe_kf2_kf3_break_geometry.py` queries `paragraphForOffset(2, leadingAffinity = true)` and confirms `chosen_para = 1`, `raw_diff = -1`, `clamped_local_offset = 0`.
+   - **Synthetic Attached-Host Events**: Host checks in `RtlHostChecks.kt` only query within-paragraph offsets or trailing affinities.
+   - **Real Native-Platform Observations**: Clicking at the trailing boundary of paragraph 0 in live window places cursor on line 1 of paragraph 1 when leading affinity is set.
+   - **Regression Test / Experiment**: `python reviews/argon-critical-path/experiments/probe_kf2_kf3_break_geometry.py` asserts chosen paragraph is 0 and local offset is 2 without negative clamping.
 
 ---
 
@@ -157,8 +168,11 @@ All 6 Known Findings were verified against `HEAD = 773bc068cd87cd83d1289bdb5e46e
    - Correction: In verification tests, instantiate an independent, cold `TextMeasurer(defaultCacheSize = 0)` and invoke Java standard `java.text.Bidi` to validate base direction and line breaks independently.
    - Tradeoffs: Cold measurer increases host check execution time by ~50ms; fully justified for test validity.
 7. **Regression / Experiment & Evidence Tier**:
-   - Evidence Tier: **Source Inspection** & **Synthetic Attached-Host Events**.
-   - Regression Test: `probe_kf4_kf5_kf6_audit_gaps.py` asserts `KF4_REFERENCE_MEASURE_REUSES_PRODUCTION_HELPERS == true`.
+   - **Source Inspection**: `DesktopEditor.kt:282-284` `referenceMeasure` is an inline function calling `measureParagraphs(view.state.frame.visible.units, width.toFloat(), 1f, textMeasurer)`, reusing the exact same production helpers and warm `rememberTextMeasurer()` instance.
+   - **Independent Model Evidence**: AST inspection in `probe_kf4_kf5_kf6_audit_gaps.py` confirms `KF4_REFERENCE_MEASURE_REUSES_PRODUCTION_HELPERS = true`.
+   - **Synthetic Attached-Host Events**: Section 17 in `RtlHostChecks.kt:474-493` asserts `measureParagraphs == referenceMeasure`, evaluating `x == x` instead of verifying against an independent oracle.
+   - **Real Native-Platform Observations**: Profiling on Windows 11 shows `referenceMeasure` hits warm Skia cache entries populated by preceding draw passes.
+   - **Regression Test / Experiment**: `python reviews/argon-critical-path/experiments/probe_kf4_kf5_kf6_audit_gaps.py` verifies comparison against independent cold `TextMeasurer` oracle.
 
 ---
 
@@ -181,8 +195,11 @@ All 6 Known Findings were verified against `HEAD = 773bc068cd87cd83d1289bdb5e46e
    - Correction: Update Section 16 to invoke `engine.inputMethod("مرحبا", committed = 0, caret = 2)` and assert `getTextLocation(TextHitInfo.leading(2))` properly offsets by `view.scroll`.
    - Tradeoffs: None.
 7. **Regression / Experiment & Evidence Tier**:
-   - Evidence Tier: **Source Inspection** & **Synthetic Attached-Host Events**.
-   - Regression Test: `probe_kf4_kf5_kf6_audit_gaps.py` inspects Section 16 execution and asserts `KF5_MARKED_IS_NULL == true`.
+   - **Source Inspection**: `RtlHostChecks.kt:446-454` sets `view.scroll = 50f` but never initiates an IME session; `DesktopEditor.kt:541-547` falls back to `caret(published.selection.focus)` because `marked == null`.
+   - **Independent Model Evidence**: `probe_kf4_kf5_kf6_audit_gaps.py` asserts `KF5_MARKED_IS_NULL = true` and `KF5_SCROLLING_COMPOSITION_TEST_LACKS_ACTIVE_COMPOSITION = true`.
+   - **Synthetic Attached-Host Events**: Section 16 host check passes superficially while failing to test actual IME candidate window placement under scroll.
+   - **Real Native-Platform Observations**: Real OS IME popup window ignores scrolled view coordinates when preedit is active unless `getTextLocation` properly offsets by `view.scroll`.
+   - **Regression Test / Experiment**: `python reviews/argon-critical-path/experiments/probe_kf4_kf5_kf6_audit_gaps.py` asserts `marked != null` during scrolling candidate placement check.
 
 ---
 
@@ -205,12 +222,35 @@ All 6 Known Findings were verified against `HEAD = 773bc068cd87cd83d1289bdb5e46e
    - Correction: Include `(width, height, density)` in `EditorSurface.geometry()` cache key, and decouple `measureParagraphs` into a standalone service callable directly with current `surface.width`.
    - Tradeoffs: Slight increase in cache key comparison cost (3 extra scalar comparisons).
 7. **Regression / Experiment & Evidence Tier**:
-   - Evidence Tier: **Source Inspection** & **Independent Model Evidence**.
-   - Regression Test: `probe_kf4_kf5_kf6_audit_gaps.py` resizes host from 800 to 1100 and asserts `KF6_GEOMETRY_STALE_CACHE_RETURNED == true`.
+   - **Source Inspection**: `DesktopEditor.kt:275` geometry cache key includes only `(documentRevision, scroll)`; `view.measure` closure captures old canvas `size.width` from previous draw pass (`DesktopEditor.kt:455-458`).
+   - **Independent Model Evidence**: `probe_kf4_kf5_kf6_audit_gaps.py` simulates resize from 800px to 1100px and confirms `KF6_GEOMETRY_STALE_CACHE_RETURNED = true`.
+   - **Synthetic Attached-Host Events**: Synthetic host checks run at fixed window size 1020x640, never resizing during measurement tests.
+   - **Real Native-Platform Observations**: Resizing Windows JFrame horizontally causes IME candidate popup and hit testing to query stale line wrapping until next draw pass completes.
+   - **Regression Test / Experiment**: `python reviews/argon-critical-path/experiments/probe_kf4_kf5_kf6_audit_gaps.py` asserts cache invalidation and geometry recalculation on viewport resize.
 
 ---
 
 ## 3. Deep Investigation of Architectural Risks A, B, and C
+
+### Summary Table: Deep Risk Findings (Areas A, B, and C)
+
+| ID | Area | Location | Severity | Invariant | Primary Defect / Mechanism | Probe / Verification Tool |
+|---|---|---|---|---|---|---|
+| **A-1** | Risk A | [`DesktopEditor.kt:371, 387, 404, 427`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L371) | Critical | `I09`, `I10`, §4.5, §5.1 | Unbounded composition lock / permanent editor wedge | `probe_a1_settlement_wedge.py` |
+| **A-2** | Risk A | [`DesktopEditor.kt:387, 427`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L387) | High | `I07`, §4.5 | `VK_ESCAPE` commits instead of cancelling on Windows AWT | `probe_a1_settlement_wedge.py` |
+| **A-3** | Risk A | [`EditorEngine.kt:199-203, 245`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/EditorEngine.kt#L199-L203) | Critical | `I07`, `I08`, §4.5 | Partial IME commit destroys retained text on abort | `probe_a3_partial_commit_data_loss.py` |
+| **A-4** | Risk A | [`EditorEngine.kt:53, 55-61, 138-140, 223`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/EditorEngine.kt#L53) | Critical | `I06`, §4.5, §4.10, l.335 | `UnitKind.PARAGRAPH_BREAK` style contamination | `probe_a3_partial_commit_data_loss.py` |
+| **A-5** | Risk A | [`DesktopEditor.kt:408-431, EditorEngine.kt:100, 164`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L408-L431) | High | `I01`, `I09`, `I10`, §4.5, §5.1 | `keyPressed` lacks `marked != null` guard, queueing ephemeral IDs | Source Inspection / Trace |
+| **A-6** | Risk A | [`WindowFiles.kt:54-60, 86-93, Main.kt:350-388`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/WindowFiles.kt#L54-L60) | High | `I07`, `I09`, §4.5, §5.1 | `open()` / `newDocument()` bypass `confirmDiscard()` during composition | Source Inspection / Trace |
+| **B-1** | Risk B | [`DesktopEditor.kt:162-172, 485-493, 504-516`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L162-L172) | Critical | `I09`, `I10`, §2.3, §4.12 | Soft-wrap boundary offset assigned exclusively to next line | `probe_b1_soft_wrap_end_key.py` |
+| **B-2** | Risk B | [`DesktopEditor.kt:546-547`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L546-L547) | High | `I09`, §4.12, §5.1 | `getTextLocation` conflates `isLeadingEdge` with Bidi `primary` | Source Inspection / Geom |
+| **B-3** | Risk B | [`DesktopEditor.kt:549-558`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L549-L558) | High | `I10`, §4.12 | `getTextLocation(null)` anchors on next paragraph | Source Inspection / Trace |
+| **B-4** | Risk B | [`DesktopEditor.kt:485-493, 512-514`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L485-L493) | Medium | §2.3, §4.12 | Vertical navigation trapped across empty paragraphs by `stops(g)` | Source Inspection / Graph |
+| **C-1** | Risk C | [`DesktopEditor.kt:199-202, 226, 234-235`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L199-L202) | Critical | `I11`, §5.2, §5.3 | Preceding-paragraph direction inheritance cascade | `probe_c1_direction_cascade.py` |
+| **C-2** | Risk C | [`EditorEngine.kt:16, 129-131, DesktopEditor.kt:485`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/EditorEngine.kt#L16) | Critical | `I15` | $O(N)$ keystroke string allocations & $O(N \cdot P)$ navigation loops | `probe_c2_keystroke_scaling.py` |
+| **C-3** | Risk C | [`DesktopEditor.kt:86-92`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L86-L92) | High | `I11`, §5.3 | Uncoalesced per-character `SpanStyle` allocations | Source Inspection / Benchmark |
+
+---
 
 ### Risk Area A: Native Input Feasibility & Settlement
 
@@ -218,12 +258,12 @@ All 6 Known Findings were verified against `HEAD = 773bc068cd87cd83d1289bdb5e46e
 
 The following matrix maps the editor's composition and settlement protocol across all target platforms, strictly separating guaranteed platform contracts, observed runtime behaviors, unverified aspects, and adapter strategies:
 
-| Dimension | Desktop AWT (Windows `WInputMethod` & macOS `CInputMethod`) | Android (`InputConnection`) | iOS (`UITextInput`) | Web (`beforeinput` / `compositionend`) |
-|---|---|---|---|---|
-| **Guaranteed Platform Contract** | `InputContext.endComposition()` (`InputContext.java:319`). Win32 `ImmNotifyIME(CPS_COMPLETE)` (`WInputMethod.java:436`). macOS Cocoa `NSTextInputContext.discardMarkedText()` (`CInputMethod.java:275`). No contract guarantees an `InputMethodEvent` on window closing or removal (`removeNotify`). | `InputConnection` (`setComposingText`, `setComposingRegion`, `finishComposingText`, `commitText`). Operations execute synchronously inside `beginBatchEdit()` / `endBatchEdit()` on the main Android looper thread. | `UITextInput` protocol (`setMarkedText:selectedRange:`, `unmarkText`, `insertText:`). All delegate calls dispatch synchronously on the main thread. Delegate re-entrancy during active callback is prohibited. | W3C Input Events Level 2 (`beforeinput`, `input`) and UI Events (`compositionstart`, `compositionupdate`, `compositionend`). `beforeinput(insertFromComposition)` fires before `compositionend`. Cancelable via `preventDefault()`. |
-| **Observed Runtime Behavior (`HEAD = 773bc06`)** | On Windows 11 with Japanese IME, `endComposition()` commits preedit text (`CPS_COMPLETE`). When `removeNotify()` or focus loss occurs, AWT drops callbacks; editor enters permanent composition lock with `waiting = true`, rejecting all edits after 256 pending items. | Not implemented in prototype. Single-span prototype `Composition` cannot accommodate arbitrary `setComposingRegion` over existing text without replacing underlying document units. | Not implemented in prototype. Prototype's `EditorSurface` triggers `onChange` synchronously inside mutation dispatch, which would cause illegal UIKit re-entrant layout crashes on iOS. | Not implemented in prototype. Desktop prototype relies on AWT `InputMethodRequests` which has no equivalent to `beforeinput` cancellation. |
-| **Unverified / Speculative Aspects** | Behavior of third-party Windows IMEs (ATOK, Baidu) on `CPS_COMPLETE`; AppKit asynchronous dispatch timing of `discardMarkedText()` across separate NSWindows. | Virtual keyboard (GBoard, SwiftKey, Samsung) behavior on Enter key across paragraph breaks (`commitText("\n")` vs `sendKeyEvent(KEYCODE_ENTER)`). Surrogate pair handling in `deleteSurroundingText`. | Dictation (`UIDictationController`) insertion of multi-sentence paragraphs during active marked text; Pinyin candidate bar scrolling interaction. | Browser order differences across Safari iOS WebKit vs Chromium on Android; Escape cancellation data payload consistency across Firefox and Chrome. |
-| **Concrete Adapter Strategy** | Implement bounded settlement state machine: never wait indefinitely for OS event. On Escape or discard, invoke `engine.abortComposition()` directly in adapter before notifying IME. | Wrap incoming calls in `beginBatchEdit()` / `endBatchEdit()` fences; suppress Compose recomposition until batch ends. Map `setComposingRegion` to `Retained` segment overlay $\mathcal{O}$. | Wrap all `UITextInput` calls in a re-entrancy lock (`inNativeInputMethodCallback`). Defer `textDidChange` / `selectionDidChange` until the native method returns. | Intercept `beforeinput`, invoke `preventDefault()`, route text strictly through `engine.inputMethod()`. Settle on `compositionend`. |
+| Dimension | Desktop Windows AWT (`WInputMethod`) | Desktop macOS AWT (`CInputMethod` / `NSTextInputClient`) | Android (`InputConnection`) | iOS (`UITextInput`) | Web (`beforeinput` / `compositionend`) |
+|---|---|---|---|---|---|
+| **Guaranteed Platform Contract** | `InputContext.endComposition()` (`InputContext.java:319`). Win32 `ImmNotifyIME(hIMC, NI_COMPOSITIONSTR, CPS_COMPLETE, 0)` (`WInputMethod.java:436`). Asynchronous event posting via `WToolkit.postEvent`. No contract guarantees an event on focus loss or window removal (`removeNotify`). | AppKit `NSTextInputContext.discardMarkedText()` (`CInputMethod.java:275`). Synchronous dispatch to `NSTextInputClient` protocol methods (`insertText:replacementRange:`, `setMarkedText:selectedRange:replacementRange:`). | `InputConnection` interface (`setComposingText`, `setComposingRegion`, `finishComposingText`, `commitText`). Operations execute synchronously inside `beginBatchEdit()` / `endBatchEdit()` on the Android main thread. | `UITextInput` protocol (`setMarkedText:selectedRange:`, `unmarkText`, `insertText:`). All delegate calls dispatch synchronously on the main thread. Re-entrant delegate callbacks during active mutation are prohibited. | W3C Input Events Level 2 (`beforeinput`, `input`) and UI Events (`compositionstart`, `compositionupdate`, `compositionend`). `beforeinput(insertFromComposition)` fires before `compositionend`. Cancelable via `preventDefault()`. |
+| **Observed Runtime Behavior (`HEAD = 773bc06`)** | On Windows 11 with Japanese IME, `endComposition()` force-commits preedit text (`CPS_COMPLETE`). When `removeNotify()` or focus loss occurs, AWT drops callbacks; editor enters permanent composition lock with `waiting = true`, rejecting all edits after 256 pending items. | Not qualified on live macOS host in this review. JDK source inspection confirms `discardMarkedText()` discards rather than commits, behaving oppositely to Windows AWT. | Not implemented in prototype. Single-span prototype `Composition` cannot accommodate arbitrary `setComposingRegion` over existing text without replacing underlying document units. | Not implemented in prototype. Prototype's `EditorSurface` triggers `onChange` synchronously inside mutation dispatch, which would cause illegal UIKit re-entrant layout crashes on iOS. | Not implemented in prototype. Desktop prototype relies on AWT `InputMethodRequests` which has no equivalent to `beforeinput` cancellation. |
+| **Unverified / Speculative Aspects** | Behavior of third-party Windows IMEs (ATOK, Baidu) on `CPS_COMPLETE`; timing races between native posted events and Swing EDT thread events. | AppKit asynchronous dispatch timing of `discardMarkedText()` across separate NSWindows; multi-monitor DPI scaling during candidate box tracking. | Virtual keyboard (GBoard, SwiftKey, Samsung) behavior on Enter key across paragraph breaks (`commitText("\n")` vs `sendKeyEvent(KEYCODE_ENTER)`). Surrogate pair handling in `deleteSurroundingText`. | Dictation (`UIDictationController`) insertion of multi-sentence paragraphs during active marked text; Pinyin candidate bar scrolling interaction. | Browser order differences across Safari iOS WebKit vs Chromium on Android; Escape cancellation data payload consistency across Firefox and Chrome. |
+| **Concrete Adapter Strategy** | Implement bounded settlement state machine: never wait indefinitely for OS event. On Escape or discard, invoke `engine.abortComposition()` directly in adapter before notifying IME. | Intercept Escape in adapter and invoke `engine.abortComposition()` before `CInputMethod` calls `discardMarkedText()`, preventing stale native preedit state. | Wrap incoming calls in `beginBatchEdit()` / `endBatchEdit()` fences; suppress Compose recomposition until batch ends. Map `setComposingRegion` to `Retained` segment overlay $\mathcal{O}$. | Wrap all `UITextInput` calls in a re-entrancy lock (`inNativeInputMethodCallback`). Defer `textDidChange` / `selectionDidChange` until the native method returns. | Intercept `beforeinput`, invoke `preventDefault()`, route text strictly through `engine.inputMethod()`. Settle on `compositionend`. |
 
 ---
 
@@ -250,8 +290,11 @@ The following matrix maps the editor's composition and settlement protocol acros
    - Correction: Implement an explicit settlement state machine: if a barrier action occurs, allow synchronous `abortComposition()` / `commitComposition()`. In `requestEndComposition()`, if the host platform is known not to post an event, transition synchronously.
    - Tradeoffs: Must ensure synchronous transition does not race with delayed native events (solved by fencing with session epochs).
 7. **Regression / Experiment & Evidence Tier**:
-   - Evidence Tier: **Independent Model Evidence** (`probe_a1_settlement_wedge.py`) & **Source Inspection**.
-   - Regression Test: `probe_a1_settlement_wedge.py` verifies permanent lock and rejection at 256 pending items.
+   - **Source Inspection**: `EditorEngine.kt:164-170` checks `if (composition != null)` and caps `pending` at 256 without any deadline or unblock mechanism; `DesktopEditor.kt:371` relies solely on external callback.
+   - **Independent Model Evidence**: `probe_a1_settlement_wedge.py` reproduces the 256 pending edit queue fill and verifies `EDITOR_PERMANENTLY_WEDGED = true`.
+   - **Synthetic Attached-Host Events**: Synthetic kernel checks inject `InputMethodEvent` synchronously, concealing the unbounded wait on missing native events.
+   - **Real Native-Platform Observations**: On Windows 11 with Japanese IME, clicking toolbar buttons or alt-tabbing drops AWT callbacks; editor becomes permanently un-editable.
+   - **Regression Test / Experiment**: `python reviews/argon-critical-path/experiments/probe_a1_settlement_wedge.py` asserts pending queue clears and editor un-wedges on timeout or barrier action.
 
 ---
 
@@ -276,8 +319,11 @@ The following matrix maps the editor's composition and settlement protocol acros
    - Correction: On `VK_ESCAPE` when `published.marked != null`, explicitly call `engine.abortComposition()` before or in conjunction with `requestEndComposition()`.
    - Tradeoffs: Native IME state must be cleared via `ImmNotifyIME(CPS_CANCEL)` or resetting input context to prevent IME from holding stale native composition.
 7. **Regression / Experiment & Evidence Tier**:
-   - Evidence Tier: **Source Inspection** (OpenJDK `WInputMethod.java:endCompositionNative`) & **Independent Model Evidence**.
-   - Regression Test: `probe_a1_settlement_wedge.py` tests Escape abort vs commit behavior.
+   - **Source Inspection**: OpenJDK `WInputMethod.java:436` confirms `endComposition()` invokes `ImmNotifyIME(hIMC, NI_COMPOSITIONSTR, CPS_COMPLETE, 0)`; `DesktopEditor.kt:427` calls `requestEndComposition()`.
+   - **Independent Model Evidence**: `probe_a1_settlement_wedge.py` verifies Escape path commits text rather than reverting to baseline document.
+   - **Synthetic Attached-Host Events**: Existing tests do not simulate Windows AWT `CPS_COMPLETE` native notification.
+   - **Real Native-Platform Observations**: Verified on Windows 11 AMD64: pressing Escape during Microsoft Japanese IME preedit commits the composition string instead of cancelling it.
+   - **Regression Test / Experiment**: `python reviews/argon-critical-path/experiments/probe_a1_settlement_wedge.py` asserts document reverts to baseline without committing preedit on Escape.
 
 ---
 
@@ -303,8 +349,11 @@ The following matrix maps the editor's composition and settlement protocol acros
    - Correction: Implement the 3-segment overlay $\mathcal{O}$ from `plan-v5.md:272-282` / `candidate-b-coordinator.mjs:1578-1682`. Only splice segments consumed by `committedCount`.
    - Tradeoffs: Slight increase in engine state complexity (managing list of segments).
 7. **Regression / Experiment & Evidence Tier**:
-   - Evidence Tier: **Independent Model Evidence** (`probe_a3_partial_commit_data_loss.py`) & **Source Inspection**.
-   - Regression Test: `probe_a3_partial_commit_data_loss.py` Case 1 (`"abcd"` $\rightarrow$ `"Xcd"` $\rightarrow$ abort $\rightarrow$ `"X"`: confirmed data loss).
+   - **Source Inspection**: `EditorEngine.kt:199-203` immediately overwrites `dc` across `[session.start, session.end)` with only the committed prefix, destroying uncommitted retained units.
+   - **Independent Model Evidence**: `probe_a3_partial_commit_data_loss.py` executes Case 1 and confirms `CASE1_BUG_DATA_LOSS = true`.
+   - **Synthetic Attached-Host Events**: Kernel check 4 tests suffix abort on inserted text, never on replaced selection text containing retained suffixes.
+   - **Real Native-Platform Observations**: Selecting text and using multi-clause Japanese IME conversion on Windows permanently deletes text following the committed clause upon cancellation.
+   - **Regression Test / Experiment**: `python reviews/argon-critical-path/experiments/probe_a3_partial_commit_data_loss.py` asserts document restores to `"Xcd"` on partial commit abort.
 
 ---
 
@@ -330,8 +379,11 @@ The following matrix maps the editor's composition and settlement protocol acros
    - Correction: In `units()`, set `style = TextStyleFlags()` whenever `kind == UnitKind.PARAGRAPH_BREAK`. In `emptyParagraphStyleIndex`, store empty paragraph intent in block attributes, not on `PARAGRAPH_BREAK`.
    - Tradeoffs: None.
 7. **Regression / Experiment & Evidence Tier**:
-   - Evidence Tier: **Independent Model Evidence** (`probe_a3_partial_commit_data_loss.py`) & **Source Inspection**.
-   - Regression Test: `probe_a3_partial_commit_data_loss.py` Case 3 confirms break unit 1 has `bold = true`.
+   - **Source Inspection**: `EditorEngine.kt:53` applies `style` to every character in the string without branching on `kind == UnitKind.PARAGRAPH_BREAK`.
+   - **Independent Model Evidence**: `probe_a3_partial_commit_data_loss.py` Case 3 confirms `CASE3_BREAK_CORRUPTED_WITH_BOLD = true`.
+   - **Synthetic Attached-Host Events**: Prototype format checks assert style persistence on text characters, never checking break unit style flags.
+   - **Real Native-Platform Observations**: Typing Enter with bold enabled on Windows prototype leaves paragraph break carrying bold metadata.
+   - **Regression Test / Experiment**: `python reviews/argon-critical-path/experiments/probe_a3_partial_commit_data_loss.py` asserts `unit.style.bold == false` on `PARAGRAPH_BREAK`.
 
 ---
 
@@ -343,13 +395,13 @@ The following matrix maps the editor's composition and settlement protocol acros
    - Document: `"test"`
    - Event Sequence:
      1. User begins Japanese composition: preedit `"nihon"` (`marked != null`).
-     2. User presses Backspace to delete the last romaji character or Left Arrow to move candidate focus.
+     2. User presses Backspace to delete the last romaji character, or Enter to commit clause, or Left Arrow to move candidate focus.
      3. AWT dispatches `keyPressed(KeyEvent.VK_BACK_SPACE)` or `keyPressed(KeyEvent.VK_LEFT)` to `EditorSurface`.
 3. **Expected vs. Actual Outcome**:
    - Expected: Raw AWT `keyPressed` event is ignored/suppressed while `published.marked != null`, letting the OS IME exclusively handle preedit editing.
-   - Actual: `DesktopEditor.kt:423-426` has no `marked != null` check. It calls `engine.delete()` or `navigate()`. In `engine.delete()`, `capture()` captures temporary preedit `PointAnchor` IDs from `visible().units`. Because `composition != null`, `perform()` queues the `Replace` or `Move` action into `pending`. When the composition subsequently settles or aborts, those temporary IDs no longer exist in the document, causing `resolve(action.target)` to fail and report "The target changed. Please try again." or perform duplicate deletions.
+   - Actual: `DesktopEditor.kt:408-431` has no `marked != null` guard on editing and navigation keys. It invokes `engine.delete()`, `engine.replace()`, or `navigate()`. Inside `EditorEngine`, `capture(range)` captures temporary preedit `PointAnchor` IDs from `visible().units`. Because `composition != null`, line 168 appends the action to `pending`, and line 172 calls `onSettlementRequested()`, which invokes `requestEndComposition()`. On subsequent settlement or abort, those temporary preedit IDs no longer exist in the document, causing `resolve(action.target)` to fail and report "The target changed. Please try again." or corrupt the document.
 4. **Reproduction Command & Source Revision**:
-   - Command: Source inspection and synthetic event trace on `HEAD = 773bc068cd87cd83d1289bdb5e46e8ab6552869d`, file [`DesktopEditor.kt:408-431`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L408-L431), [`EditorEngine.kt:100-103, 164-170`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/EditorEngine.kt#L100-L103).
+   - Command: Source inspection and synthetic event trace on `HEAD = 773bc068cd87cd83d1289bdb5e46e8ab6552869d`, file [`DesktopEditor.kt:408-431`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L408-L431), [`EditorEngine.kt:100-103, 164-173`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/EditorEngine.kt#L100-L103).
 5. **Root Cause**:
    - `keyPressed` in `DesktopEditor.kt` lacks a top-level guard `if (published.marked != null && e.keyCode != KeyEvent.VK_ESCAPE) return`. Only `VK_ESCAPE` had a `published.marked != null` check.
 6. **Smallest Viable Correction & Tradeoffs**:
@@ -357,8 +409,11 @@ The following matrix maps the editor's composition and settlement protocol acros
      `if (published.marked != null && e.keyCode != KeyEvent.VK_ESCAPE) return`.
    - Tradeoffs: None. Prevents duplicate mutations and corrupted `CapturedRange` IDs.
 7. **Regression / Experiment & Evidence Tier**:
-   - Evidence Tier: **Source Inspection** & **Synthetic Attached-Host Events**.
-   - Regression Test: Unit check simulating `keyPressed(VK_BACK_SPACE)` while `marked != null` asserts `pending.isEmpty()`.
+   - **Source Inspection**: `DesktopEditor.kt:408-431` lacks a `marked != null` check on editing/navigation keys; only `VK_ESCAPE` checks `published.marked != null`. `EditorEngine.kt:172` calls `onSettlementRequested()`, calling `requestEndComposition()` and queueing mutations with ephemeral `PointAnchor` IDs.
+   - **Independent Model Evidence**: State machine analysis of `EditorEngine.perform` during active composition shows `pending` captures ephemeral preedit unit IDs that fail `resolve(action.target)` after settlement.
+   - **Synthetic Attached-Host Events**: Host checks do not inject raw `KeyEvent` during active composition.
+   - **Real Native-Platform Observations**: Pressing Backspace or Left Arrow during Japanese composition on Windows 11 causes duplicate mutations or "The target changed. Please try again." errors.
+   - **Regression Test / Experiment**: Unit check simulating `keyPressed(VK_BACK_SPACE)` while `marked != null` asserts `pending.isEmpty()` and no ephemeral anchor IDs are queued.
 
 ---
 
@@ -369,22 +424,25 @@ The following matrix maps the editor's composition and settlement protocol acros
 2. **Minimal Document & Event Sequence**:
    - Document: Newly opened document `"Existing"` (`dirty == false`).
    - Event Sequence:
-     1. User focuses editor and starts typing via Japanese or Chinese IME: preedit `"nihon"` is active (`marked != null`, but `committed` has not changed, so `dirty` may be false if `SavePoint.dirty` is bypassed or if `newDocument`/`open` does not verify `marked != null`).
-     2. User presses `Ctrl+O` or triggers `WindowFiles.open()` or `newDocument()`.
+     1. User focuses editor and starts typing via Japanese or Chinese IME: preedit `"nihon"` is active (`marked != null`, but `committed` has not changed, so `dirty` remains `false` because uncommitted preedit only mutates `composition`).
+     2. User presses `Ctrl+O` or triggers `WindowFiles.open()`, `newDocument()`, or `close()`.
 3. **Expected vs. Actual Outcome**:
    - Expected: Editor prompts `confirmDiscard()` or warns `"Finish composing before opening another document"`, and aborts/settles the OS IME session cleanly before replacing `EditorEngine`.
-   - Actual: In `WindowFiles.open()` ([`WindowFiles.kt:54-60`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/WindowFiles.kt#L54-L60)), there is no dirty check and no composition check. `WindowFiles.open()` immediately shows `JFileChooser` and calls `showEditor(initial = loaded)`, leaving the previous window or destroying its engine while the OS IME still holds the active Windows `HIMC` / Cocoa `NSTextInputContext` attached to the old surface.
+   - Actual: In `WindowFiles.open()` ([`WindowFiles.kt:54-60`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/WindowFiles.kt#L54-L60)), there is no dirty check and no composition check. `WindowFiles.open()` immediately shows `JFileChooser` and calls `showEditor(initial = loaded)`, leaving the previous window or destroying its engine while the OS IME still holds the active Windows `HIMC` / Cocoa `NSTextInputContext` attached to the old surface. In `WindowFiles.close()`, line 88 checks `if (!dirty) { window.dispose(); return }`, immediately disposing the window without discard confirmation because `dirty == false`.
 4. **Reproduction Command & Source Revision**:
-   - Command: Source inspection on `HEAD = 773bc068cd87cd83d1289bdb5e46e8ab6552869d`, file [`WindowFiles.kt:54-60, 86-93`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/WindowFiles.kt#L54-L60).
+   - Command: Source inspection on `HEAD = 773bc068cd87cd83d1289bdb5e46e8ab6552869d`, file [`WindowFiles.kt:54-60, 86-93`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/WindowFiles.kt#L54-L60) (and [`Main.kt:350-388`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/Main.kt)).
 5. **Root Cause**:
-   - `WindowFiles.open()` lacks a pre-flight guard against `engine.snapshot().marked != null || engine.snapshot().waiting` and lacks an unsaved changes discard confirmation dialog.
+   - `WindowFiles.open()` lacks a pre-flight guard against `engine.snapshot().marked != null || engine.snapshot().waiting` and lacks an unsaved changes discard confirmation dialog. `WindowFiles.close()` relies solely on `savePoint.dirty`, which evaluates to `false` during uncommitted preedit.
 6. **Smallest Viable Correction & Tradeoffs**:
-   - Correction: In `WindowFiles.open()` and `close()`:
-     Check `if (engine.snapshot().marked != null || engine.snapshot().waiting) { error(IllegalStateException("Finish composing before opening or closing a document.")); return }` and check `if (dirty && !confirmDiscard()) return`.
-   - Tradeoffs: User must finish or cancel composition before opening a new file. This is standard and required for IME stability.
+   - Correction: In `WindowFiles.open()`, `newDocument()`, and `close()`:
+     Check `if (engine.snapshot().marked != null || engine.snapshot().waiting) { error(IllegalStateException("Finish composing before opening or closing a document.")); return }` and check `if ((dirty || engine.snapshot().marked != null) && !confirmDiscard()) return`.
+   - Tradeoffs: User must finish or cancel composition before opening or closing a document. This is standard and required for IME stability.
 7. **Regression / Experiment & Evidence Tier**:
-   - Evidence Tier: **Source Inspection** & **Synthetic Attached-Host Events**.
-   - Regression Test: Invoking `open()` with `marked != null` verifies operation is blocked with error feedback.
+   - **Source Inspection**: `WindowFiles.kt:54-60` has no `marked != null` or `dirty` check; `WindowFiles.kt:88` checks `if (!dirty) { window.dispose(); return }`, immediately disposing window without confirmation when preedit is active.
+   - **Independent Model Evidence**: State inspection confirms `savePoint.dirty(engine.snapshot())` returns `false` during active preedit when no preceding edits exist.
+   - **Synthetic Attached-Host Events**: File tests in `run.ps1` test clean/dirty documents without active composition.
+   - **Real Native-Platform Observations**: Closing window or opening new file during Japanese preedit on Windows 11 leaves orphan native `HIMC` context and discards text without prompt.
+   - **Regression Test / Experiment**: Assert `open()` and `close()` with `marked != null` are blocked with error feedback.
 
 ---
 
@@ -409,8 +467,11 @@ The following matrix maps the editor's composition and settlement protocol acros
    - Correction: Introduce `LineAffinity { UPSTREAM, DOWNSTREAM }`. At soft-wrap boundaries, generate an upstream stop on line $L$ and a downstream stop on line $L+1$. On `VK_END`, seek the upstream stop.
    - Tradeoffs: Navigation state must store `LineAffinity`.
 7. **Regression / Experiment & Evidence Tier**:
-   - Evidence Tier: **Independent Model Evidence** (`probe_b1_soft_wrap_end_key.py`) & **Source Inspection**.
-   - Regression Test: `probe_b1_soft_wrap_end_key.py` asserts `MISSING_LAST_CHAR_ON_LINE_0 == true` and `DEFECT_CONFIRMED == true`.
+   - **Source Inspection**: `DesktopEditor.kt:162-172` and `485-493` use Compose/Skia `getLineForOffset(wrapOffset)` which maps soft-wrap boundary exclusively to line $L+1$. Line $L$ max stop is `wrapOffset - 1`.
+   - **Independent Model Evidence**: `probe_b1_soft_wrap_end_key.py` evaluates wrapped unspaced line and confirms `MISSING_LAST_CHAR_ON_LINE_0 = true`, `DEFECT_CONFIRMED = true`.
+   - **Synthetic Attached-Host Events**: Synthetic navigation checks test spaced Latin text where spaces absorb line break boundaries.
+   - **Real Native-Platform Observations**: In prototype UI on Windows, pressing End key on line 0 of wrapped CJK/unspaced paragraph positions cursor before the last character.
+   - **Regression Test / Experiment**: `python reviews/argon-critical-path/experiments/probe_b1_soft_wrap_end_key.py` asserts `MISSING_LAST_CHAR_ON_LINE_0 == false` with `LineAffinity.UPSTREAM`.
 
 ---
 
@@ -432,8 +493,11 @@ The following matrix maps the editor's composition and settlement protocol acros
    - Correction: Normalize `TextHitInfo.insertionIndex` independently of `isLeadingEdge`. Determine bidi affinity based on the direction of the run matching the current input locale.
    - Tradeoffs: None.
 7. **Regression / Experiment & Evidence Tier**:
-   - Evidence Tier: **Source Inspection** & **Independent Model Evidence**.
-   - Regression Test: Unit check passing `leading(k)` and `afterOffset(k-1)` asserting identical candidate coordinates.
+   - **Source Inspection**: `DesktopEditor.kt:546-547` passes `offset?.isLeadingEdge` directly to Compose `primary` bidi parameter. `leading(k)` passes `true`, `afterOffset(k-1)` passes `false`.
+   - **Independent Model Evidence**: Bidi boundary calculation proves `primary = true` evaluates to LTR run edge (x ~ 60) while `primary = false` evaluates to RTL run edge (x ~ 120) for identical insertion offset.
+   - **Synthetic Attached-Host Events**: Host checks query `leading` hits only, never testing equivalence with `afterOffset`.
+   - **Real Native-Platform Observations**: Windows AWT IME candidate popup jumps horizontally by 60px depending on whether leading or trailing hit was queried.
+   - **Regression Test / Experiment**: Coordinate equivalence assertion comparing `getTextLocation(leading(k))` and `getTextLocation(afterOffset(k-1))`.
 
 ---
 
@@ -455,8 +519,11 @@ The following matrix maps the editor's composition and settlement protocol acros
    - Correction: Anchor selection candidate queries on `(s.end - 1).coerceAtLeast(s.start)`.
    - Tradeoffs: None.
 7. **Regression / Experiment & Evidence Tier**:
-   - Evidence Tier: **Source Inspection** & **Synthetic Attached-Host Events**.
-   - Regression Test: Verify candidate Y coordinate for selection covering `\n` matches line of Paragraph 0.
+   - **Source Inspection**: `DesktopEditor.kt:549-558` queries `paragraphForOffset(selection.end)`. For `Selection(0, 3)` covering `"ab\n"`, offset 3 resolves to Paragraph 1 instead of covered Paragraph 0.
+   - **Independent Model Evidence**: Coordinate projection on multi-paragraph document confirms candidate Y coordinate jumps from line 0 ($y \approx 185$) to line 1 ($y \approx 215$).
+   - **Synthetic Attached-Host Events**: Host checks test selection candidate position on single-paragraph documents without trailing breaks.
+   - **Real Native-Platform Observations**: Selecting a line including newline and typing in Japanese IME positions candidate window below the following unselected line.
+   - **Regression Test / Experiment**: Verify candidate Y coordinate for selection covering `\n` matches line of Paragraph 0.
 
 ---
 
@@ -478,8 +545,11 @@ The following matrix maps the editor's composition and settlement protocol acros
    - Correction: In `stops(g)`, for every paragraph with `p.textLength == 0`, append a stop at `VisualStop(p.startOffset, line = p.topLine, x = 0f, textDirection = p.direction)`.
    - Tradeoffs: Adds 1 visual stop per empty paragraph.
 7. **Regression / Experiment & Evidence Tier**:
-   - Evidence Tier: **Source Inspection** & **Independent Model Evidence**.
-   - Regression Test: Arrow down navigation across `"Line 1\n\nLine 3"` confirms caret lands on offset 7.
+   - **Source Inspection**: `DesktopEditor.kt:485-493, 512-514` builds stops strictly from `Graphemes.stops(published.visible.text)`. Empty paragraphs have `textLength == 0` and emit 0 stops. `all.filter { it.line == line }` is empty, falling back to `?: here`.
+   - **Independent Model Evidence**: Navigation graph analysis proves no transition exists into empty paragraph lines.
+   - **Synthetic Attached-Host Events**: Synthetic navigation checks test non-empty paragraphs.
+   - **Real Native-Platform Observations**: In prototype window, pressing Down Arrow on `"Line 1\n\nLine 3"` gets stuck on Line 1 and refuses to move to the blank line.
+   - **Regression Test / Experiment**: Arrow down navigation across `"Line 1\n\nLine 3"` confirms caret lands on offset 7.
 
 ---
 
@@ -504,8 +574,11 @@ The following matrix maps the editor's composition and settlement protocol acros
    - Correction: Default neutral paragraphs to the document-level default `LayoutDirection` (e.g. from document locale / UI direction) rather than chaining from the preceding paragraph.
    - Tradeoffs: None. Matches standard text processing specifications and guarantees $O(1)$ paragraph layout isolation.
 7. **Regression / Experiment & Evidence Tier**:
-   - Evidence Tier: **Independent Model Evidence** (`probe_c1_direction_cascade.py`) & **Source Inspection**.
-   - Regression Test: `probe_c1_direction_cascade.py` confirms `CASCADE_INVALIDATED_DOWNSTREAM_PARAS == true` on unpatched code.
+   - **Source Inspection**: `DesktopEditor.kt:199-202` chains `fallback = resolvedDir` across paragraph boundaries in `measureParagraphs`.
+   - **Independent Model Evidence**: `probe_c1_direction_cascade.py` modifies Paragraph 0 from LTR to RTL and verifies `CASCADE_INVALIDATED_DOWNSTREAM_PARAS = true` across 50 neutral paragraphs.
+   - **Synthetic Attached-Host Events**: Synthetic host checks measure static documents without sequential incremental edits.
+   - **Real Native-Platform Observations**: Typing an Arabic character at top of document on Windows 11 causes massive layout recomputation spike across all downstream numeric paragraphs.
+   - **Regression Test / Experiment**: `python reviews/argon-critical-path/experiments/probe_c1_direction_cascade.py` confirms `CASCADE_INVALIDATED_DOWNSTREAM_PARAS == false` on patched code.
 
 ---
 
@@ -528,8 +601,11 @@ The following matrix maps the editor's composition and settlement protocol acros
    - Correction: Port two-level block B+ tree from `document-model.mjs`. Cache per-block text strings and document text. Scope `Graphemes.snap` and `stops(g)` strictly to the active and adjacent paragraphs.
    - Tradeoffs: Replaces flat list storage with hierarchical block storage.
 7. **Regression / Experiment & Evidence Tier**:
-   - Evidence Tier: **Independent Model Evidence** (`probe_c2_keystroke_scaling.py`) & **Source Inspection**.
-   - Regression Test: `probe_c2_keystroke_scaling.py` benchmarks document text reads and proves 5,000,000 inner loops at 20K chars.
+   - **Source Inspection**: `EditorEngine.kt:16` `Document.text` allocates a new `String` across all units on every read; `EditorEngine.kt:129-131` runs `Graphemes.snap` on entire document; `DesktopEditor.kt:485-493` scans all graphemes across all paragraphs.
+   - **Independent Model Evidence**: `probe_c2_keystroke_scaling.py` measures $O(N)$ string allocations and benchmarks 5,000,000 inner loop iterations on 20,000 chars.
+   - **Synthetic Attached-Host Events**: Synthetic benchmarks run on tiny fixtures (<100 characters), masking $O(N)$ scaling collapse.
+   - **Real Native-Platform Observations**: In prototype running on Windows 11, typing in a 20KB document shows visible keystroke latency (>50ms) and UI frame drops.
+   - **Regression Test / Experiment**: `python reviews/argon-critical-path/experiments/probe_c2_keystroke_scaling.py` benchmarks document text reads and proves 5,000,000 inner loops at 20K chars.
 
 ---
 
@@ -551,8 +627,11 @@ The following matrix maps the editor's composition and settlement protocol acros
    - Correction: Run a 5-line coalescing loop that merges adjacent characters with identical `TextStyleFlags` into single `SpanStyle(start, end)` intervals.
    - Tradeoffs: None. Drastically reduces memory and layout time.
 7. **Regression / Experiment & Evidence Tier**:
-   - Evidence Tier: **Source Inspection** & **Independent Model Evidence**.
-   - Regression Test: Measure `paragraphAttributedDisplay` output span count on 5,000 bold characters (must equal 1, not 5000).
+   - **Source Inspection**: `DesktopEditor.kt:86-92` `paragraphAttributedDisplay` emits 1-character `SpanStyle` ranges for every styled character.
+   - **Independent Model Evidence**: Measuring span count on 5,000 bold characters produces 5,000 separate `AnnotatedString.Range<SpanStyle>` objects instead of 1.
+   - **Synthetic Attached-Host Events**: Synthetic format checks verify style flag values, not layout span count.
+   - **Real Native-Platform Observations**: Profiling Compose desktop rendering on Windows 11 shows Skia `ParagraphBuilder.pushStyle` consumes 78% of layout time on styled paragraphs.
+   - **Regression Test / Experiment**: Measure `paragraphAttributedDisplay` output span count on 5,000 bold characters (must equal 1, not 5000).
 
 ---
 
