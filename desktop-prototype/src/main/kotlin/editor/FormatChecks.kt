@@ -98,7 +98,8 @@ fun runFormatChecks() {
         val e=EditorEngine(doc("a",listOf(bold)));e.selectAll();e.delete(true)
         check(e.snapshot().visible.startStyle==bold);e.replace("b");check(e.snapshot().visible.units.single().style==bold)
         e.replace("\n","Enter",true);e.replace("c");check(e.snapshot().visible.units.last().style==bold)
-        e.delete(true);val saved=DocumentFiles.decode(DocumentFiles.encode(e.snapshot().committed));check(saved.units.last().style==bold)
+        e.delete(true);val saved=DocumentFiles.decode(DocumentFiles.encode(e.snapshot().committed))
+        check(saved.units.last().paragraphStyle==bold && saved.units.last().style==TextStyleFlags())
         val reopened=EditorEngine(saved);reopened.move(Selection(saved.units.size,saved.units.size));reopened.replace("d");check(reopened.snapshot().visible.units.last().style==bold)
     }
     test("backspace inherits surviving left; forward delete inherits surviving right") {
@@ -106,11 +107,44 @@ fun runFormatChecks() {
         val a=EditorEngine(original);a.move(Selection(2,2));a.delete(true);check(a.snapshot().typingStyle==bold)
         val b=EditorEngine(original);b.move(Selection(1,1));b.delete(false);check(b.snapshot().typingStyle==italic)
     }
-    test("v1 prototype files remain readable; v2 restores style metadata") {
-        val payload=ByteArrayOutputStream().apply { DataOutputStream(this).use { it.writeInt(0x41535450);it.writeInt(1);it.writeInt(2);it.writeChar('a'.code);it.writeByte(0);it.writeChar('\n'.code);it.writeByte(1) } }.toByteArray()
-        val old=DocumentFiles.decode(payload+MessageDigest.getInstance("SHA-256").digest(payload));check(old.text=="a\n" && old.units.last().kind==UnitKind.PARAGRAPH_BREAK)
-        val styled=Document(old.units.map { it.copy(style=bold) },italic);check(DocumentFiles.decode(DocumentFiles.encode(styled)).same(styled))
+    test("v1 prototype files remain readable; v2 restores style metadata; v3 migrates break styles to paragraphStyle") {
+        val payloadV1=ByteArrayOutputStream().apply { DataOutputStream(this).use { it.writeInt(0x41535450);it.writeInt(1);it.writeInt(2);it.writeChar('a'.code);it.writeByte(0);it.writeChar('\n'.code);it.writeByte(1) } }.toByteArray()
+        val oldV1=DocumentFiles.decode(payloadV1+MessageDigest.getInstance("SHA-256").digest(payloadV1));check(oldV1.text=="a\n" && oldV1.units.last().kind==UnitKind.PARAGRAPH_BREAK)
+        check(oldV1.units.last().style == TextStyleFlags() && oldV1.units.last().paragraphStyle == TextStyleFlags())
+
+        // v2 file with break unit style bits (bold on break)
+        val payloadV2=ByteArrayOutputStream().apply { DataOutputStream(this).use {
+            it.writeInt(0x41535450); it.writeInt(2); it.writeInt(2); it.writeByte(0)
+            it.writeChar('a'.code); it.writeByte(0); it.writeByte(1) // 'a' bold
+            it.writeChar('\n'.code); it.writeByte(1); it.writeByte(2) // break italic
+        } }.toByteArray()
+        val oldV2=DocumentFiles.decode(payloadV2+MessageDigest.getInstance("SHA-256").digest(payloadV2))
+        check(oldV2.text == "a\n")
+        check(oldV2.units[0].style == bold && oldV2.units[0].paragraphStyle == TextStyleFlags())
+        check(oldV2.units[1].kind == UnitKind.PARAGRAPH_BREAK)
+        check(oldV2.units[1].style == TextStyleFlags()) { "v2 break style must be normalized to unstyled inline style" }
+        check(oldV2.units[1].paragraphStyle == italic) { "v2 break style must migrate to paragraphStyle" }
+
+        val styled=Document(oldV1.units.map { if (it.kind == UnitKind.PARAGRAPH_BREAK) it.copy(style = TextStyleFlags(), paragraphStyle = bold) else it.copy(style = bold) }, italic)
+        check(DocumentFiles.decode(DocumentFiles.encode(styled)).same(styled))
         val e=EditorEngine(styled);val point=SavePoint(styled);e.move(Selection(0,1));e.toggleFormat(FormatKey.ITALIC);check(point.dirty(e.snapshot()))
+    }
+    test("multiple independent empty paragraphs maintain distinct paragraph styles and unstyled breaks") {
+        val e = EditorEngine()
+        e.replace("a\n\n\n", "Multi-empty", paragraphBreaks = true)
+        check(e.snapshot().visible.text == "a\n\n\n")
+        val breaks = e.snapshot().visible.units.filter { it.kind == UnitKind.PARAGRAPH_BREAK }
+        check(breaks.size == 3)
+        check(breaks.all { it.style == TextStyleFlags() }) { "All paragraph breaks must have unstyled inline style" }
+        e.move(Selection(2, 2))
+        e.toggleFormat(FormatKey.BOLD)
+        e.replace("b", "Typing in empty paragraph")
+        check(e.snapshot().visible.text == "a\nb\n\n")
+        check(e.snapshot().visible.units.first { it.char == 'b' }.style == bold)
+        val encoded = DocumentFiles.encode(e.snapshot().committed)
+        val decoded = DocumentFiles.decode(encoded)
+        check(decoded.same(e.snapshot().committed))
+        check(decoded.units.filter { it.kind == UnitKind.PARAGRAPH_BREAK }.all { it.style == TextStyleFlags() })
     }
     println("ALL $cases formatting checks passed; physical IME remains unqualified.")
 }

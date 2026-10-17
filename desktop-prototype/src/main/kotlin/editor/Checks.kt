@@ -29,6 +29,58 @@ fun runChecks() {
         check(e.snapshot().committed.text == "你llo"); e.abortComposition(); check(e.snapshot().visible.text == "你llo")
         e.perform(EditAction.Undo); check(e.snapshot().visible.text == "Hello")
     }
+    test("partial acceptance with frozen retained/replacement overlay: abcd fixtures") {
+        // Example 1: select all "abcd", inputMethod("Xcd", 1, 2) + abort -> "Xcd"
+        val e1 = seeded("abcd"); e1.selectAll(); e1.inputMethod("Xcd", 1, 2)
+        check(e1.snapshot().visible.text == "Xcd")
+        check(e1.snapshot().committed.text == "Xcd") // retained "cd" remains in dc
+        e1.abortComposition()
+        check(e1.snapshot().visible.text == "Xcd")
+        e1.perform(EditAction.Undo); check(e1.snapshot().visible.text == "abcd")
+
+        // Example 2: select all "abcd", inputMethod("abX", 1, 2) + abort -> "abcd"
+        val e2 = seeded("abcd"); e2.selectAll(); e2.inputMethod("abX", 1, 2)
+        check(e2.snapshot().visible.text == "abX")
+        check(e2.snapshot().committed.text == "abcd") // retained "bcd" remains in dc
+        e2.abortComposition()
+        check(e2.snapshot().visible.text == "abcd")
+        check(e2.snapshot().undoCount == 1) // no spurious undo step for no-op commit
+        e2.perform(EditAction.Undo); check(e2.snapshot().visible.text.isEmpty()) // fixture undone
+
+        // Attributed variant: 'a' bold, 'b' italic, 'c' normal, 'd' bold
+        val bold = TextStyleFlags(bold = true); val italic = TextStyleFlags(italic = true)
+        val styledDoc = Document(listOf(
+            TextUnit(1, 'a', style = bold),
+            TextUnit(2, 'b', style = italic),
+            TextUnit(3, 'c', style = TextStyleFlags()),
+            TextUnit(4, 'd', style = bold)
+        ))
+        val e3 = EditorEngine(styledDoc); e3.selectAll()
+        e3.inputMethod("Xcd", 1, 2)
+        e3.abortComposition()
+        check(e3.snapshot().visible.text == "Xcd")
+        val units3 = e3.snapshot().visible.units
+        check(units3[0].style == bold) // 'X' inherits seed from replacement style at start (bold)
+        check(units3[1].style == TextStyleFlags()) // 'c' retained
+        check(units3[2].style == bold) // 'd' retained
+        e3.perform(EditAction.Undo); check(e3.snapshot().visible.same(styledDoc))
+
+        // Structural break retention across partial commits
+        val paraDoc = Document(listOf(
+            TextUnit(1, 'P'), TextUnit(2, '1'),
+            TextUnit(3, '\n', kind = UnitKind.PARAGRAPH_BREAK),
+            TextUnit(4, 'P'), TextUnit(5, '2')
+        ))
+        val e4 = EditorEngine(paraDoc); e4.selectAll()
+        e4.inputMethod("P1\nQ", 3, 1) // commits "P1\n"
+        check(e4.snapshot().committed.text == "P1\nP2") // retained "P2" remains in dc
+        check(e4.snapshot().committed.units[2].kind == UnitKind.PARAGRAPH_BREAK)
+        e4.abortComposition()
+        check(e4.snapshot().visible.text == "P1\nP2")
+        check(e4.snapshot().visible.units[2].kind == UnitKind.PARAGRAPH_BREAK)
+        check(e4.snapshot().undoCount == 0) // initial document unchanged, no spurious undo entry
+        check(e4.snapshot().visible.same(paraDoc))
+    }
     test("candidate detour is path independent, no-op commit does not bump document revision") {
         val e = seeded("abcd"); e.move(Selection(0, 3)); val count = e.snapshot().undoCount
         e.inputMethod("X", 0, 1); e.inputMethod("abc", 0, 2); val rev = e.snapshot().documentRevision

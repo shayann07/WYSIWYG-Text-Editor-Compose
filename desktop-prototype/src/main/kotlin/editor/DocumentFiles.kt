@@ -10,7 +10,7 @@ import java.security.MessageDigest
 object DocumentFiles {
     const val MAX_UNITS = 100_000
     private const val MAGIC = 0x41535450 // ASTP
-    private const val VERSION = 2
+    private const val VERSION = 3
     private const val HEADER = 13
     private const val DIGEST = 32
     private const val MAX_BYTES = HEADER + MAX_UNITS * 4 + DIGEST
@@ -23,7 +23,10 @@ object DocumentFiles {
             out.writeByte(document.startStyle.bits)
             document.units.forEach { unit ->
                 require(unit.kind != UnitKind.PARAGRAPH_BREAK || unit.char == '\n') { "Invalid paragraph break" }
-                out.writeChar(unit.char.code); out.writeByte(unit.kind.ordinal); out.writeByte(unit.style.bits)
+                require(unit.kind != UnitKind.PARAGRAPH_BREAK || unit.style == TextStyleFlags()) { "Paragraph break inline style must be unstyled" }
+                out.writeChar(unit.char.code); out.writeByte(unit.kind.ordinal)
+                val styleBits = if (unit.kind == UnitKind.PARAGRAPH_BREAK) unit.paragraphStyle.bits else unit.style.bits
+                out.writeByte(styleBits)
             }
         }
         val payload = bytes.toByteArray()
@@ -45,8 +48,14 @@ object DocumentFiles {
                 require(tag in UnitKind.entries.indices) { "Unknown unit kind" }
                 val kind = UnitKind.entries[tag]
                 require(kind != UnitKind.PARAGRAPH_BREAK || char == '\n') { "Invalid paragraph break" }
-                val style = if (version == 1) TextStyleFlags() else TextStyleFlags.fromBits(input.readUnsignedByte())
-                TextUnit(index.toLong() + 1, char, kind, style)
+                val (style, paragraphStyle) = if (version == 1) {
+                    TextStyleFlags() to TextStyleFlags()
+                } else {
+                    val bits = TextStyleFlags.fromBits(input.readUnsignedByte())
+                    if (kind == UnitKind.PARAGRAPH_BREAK) TextStyleFlags() to bits
+                    else bits to TextStyleFlags()
+                }
+                TextUnit(index.toLong() + 1, char, kind, style, paragraphStyle)
             }, startStyle)
         }
     }

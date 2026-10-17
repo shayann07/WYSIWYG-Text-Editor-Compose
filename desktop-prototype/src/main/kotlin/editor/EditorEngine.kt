@@ -5,29 +5,41 @@ import java.util.ArrayDeque
 enum class UnitKind { TEXT, PARAGRAPH_BREAK }
 enum class FormatKey { BOLD, ITALIC }
 enum class TypingSide { LEFT, RIGHT }
-data class TextStyleFlags(val bold: Boolean = false, val italic: Boolean = false) {
+enum class WrapAffinity { DOWNSTREAM, UPSTREAM }
+enum class SegmentOrigin { RETAINED, REPLACEMENT }
+data class OverlaySegment(val dcStart: Int, val dcEnd: Int, val units: List<TextUnit>, val origin: SegmentOrigin)
+data class TextStyleFlags @JvmOverloads constructor(val bold: Boolean = false, val italic: Boolean = false) {
     fun get(key: FormatKey) = if (key == FormatKey.BOLD) bold else italic
     fun patch(key: FormatKey, value: Boolean) = if (key == FormatKey.BOLD) copy(bold = value) else copy(italic = value)
     val bits get() = (if (bold) 1 else 0) or (if (italic) 2 else 0)
     companion object { fun fromBits(bits: Int): TextStyleFlags { require(bits in 0..3); return TextStyleFlags(bits and 1 != 0, bits and 2 != 0) } }
 }
-data class TextUnit(val id: Long, val char: Char, val kind: UnitKind = UnitKind.TEXT, val style: TextStyleFlags = TextStyleFlags())
-data class Document(val units: List<TextUnit>, val startStyle: TextStyleFlags = TextStyleFlags()) {
+data class TextUnit @JvmOverloads constructor(val id: Long, val char: Char, val kind: UnitKind = UnitKind.TEXT, val style: TextStyleFlags = TextStyleFlags(), val paragraphStyle: TextStyleFlags = TextStyleFlags())
+data class Document @JvmOverloads constructor(val units: List<TextUnit>, val startStyle: TextStyleFlags = TextStyleFlags()) {
     val text: String get() = units.joinToString("") { it.char.toString() }
-    fun same(other: Document) = startStyle == other.startStyle && units.size == other.units.size && units.indices.all { units[it].char == other.units[it].char && units[it].kind == other.units[it].kind && units[it].style == other.units[it].style }
+    fun same(other: Document) = startStyle == other.startStyle && units.size == other.units.size && units.indices.all {
+        units[it].char == other.units[it].char && units[it].kind == other.units[it].kind && units[it].style == other.units[it].style && units[it].paragraphStyle == other.units[it].paragraphStyle
+    }
     fun splice(a: Int, b: Int, inserted: List<TextUnit>) = Document(units.take(a) + inserted + units.drop(b), startStyle)
 }
-data class Selection(val anchor: Int, val focus: Int, val primary: Boolean = true) {
+data class Selection @JvmOverloads constructor(val anchor: Int, val focus: Int, val primary: Boolean = true, val wrapAffinity: WrapAffinity = WrapAffinity.DOWNSTREAM) {
     val start get() = minOf(anchor, focus); val end get() = maxOf(anchor, focus); val collapsed get() = anchor == focus
 }
 data class EditorFrame(val visible: Document, val committed: Document, val selection: Selection, val marked: IntRange?, val documentRevision: Long, val sessionRevision: Long, val undoCount: Int, val redoCount: Int, val waiting: Boolean, val notice: String, val typingStyle: TextStyleFlags)
 private data class Saved(val document: Document, val selection: Selection, val intent: TextStyleFlags?, val side: TypingSide)
 private data class History(val id: Long, val before: Saved, var after: Saved, val kind: String, var time: Long)
-private data class Composition(val before: Saved, var start: Int, var end: Int, var candidate: List<TextUnit>, var baseline: List<TextUnit>, val seed: TextStyleFlags, val synthesized: MutableMap<Pair<Int, Char>, TextUnit> = HashMap(), var undoSawDirty: Boolean = false)
+private data class Composition(
+    val before: Saved,
+    var segments: List<OverlaySegment>,
+    var epochBaseSegments: List<OverlaySegment>,
+    val seed: TextStyleFlags,
+    val synthesized: MutableMap<Pair<Int, Char>, TextUnit> = HashMap(),
+    var undoSawDirty: Boolean = false
+)
 data class CapturedRange(val ids: List<Long>, val left: Long?, val right: Long?, val collapsed: Boolean, val backwards: Boolean)
 sealed interface EditAction {
     data class Replace(val target: CapturedRange, val text: String, val kind: String = "Typing", val paragraphBreaks: Boolean = false, val style: TextStyleFlags = TextStyleFlags(), val deleteSide: TypingSide? = null) : EditAction
-    data class Move(val target: CapturedRange, val primary: Boolean = true, val side: TypingSide = TypingSide.LEFT) : EditAction
+    data class Move(val target: CapturedRange, val primary: Boolean = true, val side: TypingSide = TypingSide.LEFT, val wrapAffinity: WrapAffinity = WrapAffinity.DOWNSTREAM) : EditAction
     data class Format(val target: CapturedRange?, val key: FormatKey, val value: Boolean) : EditAction
     data object Undo : EditAction
     data object Redo : EditAction
@@ -35,29 +47,72 @@ sealed interface EditAction {
 
 /** Plain-text vertical slice: one owner, Dc + provisional replacement, independent history.
  * Array snapshots are intentional for this prototype, NOT the production persistent index. */
-class EditorEngine(initial: Document = Document(emptyList()), private val now: () -> Long = { System.nanoTime() / 1_000_000 }) {
+class EditorEngine @JvmOverloads constructor(initial: Document = Document(emptyList()), private val now: () -> Long = { System.nanoTime() / 1_000_000 }) {
     private val owner = Thread.currentThread()
     private var serial = 0L; private var historySerial = 0L
-    private var dc = Document(initial.units.map { it.copy(id = ++serial) }, initial.startStyle); private var composition: Composition? = null
+    private var dc = Document(
+        initial.units.map { unit ->
+            if (unit.kind == UnitKind.PARAGRAPH_BREAK && unit.style != TextStyleFlags() && unit.paragraphStyle == TextStyleFlags()) {
+                unit.copy(id = ++serial, style = TextStyleFlags(), paragraphStyle = unit.style)
+            } else {
+                unit.copy(id = ++serial)
+            }
+        },
+        initial.startStyle
+    )
+    private var composition: Composition? = null
     private var selection = Selection(0, 0)
     private var intent: TextStyleFlags? = null; private var side = TypingSide.LEFT
     private val undo = ArrayList<History>(); private val redo = ArrayList<History>()
     private val pending = ArrayList<EditAction>(); private val dispatchQueue = ArrayDeque<() -> Unit>()
     private var busy = false; private var documentRevision = 0L; private var sessionRevision = 0L
     private var typingBarrier = false; private var notice = "Ready"
+    var settlementRequestedAt: Long? = null; private set
+    var settlementTimedOut = false; private set
+    var imeEpoch = 0L; private set
     var onChange: (EditorFrame) -> Unit = {}
     var onSettlementRequested: () -> Unit = {}
     var onEvent: (String) -> Unit = {}
-    private fun visible() = composition?.let { dc.splice(it.start, it.end, it.candidate) } ?: dc
-    fun snapshot() = EditorFrame(visible(), dc, selection, composition?.let { it.start until it.start + it.candidate.size }, documentRevision, sessionRevision, undo.size, redo.size, pending.isNotEmpty(), notice, effectiveTyping())
-    private fun units(text: String, breaks: Boolean = false, style: TextStyleFlags = effectiveTyping()) = text.map { TextUnit(++serial, it, if (breaks && it == '\n') UnitKind.PARAGRAPH_BREAK else UnitKind.TEXT, style) }
+    private fun visible() = composition?.let { c ->
+        val sc = c.segments.first().dcStart
+        val ec = c.segments.last().dcEnd
+        dc.splice(sc, ec, c.segments.flatMap { it.units })
+    } ?: dc
+    fun snapshot() = EditorFrame(
+        visible(),
+        dc,
+        selection,
+        composition?.let { c ->
+            val sc = c.segments.first().dcStart
+            val len = c.segments.sumOf { it.units.size }
+            sc until (sc + len)
+        },
+        documentRevision,
+        sessionRevision,
+        undo.size,
+        redo.size,
+        pending.isNotEmpty(),
+        notice,
+        effectiveTyping()
+    )
+    private fun units(text: String, breaks: Boolean = false, style: TextStyleFlags = effectiveTyping()) = text.map {
+        val isBreak = breaks && it == '\n'
+        TextUnit(
+            id = ++serial,
+            char = it,
+            kind = if (isBreak) UnitKind.PARAGRAPH_BREAK else UnitKind.TEXT,
+            style = if (isBreak) TextStyleFlags() else style,
+            paragraphStyle = if (isBreak) style else TextStyleFlags()
+        )
+    }
     private fun saved() = Saved(visible(), selection, intent, side)
     private fun inherit(at: Int, from: TypingSide): TextStyleFlags {
         val u = visible().units
         val left = u.getOrNull(at - 1)?.takeIf { it.kind == UnitKind.TEXT }?.style
         val right = u.getOrNull(at)?.takeIf { it.kind == UnitKind.TEXT }?.style
         return (if (from == TypingSide.LEFT) left ?: right else right ?: left)
-            ?: u.getOrNull(at - 1)?.style ?: visible().startStyle
+            ?: u.getOrNull(at - 1)?.takeIf { it.kind == UnitKind.PARAGRAPH_BREAK }?.paragraphStyle
+            ?: visible().startStyle
     }
     private fun effectiveTyping() = intent ?: inherit(selection.focus, side)
     private fun replacementStyle(range: Selection): TextStyleFlags = if (range.collapsed) effectiveTyping() else visible().units.subList(range.start, range.end).firstOrNull { it.kind == UnitKind.TEXT }?.style ?: effectiveTyping()
@@ -136,12 +191,22 @@ class EditorEngine(initial: Document = Document(emptyList()), private val now: (
                 if (inserted.isEmpty()) {
                     val at = selection.focus
                     val empty = (at == 0 || dc.units[at - 1].kind == UnitKind.PARAGRAPH_BREAK) && (at == dc.units.size || dc.units[at].kind == UnitKind.PARAGRAPH_BREAK)
-                    if (empty) dc = if (at == 0) dc.copy(startStyle = action.style) else dc.copy(units = dc.units.mapIndexed { i, unit -> if (i == at - 1) unit.copy(style = action.style) else unit })
-                    else { intent = null; side = action.deleteSide ?: TypingSide.LEFT }
+                    if (empty) {
+                        dc = if (at == 0) dc.copy(startStyle = action.style)
+                             else dc.copy(units = dc.units.mapIndexed { i, unit ->
+                                 if (i == at - 1) unit.copy(style = TextStyleFlags(), paragraphStyle = action.style) else unit
+                             })
+                    } else { intent = null; side = action.deleteSide ?: TypingSide.LEFT }
                 }
                 notice = "Ready"; return push(before, action.kind, !queued && action.kind == "Typing")
             }
-            is EditAction.Move -> { resolve(action.target)?.let { selection = it.copy(primary = action.primary); intent = null; side = action.side } ?: run { notice = "Text changed. Select the position again." }; typingBarrier = true }
+            is EditAction.Move -> {
+                resolve(action.target)?.let {
+                    selection = it.copy(primary = action.primary, wrapAffinity = action.wrapAffinity)
+                    intent = null; side = action.side
+                } ?: run { notice = "Text changed. Select the position again." }
+                typingBarrier = true
+            }
             is EditAction.Format -> {
                 val target = action.target?.let(::resolve) ?: run { notice = "Formatting target changed. Select it again."; return null }
                 typingBarrier = true
@@ -167,12 +232,25 @@ class EditorEngine(initial: Document = Document(emptyList()), private val now: (
                 if (action == EditAction.Undo && (!composition!!.before.document.same(visible()) || !composition!!.before.document.same(dc))) composition!!.undoSawDirty = true
                 if (action is EditAction.Move && pending.lastOrNull() is EditAction.Move) pending[pending.lastIndex] = action else pending += action
                 notice = "Waiting for the input method to finish…"
+                if (settlementRequestedAt == null) settlementRequestedAt = now()
             } else apply(action)
         }
         if (composition != null && pending.isNotEmpty()) onSettlementRequested()
     }
+    fun checkSettlementWatchdog(timeoutMs: Long = 2_000L): Boolean {
+        val req = settlementRequestedAt ?: return false
+        if (composition != null && pending.isNotEmpty() && (now() - req) >= timeoutMs) {
+            settlementTimedOut = true
+            pending.clear()
+            notice = "Input method did not respond; pending commands cancelled. Press Escape or abort composition to recover."
+            sessionRevision++
+            runCatching { onChange(snapshot()) }
+            return true
+        }
+        return false
+    }
     fun replace(text: String, kind: String = "Typing", paragraphBreaks: Boolean = false, range: Selection = selection, deleteSide: TypingSide? = null) = perform(EditAction.Replace(capture(range), text, kind, paragraphBreaks, replacementStyle(range), deleteSide))
-    fun move(range: Selection, primary: Boolean = true, side: TypingSide = TypingSide.LEFT) = perform(EditAction.Move(capture(range), primary, side))
+    fun move(range: Selection, primary: Boolean = range.primary, side: TypingSide = TypingSide.LEFT, wrapAffinity: WrapAffinity = range.wrapAffinity) = perform(EditAction.Move(capture(range), primary, side, wrapAffinity))
     fun selectAll() = move(Selection(0, visible().units.size))
     fun delete(backward: Boolean) {
         val s = snapshot(); if (!s.selection.collapsed) { replace("", "Delete", deleteSide = if (backward) TypingSide.LEFT else TypingSide.RIGHT); return }
@@ -184,53 +262,291 @@ class EditorEngine(initial: Document = Document(emptyList()), private val now: (
     fun inputMethod(text: String, committedCount: Int, caret: Int?) {
         require(committedCount in 0..text.length)
         require(caret == null || caret in 0..text.length - committedCount)
+        if (composition == null && text.isEmpty() && committedCount == 0 && selection.collapsed) return
         dispatch("IME text: committed=$committedCount composed=${text.length - committedCount}") {
+            settlementRequestedAt = null
+            settlementTimedOut = false
             val existing = composition != null
-            val session = composition ?: Composition(saved(), selection.start, selection.end, emptyList(), dc.units.subList(selection.start, selection.end).toList(), replacementStyle(selection)).also { composition = it }
-            // Reconcile against an immutable attribution epoch, not the preceding candidate.
-            val baseline = session.baseline
-            var prefix = 0; while (prefix < minOf(baseline.size, text.length) && baseline[prefix].char == text[prefix]) prefix++
-            var suffix = 0; while (suffix < minOf(baseline.size, text.length) - prefix && baseline[baseline.lastIndex - suffix].char == text[text.lastIndex - suffix]) suffix++
-            val replacement = text.mapIndexed { i, char -> when {
-                i < prefix -> baseline[i]
-                i >= text.length - suffix -> baseline[baseline.size - (text.length - i)]
-                else -> session.synthesized.getOrPut(i to char) { TextUnit(++serial, char, style = session.seed) }
-            } }
-            if (committedCount > 0) {
-                dc = dc.splice(session.start, session.end, replacement.take(committedCount))
-                session.start += committedCount; session.end = session.start
-                session.baseline = replacement.drop(committedCount); session.synthesized.clear()
+            val session = composition ?: run {
+                val initialSegments = if (selection.start == selection.end) {
+                    listOf(OverlaySegment(selection.start, selection.start, emptyList(), SegmentOrigin.REPLACEMENT))
+                } else {
+                    (selection.start until selection.end).map { i ->
+                        OverlaySegment(i, i + 1, listOf(dc.units[i]), SegmentOrigin.RETAINED)
+                    }
+                }
+                Composition(
+                    before = saved(),
+                    segments = initialSegments,
+                    epochBaseSegments = initialSegments,
+                    seed = replacementStyle(selection)
+                ).also { composition = it }
             }
-            session.candidate = replacement.drop(committedCount)
-            selection = Selection(session.start + (caret ?: session.candidate.size), session.start + (caret ?: session.candidate.size))
-            if (session.candidate.isEmpty()) {
-                // An explicit native removal accepts deletion of the previous replacement footprint.
-                dc = dc.splice(session.start, session.end, emptyList())
-                selection = Selection(session.start, session.start)
+
+            val baseSegs = session.epochBaseSegments
+            val B = baseSegs.flatMap { it.units }
+
+            var p = 0
+            while (p < text.length && p < B.size && text[p] == B[p].char) p++
+
+            var s = 0
+            while (s < text.length - p && s < B.size - p && text[text.length - 1 - s] == B[B.size - 1 - s].char) s++
+
+            val newSegments: List<OverlaySegment>
+            if (p == B.size && s == 0 && text.length == B.size) {
+                newSegments = baseSegs
+            } else {
+                val midText = text.substring(p, text.length - s)
+                val midUnits = midText.mapIndexed { idx, ch ->
+                    session.synthesized.getOrPut((p + idx) to ch) {
+                        TextUnit(++serial, ch, UnitKind.TEXT, session.seed)
+                    }
+                }
+                val aMid = p
+                val bMid = B.size - s
+
+                val segList = ArrayList<OverlaySegment>()
+                var firstTouched = -1
+                var lastTouched = -1
+                var leftUnits = emptyList<TextUnit>()
+                var rightUnits = emptyList<TextUnit>()
+
+                if (aMid == bMid) {
+                    var curVis = 0
+                    for (i in baseSegs.indices) {
+                        val seg = baseSegs[i]
+                        val segStart = curVis
+                        val segEnd = curVis + seg.units.size
+                        curVis = segEnd
+                        if (segStart < aMid && aMid < segEnd) {
+                            firstTouched = i
+                            lastTouched = i
+                            leftUnits = seg.units.subList(0, aMid - segStart)
+                            rightUnits = seg.units.subList(aMid - segStart, seg.units.size)
+                            break
+                        }
+                    }
+                } else {
+                    var curVis = 0
+                    for (i in baseSegs.indices) {
+                        val seg = baseSegs[i]
+                        val segStart = curVis
+                        val segEnd = curVis + seg.units.size
+                        curVis = segEnd
+                        val touches = if (seg.units.isEmpty()) {
+                            aMid <= segStart && segStart <= bMid
+                        } else {
+                            maxOf(segStart, aMid) < minOf(segEnd, bMid)
+                        }
+                        if (touches) {
+                            if (firstTouched == -1) {
+                                firstTouched = i
+                                val lEnd = (aMid - segStart).coerceIn(0, seg.units.size)
+                                leftUnits = seg.units.subList(0, lEnd)
+                            }
+                            lastTouched = i
+                            val rStart = (bMid - segStart).coerceIn(0, seg.units.size)
+                            rightUnits = seg.units.subList(rStart, seg.units.size)
+                        }
+                    }
+                }
+
+                if (firstTouched == -1) {
+                    var insIdx = 0
+                    var curVis = 0
+                    while (insIdx < baseSegs.size && curVis + baseSegs[insIdx].units.size <= aMid) {
+                        curVis += baseSegs[insIdx].units.size
+                        insIdx++
+                    }
+                    for (i in 0 until insIdx) segList.add(baseSegs[i])
+                    val dcPos = if (insIdx < baseSegs.size) baseSegs[insIdx].dcStart
+                                else if (baseSegs.isNotEmpty()) baseSegs.last().dcEnd
+                                else 0
+                    segList.add(OverlaySegment(dcPos, dcPos, midUnits, SegmentOrigin.REPLACEMENT))
+                    for (i in insIdx until baseSegs.size) segList.add(baseSegs[i])
+                } else {
+                    for (i in 0 until firstTouched) segList.add(baseSegs[i])
+
+                    val dcStartMid = if (leftUnits.isNotEmpty()) baseSegs[firstTouched].dcEnd else baseSegs[firstTouched].dcStart
+                    val dcEndMid = baseSegs[lastTouched].dcEnd
+
+                    if (leftUnits.isNotEmpty()) {
+                        segList.add(
+                            OverlaySegment(
+                                baseSegs[firstTouched].dcStart,
+                                baseSegs[firstTouched].dcEnd,
+                                leftUnits,
+                                baseSegs[firstTouched].origin
+                            )
+                        )
+                    }
+
+                    if (midUnits.isNotEmpty() || dcStartMid < dcEndMid) {
+                        segList.add(OverlaySegment(dcStartMid, dcEndMid, midUnits, SegmentOrigin.REPLACEMENT))
+                    }
+
+                    if (rightUnits.isNotEmpty()) {
+                        segList.add(
+                            OverlaySegment(
+                                baseSegs[lastTouched].dcEnd,
+                                baseSegs[lastTouched].dcEnd,
+                                rightUnits,
+                                baseSegs[lastTouched].origin
+                            )
+                        )
+                    }
+
+                    for (i in (lastTouched + 1) until baseSegs.size) segList.add(baseSegs[i])
+                }
+
+                if (segList.isEmpty()) {
+                    val fallbackDc = if (firstTouched in baseSegs.indices) baseSegs[firstTouched].dcStart
+                                     else if (baseSegs.isNotEmpty()) baseSegs[0].dcStart
+                                     else 0
+                    segList.add(OverlaySegment(fallbackDc, fallbackDc, emptyList(), SegmentOrigin.REPLACEMENT))
+                }
+                newSegments = segList
+            }
+
+            if (committedCount > 0) {
+                val pCut = committedCount
+                val segs = newSegments
+                val sc = segs.first().dcStart
+                var curVis = 0
+                val consumedSegments = ArrayList<OverlaySegment>()
+                val remainingSegments = ArrayList<OverlaySegment>()
+                data class SplitTail(val units: List<TextUnit>, val origDcEnd: Int, val origin: SegmentOrigin)
+                var splitTail: SplitTail? = null
+                var dCut = sc
+                val totalOverlayUnits = segs.sumOf { it.units.size }
+
+                for (seg in segs) {
+                    val segLen = seg.units.size
+                    val segStart = curVis
+                    val segEnd = curVis + segLen
+                    curVis = segEnd
+
+                    if (segLen == 0) {
+                        val hasRemainingUnitsAfter = pCut < totalOverlayUnits
+                        if (segStart < pCut || (segStart == pCut && committedCount > 0 && !hasRemainingUnitsAfter)) {
+                            consumedSegments.add(seg)
+                            dCut = seg.dcEnd
+                        } else {
+                            remainingSegments.add(seg)
+                        }
+                        continue
+                    }
+
+                    if (segEnd <= pCut) {
+                        consumedSegments.add(seg)
+                        dCut = seg.dcEnd
+                    } else if (segStart < pCut) {
+                        val commUnits = seg.units.subList(0, pCut - segStart)
+                        val remUnits = seg.units.subList(pCut - segStart, seg.units.size)
+                        val origSpan = seg.dcEnd - seg.dcStart
+                        val consumedSpan = if (seg.origin == SegmentOrigin.RETAINED) commUnits.size else origSpan
+                        val segCut = seg.dcStart + consumedSpan
+                        consumedSegments.add(OverlaySegment(seg.dcStart, segCut, commUnits, seg.origin))
+                        dCut = segCut
+                        splitTail = SplitTail(remUnits, seg.dcEnd, seg.origin)
+                    } else {
+                        remainingSegments.add(seg)
+                    }
+                }
+
+                val pCommit = consumedSegments.flatMap { it.units }
+                dc = dc.splice(sc, dCut, pCommit)
+                val delta = pCommit.size - (dCut - sc)
+                val newSc = sc + pCommit.size
+
+                val finalRemSegments = ArrayList<OverlaySegment>()
+                if (splitTail != null && splitTail.units.isNotEmpty()) {
+                    finalRemSegments.add(
+                        OverlaySegment(
+                            dcStart = newSc,
+                            dcEnd = splitTail.origDcEnd + delta,
+                            units = splitTail.units,
+                            origin = if (splitTail.origin == SegmentOrigin.RETAINED) SegmentOrigin.RETAINED else SegmentOrigin.REPLACEMENT
+                        )
+                    )
+                }
+                for (seg in remainingSegments) {
+                    finalRemSegments.add(
+                        OverlaySegment(
+                            dcStart = seg.dcStart + delta,
+                            dcEnd = seg.dcEnd + delta,
+                            units = seg.units,
+                            origin = seg.origin
+                        )
+                    )
+                }
+                if (finalRemSegments.isEmpty()) {
+                    finalRemSegments.add(OverlaySegment(newSc, newSc, emptyList(), SegmentOrigin.REPLACEMENT))
+                }
+                session.segments = finalRemSegments
+                session.epochBaseSegments = finalRemSegments
+                session.synthesized.clear()
+            } else {
+                session.segments = newSegments
+            }
+
+            val sc = session.segments.first().dcStart
+            val remUnits = session.segments.sumOf { it.units.size }
+            selection = Selection(sc + (caret ?: remUnits), sc + (caret ?: remUnits))
+
+            if (committedCount == text.length) {
+                val ec = session.segments.last().dcEnd
+                if (ec > sc) {
+                    dc = dc.splice(sc, ec, emptyList())
+                }
+                selection = Selection(sc, sc)
                 finish(session, if (existing || text.length != committedCount) "Composition" else "Typing")
-            } else notice = if (pending.isEmpty()) "Composing…" else "Waiting for the input method to finish…"
+            } else {
+                notice = if (pending.isEmpty()) "Composing…" else "Waiting for the input method to finish…"
+            }
         }
     }
     fun inputMethodCaret(offset: Int) {
-        val s = composition ?: return; if (offset !in 0..s.candidate.size) return
-        dispatch("IME caret") { composition?.let { selection = Selection(it.start + offset, it.start + offset) } }
+        val s = composition ?: return
+        val remLen = s.segments.sumOf { it.units.size }
+        if (offset !in 0..remLen) return
+        dispatch("IME caret") {
+            composition?.let {
+                val sc = it.segments.first().dcStart
+                selection = Selection(sc + offset, sc + offset)
+            }
+        }
     }
     private fun finish(session: Composition, kind: String, aborted: Boolean = false) {
         composition = null
+        settlementRequestedAt = null
+        settlementTimedOut = false
+        imeEpoch++
         intent = if (aborted && session.before.document.same(dc)) session.before.intent else session.seed
         if (!aborted && !session.before.document.same(dc)) {
             val at = selection.focus
             val empty = (at == 0 || dc.units[at - 1].kind == UnitKind.PARAGRAPH_BREAK) && (at == dc.units.size || dc.units[at].kind == UnitKind.PARAGRAPH_BREAK)
-            if (empty) dc = if (at == 0) dc.copy(startStyle = session.seed) else dc.copy(units = dc.units.mapIndexed { i, unit -> if (i == at - 1) unit.copy(style = session.seed) else unit })
+            if (empty) {
+                dc = if (at == 0) dc.copy(startStyle = session.seed)
+                     else dc.copy(units = dc.units.mapIndexed { i, unit ->
+                         if (i == at - 1) unit.copy(style = TextStyleFlags(), paragraphStyle = session.seed) else unit
+                     })
+            }
         }
         val group = push(session.before, kind, kind == "Typing" && pending.isEmpty())
-        // Capture before draining: a preceding queued Undo may remove these identities.
-        val settledTarget = capture(Selection(session.before.selection.start, session.start))
+        val sc = session.segments.first().dcStart
+        val settledTarget = capture(Selection(session.before.selection.start, sc))
         val slots = undo.map { it.id as Long? }.toMutableList()
         if (group == null && session.undoSawDirty) slots += null
         for (action in pending.toList()) {
             if (action == EditAction.Undo) {
-                if (slots.isNotEmpty()) { val id = slots.removeAt(slots.lastIndex); if (id != null) { check(undo.lastOrNull()?.id == id); apply(action) } else notice = "Pending action already reverted" }
+                if (slots.isNotEmpty()) {
+                    val id = slots.removeAt(slots.lastIndex)
+                    if (id != null) {
+                        check(undo.lastOrNull()?.id == id)
+                        apply(action)
+                    } else notice = "Pending action already reverted"
+                }
             } else {
                 val executable = if (action is EditAction.Format && action.target == null) {
                     if (aborted || settledTarget.collapsed) null else action.copy(target = settledTarget)
@@ -239,9 +555,22 @@ class EditorEngine(initial: Document = Document(emptyList()), private val now: (
                 if (action is EditAction.Replace || action is EditAction.Format) slots += id
             }
         }
-        pending.clear(); if (notice.startsWith("Composing") || notice.startsWith("Waiting")) notice = "Ready"
+        pending.clear()
+        if (notice.startsWith("Composing") || notice.startsWith("Waiting")) notice = "Ready"
     }
     /** Explicit application abort, exercised by kernel tests; not guessed from AWT unmark. */
-    fun abortComposition() { dispatch("Application abort") { composition?.let { s -> selection = if (s.before.document.same(dc)) s.before.selection else Selection(s.start, s.start); finish(s, "Composition", aborted = true) } } }
-    fun surroundingCommittedText(): String { val frame = snapshot(); val marked = frame.marked ?: return frame.visible.text; return frame.visible.text.removeRange(marked.first, marked.last + 1) }
+    fun abortComposition() {
+        dispatch("Application abort") {
+            composition?.let { s ->
+                selection = if (s.before.document.same(dc)) s.before.selection
+                            else Selection(s.segments.first().dcStart, s.segments.first().dcStart)
+                finish(s, "Composition", aborted = true)
+            }
+        }
+    }
+    fun surroundingCommittedText(): String {
+        val frame = snapshot()
+        val marked = frame.marked ?: return frame.visible.text
+        return frame.visible.text.removeRange(marked.first, marked.last + 1)
+    }
 }
