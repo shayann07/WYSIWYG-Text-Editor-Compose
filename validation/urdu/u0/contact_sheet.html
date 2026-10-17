@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>Urdu Acceptance Gate U0 — Typography Contact Sheet</title>
+<style>
+  @font-face {
+    font-family: 'Noto Nastaliq Urdu';
+    src: url('fonts/NotoNastaliqUrdu[wght].ttf') format('truetype');
+  }
+  @font-face {
+    font-family: 'Gulzar';
+    src: url('fonts/Gulzar-Regular.ttf') format('truetype');
+  }
+  @font-face {
+    font-family: 'Noto Sans Arabic';
+    src: url('fonts/NotoSansArabic[wdth,wght].ttf') format('truetype');
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f8fafc;
+    color: #0f172a;
+    margin: 0;
+    padding: 32px;
+  }
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    padding: 32px;
+  }
+  h1, h2, h3 { color: #1e293b; margin-top: 0; }
+  .notice {
+    background: #fef3c7;
+    border-right: 4px solid #f59e0b;
+    padding: 16px;
+    border-radius: 4px;
+    margin-bottom: 24px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 32px;
+    font-size: 14px;
+  }
+  th, td {
+    border: 1px solid #e2e8f0;
+    padding: 12px;
+    text-align: right;
+  }
+  th { background: #f1f5f9; }
+  .specimen-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  .specimen-label {
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  .specimen-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-top: 12px;
+  }
+  .font-box {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 16px;
+  }
+  .font-title {
+    font-size: 12px;
+    color: #475569;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 6px;
+    margin-bottom: 12px;
+    font-weight: bold;
+  }
+  .nastaliq-primary {
+    font-family: 'Noto Nastaliq Urdu', serif;
+    font-size: 26px;
+    line-height: 2.5;
+  }
+  .nastaliq-secondary {
+    font-family: 'Gulzar', serif;
+    font-size: 26px;
+    line-height: 2.2;
+  }
+  .naskh-fallback {
+    font-family: 'Noto Sans Arabic', sans-serif;
+    font-size: 24px;
+    line-height: 1.8;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>اردو کوالٹی گیٹ U0 — ٹائپوگرافی تقابلی جائزہ (Contact Sheet)</h1>
+  <div class="notice">
+    <strong>توجہ فرمائیں (Honesty Notice):</strong> یہ تقابلی شیٹ Gate U0 کے لیے تیار کی گئی ہے تاکہ امیدوار فونٹس کا موازنہ کیا جا سکے۔ URDU-ACCEPTANCE.md کے مطابق حقیقی انسانی ماہرِ لسانیات و خطاطی کا جائزہ تاحال <code>NOT RUN</code> ہے۔ خودکار مشاہدہ قطعی انسانی منظوری کا متبادل نہیں ہے۔
+  </div>
+
+  <h2>1. امیدوار فونٹس کی پیمائش (Geometry & Layout Metrics)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>فونٹ کا نام</th>
+        <th>انداز (Style)</th>
+        <th>کردار (Role)</th>
+        <th>Em سائز (UPEM)</th>
+        <th>Ascent</th>
+        <th>Descent</th>
+        <th>عمودی فاصلہ</th>
+        <th>کم از کم تجویز کردہ سطر کا فاصلہ (Line Height)</th>
+        <th>Cursive Attachment (curs)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Noto Nastaliq Urdu</strong></td>
+        <td>Nastaliq</td>
+        <td>PRIMARY_CANDIDATE</td>
+        <td>1000</td>
+        <td>1904</td>
+        <td>-596</td>
+        <td>2500</td>
+        <td><strong>2.5x</strong></td>
+        <td>ہاں (فعال)</td>
+      </tr>
+      <tr>
+        <td><strong>Gulzar</strong></td>
+        <td>Nastaliq</td>
+        <td>SECONDARY_CANDIDATE</td>
+        <td>1000</td>
+        <td>1500</td>
+        <td>-1200</td>
+        <td>2700</td>
+        <td><strong>2.7x</strong></td>
+        <td>ہاں (فعال)</td>
+      </tr>
+      <tr>
+        <td><strong>Noto Sans Arabic</strong></td>
+        <td>Naskh</td>
+        <td>FALLBACK</td>
+        <td>1000</td>
+        <td>1374</td>
+        <td>-738</td>
+        <td>2112</td>
+        <td><strong>2.112x</strong></td>
+        <td>نہیں (غیر دستیاب)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>2. تقابلی نمونہ جات (Visual Specimens)</h2>
+  <div class="specimen-card">
+    <div class="specimen-label">General Prose</div>
+    <div class="specimen-row">
+      <div class="font-box">
+        <div class="font-title">Noto Nastaliq Urdu (بنیادی امیدوار)</div>
+        <div class="nastaliq-primary">اردو زبان کی خوبصورتی</div>
+      </div>
+      <div class="font-box">
+        <div class="font-title">Gulzar (ثانوی امیدوار)</div>
+        <div class="nastaliq-secondary">اردو زبان کی خوبصورتی</div>
+      </div>
+      <div class="font-box">
+        <div class="font-title">Noto Sans Arabic (ہنگامی فال بیک - نسخ)</div>
+        <div class="naskh-fallback">اردو زبان کی خوبصورتی</div>
+      </div>
+    </div>
+  </div>
+  <div class="specimen-card">
+    <div class="specimen-label">Nastaliq Cascading Ligatures</div>
+    <div class="specimen-row">
+      <div class="font-box">
+        <div class="font-title">Noto Nastaliq Urdu (بنیادی امیدوار)</div>
+        <div class="nastaliq-primary">نستعلیق خط اور تحقیق کی تشکیل</div>
+      </div>
+      <div class="font-box">
+        <div class="font-title">Gulzar (ثانوی امیدوار)</div>
+        <div class="nastaliq-secondary">نستعلیق خط اور تحقیق کی تشکیل</div>
+      </div>
+      <div class="font-box">
+        <div class="font-title">Noto Sans Arabic (ہنگامی فال بیک - نسخ)</div>
+        <div class="naskh-fallback">نستعلیق خط اور تحقیق کی تشکیل</div>
+      </div>
+    </div>
+  </div>
+  <div class="specimen-card">
+    <div class="specimen-label">Urdu Letter Distinctions (Keheh & Urdu Yeh)</div>
+    <div class="specimen-row">
+      <div class="font-box">
+        <div class="font-title">Noto Nastaliq Urdu (بنیادی امیدوار)</div>
+        <div class="nastaliq-primary">کتاب اور قلم — زندگی کی خوبصورتی</div>
+      </div>
+      <div class="font-box">
+        <div class="font-title">Gulzar (ثانوی امیدوار)</div>
+        <div class="nastaliq-secondary">کتاب اور قلم — زندگی کی خوبصورتی</div>
+      </div>
+      <div class="font-box">
+        <div class="font-title">Noto Sans Arabic (ہنگامی فال بیک - نسخ)</div>
+        <div class="naskh-fallback">کتاب اور قلم — زندگی کی خوبصورتی</div>
+      </div>
+    </div>
+  </div>
+  <div class="specimen-card">
+    <div class="specimen-label">Tashkeel Diacritics Stacking</div>
+    <div class="specimen-row">
+      <div class="font-box">
+        <div class="font-title">Noto Nastaliq Urdu (بنیادی امیدوار)</div>
+        <div class="nastaliq-primary">مُحَمَّد رَسُولُ اللہِ</div>
+      </div>
+      <div class="font-box">
+        <div class="font-title">Gulzar (ثانوی امیدوار)</div>
+        <div class="nastaliq-secondary">مُحَمَّد رَسُولُ اللہِ</div>
+      </div>
+      <div class="font-box">
+        <div class="font-title">Noto Sans Arabic (ہنگامی فال بیک - نسخ)</div>
+        <div class="naskh-fallback">مُحَمَّد رَسُولُ اللہِ</div>
+      </div>
+    </div>
+  </div>
+  <div class="specimen-card">
+    <div class="specimen-label">Classical Poetry (Mirza Ghalib)</div>
+    <div class="specimen-row">
+      <div class="font-box">
+        <div class="font-title">Noto Nastaliq Urdu (بنیادی امیدوار)</div>
+        <div class="nastaliq-primary">دل ناداں تجھے ہوا کیا ہے<br>آخر اس درد کی دوا کیا ہے</div>
+      </div>
+      <div class="font-box">
+        <div class="font-title">Gulzar (ثانوی امیدوار)</div>
+        <div class="nastaliq-secondary">دل ناداں تجھے ہوا کیا ہے<br>آخر اس درد کی دوا کیا ہے</div>
+      </div>
+      <div class="font-box">
+        <div class="font-title">Noto Sans Arabic (ہنگامی فال بیک - نسخ)</div>
+        <div class="naskh-fallback">دل ناداں تجھے ہوا کیا ہے<br>آخر اس درد کی دوا کیا ہے</div>
+      </div>
+    </div>
+  </div>
+  <div class="specimen-card">
+    <div class="specimen-label">Mixed Scripts & Eastern Numerals</div>
+    <div class="specimen-row">
+      <div class="font-box">
+        <div class="font-title">Noto Nastaliq Urdu (بنیادی امیدوار)</div>
+        <div class="nastaliq-primary">قیمت: ۱۲۳ روپے (123 USD)</div>
+      </div>
+      <div class="font-box">
+        <div class="font-title">Gulzar (ثانوی امیدوار)</div>
+        <div class="nastaliq-secondary">قیمت: ۱۲۳ روپے (123 USD)</div>
+      </div>
+      <div class="font-box">
+        <div class="font-title">Noto Sans Arabic (ہنگامی فال بیک - نسخ)</div>
+        <div class="naskh-fallback">قیمت: ۱۲۳ روپے (123 USD)</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
