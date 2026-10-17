@@ -5,6 +5,7 @@ import javax.swing.SwingUtilities
 import javax.swing.UIManager
 
 fun main(args: Array<String>) {
+    if ("--urdu-u0-check" in args) { runUrduChecks(args); return }
     if ("--check" in args) { runChecks(); runFileChecks(); runFormatChecks(); return }
     if ("--stress" in args) { runStressChecks(); return }
     val diagnostics = args.indexOf("--diagnostics").takeIf { it >= 0 }?.let { File(args[it + 1]) }

@@ -6,6 +6,7 @@ including malformed UTF-16 edge cases, formatting boundaries, Undo/Redo, and pag
 
 import json
 import os
+import re
 import unicodedata
 
 CATEGORIES = [
@@ -22,11 +23,28 @@ CATEGORIES = [
     "input_and_mutation"
 ]
 
-def make_fixture(fixture_id, category, title, text, purpose, provenance="Self-authored standard Urdu test fixture", forbidden=None, bidi="RTL", req_nastaliq=True, execution_scope="EXECUTABLE_PROTOTYPE", formatting_spans=None, undo_redo_plan=None, future_domain=None):
-    raw_code_units = "".join(f"\\u{ord(c):04x}" for c in text)
+def make_fixture(fixture_id, category, title, text, purpose, provenance="Self-authored standard Urdu test fixture", forbidden=None, bidi="RTL", req_nastaliq=True, execution_scope="EXECUTABLE_PROTOTYPE", formatting_spans=None, undo_redo_plan=None, future_domain=None, operations=None):
+    encoded_utf16 = text.encode("utf-16le", errors="surrogatepass")
+    utf16_code_units = [int.from_bytes(encoded_utf16[i:i+2], "little") for i in range(0, len(encoded_utf16), 2)]
+    utf16_length = len(utf16_code_units)
+    scalar_count = len(text)
+    raw_code_units = "".join(f"\\u{cu:04x}" for cu in utf16_code_units)
     code_points_hex = [f"{ord(c):04X}" for c in text]
     forbidden_list = forbidden or []
     
+    if operations is None:
+        if execution_scope == "EXECUTABLE_PROTOTYPE":
+            if category == "formatting_and_undo_redo":
+                operations = ["insert_text", "apply_formatting", "verify_spans", "undo", "verify_baseline", "redo", "verify_spans", "save_load_roundtrip"]
+            elif category == "input_and_mutation":
+                operations = ["insert_text", "verify_text", "verify_code_units", "save_load_roundtrip"]
+            elif category == "malformed_and_utf16_edge_cases":
+                operations = ["insert_raw_units", "verify_code_units_preserved", "verify_no_crash", "save_load_roundtrip"]
+            else:
+                operations = ["insert_text", "verify_text", "verify_utf16_code_units", "save_load_roundtrip"]
+        else:
+            operations = []
+
     expected_outcome = {
         "bidiDirection": bidi,
         "joiningValid": True,
@@ -47,11 +65,15 @@ def make_fixture(fixture_id, category, title, text, purpose, provenance="Self-au
         "category": category,
         "title": title,
         "text": text,
+        "scalarCount": scalar_count,
+        "utf16Length": utf16_length,
+        "utf16CodeUnits": utf16_code_units,
         "rawCodeUnits": raw_code_units,
         "codePointsHex": code_points_hex,
         "purpose": purpose,
         "provenance": provenance,
         "executionScope": execution_scope,
+        "operations": operations,
         "expectedOutcome": expected_outcome,
         "reviewerStatus": "UNREVIEWED_SYNTHETIC"
     }
@@ -140,7 +162,8 @@ def build_all_fixtures():
         ("پیلا پھول", "U+067E (Peh) canonical preservation.", "Botanical color phrase", ["0628"]),
         ("چاندنی رات", "U+0686 (Cheh) canonical preservation.", "Nocturnal poetic phrase", ["062C"]),
         ("ژالہ باری ہوئی", "U+0698 (Zheh) initial canonical preservation.", "Meteorological report", ["0632"]),
-        ("گلاب کا پودا", "U+06AF (Gaf) canonical preservation.", "Gardening phrase", ["0643"])
+        ("گلاب کا پودا", "U+06AF (Gaf) canonical preservation.", "Gardening phrase", ["0643"]),
+        ("یہ اردو کتاب ہے اور هذا كتاب عربي ہے", "Coexistence of Urdu Keheh (U+06A9) and Arabic Kaf (U+0643), Urdu Yeh (U+06CC) and Arabic Yeh (U+064A) in a single bilingual passage.", "Bilingual Urdu-Arabic reference text", None)
     ]
     for text, purpose, prov, forb in letters_items:
         fixtures.append(make_fixture(next_id(), cat, f"Letters: {text[:20]}...", text, purpose, provenance=prov, forbidden=forb))
@@ -265,6 +288,9 @@ def build_all_fixtures():
     # ==========================================
     cat = "malformed_and_utf16_edge_cases"
     malformed_items = [
+        ("\U0001F600", "Valid supplementary character 😀 (U+1F600, SMP smiling face emoji, 2 UTF-16 code units).", "Unicode supplementary plane character"),
+        ("\U0001F469\u200D\U0001F4BB", "Valid emoji sequence 👩‍💻 (woman technologist: U+1F469 + ZWJ + U+1F4BB, 5 UTF-16 code units).", "Complex emoji ZWJ sequence"),
+        ("\uD83D\u0627", "Lone high surrogate (U+D83D) followed by Urdu Alef (U+0627).", "Malformed UTF-16 surrogate followed by BMP letter"),
         ("\uD83D", "Unmatched high surrogate (U+D83D) without low surrogate.", "Malformed UTF-16 edge case"),
         ("\uDE00", "Unmatched low surrogate (U+DE00) without high surrogate.", "Malformed UTF-16 edge case"),
         ("\uDE00\uD83D", "Inverted surrogate pair (low surrogate before high surrogate).", "Malformed UTF-16 sequence"),
@@ -355,7 +381,7 @@ def build_all_fixtures():
         ("عزوجل", "Divine majesty ligature.", "Theological formula")
     ]
     for text, purpose, prov in geom_items:
-        fixtures.append(make_fixture(next_id(), cat, f"Geometry: {text[:20]}...", text, purpose, provenance=prov))
+        fixtures.append(make_fixture(next_id(), cat, f"Geometry: {text[:20]}...", text, purpose, provenance=prov, execution_scope="CORPUS_ONLY"))
 
     # ==========================================
     # 9. Spacing & Justification (26 fixtures)
@@ -499,9 +525,12 @@ def main():
         print(f"  {scope}: {count}")
 
     output_path = os.path.join(os.path.dirname(__file__), "fixtures.json")
-    with open(output_path, "w", encoding="utf-8", errors="surrogatepass") as f:
-        json.dump(fixtures, f, ensure_ascii=False, indent=2)
-    print(f"Written {len(fixtures)} fixtures to {output_path}")
+    dumped = json.dumps(fixtures, ensure_ascii=False, indent=2)
+    # Strictly escape any lone surrogates U+D800..U+DFFF as \uXXXX to produce strict RFC 8259 UTF-8
+    strict_utf8 = re.sub(r'[\ud800-\udfff]', lambda m: f"\\u{ord(m.group()):04x}", dumped)
+    with open(output_path, "wb") as f:
+        f.write(strict_utf8.encode("utf-8"))
+    print(f"Written {len(fixtures)} fixtures to {output_path} (strict UTF-8 with escaped surrogates)")
 
 if __name__ == "__main__":
     main()
