@@ -133,6 +133,7 @@ class EditorEngine @JvmOverloads constructor(initial: Document = Document(emptyL
             val savedIntent = intent; val savedSide = side
             val savedComposition = composition?.let { it.copy(synthesized = HashMap(it.synthesized)) }
             val savedUndo = undo.map { it.copy() }; val savedRedo = redo.map { it.copy() }; val savedPending = pending.toList(); val barrier = typingBarrier
+            val savedSettlementRequestedAt = settlementRequestedAt; val savedSettlementTimedOut = settlementTimedOut
             try {
                 block()
                 check(selection.anchor in 0..visible().units.size && selection.focus in 0..visible().units.size)
@@ -140,6 +141,7 @@ class EditorEngine @JvmOverloads constructor(initial: Document = Document(emptyL
             } catch (e: Exception) {
                 dc = savedDc; selection = savedSelection; composition = savedComposition; intent = savedIntent; side = savedSide
                 undo.clear(); undo.addAll(savedUndo); redo.clear(); redo.addAll(savedRedo); pending.clear(); pending.addAll(savedPending); typingBarrier = barrier
+                settlementRequestedAt = savedSettlementRequestedAt; settlementTimedOut = savedSettlementTimedOut
                 notice = "Edit rejected: ${e.message}"
                 runCatching { onEvent("Rejected $label: ${e.message}") }; runCatching { onChange(snapshot()) }
                 return@addLast
@@ -232,22 +234,34 @@ class EditorEngine @JvmOverloads constructor(initial: Document = Document(emptyL
                 if (action == EditAction.Undo && (!composition!!.before.document.same(visible()) || !composition!!.before.document.same(dc))) composition!!.undoSawDirty = true
                 if (action is EditAction.Move && pending.lastOrNull() is EditAction.Move) pending[pending.lastIndex] = action else pending += action
                 notice = "Waiting for the input method to finish…"
+                settlementTimedOut = false
                 if (settlementRequestedAt == null) settlementRequestedAt = now()
             } else apply(action)
         }
         if (composition != null && pending.isNotEmpty()) onSettlementRequested()
     }
     fun checkSettlementWatchdog(timeoutMs: Long = 2_000L): Boolean {
+        if (composition == null || pending.isEmpty()) {
+            settlementRequestedAt = null
+            return false
+        }
         val req = settlementRequestedAt ?: return false
-        if (composition != null && pending.isNotEmpty() && (now() - req) >= timeoutMs) {
+        if ((now() - req) < timeoutMs) return false
+        dispatch("Settlement watchdog timeout") {
             settlementTimedOut = true
+            settlementRequestedAt = null
             pending.clear()
             notice = "Input method did not respond; pending commands cancelled. Press Escape or abort composition to recover."
-            sessionRevision++
-            runCatching { onChange(snapshot()) }
-            return true
         }
-        return false
+        return true
+    }
+    fun cancelPendingOnTeardown() {
+        if (pending.isEmpty() && settlementRequestedAt == null && !settlementTimedOut) return
+        dispatch("Surface teardown") {
+            pending.clear()
+            settlementRequestedAt = null
+            settlementTimedOut = false
+        }
     }
     fun replace(text: String, kind: String = "Typing", paragraphBreaks: Boolean = false, range: Selection = selection, deleteSide: TypingSide? = null) = perform(EditAction.Replace(capture(range), text, kind, paragraphBreaks, replacementStyle(range), deleteSide))
     fun move(range: Selection, primary: Boolean = range.primary, side: TypingSide = TypingSide.LEFT, wrapAffinity: WrapAffinity = range.wrapAffinity) = perform(EditAction.Move(capture(range), primary, side, wrapAffinity))
@@ -264,8 +278,6 @@ class EditorEngine @JvmOverloads constructor(initial: Document = Document(emptyL
         require(caret == null || caret in 0..text.length - committedCount)
         if (composition == null && text.isEmpty() && committedCount == 0 && selection.collapsed) return
         dispatch("IME text: committed=$committedCount composed=${text.length - committedCount}") {
-            settlementRequestedAt = null
-            settlementTimedOut = false
             val existing = composition != null
             val session = composition ?: run {
                 val initialSegments = if (selection.start == selection.end) {
@@ -501,8 +513,12 @@ class EditorEngine @JvmOverloads constructor(initial: Document = Document(emptyL
                 }
                 selection = Selection(sc, sc)
                 finish(session, if (existing || text.length != committedCount) "Composition" else "Typing")
+            } else if (pending.isEmpty()) {
+                settlementRequestedAt = null
+                if (!settlementTimedOut) notice = "Composing…"
             } else {
-                notice = if (pending.isEmpty()) "Composing…" else "Waiting for the input method to finish…"
+                if (settlementRequestedAt == null) settlementRequestedAt = now()
+                notice = "Waiting for the input method to finish…"
             }
         }
     }

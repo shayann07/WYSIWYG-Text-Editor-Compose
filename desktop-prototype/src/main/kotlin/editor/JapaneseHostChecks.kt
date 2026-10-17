@@ -22,27 +22,28 @@ import javax.swing.JPanel
  * NOTE: These checks exercise synthetic AWT InputMethodEvent dispatch and attached Compose text layout.
  * They do NOT certify physical romaji conversion or native candidate popups by the Microsoft Windows OS IME.
  */
-fun runJapaneseHostChecks(surface: EditorSurface) {
+fun runJapaneseHostChecks(surface: EditorSurface): EditorSurface {
     val e = surface.engine
+    var activeSurface = surface
 
-    fun imeEvent(text: String, committedCount: Int, caret: Int?) {
+    fun imeEvent(text: String, committedCount: Int, caret: Int?, target: EditorSurface = activeSurface): InputMethodEvent {
         val iterator = if (text.isEmpty()) null else AttributedString(text).iterator
-        surface.dispatchEvent(
-            InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, iterator, committedCount, caret?.let(TextHitInfo::leading), null)
-        )
+        val ev = InputMethodEvent(target, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, iterator, committedCount, caret?.let(TextHitInfo::leading), null)
+        target.dispatchEvent(ev)
+        return ev
     }
 
-    fun caretEvent(caret: Int) {
-        surface.dispatchEvent(
-            InputMethodEvent(surface, InputMethodEvent.CARET_POSITION_CHANGED, null, 0, TextHitInfo.leading(caret), null)
-        )
+    fun caretEvent(caret: Int, target: EditorSurface = activeSurface): InputMethodEvent {
+        val ev = InputMethodEvent(target, InputMethodEvent.CARET_POSITION_CHANGED, null, 0, TextHitInfo.leading(caret), null)
+        target.dispatchEvent(ev)
+        return ev
     }
 
-    fun key(code: Int, ctrl: Boolean = false, shift: Boolean = false) {
+    fun key(code: Int, ctrl: Boolean = false, shift: Boolean = false, target: EditorSurface = activeSurface) {
         var mod = 0
         if (ctrl) mod = mod or KeyEvent.CTRL_DOWN_MASK
         if (shift) mod = mod or KeyEvent.SHIFT_DOWN_MASK
-        surface.dispatchEvent(KeyEvent(surface, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), mod, code, KeyEvent.CHAR_UNDEFINED))
+        target.dispatchEvent(KeyEvent(target, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), mod, code, KeyEvent.CHAR_UNDEFINED))
     }
 
     // 1. Synthetic preedit, candidate conversion, popup coordinates, commit and exact Undo/Redo
@@ -427,38 +428,96 @@ fun runJapaneseHostChecks(surface: EditorSurface) {
     e.perform(EditAction.Undo)
     check(e.snapshot().visible.text.isEmpty())
 
-    // 9. Explicit native context retirement and late callback rejection via activeImeEpoch
+    // 9. Concrete AWT host/context retirement and replacement via ordinary AWT dispatchEvent
+    // 9a. Ordinary delayed AWT callback rejection on retired host + identical text in consecutive legitimate sessions
+    val retiredHost1 = activeSurface
+    imeEvent("あ", 0, 1, target = retiredHost1)
+    val retiredEpoch = retiredHost1.activeImeEpoch
+    retiredHost1.abortAndRetireComposition()
+    check(retiredHost1.retired && retiredHost1.inputContext == null)
+    check(retiredHost1.activeImeEpoch == retiredEpoch + 1)
+    activeSurface = checkNotNull(retiredHost1.replacementSurface) { "abortAndRetireComposition must install replacement host" }
+    check((activeSurface.parent as javax.swing.JLayeredPane).getLayer(activeSurface) == 100) { "Replacement host must occupy layer 100 in JLayeredPane" }
+    check(e.snapshot().marked == null && e.snapshot().visible.text.isEmpty())
+
+    // Late ordinary AWT commit and caret callbacks targeting retiredHost1 (no epoch tag!) must be consumed and ignored
+    val lateCommit = imeEvent("あ", 1, null, target = retiredHost1)
+    val latePreedit = imeEvent("遅い", 0, 2, target = retiredHost1)
+    val lateCaret = caretEvent(0, target = retiredHost1)
+    check(lateCommit.isConsumed && latePreedit.isConsumed && lateCaret.isConsumed) { "Ordinary AWT events on retired host must be consumed" }
+    check(e.snapshot().visible.text.isEmpty() && e.snapshot().committed.text.isEmpty() && e.snapshot().undoCount == 0)
+
+    // Legitimate subsequent input on replacement host, including identical text "あ", must succeed
     imeEvent("あ", 0, 1)
-    val retiredEpoch = surface.activeImeEpoch
-    surface.abortAndRetireComposition()
-    check(surface.activeImeEpoch == retiredEpoch + 1)
-    check(e.snapshot().marked == null)
-    check(e.snapshot().visible.text.isEmpty())
-    val lateEvent = InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("遅い").iterator, 2, null, null)
-    surface.dispatchInputMethodEventWithEpoch(lateEvent, retiredEpoch)
-    check(lateEvent.isConsumed) { "Late callback targeting retired epoch must be consumed and discarded" }
-    check(e.snapshot().visible.text.isEmpty()) { "Late callback must not affect engine state" }
-    val validEvent = InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("有効").iterator, 2, null, null)
-    surface.dispatchInputMethodEventWithEpoch(validEvent, surface.activeImeEpoch)
-    check(e.snapshot().visible.text == "有効")
-    e.perform(EditAction.Undo)
+    // Stale caret/text on retiredHost1 while activeSurface is composing must not affect active composition
+    caretEvent(0, target = retiredHost1)
+    imeEvent("無視", 2, null, target = retiredHost1)
+    check(e.snapshot().visible.text == "あ" && e.snapshot().selection == Selection(1, 1))
+    imeEvent("あ", 1, null)
+    check(e.snapshot().committed.text == "あ" && e.snapshot().marked == null && e.snapshot().undoCount == 1)
+    // Consecutive legitimate session with identical text "あ"
+    imeEvent("あ", 0, 1)
+    imeEvent("あ", 1, null)
+    check(e.snapshot().committed.text == "ああ" && e.snapshot().undoCount == 2)
+    e.perform(EditAction.Undo); e.perform(EditAction.Undo)
     check(e.snapshot().visible.text.isEmpty())
 
-    // 10. Watchdog timeout and cancellation without auto-commit
-    imeEvent("とうきょう", 0, 5)
+    // 9b. Reentrant ordinary AWT commit during abortAndRetireComposition
+    val retiredHost2 = activeSurface
+    imeEvent("再入", 0, 2, target = retiredHost2)
+    retiredHost2.onEndCompositionRequested = {
+        imeEvent("再入", 2, null, target = retiredHost2)
+        caretEvent(0, target = retiredHost2)
+    }
+    retiredHost2.abortAndRetireComposition()
+    activeSurface = checkNotNull(retiredHost2.replacementSurface)
+    check(e.snapshot().committed.text.isEmpty() && e.snapshot().visible.text.isEmpty()) { "Reentrant ordinary commit during abort must be ignored" }
+    check(e.snapshot().marked == null && e.snapshot().undoCount == 0)
+
+    // 9c. Partial-commit recovery on attached host under reentrant and delayed ordinary AWT callbacks
+    e.replace("abcd", "Fixture")
+    e.selectAll()
+    val retiredHost3 = activeSurface
+    imeEvent("XYcd", 1, 3, target = retiredHost3) // 'X' accepted, 'Y' provisional, "cd" retained
+    check(e.snapshot().committed.text == "Xcd" && e.snapshot().visible.text == "XYcd")
+    retiredHost3.onEndCompositionRequested = {
+        imeEvent("XYcd", 4, null, target = retiredHost3)
+    }
+    retiredHost3.abortAndRetireComposition()
+    imeEvent("LATE", 4, null, target = retiredHost3)
+    activeSurface = checkNotNull(retiredHost3.replacementSurface)
+    check(e.snapshot().visible.text == "Xcd" && e.snapshot().committed.text == "Xcd" && e.snapshot().marked == null)
+    e.perform(EditAction.Undo)
+    check(e.snapshot().visible.text == "abcd" && e.snapshot().selection == Selection(0, 4))
+    e.perform(EditAction.Redo)
+    check(e.snapshot().visible.text == "Xcd" && e.snapshot().selection == Selection(1, 1))
+    e.perform(EditAction.Undo); e.perform(EditAction.Undo)
+    check(e.snapshot().visible.text.isEmpty())
+
+    // 10. Watchdog timeout across candidate updates and Escape recovery without auto-commit
+    imeEvent("とう", 0, 2)
     check(e.snapshot().marked != null)
     check(!e.snapshot().waiting)
     key(KeyEvent.VK_B, ctrl = true)
     check(e.snapshot().waiting) { "Shortcut during composition must set waiting flag" }
+    val deadlineStart = checkNotNull(e.settlementRequestedAt) { "Shortcut during composition must record settlementRequestedAt" }
+    // Non-terminal candidate update while command is pending must preserve deadlineStart and waiting state
+    imeEvent("とうきょう", 0, 5)
+    check(e.snapshot().waiting) { "Candidate update must not clear waiting state" }
+    check(e.settlementRequestedAt == deadlineStart) { "Candidate update must preserve original settlementRequestedAt deadline" }
     check(!e.settlementTimedOut)
     val timedOut = e.checkSettlementWatchdog(timeoutMs = 0L)
     check(timedOut) { "Watchdog must report timeout" }
     check(e.settlementTimedOut)
+    check(e.settlementRequestedAt == null)
     check(!e.snapshot().waiting) { "Watchdog timeout must cancel pending queue so editor is not wedged" }
     check(e.snapshot().marked != null) { "Watchdog timeout must NOT auto-commit unaccepted text" }
+    val preEscapeHost = activeSurface
     key(KeyEvent.VK_ESCAPE)
+    activeSurface = checkNotNull(preEscapeHost.replacementSurface) { "Escape after watchdog timeout must retire host and install replacement" }
+    imeEvent("とうきょう", 5, null, target = preEscapeHost)
     check(e.snapshot().marked == null) { "Escape must abort timed-out composition" }
-    check(e.snapshot().visible.text.isEmpty())
+    check(e.snapshot().visible.text.isEmpty() && e.snapshot().committed.text.isEmpty())
 
     println("PASS Synthetic Japanese IME callback sequence (preedit -> conversion -> commit), single-group Undo/Redo")
     println("PASS Attached Compose IME candidate geometry (getTextLocation / getLocationOffset monotonic coordinates under stated conditions)")
@@ -468,5 +527,6 @@ fun runJapaneseHostChecks(surface: EditorSurface) {
     println("PASS Synthetic Japanese selection replacement with exact selection restoration on Undo")
     println("PASS Synthetic Japanese queued formatting and Undo command ordering with attributed history")
     println("PASS Synthetic Japanese paragraph-boundary composition and cross-paragraph selection replacement")
-    println("PASS Synthetic Japanese duplicate terminal callbacks, retirement epoch isolation and watchdog timeout without auto-commit")
+    println("PASS Synthetic Japanese duplicate terminal callbacks, ordinary AWT host retirement/replacement and watchdog timeout across candidate updates")
+    return activeSurface
 }

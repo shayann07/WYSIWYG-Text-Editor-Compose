@@ -479,23 +479,89 @@ open class EditorSurface(val engine: EditorEngine, val view: ViewState, private 
     private var dragAnchor = 0
     private var preferredX: Float? = null
     private var keyEvents = 0; private var imeEvents = 0
+    private var ownInputContext: java.awt.im.InputContext? = java.awt.im.InputContext.getInstance()
     var activeImeEpoch = 0; private set
+    var retired = false; private set
+    var disposed = false; private set
+    var replacementSurface: EditorSurface? = null; private set
+    var onHostReplaced: (EditorSurface) -> Unit = {}
     private val blinkTimer = Timer(500) {
-        if (view.focused) view.blink = !view.blink
-        engine.checkSettlementWatchdog()
+        if (!retired && !disposed) {
+            if (view.focused) view.blink = !view.blink
+            engine.checkSettlementWatchdog()
+        }
     }
     var statusChanged: (EditorFrame) -> Unit = {}
     var requestSave: (Boolean) -> Unit = {}
     var requestOpen: () -> Unit = {}
     var onEndCompositionRequested: () -> Unit = {}
-    fun requestEndComposition() { onEndCompositionRequested(); inputContext?.endComposition() }
+    override fun getInputContext(): java.awt.im.InputContext? = if (retired || disposed) null else ownInputContext
+    fun requestEndComposition() {
+        if (retired || disposed) return
+        onEndCompositionRequested()
+        ownInputContext?.endComposition()
+    }
     fun abortAndRetireComposition() {
+        abortAndRetireComposition(replaceHost = true)
+    }
+    fun abortAndRetireComposition(replaceHost: Boolean): EditorSurface? {
+        if (retired) return replacementSurface
+        val wasFocused = isFocusOwner
+        val parentContainer = parent
+        val oldContext = ownInputContext
+        retired = true
         activeImeEpoch++
+        ownInputContext = null
+        blinkTimer.stop()
+        runCatching { onEndCompositionRequested() }
+        runCatching { oldContext?.endComposition() }
+        runCatching { oldContext?.removeNotify(this) }
+        runCatching { oldContext?.dispose() }
+        runCatching { enableInputMethods(false) }
+        val replacement = if (replaceHost && !disposed) {
+            EditorSurface(engine, view, diagnostics, trace).also { next ->
+                next.keyEvents = keyEvents
+                next.imeEvents = imeEvents
+                next.activeImeEpoch = activeImeEpoch
+                next.statusChanged = statusChanged
+                next.requestSave = requestSave
+                next.requestOpen = requestOpen
+                next.onHostReplaced = onHostReplaced
+                next.bounds = bounds
+            }
+        } else null
+        replacementSurface = replacement
         engine.abortComposition()
-        requestEndComposition()
+        val snap = engine.snapshot()
+        published = snap
+        view.frame = snap
+        if (replacement != null && parentContainer != null) {
+            if (parentContainer is JLayeredPane) {
+                val layer = JLayeredPane.getLayer(this)
+                parentContainer.remove(this)
+                parentContainer.add(replacement)
+                parentContainer.setLayer(replacement, layer)
+            } else {
+                val idx = parentContainer.components.indexOf(this)
+                parentContainer.remove(this)
+                if (idx >= 0) parentContainer.add(replacement, idx) else parentContainer.add(replacement)
+            }
+            parentContainer.revalidate()
+            parentContainer.repaint()
+            if (wasFocused) replacement.requestFocusInWindow()
+        }
+        if (replacement != null) {
+            onHostReplaced(replacement)
+            replacement.statusChanged(snap)
+            replacement.writeDiagnostics()
+        } else {
+            statusChanged(snap)
+            writeDiagnostics()
+        }
+        return replacement
     }
     fun dispatchInputMethodEventWithEpoch(e: InputMethodEvent, epoch: Int) {
-        if (epoch != activeImeEpoch) {
+        if (retired || disposed || epoch != activeImeEpoch) {
             e.consume()
             return
         }
@@ -505,21 +571,34 @@ open class EditorSurface(val engine: EditorEngine, val view: ViewState, private 
         isOpaque = false; isFocusable = true; focusTraversalKeysEnabled = false
         cursor = Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR); enableInputMethods(true)
         engine.onChange = { f ->
-            val old = published; published = f; view.frame = f; view.blink = true; view.ensureCaret = true
-            statusChanged(f); repaint()
-            try {
-                getAccessibleContext().firePropertyChange(AccessibleContext.ACCESSIBLE_TEXT_PROPERTY, old.visible.text, f.visible.text)
-                getAccessibleContext().firePropertyChange(AccessibleContext.ACCESSIBLE_CARET_PROPERTY, old.selection.focus, f.selection.focus)
-            } finally { writeDiagnostics() }
+            if (!retired && !disposed) {
+                val old = published; published = f; view.frame = f; view.blink = true; view.ensureCaret = true
+                statusChanged(f); repaint()
+                try {
+                    getAccessibleContext().firePropertyChange(AccessibleContext.ACCESSIBLE_TEXT_PROPERTY, old.visible.text, f.visible.text)
+                    getAccessibleContext().firePropertyChange(AccessibleContext.ACCESSIBLE_CARET_PROPERTY, old.selection.focus, f.selection.focus)
+                } finally { writeDiagnostics() }
+            }
         }
-        engine.onSettlementRequested = { requestEndComposition() }
+        engine.onSettlementRequested = { if (!retired && !disposed) requestEndComposition() }
         engine.onEvent = { event -> trace?.record("engine",event,engine.snapshot()); diagnostics?.parentFile?.let { it.mkdirs(); File(it, "input-events.log").appendText("${System.currentTimeMillis()} $event\n") } }
         addFocusListener(object : FocusAdapter() {
-            override fun focusGained(e: FocusEvent) { view.focused = true; view.blink = true; trace?.record("focus-gained","locale=${inputContext?.locale}",engine.snapshot()); writeDiagnostics() }
-            override fun focusLost(e: FocusEvent) { view.focused = false; trace?.record("focus-lost","temporary=${e.isTemporary}",engine.snapshot()); requestEndComposition(); writeDiagnostics() }
+            override fun focusGained(e: FocusEvent) {
+                if (retired || disposed) return
+                view.focused = true; view.blink = true; trace?.record("focus-gained","locale=${inputContext?.locale}",engine.snapshot()); writeDiagnostics()
+            }
+            override fun focusLost(e: FocusEvent) {
+                if (retired || disposed) return
+                view.focused = false; trace?.record("focus-lost","temporary=${e.isTemporary}",engine.snapshot()); requestEndComposition(); writeDiagnostics()
+            }
         })
         addInputMethodListener(object : InputMethodListener {
             override fun inputMethodTextChanged(e: InputMethodEvent) {
+                if (retired || disposed) {
+                    trace?.record("awt-text-ignored","retired=$retired; disposed=$disposed",engine.snapshot())
+                    e.consume()
+                    return
+                }
                 imeEvents++
                 val text = e.text?.let { iterator -> buildString { for (index in iterator.beginIndex until iterator.endIndex) append(iterator.setIndex(index)) } } ?: ""
                 val committed = e.committedCharacterCount
@@ -529,16 +608,23 @@ open class EditorSurface(val engine: EditorEngine, val view: ViewState, private 
                 else runCatching { engine.onEvent("Rejected malformed native text/caret range") }
                 e.consume(); preferredX = null
             }
-            override fun caretPositionChanged(e: InputMethodEvent) { trace?.record("awt-caret","${e.caret}",engine.snapshot()); e.caret?.let { engine.inputMethodCaret(it.insertionIndex) }; e.consume() }
+            override fun caretPositionChanged(e: InputMethodEvent) {
+                if (retired || disposed) {
+                    trace?.record("awt-caret-ignored","retired=$retired; disposed=$disposed",engine.snapshot())
+                    e.consume()
+                    return
+                }
+                trace?.record("awt-caret","${e.caret}",engine.snapshot()); e.caret?.let { engine.inputMethodCaret(it.insertionIndex) }; e.consume()
+            }
         })
         addKeyListener(object : KeyAdapter() {
             override fun keyTyped(e: KeyEvent) {
-                if (e.isConsumed || published.marked != null) return
+                if (retired || disposed || e.isConsumed || published.marked != null) return
                 if ((e.isControlDown || e.isMetaDown || e.isAltDown) && !e.isAltGraphDown) return
                 if (e.keyChar >= ' ' && e.keyChar != '\u007f' && e.keyChar != KeyEvent.CHAR_UNDEFINED) { keyEvents++; engine.replace(e.keyChar.toString()); preferredX = null; e.consume() }
             }
             override fun keyPressed(e: KeyEvent) {
-                if (e.isConsumed) return
+                if (retired || disposed || e.isConsumed) return
                 trace?.record("key-pressed","code=${e.keyCode}; modifiers=${e.modifiersEx}; locale=${inputContext?.locale}",engine.snapshot())
                 val command = (e.isControlDown || e.isMetaDown) && !e.isAltGraphDown
                 when {
@@ -567,6 +653,7 @@ open class EditorSurface(val engine: EditorEngine, val view: ViewState, private 
         })
         addMouseListener(object : MouseAdapter() {
             override fun mousePressed(e: MouseEvent) {
+                if (retired || disposed) return
                 requestFocusInWindow(); preferredX = null
                 val pos = hit(e.point) ?: return
                 if (e.clickCount >= 3) {
@@ -580,13 +667,29 @@ open class EditorSurface(val engine: EditorEngine, val view: ViewState, private 
             }
         })
         addMouseMotionListener(object : MouseMotionAdapter() { override fun mouseDragged(e: MouseEvent) {
+            if (retired || disposed) return
             if (e.y < 12) view.scroll = max(0f, view.scroll - 18) else if (e.y > height - 12) view.scroll += 18
             hit(e.point)?.let { engine.move(Selection(dragAnchor, it)) }
         } })
-        addMouseWheelListener { e -> view.ensureCaret = false; view.scroll = max(0f, view.scroll + e.preciseWheelRotation.toFloat() * 56) }
+        addMouseWheelListener { e ->
+            if (retired || disposed) return@addMouseWheelListener
+            view.ensureCaret = false; view.scroll = max(0f, view.scroll + e.preciseWheelRotation.toFloat() * 56)
+        }
         blinkTimer.start()
     }
-    override fun removeNotify() { blinkTimer.stop(); super.removeNotify() }
+    override fun removeNotify() {
+        val oldContext = ownInputContext
+        disposed = true
+        ownInputContext = null
+        blinkTimer.stop()
+        runCatching { oldContext?.removeNotify(this) }
+        runCatching { oldContext?.dispose() }
+        runCatching { enableInputMethods(false) }
+        if (!retired) {
+            engine.cancelPendingOnTeardown()
+        }
+        super.removeNotify()
+    }
     public override fun processFocusEvent(e: FocusEvent) { super.processFocusEvent(e) }
     fun geometry(): Geometry? {
         if (width > 0 && height > 0) {
@@ -790,14 +893,16 @@ open class EditorSurface(val engine: EditorEngine, val view: ViewState, private 
     fun writeDiagnostics() {
         val f = diagnostics ?: return; f.parentFile.mkdirs()
         fun quoted(s: String) = "\"" + s.flatMap { c -> when (c) { '\\' -> "\\\\"; '"' -> "\\\""; '\n' -> "\\n"; '\r' -> "\\r"; '\t' -> "\\t"; else -> if (c.code < 32 || Character.isSurrogate(c)) "\\u%04x".format(c.code) else c.toString() }.toList() }.joinToString("") + "\""
-        val s=published
+        val s=engine.snapshot()
+        published=s
         f.writeText("{\"text\":${quoted(s.visible.text)},\"anchor\":${s.selection.anchor},\"focus\":${s.selection.focus},\"undo\":${s.undoCount},\"redo\":${s.redoCount},\"documentRevision\":${s.documentRevision},\"sessionRevision\":${s.sessionRevision},\"composing\":${s.marked!=null},\"waiting\":${s.waiting},\"focused\":$isFocusOwner,\"keyTypedEvents\":$keyEvents,\"imeTextEvents\":$imeEvents,\"notice\":${quoted(s.notice)}}")
     }
 }
 
 fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList()), initialPath: java.nio.file.Path? = null, trace: ImeTrace? = null, traceLanguage: String? = null, offscreenTest: Boolean = false, windowLocation: Point? = null): JFrame {
     check(SwingUtilities.isEventDispatchThread())
-    val engine=EditorEngine(initial);val state=ViewState(engine.snapshot());val surface=EditorSurface(engine,state,diagnostics,trace)
+    val engine=EditorEngine(initial);val state=ViewState(engine.snapshot());var surface=EditorSurface(engine,state,diagnostics,trace)
+    surface.onHostReplaced={surface=it}
     val window=JFrame("Astra Editor — Desktop Prototype")
     lateinit var files: WindowFiles
     val compose=ComposePanel(renderSettings=RenderSettings.SwingGraphics()).apply {isFocusable=false;setContent {DocumentCanvas(state)}}
@@ -816,10 +921,11 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
         val result=JLabel("Choose an installed input method; then type test text.")
         picker.addActionListener {
             val tag=languages.getValue(picker.selectedItem as String)
-            val accepted=surface.inputContext.selectInputMethod(java.util.Locale.forLanguageTag(tag))
-            val compositionEnabled = if(accepted && tag=="ja-JP") runCatching { surface.inputContext.isCompositionEnabled=true; surface.inputContext.isCompositionEnabled }.getOrNull() else null
+            val ctx=surface.inputContext
+            val accepted=ctx?.selectInputMethod(java.util.Locale.forLanguageTag(tag)) ?: false
+            val compositionEnabled = if(accepted && tag=="ja-JP") runCatching { ctx?.isCompositionEnabled=true; ctx?.isCompositionEnabled }.getOrNull() else null
             result.text="Input: $tag — ${if(accepted)"selected" else "unavailable"}"
-            trace.record("select-input","requested=$tag; accepted=$accepted; actual=${surface.inputContext.locale}; compositionEnabled=$compositionEnabled",engine.snapshot())
+            trace.record("select-input","requested=$tag; accepted=$accepted; actual=${ctx?.locale}; compositionEnabled=$compositionEnabled",engine.snapshot())
             surface.requestFocusInWindow()
         }
         if(traceLanguage!=null) SwingUtilities.invokeLater { picker.selectedItem=languages.entries.first { it.value==traceLanguage }.key }
@@ -837,7 +943,7 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
     val footer=JPanel(BorderLayout()).apply {background=bg;border=EmptyBorder(10,24,10,24)}
     val position=JLabel();val notice=JLabel();listOf(position,notice).forEach {it.font=Font("Segoe UI",Font.PLAIN,12);it.foreground=Color(0x64748b)}
     footer.add(position,BorderLayout.WEST);footer.add(notice,BorderLayout.EAST)
-    files=WindowFiles(window,engine,initialPath,onDiscardComposition={surface.abortAndRetireComposition()}){surface.statusChanged(engine.snapshot())}
+    files=WindowFiles(window,engine,initialPath,onDiscardComposition={surface.abortAndRetireComposition(replaceHost=false)}){surface.statusChanged(engine.snapshot())}
     surface.requestSave={files.save(it)};surface.requestOpen={files.open()}
     surface.statusChanged={f->val before=f.visible.text.take(f.selection.focus);val line=before.count {it=='\n'}+1;val col=Graphemes.stops(before.substringAfterLast('\n')).size;position.text="Line $line · Column $col"+(if(f.selection.collapsed)"" else " · ${f.selection.end-f.selection.start} selected");notice.text=files.status+(if(f.notice=="Ready")"" else " · ${f.notice}");title.text=files.name;window.title="${files.name} — Astra Editor";open.isEnabled=!files.busy;save.isEnabled=!files.busy;undo.isEnabled=f.undoCount>0||f.marked!=null;redo.isEnabled=f.redoCount>0&&f.marked==null
         fun label(name: String, key: FormatKey) = when(engine.formatState(key)) { true -> "$name on"; false -> name; null -> "$name mixed" }

@@ -56,14 +56,20 @@ fun runFileChecks() {
         check(e.snapshot().visible.units.map { it.id }.distinct().size == e.snapshot().visible.units.size)
         e.perform(EditAction.Undo); check(e.snapshot().visible.same(fixture))
     }
-    test("closing with preedit active requires choice: Cancel leaves open, Discard aborts composition") {
-        val window = javax.swing.JFrame().apply { addNotify() }
+    test("closing with preedit active requires choice: Cancel leaves open, Discard aborts and retires surface against reentrant/late callbacks") {
+        val window = javax.swing.JFrame()
         val e = EditorEngine(document("hello"))
+        val surface = EditorSurface(e, ViewState(e.snapshot()))
+        window.contentPane.add(surface)
+        window.addNotify()
         var compositionDiscarded = false
         val wf = WindowFiles(
             window, e, null,
             promptCloseChoice = { 2 },
-            onDiscardComposition = { compositionDiscarded = true; e.abortComposition() },
+            onDiscardComposition = {
+                compositionDiscarded = true
+                surface.abortAndRetireComposition(replaceHost = false)
+            },
             refresh = {}
         )
         e.selectAll()
@@ -74,10 +80,20 @@ fun runFileChecks() {
         check(e.snapshot().marked != null) { "Cancel choice must not discard composition" }
         check(!compositionDiscarded)
 
+        // Attempt reentrant ordinary AWT commit during Discard endComposition
+        surface.onEndCompositionRequested = {
+            val it = java.text.AttributedString("reentrant").iterator
+            surface.dispatchEvent(java.awt.event.InputMethodEvent(surface, java.awt.event.InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, it, 9, java.awt.font.TextHitInfo.leading(0), null))
+        }
         wf.promptCloseChoice = { 1 }
         wf.close()
+        // Attempt late ordinary AWT commit after window disposal
+        val lateIt = java.text.AttributedString("late").iterator
+        surface.dispatchEvent(java.awt.event.InputMethodEvent(surface, java.awt.event.InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, lateIt, 4, java.awt.font.TextHitInfo.leading(0), null))
         check(compositionDiscarded) { "Discard choice must invoke onDiscardComposition" }
+        check(surface.retired && surface.disposed) { "Surface must be retired and disposed on Discard close" }
         check(e.snapshot().marked == null) { "Discard choice must abort composition" }
+        check(e.snapshot().committed.text == "hello" && e.snapshot().visible.text == "hello") { "Reentrant and post-dispose commits must not mutate document" }
         check(!window.isDisplayable) { "Discard choice must dispose window" }
     }
     test("concurrent async save-and-close while composing does not dispose over active preedit") {

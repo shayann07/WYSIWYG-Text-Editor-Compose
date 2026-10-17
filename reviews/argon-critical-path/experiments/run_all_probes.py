@@ -10,6 +10,7 @@ Executes:
 7. probe_c2_keystroke_scaling.py
 """
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -58,7 +59,8 @@ def main():
         })
         print("--------------------------------------------------------------------------------")
 
-    summary_file = EXPERIMENTS_DIR / "probe_results_summary.json"
+    summary_out = os.environ.get("ARGON_PROBE_SUMMARY_OUT")
+    summary_file = pathlib.Path(summary_out) if summary_out else (EXPERIMENTS_DIR / "probe_results_summary.json")
     summary_file.write_text(json.dumps(results, indent=2), encoding="utf-8")
     print(f"All probes completed. Summary written to {summary_file}")
     return 0 if all_passed else 1

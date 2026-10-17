@@ -65,6 +65,7 @@ def main():
         probes_runner = ROOT / "reviews" / "argon-critical-path" / "experiments" / "run_all_probes.py"
         if probes_runner.exists():
             os.environ["EDITOR_BUILD_CLASSPATH"] = cp
+            os.environ["ARGON_PROBE_SUMMARY_OUT"] = str(output / "probe_results_summary.json")
             run("argon-regression-probes", [sys.executable, str(probes_runner)], 120, "All probes completed")
         frozen = json.loads((ROOT / "v5-freeze-manifest.json").read_text(encoding="utf-8"))
         for path, expected in frozen["hashes"].items():
