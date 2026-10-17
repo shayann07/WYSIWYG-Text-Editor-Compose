@@ -1061,6 +1061,15 @@ private fun runHostReplacementFailurePathChecks() {
                 "Ambiguous callback must be quarantined for explicit recovery"
             }
 
+            // Also verify mutating keystrokes (Enter, Backspace, Delete, Tab) are blocked on degraded host
+            next.dispatchEvent(KeyEvent(next, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, KeyEvent.VK_ENTER, '\n'))
+            next.dispatchEvent(KeyEvent(next, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, KeyEvent.VK_BACK_SPACE, KeyEvent.CHAR_UNDEFINED))
+            next.dispatchEvent(KeyEvent(next, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, KeyEvent.VK_DELETE, KeyEvent.CHAR_UNDEFINED))
+            next.dispatchEvent(KeyEvent(next, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, KeyEvent.VK_TAB, '\t'))
+            check(surface.engine.snapshot().committed.text == "Baseline" && surface.engine.snapshot().visible.text == "Baseline") {
+                "Degraded replacement must NOT admit mutating keystrokes (Enter, Backspace, Delete, Tab) into the document!"
+            }
+
             val diagText = diagFile.readText()
             check("\"recoveryStatus\":\"DEGRADED_RECOVERY_FAILED\"" in diagText && "\"contextQualified\":false" in diagText && "\"admissionAllowed\":false" in diagText)
             check("Injected endComposition failure" in diagText)
@@ -1077,7 +1086,7 @@ private fun runHostReplacementFailurePathChecks() {
             check(surface.engine.snapshot().committed.text == "BaselineOK")
         }
 
-        // 2. Genuine failure in removeNotifyContext (context detachment)
+        // 2a. Genuine failure in removeNotifyContext BEFORE removal (context detachment)
         withTestHost(
             EditorSurface.RecoveryHooks(
                 removeNotifyContext = { _, _ ->
@@ -1098,7 +1107,29 @@ private fun runHostReplacementFailurePathChecks() {
             check(cleaned && surface.unresolvedContext == null) { "Explicit retryCleanup must resolve undisposed context" }
         }
 
-        // 3a. Genuine failure in disposeContext (context disposal)
+        // 2b. Failure in removeNotifyContext AFTER removal (removeNotify succeeded, then threw)
+        withTestHost(
+            EditorSurface.RecoveryHooks(
+                removeNotifyContext = { ctx, comp ->
+                    ctx.removeNotify(comp)
+                    throw RuntimeException("Injected removeNotify failure after removal")
+                }
+            )
+        ) { _, surface, _ ->
+            surface.dispatchEvent(InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("未完").iterator, 0, TextHitInfo.leading(2), null))
+            val next = surface.abortAndRetireComposition(replaceHost = true)
+            val report = checkNotNull(surface.lastRecoveryReport)
+            check(!report.succeeded && report.status == RecoveryStatus.DEGRADED_RECOVERY_FAILED && !report.contextQualified && !report.admissionAllowed)
+            check(report.failures.any { "removeNotifyContext: RuntimeException: Injected removeNotify failure after removal" in it })
+            check(surface.unresolvedContext != null) { "Context was detached but disposal was not reached; tracked as unresolved resource" }
+
+            // Production explicit cleanup / retry
+            surface.recoveryHooks = EditorSurface.RecoveryHooks()
+            val cleaned = surface.retryCleanup()
+            check(cleaned && surface.unresolvedContext == null) { "Explicit retryCleanup must dispose remaining unresolved context" }
+        }
+
+        // 3a. Genuine failure in disposeContext BEFORE dispose() (context disposal)
         withTestHost(
             EditorSurface.RecoveryHooks(
                 disposeContext = { _ ->
@@ -1119,7 +1150,29 @@ private fun runHostReplacementFailurePathChecks() {
             check(cleaned && surface.unresolvedContext == null) { "Explicit retryCleanup must dispose unresolved context honestly" }
         }
 
-        // 3b. Failure in disableInputMethods after clean context disposal
+        // 3b. Failure in disposeContext AFTER ctx.dispose() (post-call exception)
+        withTestHost(
+            EditorSurface.RecoveryHooks(
+                disposeContext = { ctx ->
+                    ctx.dispose()
+                    throw RuntimeException("Injected post-call exception after dispose()")
+                }
+            )
+        ) { _, surface, _ ->
+            surface.dispatchEvent(InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("未完").iterator, 0, TextHitInfo.leading(2), null))
+            val next = surface.abortAndRetireComposition(replaceHost = true)
+            val report = checkNotNull(surface.lastRecoveryReport)
+            check(!report.succeeded && report.status == RecoveryStatus.DEGRADED_RECOVERY_FAILED && !report.contextQualified && !report.admissionAllowed)
+            check(report.failures.any { "disposeContext: RuntimeException: Injected post-call exception after dispose()" in it })
+            check(surface.unresolvedContext != null) { "When disposeContext throws, context is tracked as unresolved until explicit retryCleanup" }
+
+            // Explicit retry cleanup
+            surface.recoveryHooks = EditorSurface.RecoveryHooks()
+            val cleaned = surface.retryCleanup()
+            check(cleaned && surface.unresolvedContext == null) { "Explicit retryCleanup must resolve undisposed context" }
+        }
+
+        // 3c. Failure in disableInputMethods after clean context disposal
         withTestHost(
             EditorSurface.RecoveryHooks(
                 disableInputMethods = { surf ->

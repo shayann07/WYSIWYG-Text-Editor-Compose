@@ -38,7 +38,7 @@ python desktop-prototype/verify.py
 | `desktop-prototype/run.cmd` | `c68514768c7d36dcd53fe6f6134c9302190b841641f13a5cd7c3db72b81ffb06` |
 | `desktop-prototype/verify.py` | `0fbcbc195a7a1fd1329fef823858e2aae2e3b299352d419efe41790bd75d40e1` |
 | `desktop-prototype/src/main/kotlin/editor/Checks.kt` | `0712bc134c86e4cea2f8305d01ff84b5f7a492a31207fe717e18b33d83222ad1` |
-| `desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt` | `0772fa5f5cc6f378da90ea1100d367abb8293d1912b397738f80dc717286b350` |
+| `desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt` | `c44fcb64ca9fa2341a24482c221d18da0e81ddb01c815ad438f88688c3422bc5` |
 | `desktop-prototype/src/main/kotlin/editor/DocumentFiles.kt` | `39d6b97af698f5a96ad940aea02150953398a4dd6f9a1266f69e4088ccc75e25` |
 | `desktop-prototype/src/main/kotlin/editor/EditorEngine.kt` | `b6a5b687c3a78d3f07c7a03e7e51cfd8c49132f0e072a869c323ee90b4a8920f` |
 | `desktop-prototype/src/main/kotlin/editor/FileChecks.kt` | `4d3142000a3759cfcfd58dbf8abc4ed6d61fa98c501022696faf3c16fd50cb69` |
@@ -47,7 +47,7 @@ python desktop-prototype/verify.py
 | `desktop-prototype/src/main/kotlin/editor/Graphemes.kt` | `a297a5154df6a77cb1bc65115c92d5a738367671fb02f47a94c425544cb0c629` |
 | `desktop-prototype/src/main/kotlin/editor/HostChecks.kt` | `210f422453a0df2400e235fc26175c198fc719dc636c02231863f83dece93eab` |
 | `desktop-prototype/src/main/kotlin/editor/ImeTrace.kt` | `153bb4b538d707cdf6c57fada2c71ff55db3445757295bc9f67612ce4e06a521` |
-| `desktop-prototype/src/main/kotlin/editor/JapaneseHostChecks.kt` | `0fe4c66f01ef5c48d03a68f8deea7965f2b01418350c5a479ad0735ca65bed5e` |
+| `desktop-prototype/src/main/kotlin/editor/JapaneseHostChecks.kt` | `e4e80b0e81ffb94656ff859fe01d6b34b9dacbdc4ee3bc712b703a97987bd3a8` |
 | `desktop-prototype/src/main/kotlin/editor/Main.kt` | `c3d1a40dd87a612de2e517432cbbbffd4bff6255bb3f5a2e7a2dbedbe59085b3` |
 | `desktop-prototype/src/main/kotlin/editor/RtlHostChecks.kt` | `e150c53d8c2544d1d0420d26ef6c007bc0f8f23812c61c0a13bb45b5b08b0ef1` |
 | `desktop-prototype/src/main/kotlin/editor/StressChecks.kt` | `d5084fb3df4e97b424c09ddbb628ffb953ea8ca1c7ea683eb56e21801ac5ca15` |
@@ -265,6 +265,7 @@ When replacement host teardown failed, `recoveryStatus` was marked `DEGRADED_REC
    - `admissionAllowed`: strictly enforced gate for document admission. Set to `true` on initial healthy setup or after explicit recovery; set to `false` whenever recovery fails or enters degraded status.
 2. **Admission Control & Quarantined Buffering**:
    - When `!admissionAllowed`, `inputMethodTextChanged` buffers incoming callbacks into `quarantinedCallbacks: CopyOnWriteArrayList<QuarantinedCallback>` and consumes the event immediately without calling `engine.inputMethod()`.
+   - Mutating keyboard actions (`VK_ENTER`, `VK_TAB`, `VK_BACK_SPACE`, `VK_DELETE`, `Ctrl+V` paste, `Ctrl+X` cut, `Ctrl+B`, `Ctrl+I`) are blocked when `!admissionAllowed`, while non-mutating operations (Save, Open, Copy, Select All, Undo, Redo, Navigation, and Escape) remain active.
    - The committed document is completely protected from corruption or ambiguity while degraded.
 3. **Pre-Image Retention & UI Recovery Actions**:
    - `retainedPreimage`: retains the uncommitted draft text, selection, marked range, and committed text baseline from before abort.
@@ -276,6 +277,9 @@ When replacement host teardown failed, `recoveryStatus` was marked `DEGRADED_REC
    - `retryCleanup()` attempts to finish teardown of `unresolvedContext` honestly.
    - Removed fake manual test counter manipulation (`LifecycleCounters.*.incrementAndGet()`) from `JapaneseHostChecks.kt` failure tests, ensuring tests reflect genuine component behavior.
 5. **Permanent Regressions**:
+   - `JapaneseHostChecks.kt` Test 1: ordinary callback to degraded replacement quarantined, mutating keystrokes (Enter, Backspace, Delete, Tab) blocked, and explicit recovery restores input.
+   - `JapaneseHostChecks.kt` Test 2a & 2b: genuine failure in `removeNotifyContext` before removal and after removal, verifying honest `unresolvedContext` retention and `retryCleanup()` resolution.
+   - `JapaneseHostChecks.kt` Test 3a, 3b, 3c: genuine failure in `disposeContext` before disposal and after disposal, plus failure in `disableInputMethods`.
    - `JapaneseHostChecks.kt` Test 8: repeated failure, retry, and explicit recovery.
    - `JapaneseHostChecks.kt` Test 9: partial commit under degraded recovery preserving accepted prefix and exact Undo/Redo.
    - `JapaneseHostChecks.kt` Test 10: discard-close and disposal on degraded host.
@@ -296,17 +300,17 @@ When replacement host teardown failed, `recoveryStatus` was marked `DEGRADED_REC
 
 ---
 
-## 5. Summary of Test Results (`batch-20261017-190900-7776`)
+## 5. Summary of Test Results (`batch-20261017-235141-27376`)
 
 | Verification Step | Status | Duration | Coverage Summary |
 | :--- | :--- | :--- | :--- |
-| `build` | **PASS** (`exitCode: 0`) | `28.016s` | Clean isolated Maven compile and dependency copy |
-| `kernel-files-formatting` | **PASS** (`exitCode: 0`) | `6.531s` | 18 kernel checks, 12 file checks (`.astra` v1/v2/v3), 17 formatting checks, 1,093 Unicode 16 grapheme fixtures |
-| `stress` | **PASS** (`exitCode: 0`) | `1.562s` | 2,000 generated composition sessions vs `RefOverlayModel`, 12,000 randomized range-format commands, GB12/13 regional-indicator stress |
-| `attached-host` | **PASS** (`exitCode: 0`) | `3.719s` | `HostChecks`, `RtlHostChecks` (19 sections), `JapaneseHostChecks` (12 sections: `hostReplacementLifecycle100x` PASS, `hostReplacementFailurePaths` PASS) |
-| `argon-regression-probes` | **PASS** (`exitCode: 0`) | `18.594s` | All 8 executable Argon regression probes, including `probe_a1` Step 4 (degraded recovery) |
+| `build` | **PASS** (`exitCode: 0`) | `38.485s` | Clean isolated Maven compile and dependency copy |
+| `kernel-files-formatting` | **PASS** (`exitCode: 0`) | `7.156s` | 18 kernel checks, 12 file checks (`.astra` v1/v2/v3), 17 formatting checks, 1,093 Unicode 16 grapheme fixtures |
+| `stress` | **PASS** (`exitCode: 0`) | `1.891s` | 2,000 generated composition sessions vs `RefOverlayModel`, 12,000 randomized range-format commands, GB12/13 regional-indicator stress |
+| `attached-host` | **PASS** (`exitCode: 0`) | `3.937s` | `HostChecks`, `RtlHostChecks` (19 sections), `JapaneseHostChecks` (12 sections: `hostReplacementLifecycle100x` PASS, `hostReplacementFailurePaths` PASS) |
+| `argon-regression-probes` | **PASS** (`exitCode: 0`) | `20.484s` | All 8 executable Argon regression probes, including `probe_a1` Step 4 (degraded recovery) |
 | `frozen v5` | **PASS** | — | All 45 frozen v5 specification files unchanged |
-| `RecoveryAudit.java` (rerun) | **PASS** | — | Late ordinary and reentrant commits rejected; watchdog fires after candidate updates |
+| `RecoveryAudit.java` / `DegradedAudit.java` (rerun) | **PASS** | — | Late ordinary callbacks quarantined and rejected; admission control and mutating key locks verified; watchdog fires after candidate updates |
 
 ---
 

@@ -1286,17 +1286,22 @@ open class EditorSurface @JvmOverloads constructor(
                 when {
                     command && e.keyCode == KeyEvent.VK_S -> requestSave(e.isShiftDown)
                     command && e.keyCode == KeyEvent.VK_O -> requestOpen()
-                    command && e.keyCode == KeyEvent.VK_B -> engine.toggleFormat(FormatKey.BOLD)
-                    command && e.keyCode == KeyEvent.VK_I -> engine.toggleFormat(FormatKey.ITALIC)
+                    command && e.keyCode == KeyEvent.VK_B -> if (admissionAllowed) engine.toggleFormat(FormatKey.BOLD)
+                    command && e.keyCode == KeyEvent.VK_I -> if (admissionAllowed) engine.toggleFormat(FormatKey.ITALIC)
                     command && e.keyCode == KeyEvent.VK_Z -> engine.perform(if (e.isShiftDown) EditAction.Redo else EditAction.Undo)
                     command && e.keyCode == KeyEvent.VK_Y -> engine.perform(EditAction.Redo)
                     command && e.keyCode == KeyEvent.VK_A -> engine.selectAll()
                     command && e.keyCode == KeyEvent.VK_C -> copySelection(false)
-                    command && e.keyCode == KeyEvent.VK_X -> copySelection(true)
-                    command && e.keyCode == KeyEvent.VK_V -> paste()
-                    e.keyCode == KeyEvent.VK_BACK_SPACE || e.keyCode == KeyEvent.VK_DELETE -> { if (command && published.selection.collapsed) wordDelete(e.keyCode == KeyEvent.VK_BACK_SPACE) else engine.delete(e.keyCode == KeyEvent.VK_BACK_SPACE) }
-                    e.keyCode == KeyEvent.VK_ENTER -> engine.replace("\n", "Enter", paragraphBreaks = !e.isShiftDown)
-                    e.keyCode == KeyEvent.VK_TAB -> engine.replace("\t", "Typing")
+                    command && e.keyCode == KeyEvent.VK_X -> copySelection(admissionAllowed)
+                    command && e.keyCode == KeyEvent.VK_V -> if (admissionAllowed) paste()
+                    e.keyCode == KeyEvent.VK_BACK_SPACE || e.keyCode == KeyEvent.VK_DELETE -> {
+                        if (admissionAllowed) {
+                            if (command && published.selection.collapsed) wordDelete(e.keyCode == KeyEvent.VK_BACK_SPACE)
+                            else engine.delete(e.keyCode == KeyEvent.VK_BACK_SPACE)
+                        }
+                    }
+                    e.keyCode == KeyEvent.VK_ENTER -> if (admissionAllowed) engine.replace("\n", "Enter", paragraphBreaks = !e.isShiftDown)
+                    e.keyCode == KeyEvent.VK_TAB -> if (admissionAllowed) engine.replace("\t", "Typing")
                     e.keyCode in arrayOf(KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, KeyEvent.VK_UP, KeyEvent.VK_DOWN, KeyEvent.VK_HOME, KeyEvent.VK_END) -> navigate(e.keyCode, e.isShiftDown, command)
                     e.keyCode == KeyEvent.VK_ESCAPE && (published.marked != null || published.waiting || engine.settlementTimedOut) -> {
                         if (published.waiting || engine.settlementTimedOut) abortAndRetireComposition()
@@ -1490,10 +1495,18 @@ open class EditorSurface @JvmOverloads constructor(
     }
     fun copySelection(cut: Boolean) {
         val s = published.selection; if (s.collapsed) return
-        try { Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(published.visible.text.substring(s.start, s.end)), null); if (cut) engine.replace("", "Cut") }
-        catch (_: IllegalStateException) { Toolkit.getDefaultToolkit().beep() }
+        try {
+            Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(published.visible.text.substring(s.start, s.end)), null)
+            if (cut && admissionAllowed && !retired && !disposed) engine.replace("", "Cut")
+        } catch (_: IllegalStateException) { Toolkit.getDefaultToolkit().beep() }
     }
-    fun paste() { try { val text = Toolkit.getDefaultToolkit().systemClipboard.getData(DataFlavor.stringFlavor) as? String ?: return; engine.replace(text.replace("\r\n", "\n").replace('\r', '\n'), "Paste", paragraphBreaks = true) } catch (_: Exception) { Toolkit.getDefaultToolkit().beep() } }
+    fun paste() {
+        if (retired || disposed || !admissionAllowed) return
+        try {
+            val text = Toolkit.getDefaultToolkit().systemClipboard.getData(DataFlavor.stringFlavor) as? String ?: return
+            engine.replace(text.replace("\r\n", "\n").replace('\r', '\n'), "Paste", paragraphBreaks = true)
+        } catch (_: Exception) { Toolkit.getDefaultToolkit().beep() }
+    }
     override fun getInputMethodRequests(): InputMethodRequests = this
     override fun getCommittedText(beginIndex: Int, endIndex: Int, attributes: Array<out AttributedCharacterIterator.Attribute>?): AttributedCharacterIterator {
         val text = committedContext(); require(beginIndex in 0..endIndex && endIndex <= text.length); return AttributedString(text.substring(beginIndex, endIndex)).iterator
@@ -1652,9 +1665,10 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
     val open=button("Open","Open a document in a new window (Ctrl+O)"){files.open()}
     val save=button("Save","Save document (Ctrl+S); Save As: Ctrl+Shift+S"){files.save()}
     val undo=button("Undo","Ctrl+Z"){engine.perform(EditAction.Undo)};val redo=button("Redo","Ctrl+Shift+Z or Ctrl+Y"){engine.perform(EditAction.Redo)}
-    val bold=button("Bold","Toggle bold (Ctrl+B)"){engine.toggleFormat(FormatKey.BOLD)}
-    val italic=button("Italic","Toggle italic (Ctrl+I)"){engine.toggleFormat(FormatKey.ITALIC)}
-    button("Copy","Copy selected text (Ctrl+C)"){surface.copySelection(false)};button("Paste","Paste plain text (Ctrl+V)"){surface.paste()}
+    val bold=button("Bold","Toggle bold (Ctrl+B)"){if (surface.admissionAllowed) engine.toggleFormat(FormatKey.BOLD)}
+    val italic=button("Italic","Toggle italic (Ctrl+I)"){if (surface.admissionAllowed) engine.toggleFormat(FormatKey.ITALIC)}
+    button("Copy","Copy selected text (Ctrl+C)"){surface.copySelection(false)}
+    val pasteBtn=button("Paste","Paste plain text (Ctrl+V)"){surface.paste()}
     val rBtn = button("Recover","Recover editor input after failure"){surface.recoverExplicitly(false)}
     rBtn.isVisible = !surface.admissionAllowed
     recoverBtn = rBtn
@@ -1668,6 +1682,9 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
         recoverBtn?.isVisible = !surface.admissionAllowed
         val degradedNote = if (!surface.admissionAllowed && surface.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED) " · Input paused (degraded recovery) — Save available" else ""
         notice.text=files.status+(if(f.notice=="Ready")"" else " · ${f.notice}")+degradedNote;title.text=files.name;window.title="${files.name} — Astra Editor";open.isEnabled=!files.busy;save.isEnabled=!files.busy;undo.isEnabled=f.undoCount>0||f.marked!=null;redo.isEnabled=f.redoCount>0&&f.marked==null
+        pasteBtn.isEnabled = !files.busy && surface.admissionAllowed
+        bold.isEnabled = !files.busy && surface.admissionAllowed
+        italic.isEnabled = !files.busy && surface.admissionAllowed
         fun label(name: String, key: FormatKey) = when(engine.formatState(key)) { true -> "$name on"; false -> name; null -> "$name mixed" }
         bold.text=label("Bold",FormatKey.BOLD);italic.text=label("Italic",FormatKey.ITALIC)
     }
