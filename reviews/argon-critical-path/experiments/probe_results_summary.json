@@ -4,7 +4,7 @@
     "script": "probe_kf1_isolate_bidi.py",
     "passed": true,
     "exit_code": 0,
-    "elapsed_seconds": 0.953,
+    "elapsed_seconds": 0.937,
     "output": "CASE1_INPUT=???A\nCASE1_PROTO=Rtl\nCASE1_ORACLE=Ltr\nCASE1_MATCH=false\nCASE2_INPUT=?A??\nCASE2_PROTO=Ltr\nCASE2_ORACLE=Rtl\nCASE2_MATCH=false"
   },
   {
@@ -12,15 +12,23 @@
     "script": "probe_kf2_kf3_break_geometry.py",
     "passed": true,
     "exit_code": 0,
-    "elapsed_seconds": 0.985,
+    "elapsed_seconds": 0.969,
     "output": "PARAGRAPH_COUNT=2\nPARA_0_SPAN=0..2 hasBreak=true\nPARA_1_SPAN=3..5 hasBreak=false\nSELECTION=2..3 collapsed=false\nPARA_0_SELECTION_CLIP=2..2 DRAWS_HIGHLIGHT=false\nPARA_1_SELECTION_CLIP=3..3 DRAWS_HIGHLIGHT=false\nCARET_VISIBLE=false\nKF3_OFFSET=2_TRAILING_CHOSEN_PARA=0_LOCAL_OFFSET=2\nKF3_OFFSET=2_LEADING_CHOSEN_PARA=1_RAW_DIFF=-1_CLAMPED_LOCAL_OFFSET=0"
+  },
+  {
+    "probe": "KF-4, KF-5, KF-6 Audit Gaps",
+    "script": "probe_kf4_kf5_kf6_audit_gaps.py",
+    "passed": true,
+    "exit_code": 0,
+    "elapsed_seconds": 1.0,
+    "output": "KF5_MARKED_IS_NULL=true\nKF5_SCROLLING_COMPOSITION_TEST_LACKS_ACTIVE_COMPOSITION=true\nKF6_HOST_WIDTH_BEFORE=800\nKF6_HOST_WIDTH_AFTER_RESIZE=1100\nKF6_GEOMETRY_RETURNED_WIDTH=800\nKF6_GEOMETRY_STALE_CACHE_RETURNED=true\nKF4_REFERENCE_MEASURE_REUSES_PRODUCTION_HELPERS=true"
   },
   {
     "probe": "A-1 Composition Wedge",
     "script": "probe_a1_settlement_wedge.py",
     "passed": true,
     "exit_code": 0,
-    "elapsed_seconds": 1.109,
+    "elapsed_seconds": 0.984,
     "output": "COMPOSITION_ACTIVE=true\nINITIAL_NOTICE=Composing\u2026\nWAITING_STATUS=true\nFINAL_NOTICE=Finish composing before another command.\nEDITOR_PERMANENTLY_WEDGED=true"
   },
   {
@@ -28,7 +36,7 @@
     "script": "probe_a3_partial_commit_data_loss.py",
     "passed": true,
     "exit_code": 0,
-    "elapsed_seconds": 1.203,
+    "elapsed_seconds": 1.094,
     "output": "CASE1_PRE_ABORT_VISIBLE=Xcd\nCASE1_PRE_ABORT_COMMITTED=X\nCASE1_PRE_ABORT_MARKED=1..2\nCASE1_POST_ABORT_VISIBLE=X\nCASE1_BUG_DATA_LOSS=true\nCASE2_POST_ABORT_VISIBLE=a\nCASE2_BUG_DATA_LOSS=true\nCASE3_UNIT_COUNT=3\nCASE3_UNIT_0_CHAR=97_KIND=TEXT_BOLD=false\nCASE3_UNIT_1_CHAR=10_KIND=PARAGRAPH_BREAK_BOLD=true\nCASE3_UNIT_2_CHAR=98_KIND=TEXT_BOLD=false\nCASE3_BREAK_CORRUPTED_WITH_BOLD=true"
   },
   {
@@ -36,15 +44,15 @@
     "script": "probe_b1_soft_wrap_end_key.py",
     "passed": true,
     "exit_code": 0,
-    "elapsed_seconds": 0.047,
-    "output": "LINE_0_VISIBLE_CHARS=51 (indices 0..50)\nLINE_0_WRAP_BOUNDARY_OFFSET=51\nPROTOTYPE_LINE_0_MAX_STOP_OFFSET=50\nMISSING_LAST_CHAR_ON_LINE_0=True\nDEFECT_CONFIRMED=True"
+    "elapsed_seconds": 1.313,
+    "output": "LINE_0_VISIBLE_CHARS=51 (indices 0..50)\nLINE_0_WRAP_BOUNDARY_OFFSET=51\nPROTOTYPE_LINE_0_MAX_STOP_OFFSET=50\nMISSING_LAST_CHAR_ON_LINE_0=true\nDEFECT_CONFIRMED=true"
   },
   {
     "probe": "C-1 Direction Cascade",
     "script": "probe_c1_direction_cascade.py",
     "passed": true,
     "exit_code": 0,
-    "elapsed_seconds": 1.078,
+    "elapsed_seconds": 0.937,
     "output": "BEFORE_EDIT_PARA_0_DIR=Ltr\nBEFORE_EDIT_PARA_1_DIR=Ltr\nBEFORE_EDIT_PARA_5_DIR=Ltr\nAFTER_EDIT_PARA_0_DIR=Rtl\nAFTER_EDIT_PARA_1_DIR=Rtl\nAFTER_EDIT_PARA_5_DIR=Rtl\nCASCADE_INVALIDATED_DOWNSTREAM_PARAS=true"
   },
   {
@@ -52,7 +60,7 @@
     "script": "probe_c2_keystroke_scaling.py",
     "passed": true,
     "exit_code": 0,
-    "elapsed_seconds": 1.094,
-    "output": "SCALING_BENCHMARK_DOCUMENT_TEXT_ALLOCATIONS:\nDOC_SIZE=1000_100_TEXT_READS_MS=29\nDOC_SIZE=5000_100_TEXT_READS_MS=5\nDOC_SIZE=20000_100_TEXT_READS_MS=25\nDOC_20K_ARROW_KEY_STOPS_INNER_LOOPS=5000000\nO_N_SPLICING_AND_STRING_CONSTRUCTION=CONFIRMED"
+    "elapsed_seconds": 0.953,
+    "output": "SCALING_BENCHMARK_DOCUMENT_TEXT_ALLOCATIONS:\nDOC_SIZE=1000_100_TEXT_READS_MS=27\nDOC_SIZE=5000_100_TEXT_READS_MS=6\nDOC_SIZE=20000_100_TEXT_READS_MS=21\nDOC_20K_ARROW_KEY_STOPS_INNER_LOOPS=5000000\nO_N_SPLICING_AND_STRING_CONSTRUCTION=CONFIRMED"
   }
 ]

@@ -20,6 +20,7 @@ EXPERIMENTS_DIR = pathlib.Path(__file__).resolve().parent
 PROBES = [
     ("KF-1 Isolate Bidi", "probe_kf1_isolate_bidi.py"),
     ("KF-2 & KF-3 Break Selection & Geometry", "probe_kf2_kf3_break_geometry.py"),
+    ("KF-4, KF-5, KF-6 Audit Gaps", "probe_kf4_kf5_kf6_audit_gaps.py"),
     ("A-1 Composition Wedge", "probe_a1_settlement_wedge.py"),
     ("A-3 Partial Commit Data Loss", "probe_a3_partial_commit_data_loss.py"),
     ("B-1 Soft-Wrap End Key Truncation", "probe_b1_soft_wrap_end_key.py"),

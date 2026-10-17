@@ -124,6 +124,11 @@ All 6 Known Findings were tested and verified against `HEAD = 773bc068cd87cd83d1
 #### Finding B-3 (High): `getTextLocation(null)` Anchors on Next Paragraph
 - **Mechanism**: When selection spans `0..3` on `"ab\n"`, `s.end == 3` is paragraph 1. [`DesktopEditor.kt:549-558`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L549-L558) queries `paragraphForOffset(s.end)`, returning empty paragraph 1's geometry ($y = 215$) instead of paragraph 0's line ($y = 185$).
 
+#### Finding B-4 (Medium): Vertical Navigation Trapped Across Empty Paragraphs by stops(g)
+- **Mechanism**: `stops(g)` builds stops only from `Graphemes.stops(published.visible.text)`. On empty paragraphs (`textLength == 0`), no grapheme stops exist on that line.
+- **Impact**: When navigating Up/Down into an empty paragraph, line 512 evaluates `target = all.filter { it.line == line }.minByOrNull { abs(it.x - x) } ?: here`. Because `all.filter` is empty, `minByOrNull` is null, falling back to `?: here` and trapping the caret on the current line.
+- **Remedy**: Ensure `stops(g)` includes a structural stop at `(p.startOffset, line, x = 0f)` for empty paragraphs.
+
 ---
 
 ### Risk Area C: Transition from Prototype to Scalable Editor
@@ -159,9 +164,9 @@ All 6 Known Findings were tested and verified against `HEAD = 773bc068cd87cd83d1
 
 Our investigation audited prior AI reports and identified critical errors and spec-violating recommendations that must be rejected:
 
-1. **Systematic Fabrication of Invariant IDs and Spec Citations**:
+1. **Fabrication of Line Numbers, Non-Existent Invariants, and Misattributed Requirements**:
    - A prior report cited `I01`, `I02`, `I07`, `I09`, `I10`, `I12`, `I15`, `U3`, `R8` at fabricated line numbers `269–277, 363–376, 466–515, 616, 675–677` in `plan-v5.md`.
-   - The actual invariant catalog in [`plan-v5.md:168-187`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/plan-v5.md#L168-L187) contains completely different invariants (`Single Owner Reducer`, `Atomic Snapshot Publication`, `Partial-Commit Prefix Freeze`, `No Whole-Document Flatten/Serialize`, etc.).
+   - The actual invariant catalog in [`plan-v5.md:168-187`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/plan-v5.md#L168-L187) defines invariants `I01` through `I17`. However, codes `U3` and `R8` do not exist anywhere in `plan-v5.md`, and the requirements of genuine invariants were heavily misattributed (e.g., claiming `I12` mandates UAX #9 first-strong bidi when `I12` is Undo/Redo Restoration; claiming `I15` governs IME settlement when `I15` is "No Whole-Document Flatten/Serialize on Local Edit").
    - [`plan-v5.md`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/plan-v5.md) is **not** underspecified; the Kotlin prototype simply failed to implement its normative sections.
 
 2. **Refutation of Sub-Paragraph Layout Chunking (`~2,048–4,096 chars`)**:
@@ -181,6 +186,7 @@ Our investigation audited prior AI reports and identified critical errors and sp
 All probes are located under [`reviews/argon-critical-path/experiments/`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/reviews/argon-critical-path/experiments/) and can be executed via `python run_all_probes.py`:
 - `probe_kf1_isolate_bidi.py`: UAX #9 isolate bidi resolution.
 - `probe_kf2_kf3_break_geometry.py`: Break-only selection highlight and boundary jump.
+- `probe_kf4_kf5_kf6_audit_gaps.py`: Audit gaps: warm reference measurer, inactive scrolling composition query, resize invalidation.
 - `probe_a1_settlement_wedge.py`: Unbounded composition lock and editor wedge.
 - `probe_a3_partial_commit_data_loss.py`: Silent data loss on partial commit abort and newline style contamination.
 - `probe_b1_soft_wrap_end_key.py`: Soft-wrap boundary offset truncation on `VK_END`.

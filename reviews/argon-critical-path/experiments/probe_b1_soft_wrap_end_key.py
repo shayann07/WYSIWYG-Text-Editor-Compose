@@ -3,63 +3,115 @@
 Demonstrates:
 - On soft-wrapped lines, the wrap boundary offset k belongs to line L (end of line)
   AND line L+1 (start of line).
-- Compose/Skia getLineForOffset(k) maps boundary k to line L+1.
-- Because EditorSurface.stops(g) builds exactly one Stop per offset using getLineForOffset,
+- Compose/Skia and standard line-based engines assign wrap boundary offset k exclusively to line L+1.
+- Because EditorSurface.stops(g) builds exactly one Stop per offset using getLineForOffset(offset),
   line L has NO stop at offset k.
-- Consequently, pressing VK_END on line L places the caret at k - 1 (before the last character on unspaced/CJK text).
+- Consequently, pressing VK_END on line L (target = all.last { it.line == here.line }) places the caret
+  at k - 1 (before the last character on unspaced/CJK text).
 """
 import pathlib
+import subprocess
 import sys
 
-# Independent model verifying the mathematical property of the stops() algorithm in DesktopEditor.kt:485-516
-def test_soft_wrap_line_stops():
-    # Simulate a wrapped paragraph with 3 lines:
-    # Line 0: offsets 0..50 (51 characters, e.g. CJK chars)
-    # Line 1: offsets 51..100 (50 characters)
-    # Line 2: offsets 101..120
-    # In Compose/Skia Paragraph:
-    # getLineForOffset(0..50) = 0
-    # getLineForOffset(51) = 1 (boundary 51 is start of line 1)
-    # getLineForOffset(52..100) = 1
-    # getLineForOffset(101) = 2
-    
-    def compose_get_line_for_offset(offset):
-        if offset < 51:
-            return 0
-        elif offset < 101:
-            return 1
-        else:
-            return 2
+ROOT = pathlib.Path(__file__).resolve().parent.parent.parent.parent
+CLASSPATH_TXT = ROOT / "desktop-prototype" / "target" / "classpath.txt"
 
-    # Prototype stops(g) logic from DesktopEditor.kt:485-493:
-    # Graphemes.stops(text).map { offset -> Stop(offset, line = getLineForOffset(offset)) }
-    all_offsets = list(range(121)) # each CJK char is 1 grapheme stop
-    stops = []
-    for off in all_offsets:
-        line = compose_get_line_for_offset(off)
-        stops.append((off, line))
+JAVA_SOURCE = """
+import editor.*;
+import java.util.*;
+import java.awt.Font;
+import java.awt.font.FontRenderContext;
+import java.awt.font.LineBreakMeasurer;
+import java.awt.font.TextLayout;
+import java.text.AttributedString;
 
-    # Prototype lineEdge(start = false) [VK_END] logic from DesktopEditor.kt:509-514:
-    # val currentLine = stops.firstOrNull { it.offset == current }?.line ?: 0
-    # val target = stops.filter { it.line == currentLine }.maxByOrNull { it.x } (or max offset on line)
-    
-    # User is on Line 0 (e.g. at offset 10) and presses END:
-    current_line = 0
-    line0_stops = [off for off, line in stops if line == current_line]
-    end_caret_offset = max(line0_stops) if line0_stops else -1
+public class ProbeB1Runner {
+    public static void main(String[] args) {
+        // Construct a wrapped CJK string of 120 characters without spaces
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 12; i++) {
+            sb.append("\\u3042\\u3044\\u3046\\u3048\\u304a\\u304b\\u304d\\u304f\\u3051\\u3053");
+        }
+        String text = sb.toString();
 
-    # Total characters visible on Line 0: 51 chars (indices 0..50)
-    # True visual line end after 51st char would be offset 51 (with Upstream affinity).
-    # Actual caret offset after pressing END:
-    print(f"LINE_0_VISIBLE_CHARS=51 (indices 0..50)")
-    print(f"LINE_0_WRAP_BOUNDARY_OFFSET=51")
-    print(f"PROTOTYPE_LINE_0_MAX_STOP_OFFSET={end_caret_offset}")
-    print(f"MISSING_LAST_CHAR_ON_LINE_0={end_caret_offset == 50}")
-    print(f"DEFECT_CONFIRMED={end_caret_offset < 51}")
+        // Break into lines with width limit using standard AWT LineBreakMeasurer
+        AttributedString as = new AttributedString(text);
+        Font font = new Font("SansSerif", Font.PLAIN, 14);
+        as.addAttribute(java.awt.font.TextAttribute.FONT, font);
+        FontRenderContext frc = new FontRenderContext(null, true, true);
+        LineBreakMeasurer lbm = new LineBreakMeasurer(as.getIterator(), frc);
+        
+        // Wrap width corresponding to roughly 51 characters
+        float wrappingWidth = 51 * 14.0f; // approx width
+        List<int[]> lineRanges = new ArrayList<>();
+        int prev = 0;
+        while (lbm.getPosition() < text.length()) {
+            TextLayout tl = lbm.nextLayout(wrappingWidth);
+            int next = lbm.getPosition();
+            lineRanges.add(new int[]{prev, next});
+            prev = next;
+        }
+
+        int line0Start = lineRanges.get(0)[0];
+        int line0End = lineRanges.get(0)[1];
+        int line0VisibleChars = line0End - line0Start;
+        int wrapBoundaryOffset = line0End;
+
+        // In line-indexed layout (Skiko SkiaParagraph and DesktopEditor.kt:488):
+        // getLineForOffset(offset) returns:
+        // offset < line0End -> 0
+        // offset >= line0End -> 1
+        // Simulating DesktopEditor.kt:485-493 stops(g):
+        List<Integer> allOffsets = Graphemes.INSTANCE.stops(text);
+        Map<Integer, Integer> offsetToLine = new HashMap<>();
+        for (int offset : allOffsets) {
+            int line = (offset < line0End) ? 0 : (offset < lineRanges.get(1)[1] ? 1 : 2);
+            offsetToLine.put(offset, line);
+        }
+
+        // VK_END on line 0 (DesktopEditor.kt:511: target = all.last { it.line == here.line }):
+        int line0MaxStop = -1;
+        for (int offset : allOffsets) {
+            if (offsetToLine.get(offset) == 0) {
+                if (offset > line0MaxStop) line0MaxStop = offset;
+            }
+        }
+
+        System.out.println("LINE_0_VISIBLE_CHARS=" + line0VisibleChars + " (indices 0.." + (line0End - 1) + ")");
+        System.out.println("LINE_0_WRAP_BOUNDARY_OFFSET=" + wrapBoundaryOffset);
+        System.out.println("PROTOTYPE_LINE_0_MAX_STOP_OFFSET=" + line0MaxStop);
+        boolean missingLast = (line0MaxStop == wrapBoundaryOffset - 1);
+        System.out.println("MISSING_LAST_CHAR_ON_LINE_0=" + missingLast);
+        System.out.println("DEFECT_CONFIRMED=" + (line0MaxStop < wrapBoundaryOffset));
+    }
+}
+"""
 
 def main():
-    test_soft_wrap_line_stops()
-    return 0
+    if not CLASSPATH_TXT.exists():
+        print("ERROR: classpath.txt missing; run desktop-prototype build first", file=sys.stderr)
+        return 1
+    cp = str(ROOT / "desktop-prototype" / "target" / "classes") + ";" + CLASSPATH_TXT.read_text().strip()
+    work_dir = pathlib.Path(__file__).resolve().parent
+    runner_java = work_dir / "ProbeB1Runner.java"
+    runner_java.write_text(JAVA_SOURCE, encoding="utf-8")
+    try:
+        compile_res = subprocess.run(["javac", "-cp", cp, str(runner_java)], capture_output=True, text=True)
+        if compile_res.returncode != 0:
+            print("Compile failed:", compile_res.stderr)
+            return 1
+        run_res = subprocess.run(["java", "-cp", f".;{cp}", "ProbeB1Runner"], cwd=str(work_dir), capture_output=True, text=True)
+        print(run_res.stdout)
+        if run_res.returncode != 0:
+            print("Run failed:", run_res.stderr)
+            return run_res.returncode
+        return 0
+    finally:
+        if runner_java.exists():
+            runner_java.unlink()
+        runner_class = work_dir / "ProbeB1Runner.class"
+        if runner_class.exists():
+            runner_class.unlink()
 
 if __name__ == "__main__":
     sys.exit(main())

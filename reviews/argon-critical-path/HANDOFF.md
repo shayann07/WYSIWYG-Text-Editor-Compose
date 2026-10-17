@@ -89,8 +89,8 @@ This document specifies the exact implementation tasks for engineering teams, or
    - In [`paragraphAttributedDisplay`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L86-L92), coalesce adjacent characters with identical `TextStyleFlags` into single `SpanStyle` ranges before passing them to Compose's `AnnotatedString`.
 2. **Decouple Layout Measurement from Draw Pass (`KF-6`)**:
    - Move `measureParagraphs` out of the Compose `Canvas` draw lambda into a dedicated `LayoutService` keyed on live `(width, height, density, documentRevision, scroll)`.
-3. **Sticky `preferredX` in Vertical Navigation (`B-4`)**:
-   - Store `preferredX: Float?` on vertical caret movement and navigate by visual line indices `(paragraphIndex, lineIndex) ± 1`.
+3. **Empty Paragraph Vertical Navigation (`B-4`)**:
+   - In `stops(g)`, include a structural visual stop at offset `p.startOffset` for empty paragraphs (`p.textLength == 0`) so vertical navigation via `VK_UP` / `VK_DOWN` does not get trapped on adjacent non-empty lines when passing through blank lines.
 4. **Accessible Grapheme Stepping (`B-5`)**:
    - Use `Graphemes.stops(text)` for `AccessibleText.CHARACTER` in `AccessibleEditor`.
 5. **Port Measured B+ Tree Storage (`C-2`)**:
