@@ -480,25 +480,45 @@ enum class RecoveryStatus {
     DEGRADED_RECOVERY_FAILED
 }
 
+data class RetainedCompositionPreimage(
+    val draftText: String,
+    val selectionBefore: Selection,
+    val markedRangeBefore: IntRange?,
+    val committedTextBefore: String,
+    val epoch: Int
+)
+
+data class QuarantinedCallback(
+    val text: String,
+    val committed: Int,
+    val caret: Int?,
+    val epoch: Int,
+    val timestamp: Long = System.currentTimeMillis()
+)
+
 data class RecoveryReport(
     val epoch: Int,
     val replaceRequested: Boolean,
     val status: RecoveryStatus,
     val contextQualified: Boolean,
+    val setupSucceeded: Boolean = contextQualified,
+    val nativeQualified: Boolean = false,
+    val admissionAllowed: Boolean = status == RecoveryStatus.RECOVERED_QUALIFIED && contextQualified,
     val documentAbortedCleanly: Boolean,
     val replacementCreated: Boolean,
     val containerAttached: Boolean,
     val removedDuringTeardown: Boolean,
     val failures: List<String>,
     val preservedLocale: java.util.Locale?,
-    val preservedCompositionEnabled: Boolean?
+    val preservedCompositionEnabled: Boolean?,
+    val retainedPreimage: RetainedCompositionPreimage? = null
 ) {
     val succeeded: Boolean
         get() = documentAbortedCleanly && failures.isEmpty() &&
             if (replaceRequested && !removedDuringTeardown) {
-                status == RecoveryStatus.RECOVERED_QUALIFIED && contextQualified && replacementCreated && containerAttached
+                status == RecoveryStatus.RECOVERED_QUALIFIED && setupSucceeded && replacementCreated && containerAttached
             } else {
-                status == RecoveryStatus.CONSERVATIVE_ABORT_ONLY && !contextQualified && !replacementCreated
+                status == RecoveryStatus.CONSERVATIVE_ABORT_ONLY && !setupSucceeded && !replacementCreated
             }
 }
 
@@ -629,8 +649,14 @@ open class EditorSurface @JvmOverloads constructor(
     var retired = false; private set
     var disposed = false; private set
     var contextQualified = false; private set
+    var setupSucceeded = false; private set
+    var nativeQualified = false; private set
+    var admissionAllowed = false; private set
     var recoveryStatus: RecoveryStatus = RecoveryStatus.ACTIVE_INITIAL; private set
     val recoveryFailures: MutableList<String> = java.util.concurrent.CopyOnWriteArrayList()
+    val quarantinedCallbacks: MutableList<QuarantinedCallback> = java.util.concurrent.CopyOnWriteArrayList()
+    var retainedPreimage: RetainedCompositionPreimage? = null; private set
+    var unresolvedContext: java.awt.im.InputContext? = null; private set
     var lastRecoveryReport: RecoveryReport? = null; private set
     var preferredLocale: java.util.Locale? = null; private set
     var preferredCompositionEnabled: Boolean? = null; private set
@@ -724,18 +750,24 @@ open class EditorSurface @JvmOverloads constructor(
         ownInputContext = null
         stopBlinkTimer()
         if (oldContext != null) {
-            runStep("cleanupRemoveNotifyContext", failures) {
+            unresolvedContext = oldContext
+            val detachOk = runStep("cleanupRemoveNotifyContext", failures) {
                 recoveryHooks.removeNotifyContext(oldContext, this)
                 if (!hasCountedContextDetach) {
                     hasCountedContextDetach = true
                     LifecycleCounters.inputContextsDetached.incrementAndGet()
                 }
             }
-            runStep("cleanupDisposeContext", failures) {
-                recoveryHooks.disposeContext(oldContext)
-                if (!hasCountedContextDispose) {
-                    hasCountedContextDispose = true
-                    LifecycleCounters.inputContextsDisposed.incrementAndGet()
+            if (detachOk) {
+                val disposeOk = runStep("cleanupDisposeContext", failures) {
+                    recoveryHooks.disposeContext(oldContext)
+                    if (!hasCountedContextDispose) {
+                        hasCountedContextDispose = true
+                        LifecycleCounters.inputContextsDisposed.incrementAndGet()
+                    }
+                }
+                if (disposeOk || hasCountedContextDispose) {
+                    unresolvedContext = null
                 }
             }
         }
@@ -782,6 +814,67 @@ open class EditorSurface @JvmOverloads constructor(
         return accepted
     }
 
+    fun retryCleanup(): Boolean {
+        var allOk = true
+        val ctx = unresolvedContext
+        if (ctx != null) {
+            if (!hasCountedContextDetach) {
+                try {
+                    recoveryHooks.removeNotifyContext(ctx, this)
+                    hasCountedContextDetach = true
+                    LifecycleCounters.inputContextsDetached.incrementAndGet()
+                } catch (_: Throwable) {
+                    allOk = false
+                }
+            }
+            if (!hasCountedContextDispose) {
+                try {
+                    recoveryHooks.disposeContext(ctx)
+                    hasCountedContextDispose = true
+                    LifecycleCounters.inputContextsDisposed.incrementAndGet()
+                    unresolvedContext = null
+                } catch (_: Throwable) {
+                    allOk = false
+                }
+            }
+        }
+        return allOk
+    }
+
+    fun recoverExplicitly(admitQuarantined: Boolean = false): Boolean {
+        if (admissionAllowed) return true
+        retryCleanup()
+        val canRecover = ownInputContext != null && contextBindFailure == null && !disposed && !retired
+        if (canRecover) {
+            if (admitQuarantined && quarantinedCallbacks.isNotEmpty()) {
+                for (q in quarantinedCallbacks) {
+                    if (q.committed in 0..q.text.length && (q.caret == null || q.caret in 0..q.text.length - q.committed)) {
+                        engine.inputMethod(q.text, q.committed, q.caret)
+                    }
+                }
+            }
+            quarantinedCallbacks.clear()
+            admissionAllowed = true
+            setupSucceeded = true
+            contextQualified = true
+            recoveryStatus = RecoveryStatus.RECOVERED_QUALIFIED
+            writeDiagnostics()
+            statusChanged(engine.snapshot())
+            return true
+        }
+        return false
+    }
+
+    fun discardQuarantinedCallbacks() {
+        quarantinedCallbacks.clear()
+        writeDiagnostics()
+    }
+
+    fun retryRecovery(): EditorSurface? {
+        retryCleanup()
+        return abortAndRetireComposition(replaceHost = true)
+    }
+
     fun requestEndComposition() {
         if (retired || disposed) return
         val failures = ArrayList<String>()
@@ -819,6 +912,23 @@ open class EditorSurface @JvmOverloads constructor(
             null
         }
 
+        val snapBeforeAbort = engine.snapshot()
+        val draftText = snapBeforeAbort.marked?.let { range ->
+            if (range.first in 0 until snapBeforeAbort.visible.text.length && range.last in range.first until snapBeforeAbort.visible.text.length) {
+                snapBeforeAbort.visible.text.substring(range.first, range.last + 1)
+            } else ""
+        } ?: ""
+        val preimage = if (draftText.isNotEmpty() || snapBeforeAbort.marked != null) {
+            RetainedCompositionPreimage(
+                draftText = draftText,
+                selectionBefore = snapBeforeAbort.selection,
+                markedRangeBefore = snapBeforeAbort.marked,
+                committedTextBefore = snapBeforeAbort.committed.text,
+                epoch = activeImeEpoch
+            )
+        } else null
+        this.retainedPreimage = preimage
+
         retired = true
         if (!hasCountedRetire) {
             hasCountedRetire = true
@@ -830,19 +940,25 @@ open class EditorSurface @JvmOverloads constructor(
 
         runStep("onEndCompositionRequested", failures) { onEndCompositionRequested() }
         if (oldContext != null) {
+            unresolvedContext = oldContext
             runStep("endComposition", failures) { recoveryHooks.endComposition(oldContext) }
-            runStep("removeNotifyContext", failures) {
+            val detachOk = runStep("removeNotifyContext", failures) {
                 recoveryHooks.removeNotifyContext(oldContext, this)
                 if (!hasCountedContextDetach) {
                     hasCountedContextDetach = true
                     LifecycleCounters.inputContextsDetached.incrementAndGet()
                 }
             }
-            runStep("disposeContext", failures) {
-                recoveryHooks.disposeContext(oldContext)
-                if (!hasCountedContextDispose) {
-                    hasCountedContextDispose = true
-                    LifecycleCounters.inputContextsDisposed.incrementAndGet()
+            if (detachOk) {
+                val disposeOk = runStep("disposeContext", failures) {
+                    recoveryHooks.disposeContext(oldContext)
+                    if (!hasCountedContextDispose) {
+                        hasCountedContextDispose = true
+                        LifecycleCounters.inputContextsDisposed.incrementAndGet()
+                    }
+                }
+                if (disposeOk || hasCountedContextDispose) {
+                    unresolvedContext = null
                 }
             }
         }
@@ -963,30 +1079,45 @@ open class EditorSurface @JvmOverloads constructor(
 
         val finalStatus: RecoveryStatus
         val finalQualified: Boolean
+        val finalSetupSucceeded: Boolean
+        val finalAdmissionAllowed: Boolean
+        val finalNativeQualified = false // synthetic tests do not qualify real native IME routing
+
         if (replaceHost && !removedDuringTeardown) {
             val boundOk = activeReplacement != null && activeReplacement.ownInputContext != null && activeReplacement.contextBindFailure == null && !activeReplacement.retired
             if (failures.isEmpty() && documentAbortedCleanly && containerAttachedOk && boundOk) {
                 finalStatus = RecoveryStatus.RECOVERED_QUALIFIED
                 finalQualified = true
+                finalSetupSucceeded = true
+                finalAdmissionAllowed = true
                 LifecycleCounters.recoverySucceededCount.incrementAndGet()
             } else {
                 finalStatus = RecoveryStatus.DEGRADED_RECOVERY_FAILED
                 finalQualified = false
+                finalSetupSucceeded = false
+                finalAdmissionAllowed = false
                 LifecycleCounters.recoveryDegradedCount.incrementAndGet()
             }
         } else {
             if (failures.isEmpty() && documentAbortedCleanly) {
                 finalStatus = RecoveryStatus.CONSERVATIVE_ABORT_ONLY
                 finalQualified = false
+                finalSetupSucceeded = false
+                finalAdmissionAllowed = false
                 LifecycleCounters.recoveryConservativeCount.incrementAndGet()
             } else {
                 finalStatus = RecoveryStatus.DEGRADED_RECOVERY_FAILED
                 finalQualified = false
+                finalSetupSucceeded = false
+                finalAdmissionAllowed = false
                 LifecycleCounters.recoveryDegradedCount.incrementAndGet()
             }
         }
 
         contextQualified = false
+        setupSucceeded = false
+        nativeQualified = false
+        admissionAllowed = false
         recoveryStatus = finalStatus
         recoveryFailures.clear()
         recoveryFailures.addAll(failures)
@@ -996,22 +1127,30 @@ open class EditorSurface @JvmOverloads constructor(
             replaceRequested = replaceHost,
             status = finalStatus,
             contextQualified = finalQualified,
+            setupSucceeded = finalSetupSucceeded,
+            nativeQualified = finalNativeQualified,
+            admissionAllowed = finalAdmissionAllowed,
             documentAbortedCleanly = documentAbortedCleanly,
             replacementCreated = replacement != null,
             containerAttached = containerAttachedOk && activeReplacement != null,
             removedDuringTeardown = removedDuringTeardown,
             failures = failures.toList(),
             preservedLocale = observedLocale,
-            preservedCompositionEnabled = observedCompositionEnabled
+            preservedCompositionEnabled = observedCompositionEnabled,
+            retainedPreimage = preimage
         )
         lastRecoveryReport = report
 
         replacement?.let { next ->
             next.contextQualified = finalQualified
+            next.setupSucceeded = finalSetupSucceeded
+            next.nativeQualified = finalNativeQualified
+            next.admissionAllowed = finalAdmissionAllowed
             next.recoveryStatus = finalStatus
             next.recoveryFailures.clear()
             next.recoveryFailures.addAll(failures)
             next.lastRecoveryReport = report
+            next.retainedPreimage = preimage
         }
 
         val snap = engine.snapshot()
@@ -1053,11 +1192,14 @@ open class EditorSurface @JvmOverloads constructor(
         if (ownInputContext == null && contextBindFailure == null) {
             contextBindFailure = "InputContext.getInstance() returned null"
         }
-        if (ownInputContext != null && contextBindFailure == null) {
-            contextQualified = true
+        val initialSetupOk = ownInputContext != null && contextBindFailure == null
+        setupSucceeded = initialSetupOk
+        contextQualified = initialSetupOk
+        nativeQualified = false // synthetic / default: real native qualification remains NOT RUN
+        admissionAllowed = initialSetupOk
+        if (initialSetupOk) {
             recoveryStatus = RecoveryStatus.ACTIVE_INITIAL
         } else {
-            contextQualified = false
             recoveryStatus = RecoveryStatus.DEGRADED_RECOVERY_FAILED
             val desc = "contextBinding: $contextBindFailure"
             recoveryFailures.add(desc)
@@ -1094,6 +1236,18 @@ open class EditorSurface @JvmOverloads constructor(
                     e.consume()
                     return
                 }
+                if (!admissionAllowed) {
+                    val text = e.text?.let { iterator -> buildString { for (index in iterator.beginIndex until iterator.endIndex) append(iterator.setIndex(index)) } } ?: ""
+                    val committed = e.committedCharacterCount
+                    val caret = e.caret?.insertionIndex
+                    quarantinedCallbacks.add(QuarantinedCallback(text, committed, caret, activeImeEpoch))
+                    trace?.record("awt-text-quarantined", "text=$text; committed=$committed; caret=$caret; status=$recoveryStatus; admissionAllowed=false", engine.snapshot())
+                    recordDiagnosticEvent("Input method callback quarantined: recovery status is $recoveryStatus; ambiguous native text not admitted")
+                    e.consume()
+                    writeDiagnostics()
+                    statusChanged(engine.snapshot())
+                    return
+                }
                 imeEvents++
                 val text = e.text?.let { iterator -> buildString { for (index in iterator.beginIndex until iterator.endIndex) append(iterator.setIndex(index)) } } ?: ""
                 val committed = e.committedCharacterCount
@@ -1109,12 +1263,17 @@ open class EditorSurface @JvmOverloads constructor(
                     e.consume()
                     return
                 }
+                if (!admissionAllowed) {
+                    trace?.record("awt-caret-quarantined", "${e.caret}", engine.snapshot())
+                    e.consume()
+                    return
+                }
                 trace?.record("awt-caret","${e.caret}",engine.snapshot()); e.caret?.let { engine.inputMethodCaret(it.insertionIndex) }; e.consume()
             }
         })
         addKeyListener(object : KeyAdapter() {
             override fun keyTyped(e: KeyEvent) {
-                if (retired || disposed) { e.consume(); return }
+                if (retired || disposed || !admissionAllowed) { e.consume(); return }
                 if (e.isConsumed || published.marked != null) return
                 if ((e.isControlDown || e.isMetaDown || e.isAltDown) && !e.isAltGraphDown) return
                 if (e.keyChar >= ' ' && e.keyChar != '\u007f' && e.keyChar != KeyEvent.CHAR_UNDEFINED) { keyEvents++; engine.replace(e.keyChar.toString()); preferredX = null; e.consume() }
@@ -1184,24 +1343,32 @@ open class EditorSurface @JvmOverloads constructor(
         stopBlinkTimer()
         val failures = ArrayList<String>()
         if (oldContext != null) {
-            runStep("removeNotifyContext", failures) {
+            unresolvedContext = oldContext
+            val detachOk = runStep("removeNotifyContext", failures) {
                 recoveryHooks.removeNotifyContext(oldContext, this)
                 if (!hasCountedContextDetach) {
                     hasCountedContextDetach = true
                     LifecycleCounters.inputContextsDetached.incrementAndGet()
                 }
             }
-            runStep("disposeContext", failures) {
-                recoveryHooks.disposeContext(oldContext)
-                if (!hasCountedContextDispose) {
-                    hasCountedContextDispose = true
-                    LifecycleCounters.inputContextsDisposed.incrementAndGet()
+            if (detachOk) {
+                val disposeOk = runStep("disposeContext", failures) {
+                    recoveryHooks.disposeContext(oldContext)
+                    if (!hasCountedContextDispose) {
+                        hasCountedContextDispose = true
+                        LifecycleCounters.inputContextsDisposed.incrementAndGet()
+                    }
+                }
+                if (disposeOk || hasCountedContextDispose) {
+                    unresolvedContext = null
                 }
             }
             runStep("disableInputMethods", failures) { recoveryHooks.disableInputMethods(this) }
         }
         if (failures.isNotEmpty()) {
             contextQualified = false
+            setupSucceeded = false
+            admissionAllowed = false
             recoveryStatus = RecoveryStatus.DEGRADED_RECOVERY_FAILED
         }
         clearCallbacks()
@@ -1436,7 +1603,8 @@ open class EditorSurface @JvmOverloads constructor(
         val s=engine.snapshot()
         published=s
         val failuresJson = recoveryFailures.joinToString(",") { quoted(it) }
-        f.writeText("{\"text\":${quoted(s.visible.text)},\"anchor\":${s.selection.anchor},\"focus\":${s.selection.focus},\"undo\":${s.undoCount},\"redo\":${s.redoCount},\"documentRevision\":${s.documentRevision},\"sessionRevision\":${s.sessionRevision},\"composing\":${s.marked!=null},\"waiting\":${s.waiting},\"focused\":$isFocusOwner,\"keyTypedEvents\":$keyEvents,\"imeTextEvents\":$imeEvents,\"activeImeEpoch\":$activeImeEpoch,\"recoveryStatus\":${quoted(recoveryStatus.name)},\"contextQualified\":$contextQualified,\"recoveryFailures\":[$failuresJson],\"notice\":${quoted(s.notice)}}")
+        val draftStr = retainedPreimage?.draftText ?: ""
+        f.writeText("{\"text\":${quoted(s.visible.text)},\"anchor\":${s.selection.anchor},\"focus\":${s.selection.focus},\"undo\":${s.undoCount},\"redo\":${s.redoCount},\"documentRevision\":${s.documentRevision},\"sessionRevision\":${s.sessionRevision},\"composing\":${s.marked!=null},\"waiting\":${s.waiting},\"focused\":$isFocusOwner,\"keyTypedEvents\":$keyEvents,\"imeTextEvents\":$imeEvents,\"activeImeEpoch\":$activeImeEpoch,\"recoveryStatus\":${quoted(recoveryStatus.name)},\"contextQualified\":$contextQualified,\"setupSucceeded\":$setupSucceeded,\"nativeQualified\":$nativeQualified,\"admissionAllowed\":$admissionAllowed,\"quarantinedCallbacks\":${quarantinedCallbacks.size},\"retainedDraft\":${quoted(draftStr)},\"recoveryFailures\":[$failuresJson],\"notice\":${quoted(s.notice)}}")
     }
 }
 
@@ -1448,7 +1616,8 @@ fun windowCurrentSurface(window: JFrame): EditorSurface? = (window.rootPane?.get
 fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList()), initialPath: java.nio.file.Path? = null, trace: ImeTrace? = null, traceLanguage: String? = null, offscreenTest: Boolean = false, windowLocation: Point? = null): JFrame {
     check(SwingUtilities.isEventDispatchThread())
     val engine=EditorEngine(initial);val state=ViewState(engine.snapshot());var surface=EditorSurface(engine,state,diagnostics,trace)
-    surface.onHostReplaced={surface=it}
+    var recoverBtn: JButton? = null
+    surface.onHostReplaced={surface=it; recoverBtn?.isVisible = !surface.admissionAllowed}
     val window=JFrame("Astra Editor — Desktop Prototype")
     lateinit var files: WindowFiles
     val compose=ComposePanel(renderSettings=RenderSettings.SwingGraphics()).apply {isFocusable=false;setContent {DocumentCanvas(state)}}
@@ -1485,13 +1654,20 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
     val undo=button("Undo","Ctrl+Z"){engine.perform(EditAction.Undo)};val redo=button("Redo","Ctrl+Shift+Z or Ctrl+Y"){engine.perform(EditAction.Redo)}
     val bold=button("Bold","Toggle bold (Ctrl+B)"){engine.toggleFormat(FormatKey.BOLD)}
     val italic=button("Italic","Toggle italic (Ctrl+I)"){engine.toggleFormat(FormatKey.ITALIC)}
-    button("Copy","Copy selected text (Ctrl+C)"){surface.copySelection(false)};button("Paste","Paste plain text (Ctrl+V)"){surface.paste()};header.add(buttons,BorderLayout.EAST)
+    button("Copy","Copy selected text (Ctrl+C)"){surface.copySelection(false)};button("Paste","Paste plain text (Ctrl+V)"){surface.paste()}
+    val rBtn = button("Recover","Recover editor input after failure"){surface.recoverExplicitly(false)}
+    rBtn.isVisible = !surface.admissionAllowed
+    recoverBtn = rBtn
+    header.add(buttons,BorderLayout.EAST)
     val footer=JPanel(BorderLayout()).apply {background=bg;border=EmptyBorder(10,24,10,24)}
     val position=JLabel();val notice=JLabel();listOf(position,notice).forEach {it.font=Font("Segoe UI",Font.PLAIN,12);it.foreground=Color(0x64748b)}
     footer.add(position,BorderLayout.WEST);footer.add(notice,BorderLayout.EAST)
     files=WindowFiles(window,engine,initialPath,onDiscardComposition={surface.abortAndRetireComposition(replaceHost=false)}){surface.statusChanged(engine.snapshot())}
     surface.requestSave={files.save(it)};surface.requestOpen={files.open()}
-    surface.statusChanged={f->val before=f.visible.text.take(f.selection.focus);val line=before.count {it=='\n'}+1;val col=Graphemes.stops(before.substringAfterLast('\n')).size;position.text="Line $line · Column $col"+(if(f.selection.collapsed)"" else " · ${f.selection.end-f.selection.start} selected");notice.text=files.status+(if(f.notice=="Ready")"" else " · ${f.notice}");title.text=files.name;window.title="${files.name} — Astra Editor";open.isEnabled=!files.busy;save.isEnabled=!files.busy;undo.isEnabled=f.undoCount>0||f.marked!=null;redo.isEnabled=f.redoCount>0&&f.marked==null
+    surface.statusChanged={f->val before=f.visible.text.take(f.selection.focus);val line=before.count {it=='\n'}+1;val col=Graphemes.stops(before.substringAfterLast('\n')).size;position.text="Line $line · Column $col"+(if(f.selection.collapsed)"" else " · ${f.selection.end-f.selection.start} selected")
+        recoverBtn?.isVisible = !surface.admissionAllowed
+        val degradedNote = if (!surface.admissionAllowed && surface.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED) " · Input paused (degraded recovery) — Save available" else ""
+        notice.text=files.status+(if(f.notice=="Ready")"" else " · ${f.notice}")+degradedNote;title.text=files.name;window.title="${files.name} — Astra Editor";open.isEnabled=!files.busy;save.isEnabled=!files.busy;undo.isEnabled=f.undoCount>0||f.marked!=null;redo.isEnabled=f.redoCount>0&&f.marked==null
         fun label(name: String, key: FormatKey) = when(engine.formatState(key)) { true -> "$name on"; false -> name; null -> "$name mixed" }
         bold.text=label("Bold",FormatKey.BOLD);italic.text=label("Italic",FormatKey.ITALIC)
     }

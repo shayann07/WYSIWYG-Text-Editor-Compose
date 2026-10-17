@@ -11,7 +11,7 @@
     "7a4e888",
     "1e42b2a"
   ],
-  "isolatedEvidenceRun": "desktop-prototype/local-evidence/batch-20261017-190900-7776",
+  "isolatedEvidenceRun": "desktop-prototype/local-evidence/batch-20261017-230315-18524",
   "environment": {
     "os": "Windows 10/11 (win32)",
     "java": "OpenJDK 64-Bit Server VM (Temurin 21.0.8+9-LTS)",
@@ -348,6 +348,35 @@
         "desktop-prototype/src/main/kotlin/editor/JapaneseHostChecks.kt",
         "reviews/argon-critical-path/experiments/probe_a1_settlement_wedge.py"
       ]
+    },
+    {
+      "id": "DEGRADED-RECOVERY-ADMISSION",
+      "title": "Degraded recovery path admission control, resource tracking and manual counter elimination",
+      "disposition": "CONFIRMED_AND_FIXED",
+      "evidenceClass": "compiled_regression_assertion_and_independent_audit",
+      "baselineOutcome": {
+        "DegradedAudit": {
+          "status": "DEGRADED_RECOVERY_FAILED",
+          "contextQualified": false,
+          "AFTER_ORDINARY_CALLBACK_TO_DEGRADED_HOST": "LATE"
+        },
+        "counterFaking": "Test hooks manually invoked LifecycleCounters.*.incrementAndGet() to fake counter balance after exceptions"
+      },
+      "repairedOutcome": {
+        "DegradedAudit": {
+          "status": "DEGRADED_RECOVERY_FAILED",
+          "contextQualified": false,
+          "admissionAllowed": false,
+          "AFTER_ORDINARY_CALLBACK_TO_DEGRADED_HOST": ""
+        },
+        "admissionControl": "When !admissionAllowed, inputMethodTextChanged buffers incoming callbacks into quarantinedCallbacks without mutating the engine; pre-abort preimage is preserved in retainedPreimage; UI offers dynamic recoverExplicitly and retryRecovery actions",
+        "resourceTracking": "Undetached/undisposed InputContexts are tracked in unresolvedContext; disposeContext is gated on successful removeNotifyContext; retryCleanup resolves unresolved contexts without manual counter hacking; all test counter manipulation removed",
+        "regressions": "JapaneseHostChecks Tests 8 (repeated failure/retry), 9 (partial commit under degraded recovery with exact Undo/Redo), and 10 (discard-close on degraded host)"
+      },
+      "filesModified": [
+        "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
+        "desktop-prototype/src/main/kotlin/editor/JapaneseHostChecks.kt"
+      ]
     }
   ],
   "frozenFilesUnchanged": 45,
@@ -356,7 +385,7 @@
     "desktop-prototype/run.cmd": "c68514768c7d36dcd53fe6f6134c9302190b841641f13a5cd7c3db72b81ffb06",
     "desktop-prototype/verify.py": "0fbcbc195a7a1fd1329fef823858e2aae2e3b299352d419efe41790bd75d40e1",
     "desktop-prototype/src/main/kotlin/editor/Checks.kt": "0712bc134c86e4cea2f8305d01ff84b5f7a492a31207fe717e18b33d83222ad1",
-    "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt": "0c3cd1a12cbcfecbd0fc774ec0c66cd2a753f40f51a6d02eb5bfa36ee2dc77a1",
+    "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt": "0772fa5f5cc6f378da90ea1100d367abb8293d1912b397738f80dc717286b350",
     "desktop-prototype/src/main/kotlin/editor/DocumentFiles.kt": "39d6b97af698f5a96ad940aea02150953398a4dd6f9a1266f69e4088ccc75e25",
     "desktop-prototype/src/main/kotlin/editor/EditorEngine.kt": "b6a5b687c3a78d3f07c7a03e7e51cfd8c49132f0e072a869c323ee90b4a8920f",
     "desktop-prototype/src/main/kotlin/editor/FileChecks.kt": "4d3142000a3759cfcfd58dbf8abc4ed6d61fa98c501022696faf3c16fd50cb69",
@@ -365,7 +394,7 @@
     "desktop-prototype/src/main/kotlin/editor/Graphemes.kt": "a297a5154df6a77cb1bc65115c92d5a738367671fb02f47a94c425544cb0c629",
     "desktop-prototype/src/main/kotlin/editor/HostChecks.kt": "210f422453a0df2400e235fc26175c198fc719dc636c02231863f83dece93eab",
     "desktop-prototype/src/main/kotlin/editor/ImeTrace.kt": "153bb4b538d707cdf6c57fada2c71ff55db3445757295bc9f67612ce4e06a521",
-    "desktop-prototype/src/main/kotlin/editor/JapaneseHostChecks.kt": "e3a644235eb6df4ade400798229c958d61afffba3842464709a6a6d583d4cef5",
+    "desktop-prototype/src/main/kotlin/editor/JapaneseHostChecks.kt": "0fe4c66f01ef5c48d03a68f8deea7965f2b01418350c5a479ad0735ca65bed5e",
     "desktop-prototype/src/main/kotlin/editor/Main.kt": "c3d1a40dd87a612de2e517432cbbbffd4bff6255bb3f5a2e7a2dbedbe59085b3",
     "desktop-prototype/src/main/kotlin/editor/RtlHostChecks.kt": "e150c53d8c2544d1d0420d26ef6c007bc0f8f23812c61c0a13bb45b5b08b0ef1",
     "desktop-prototype/src/main/kotlin/editor/StressChecks.kt": "d5084fb3df4e97b424c09ddbb628ffb953ea8ca1c7ea683eb56e21801ac5ca15",
@@ -373,11 +402,19 @@
   },
   "recoveryAuditRerun": {
     "reproducer": "desktop-prototype/local-evidence/batch-20261017-160830-20212/RecoveryAudit.java",
-    "against": "desktop-prototype/local-evidence/batch-20261017-190900-7776",
+    "against": "desktop-prototype/local-evidence/batch-20261017-230315-18524",
     "ORDINARY_LATE_CALLBACK_AFTER_ABORT": "",
     "REENTRANT_COMMIT_DURING_ABORT": "",
     "AFTER_CANDIDATE_UPDATE_TIMEOUT": "true WAITING=false DEADLINE_START=null",
     "scope": "Synthetic events with source = oldSurface; proves only the application's old-source guard"
+  },
+  "degradedAuditRerun": {
+    "reproducer": "desktop-prototype/local-evidence/batch-20261017-193843-32536/DegradedAudit.java",
+    "against": "desktop-prototype/local-evidence/batch-20261017-230315-18524",
+    "STATUS": "DEGRADED_RECOVERY_FAILED",
+    "QUALIFIED": "false",
+    "AFTER_ORDINARY_CALLBACK_TO_DEGRADED_HOST": "",
+    "scope": "Synthetic events to replacement host in degraded status; proves admission control and quarantined callback buffering block ambiguous text from polluting the document"
   },
   "hostReplacementVerdicts": {
     "applicationPathIsolation": "PASS",

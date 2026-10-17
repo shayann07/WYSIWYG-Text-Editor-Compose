@@ -1009,9 +1009,19 @@ private fun runHostReplacementFailurePathChecks() {
             } finally {
                 for (comp in layers.components.toList()) {
                     layers.remove(comp)
+                    if (comp is EditorSurface) {
+                        if (!comp.disposed) comp.removeNotify()
+                        comp.recoveryHooks = EditorSurface.RecoveryHooks()
+                        comp.retryCleanup()
+                    }
                 }
-                if (!surface.disposed) surface.removeNotify()
-                surface.replacementSurface?.let { if (!it.disposed) it.removeNotify() }
+                var cur: EditorSurface? = surface
+                while (cur != null) {
+                    if (!cur.disposed) cur.removeNotify()
+                    cur.recoveryHooks = EditorSurface.RecoveryHooks()
+                    cur.retryCleanup()
+                    cur = cur.replacementSurface
+                }
             }
         }
 
@@ -1030,61 +1040,88 @@ private fun runHostReplacementFailurePathChecks() {
             check(!report.succeeded) { "Recovery must NOT report success when endComposition failed" }
             check(report.status == RecoveryStatus.DEGRADED_RECOVERY_FAILED)
             check(!report.contextQualified) { "RecoveryReport must NOT mark contextQualified when endComposition failed" }
+            check(!report.setupSucceeded && !report.admissionAllowed && !report.nativeQualified)
             check(report.documentAbortedCleanly)
             check(report.failures.any { "endComposition: IllegalStateException: Injected endComposition failure" in it })
-            check(next != null && !next.contextQualified && next.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED) {
-                "Replacement surface must NEVER be marked contextQualified when old context teardown failed"
+            check(next != null && !next.contextQualified && !next.admissionAllowed && next.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED) {
+                "Replacement surface must NEVER be marked contextQualified or admissionAllowed when old context teardown failed"
             }
             check(surface.engine.snapshot().visible.text == "Baseline" && surface.engine.snapshot().marked == null)
+
+            // Retained preimage preserved!
+            check(next.retainedPreimage != null && next.retainedPreimage?.draftText == "未完")
+
+            // DegradedAudit probe scenario: ordinary callback to degraded replacement must be quarantined and NOT admitted!
+            val lateCommit = InputMethodEvent(next, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("LATE").iterator, 4, null, null)
+            next.dispatchEvent(lateCommit)
+            check(surface.engine.snapshot().committed.text == "Baseline" && surface.engine.snapshot().visible.text == "Baseline") {
+                "Degraded replacement must NOT admit ambiguous native text into the committed document!"
+            }
+            check(next.quarantinedCallbacks.size == 1 && next.quarantinedCallbacks[0].text == "LATE") {
+                "Ambiguous callback must be quarantined for explicit recovery"
+            }
+
             val diagText = diagFile.readText()
-            check("\"recoveryStatus\":\"DEGRADED_RECOVERY_FAILED\"" in diagText && "\"contextQualified\":false" in diagText)
+            check("\"recoveryStatus\":\"DEGRADED_RECOVERY_FAILED\"" in diagText && "\"contextQualified\":false" in diagText && "\"admissionAllowed\":false" in diagText)
             check("Injected endComposition failure" in diagText)
             val saveFile = tempDir.resolve("recovered-1.astra")
             DocumentFiles.write(saveFile, surface.engine.snapshot().committed, null)
             check(DocumentFiles.read(saveFile).text == "Baseline")
+
+            // Explicit recovery action
+            val recovered = next.recoverExplicitly(admitQuarantined = false)
+            check(recovered && next.admissionAllowed && next.recoveryStatus == RecoveryStatus.RECOVERED_QUALIFIED)
+            check(next.quarantinedCallbacks.isEmpty())
+            // Now subsequent typing is admitted cleanly
+            next.dispatchEvent(InputMethodEvent(next, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("OK").iterator, 2, null, null))
+            check(surface.engine.snapshot().committed.text == "BaselineOK")
         }
 
-        // 2. Failure in removeNotifyContext (context removal)
-        var capturedContextForCleanup: java.awt.im.InputContext? = null
-        var capturedCompForCleanup: java.awt.Component? = null
+        // 2. Genuine failure in removeNotifyContext (context detachment)
         withTestHost(
             EditorSurface.RecoveryHooks(
-                removeNotifyContext = { ctx, comp ->
-                    capturedContextForCleanup = ctx
-                    capturedCompForCleanup = comp
-                    throw RuntimeException("Injected removeNotify failure")
+                removeNotifyContext = { _, _ ->
+                    throw RuntimeException("Injected genuine removeNotify failure before removal")
                 }
             )
         ) { _, surface, _ ->
-            try {
-                surface.dispatchEvent(InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("未完").iterator, 0, TextHitInfo.leading(2), null))
-                val next = surface.abortAndRetireComposition(replaceHost = true)
-                val report = checkNotNull(surface.lastRecoveryReport)
-                check(!report.succeeded && report.status == RecoveryStatus.DEGRADED_RECOVERY_FAILED && !report.contextQualified)
-                check(report.failures.any { "removeNotifyContext: RuntimeException: Injected removeNotify failure" in it })
-                check(next != null && !next.contextQualified && next.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED)
-                check(surface.engine.snapshot().visible.text == "Baseline" && surface.engine.snapshot().marked == null)
-            } finally {
-                // Clean up the intentionally un-detached context so global counters stay balanced after fault injection
-                val ctx = capturedContextForCleanup
-                val comp = capturedCompForCleanup
-                if (ctx != null && comp != null) {
-                    runCatching {
-                        ctx.removeNotify(comp)
-                        EditorSurface.LifecycleCounters.inputContextsDetached.incrementAndGet()
-                    }
-                }
-            }
+            surface.dispatchEvent(InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("未完").iterator, 0, TextHitInfo.leading(2), null))
+            val next = surface.abortAndRetireComposition(replaceHost = true)
+            val report = checkNotNull(surface.lastRecoveryReport)
+            check(!report.succeeded && report.status == RecoveryStatus.DEGRADED_RECOVERY_FAILED && !report.contextQualified && !report.admissionAllowed)
+            check(report.failures.any { "removeNotifyContext: RuntimeException: Injected genuine removeNotify failure before removal" in it })
+            check(surface.unresolvedContext != null) { "Undetached context must be tracked as unresolved resource" }
+
+            // Production explicit cleanup / retry
+            surface.recoveryHooks = EditorSurface.RecoveryHooks()
+            val cleaned = surface.retryCleanup()
+            check(cleaned && surface.unresolvedContext == null) { "Explicit retryCleanup must resolve undisposed context" }
         }
 
-        // 3. Failure in disposeContext and disableInputMethods (context disposal)
+        // 3a. Genuine failure in disposeContext (context disposal)
         withTestHost(
             EditorSurface.RecoveryHooks(
-                disposeContext = { ctx ->
-                    ctx.dispose()
-                    EditorSurface.LifecycleCounters.inputContextsDisposed.incrementAndGet()
-                    throw RuntimeException("Injected disposeContext failure")
-                },
+                disposeContext = { _ ->
+                    throw RuntimeException("Injected genuine disposeContext failure before dispose()")
+                }
+            )
+        ) { _, surface, _ ->
+            surface.dispatchEvent(InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("未完").iterator, 0, TextHitInfo.leading(2), null))
+            val next = surface.abortAndRetireComposition(replaceHost = true)
+            val report = checkNotNull(surface.lastRecoveryReport)
+            check(!report.succeeded && report.status == RecoveryStatus.DEGRADED_RECOVERY_FAILED && !report.contextQualified && !report.admissionAllowed)
+            check(report.failures.any { "disposeContext: RuntimeException: Injected genuine disposeContext failure before dispose()" in it })
+            check(surface.unresolvedContext != null) { "Undisposed context must be tracked as unresolved resource" }
+
+            // Explicit production retry/cleanup
+            surface.recoveryHooks = EditorSurface.RecoveryHooks()
+            val cleaned = surface.retryCleanup()
+            check(cleaned && surface.unresolvedContext == null) { "Explicit retryCleanup must dispose unresolved context honestly" }
+        }
+
+        // 3b. Failure in disableInputMethods after clean context disposal
+        withTestHost(
+            EditorSurface.RecoveryHooks(
                 disableInputMethods = { surf ->
                     surf.enableInputMethods(false)
                     throw RuntimeException("Injected disableInputMethods failure")
@@ -1094,11 +1131,9 @@ private fun runHostReplacementFailurePathChecks() {
             surface.dispatchEvent(InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("未完").iterator, 0, TextHitInfo.leading(2), null))
             val next = surface.abortAndRetireComposition(replaceHost = true)
             val report = checkNotNull(surface.lastRecoveryReport)
-            check(!report.succeeded && report.status == RecoveryStatus.DEGRADED_RECOVERY_FAILED && !report.contextQualified)
-            check(report.failures.any { "disposeContext: RuntimeException: Injected disposeContext failure" in it })
+            check(!report.succeeded && report.status == RecoveryStatus.DEGRADED_RECOVERY_FAILED && !report.contextQualified && !report.admissionAllowed)
             check(report.failures.any { "disableInputMethods: RuntimeException: Injected disableInputMethods failure" in it })
-            check(next != null && !next.contextQualified && next.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED)
-            check(surface.engine.snapshot().visible.text == "Baseline" && surface.engine.snapshot().marked == null)
+            check(surface.unresolvedContext == null) { "Context was cleanly disposed before disableInputMethods" }
         }
 
         // 4. Failure in replacement creation
@@ -1204,6 +1239,82 @@ private fun runHostReplacementFailurePathChecks() {
             surface.engine.perform(EditAction.Undo)
             check(surface.view.frame.visible.text.isEmpty())
             check("\"recoveryStatus\":\"CONSERVATIVE_ABORT_ONLY\"" in diagFile.readText())
+        }
+
+        // 8. Repeated failure, retry, and explicit recovery
+        withTestHost(
+            EditorSurface.RecoveryHooks(
+                endComposition = { throw RuntimeException("Failure 1") }
+            )
+        ) { _, surface, _ ->
+            surface.dispatchEvent(InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("ドラフト").iterator, 0, TextHitInfo.leading(4), null))
+            val next1 = checkNotNull(surface.abortAndRetireComposition(replaceHost = true))
+            check(next1.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED && !next1.admissionAllowed)
+            check(next1.retainedPreimage?.draftText == "ドラフト")
+
+            // Ordinary callback to degraded host is quarantined, document unaffected
+            next1.dispatchEvent(InputMethodEvent(next1, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("保留").iterator, 2, null, null))
+            check(next1.engine.snapshot().committed.text == "Baseline")
+            check(next1.quarantinedCallbacks.size == 1 && next1.quarantinedCallbacks[0].text == "保留")
+
+            // Second retry with failure still fails gracefully
+            next1.recoveryHooks = EditorSurface.RecoveryHooks(endComposition = { throw RuntimeException("Failure 2") })
+            val next2 = checkNotNull(next1.abortAndRetireComposition(replaceHost = true))
+            check(next2.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED && !next2.admissionAllowed)
+            check(next2.engine.snapshot().committed.text == "Baseline")
+
+            // Third retry with clean hooks succeeds
+            next2.recoveryHooks = EditorSurface.RecoveryHooks()
+            val next3 = checkNotNull(next2.abortAndRetireComposition(replaceHost = true))
+            check(next3.recoveryStatus == RecoveryStatus.RECOVERED_QUALIFIED && next3.admissionAllowed && next3.contextQualified)
+
+            // Subsequent input works cleanly
+            next3.dispatchEvent(InputMethodEvent(next3, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("成功").iterator, 2, null, null))
+            check(next3.engine.snapshot().committed.text == "Baseline成功")
+        }
+
+        // 9. Partial commit with degraded recovery preserves accepted prefix and exact Undo/Redo
+        withTestHost(
+            EditorSurface.RecoveryHooks(
+                endComposition = { throw RuntimeException("Partial commit teardown failure") }
+            )
+        ) { _, surface, _ ->
+            surface.engine.selectAll()
+            surface.engine.replace("abcd", "Init")
+            surface.engine.selectAll()
+            // Partial commit: 'X' accepted, "Y" provisional, "cd" retained
+            surface.dispatchEvent(InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("XYcd").iterator, 1, TextHitInfo.leading(2), null))
+            check(surface.engine.snapshot().committed.text == "Xcd" && surface.engine.snapshot().visible.text == "XYcd")
+
+            val next = checkNotNull(surface.abortAndRetireComposition(replaceHost = true))
+            check(next.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED && !next.admissionAllowed)
+            check(surface.engine.snapshot().committed.text == "Xcd" && surface.engine.snapshot().visible.text == "Xcd" && surface.engine.snapshot().marked == null)
+
+            // Ambiguous callback on next is quarantined, not admitted
+            next.dispatchEvent(InputMethodEvent(next, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("CORRUPT").iterator, 7, null, null))
+            check(surface.engine.snapshot().committed.text == "Xcd")
+
+            // Undo reverts partial commit back to original "abcd"
+            surface.engine.perform(EditAction.Undo)
+            check(surface.engine.snapshot().visible.text == "abcd" && surface.engine.snapshot().selection == Selection(0, 4))
+            // Redo restores accepted partial commit "Xcd"
+            surface.engine.perform(EditAction.Redo)
+            check(surface.engine.snapshot().visible.text == "Xcd")
+        }
+
+        // 10. Discard-close and disposal on degraded host
+        withTestHost(
+            EditorSurface.RecoveryHooks(
+                endComposition = { throw RuntimeException("Teardown failure for discard-close") }
+            )
+        ) { layers, surface, _ ->
+            surface.dispatchEvent(InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("破棄").iterator, 0, TextHitInfo.leading(2), null))
+            val next = checkNotNull(surface.abortAndRetireComposition(replaceHost = true))
+            check(next.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED)
+            // Discard close simulation: remove from container and removeNotify
+            layers.remove(next)
+            next.removeNotify()
+            check(next.disposed && !next.isTimerRunning && next.inputContext == null)
         }
     } finally {
         tempDir.toFile().deleteRecursively()

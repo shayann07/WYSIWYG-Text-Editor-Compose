@@ -38,7 +38,7 @@ python desktop-prototype/verify.py
 | `desktop-prototype/run.cmd` | `c68514768c7d36dcd53fe6f6134c9302190b841641f13a5cd7c3db72b81ffb06` |
 | `desktop-prototype/verify.py` | `0fbcbc195a7a1fd1329fef823858e2aae2e3b299352d419efe41790bd75d40e1` |
 | `desktop-prototype/src/main/kotlin/editor/Checks.kt` | `0712bc134c86e4cea2f8305d01ff84b5f7a492a31207fe717e18b33d83222ad1` |
-| `desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt` | `0c3cd1a12cbcfecbd0fc774ec0c66cd2a753f40f51a6d02eb5bfa36ee2dc77a1` |
+| `desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt` | `0772fa5f5cc6f378da90ea1100d367abb8293d1912b397738f80dc717286b350` |
 | `desktop-prototype/src/main/kotlin/editor/DocumentFiles.kt` | `39d6b97af698f5a96ad940aea02150953398a4dd6f9a1266f69e4088ccc75e25` |
 | `desktop-prototype/src/main/kotlin/editor/EditorEngine.kt` | `b6a5b687c3a78d3f07c7a03e7e51cfd8c49132f0e072a869c323ee90b4a8920f` |
 | `desktop-prototype/src/main/kotlin/editor/FileChecks.kt` | `4d3142000a3759cfcfd58dbf8abc4ed6d61fa98c501022696faf3c16fd50cb69` |
@@ -47,7 +47,7 @@ python desktop-prototype/verify.py
 | `desktop-prototype/src/main/kotlin/editor/Graphemes.kt` | `a297a5154df6a77cb1bc65115c92d5a738367671fb02f47a94c425544cb0c629` |
 | `desktop-prototype/src/main/kotlin/editor/HostChecks.kt` | `210f422453a0df2400e235fc26175c198fc719dc636c02231863f83dece93eab` |
 | `desktop-prototype/src/main/kotlin/editor/ImeTrace.kt` | `153bb4b538d707cdf6c57fada2c71ff55db3445757295bc9f67612ce4e06a521` |
-| `desktop-prototype/src/main/kotlin/editor/JapaneseHostChecks.kt` | `e3a644235eb6df4ade400798229c958d61afffba3842464709a6a6d583d4cef5` |
+| `desktop-prototype/src/main/kotlin/editor/JapaneseHostChecks.kt` | `0fe4c66f01ef5c48d03a68f8deea7965f2b01418350c5a479ad0735ca65bed5e` |
 | `desktop-prototype/src/main/kotlin/editor/Main.kt` | `c3d1a40dd87a612de2e517432cbbbffd4bff6255bb3f5a2e7a2dbedbe59085b3` |
 | `desktop-prototype/src/main/kotlin/editor/RtlHostChecks.kt` | `e150c53d8c2544d1d0420d26ef6c007bc0f8f23812c61c0a13bb45b5b08b0ef1` |
 | `desktop-prototype/src/main/kotlin/editor/StressChecks.kt` | `d5084fb3df4e97b424c09ddbb628ffb953ea8ca1c7ea683eb56e21801ac5ca15` |
@@ -249,6 +249,37 @@ Synthetic events built as `new InputMethodEvent(oldSurface, ...)` set `source = 
 5. Repeat steps 3–4 with an Urdu keyboard (`ur-PK`), then Arabic (`ar-SA`). Confirm the keyboard selection persists across replacement.
 6. Switch focus to another window mid-composition and back. Record whether the IME commits or cancels; do not assume either.
 7. Record OS build, JDK, IME version and diagnostics JSON in ignored `local-evidence/`. Commit only sanitized fixture results.
+
+### 3.12 Degraded Recovery Path Admission Control, Resource Tracking & Honest Cleanup
+
+**Scope.** Close the recovery failure path identified by `DegradedAudit.java` where a host in `DEGRADED_RECOVERY_FAILED` status still admitted ambiguous text callbacks into the committed document, separate application setup from native qualification, enforce admission control, track/clean unresolved resources honestly without counter manipulation, and add permanent regressions.
+
+**Root cause identified by `DegradedAudit.java`:**
+When replacement host teardown failed, `recoveryStatus` was marked `DEGRADED_RECOVERY_FAILED`. However, `EditorSurface.inputMethodTextChanged` only checked `if (retired || disposed) return;`, ignoring `recoveryStatus`. As a result, subsequent callbacks on the degraded replacement host were forwarded to `engine.inputMethod()`, admitting ambiguous text into the committed document.
+
+**Repairs:**
+1. **Explicit Status & Qualification Separation**:
+   - `setupSucceeded`: whether initial InputContext binding and component setup succeeded.
+   - `contextQualified`: whether the context passed qualification checks.
+   - `nativeQualified`: fixed to `false` for synthetic/unit test runs (real native qualification remains NOT RUN).
+   - `admissionAllowed`: strictly enforced gate for document admission. Set to `true` on initial healthy setup or after explicit recovery; set to `false` whenever recovery fails or enters degraded status.
+2. **Admission Control & Quarantined Buffering**:
+   - When `!admissionAllowed`, `inputMethodTextChanged` buffers incoming callbacks into `quarantinedCallbacks: CopyOnWriteArrayList<QuarantinedCallback>` and consumes the event immediately without calling `engine.inputMethod()`.
+   - The committed document is completely protected from corruption or ambiguity while degraded.
+3. **Pre-Image Retention & UI Recovery Actions**:
+   - `retainedPreimage`: retains the uncommitted draft text, selection, marked range, and committed text baseline from before abort.
+   - `EditorSurface` provides `recoverExplicitly(admitQuarantined: Boolean)`, `retryCleanup(): Boolean`, `discardQuarantinedCallbacks()`, and `retryRecovery(): EditorSurface?`.
+   - The desktop prototype UI (`showEditor`) renders a degraded warning banner and dynamic "Recover input" button when `!admissionAllowed`.
+4. **Honest Resource Tracking without Counter Manipulation**:
+   - `unresolvedContext` tracks any `InputContext` whose teardown failed (`removeNotifyContext` or `disposeContext`).
+   - If `removeNotifyContext` fails, `disposeContext` is gated and NOT run, preventing native context corruption and keeping the resource tracked in `unresolvedContext`.
+   - `retryCleanup()` attempts to finish teardown of `unresolvedContext` honestly.
+   - Removed fake manual test counter manipulation (`LifecycleCounters.*.incrementAndGet()`) from `JapaneseHostChecks.kt` failure tests, ensuring tests reflect genuine component behavior.
+5. **Permanent Regressions**:
+   - `JapaneseHostChecks.kt` Test 8: repeated failure, retry, and explicit recovery.
+   - `JapaneseHostChecks.kt` Test 9: partial commit under degraded recovery preserving accepted prefix and exact Undo/Redo.
+   - `JapaneseHostChecks.kt` Test 10: discard-close and disposal on degraded host.
+   - `DegradedAudit.java` verified: `STATUS=DEGRADED_RECOVERY_FAILED QUALIFIED=false`, `AFTER_ORDINARY_CALLBACK_TO_DEGRADED_HOST=` (empty string).
 
 ---
 
