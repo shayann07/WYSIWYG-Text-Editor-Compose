@@ -1,7 +1,7 @@
 {
   "investigation": "argon-critical-path",
   "commit": "773bc068cd87cd83d1289bdb5e46e8ab6552869d",
-  "timestamp": "2026-10-17T07:12:00Z",
+  "timestamp": "2026-10-17T07:40:00Z",
   "environment": {
     "os": "Windows 11 (AMD64)",
     "java": "OpenJDK 23.0.2 Temurin (build 23.0.2+7)",
@@ -73,7 +73,7 @@
       "id": "KF-5",
       "title": "Scrolling composition test has no active composition (marked == null)",
       "file": "desktop-prototype/src/main/kotlin/editor/RtlHostChecks.kt",
-      "lines": "446-454",
+      "lines": "446-454, DesktopEditor.kt:541-547",
       "status": "CONFIRMED_PRESENT",
       "severity": "MEDIUM",
       "invariant": "I17, plan-v5.md §5.1 (Active Composition Candidate Window Under Scroll)",
@@ -98,7 +98,7 @@
       "risk_area": "Risk A: Native Input Feasibility & Settlement",
       "title": "Unbounded composition lock / permanent editor wedge when endComposition() emits no InputMethodEvent",
       "file": "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
-      "lines": "371, 387, 398, 404, 427",
+      "lines": "371, 387, 398, 404, 427, EditorEngine.kt:164-170",
       "severity": "CRITICAL",
       "invariant": "I09, I10, plan-v5.md §4.5, §5.1 (Bounded Settlement Fence & Liveness)",
       "evidence": "When composition != null, keyTyped is dropped and edits are queued into pending up to 256 items. When pending reaches 256, all further edits are rejected with 'Finish composing before another command.' If OS IME does not emit InputMethodEvent, editor is wedged forever.",
@@ -140,12 +140,22 @@
     {
       "id": "A-5",
       "risk_area": "Risk A: Native Input Feasibility & Settlement",
-      "title": "Cross-platform native input protocol mismatches (Android batch edit/setComposingRegion, iOS UITextInput re-entrancy)",
+      "title": "DesktopEditor.keyPressed lacks published.marked != null guard, queueing duplicate mutations with temporary preedit PointAnchor IDs into pending",
       "file": "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt",
-      "lines": "372-575",
+      "lines": "408-431, EditorEngine.kt:100-103, 164-170",
       "severity": "HIGH",
-      "invariant": "I01, I09, plan-v5.md §5.1 (Multiplatform Adapter Transactions & Delegate Re-entrancy)",
-      "evidence": "Android InputConnection and iOS UITextInput settle compositions in-place without separate callbacks and execute multi-step mutations inside batch wrappers that must not fire re-entrant layout/delegate notifications."
+      "invariant": "I01, I09, I10, plan-v5.md §4.5, §5.1 (IME Mutation Ownership & Ephemeral Anchor Protection)",
+      "evidence": "DesktopEditor.keyPressed lacks a marked != null guard on VK_BACK_SPACE, VK_DELETE, VK_ENTER, VK_TAB, and navigation keys. It calls engine.delete() or replace(), capturing temporary preedit PointAnchor IDs from visible().units and appending to pending. On settlement or abort, these IDs no longer exist in the document, corrupting pending replay."
+    },
+    {
+      "id": "A-6",
+      "risk_area": "Risk A: Native Input Feasibility & Settlement",
+      "title": "WindowFiles.newDocument() and WindowFiles.open() bypass confirmDiscard() during active composition, replacing EditorEngine while native OS IME holds active context",
+      "file": "desktop-prototype/src/main/kotlin/editor/WindowFiles.kt",
+      "lines": "54-60, 86-93 (and Main.kt:350-388)",
+      "severity": "HIGH",
+      "invariant": "I07, I09, plan-v5.md §4.5, §5.1 (Active Composition Lifecycle & Document Replacement Safety)",
+      "evidence": "WindowFiles.open() and newDocument() lack checks for engine.snapshot().marked != null or waiting, and lack confirmDiscard() prompts when dirty == false during preedit, allowing EditorEngine replacement while Windows HIMC or Cocoa NSTextInputContext holds active native composition."
     },
     {
       "id": "B-1",

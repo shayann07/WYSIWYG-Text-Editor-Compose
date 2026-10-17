@@ -64,22 +64,40 @@ This document specifies the exact implementation tasks for engineering teams, or
 
 ---
 
-### Task 4: Bounded Settlement State Machine & IME Event Routing (`A-1`, `A-2`, `C-1`)
-- **Severity**: Critical (Permanent Editor Wedge; Premature Composition Abort).
-- **Affected Files**: [`desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt).
+### Task 4: Bounded Settlement State Machine, IME Event Routing & Raw Key Guard (`A-1`, `A-2`, `A-5`)
+- **Severity**: Critical (Permanent Editor Wedge; Premature Composition Commit; Corrupted Pending Anchors).
+- **Affected Files**: [`desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt), [`desktop-prototype/src/main/kotlin/editor/EditorEngine.kt`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/EditorEngine.kt).
 - **Required Changes**:
-  1. **Bounded Settlement State Machine**:
+  1. **Bounded Settlement State Machine (`A-1`)**:
      - Replace the unbounded waiting flag with an explicit lifecycle: `IDLE -> COMPOSING -> SETTLING(epochId) -> IDLE`.
      - When user triggers a barrier action (Escape, mouse click away), allow `Escape` to call `engine.abortComposition()` directly without waiting for an OS event.
-  2. **`VK_ESCAPE` Handling**:
+  2. **`VK_ESCAPE` Handling (`A-2`)**:
      - In [`DesktopEditor.kt:387`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L387), call `engine.abortComposition()` before or in conjunction with `inputContext?.endComposition()` so uncommitted preedit is cancelled rather than committed.
-  3. **Guard `keyPressed` During Composition**:
-     - Add `if (published.marked != null) return` to [`keyPressed`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L408-L431) for navigation and editing keys, preventing raw AWT key events from queuing duplicate mutations onto `pending` while the IME owns preedit.
-  4. **Normalize `getTextLocation`**:
+  3. **Guard `keyPressed` During Active Composition (`A-5`)**:
+     - In [`DesktopEditor.kt:408-431`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt#L408-L431), add a top-level guard:
+       `if (published.marked != null && e.keyCode != KeyEvent.VK_ESCAPE) return`
+       This prevents `VK_BACK_SPACE`, `VK_DELETE`, `VK_ENTER`, `VK_TAB`, and navigation keys from calling `requestEndComposition()` and queueing duplicate mutations with ephemeral preedit `PointAnchor` IDs into `pending`.
+  4. **Normalize `getTextLocation` (`B-2`, `B-3`)**:
      - Normalize `TextHitInfo.beforeOffset(0)` to the same start boundary as `TextHitInfo.leading(0)` and anchor non-collapsed selections on the last covered unit `(s.end - 1).coerceAtLeast(s.start)`.
 - **Acceptance Tests**:
   - Run [`probe_a1_settlement_wedge.py`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/reviews/argon-critical-path/experiments/probe_a1_settlement_wedge.py): Editor must not become wedged; pending queue must clear on settlement/abort.
+  - Verify that pressing Backspace or arrow keys during active preedit does not append duplicate actions to `pending` or capture ephemeral unit IDs.
 - **Dependencies**: Task 1.
+
+---
+
+### Task 5: Safe Document Lifecycle & Native IME Context Teardown (`A-6`)
+- **Severity**: High (Native Context Leak; Unsaved Preedit Discard Without Confirmation).
+- **Affected Files**: [`desktop-prototype/src/main/kotlin/editor/WindowFiles.kt`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/WindowFiles.kt), [`desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt`](file:///d:/Work/WYSIWYG-Text-Editor-Compose/desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt).
+- **Required Changes**:
+  1. **Block Document Replacement During Composition (`A-6`)**:
+     - In `WindowFiles.open()`, `WindowFiles.newDocument()` (and `WindowFiles.close()`), check:
+       `if (engine.snapshot().marked != null || engine.snapshot().waiting) { error(IllegalStateException("Finish composing before opening or closing a document.")); return }`
+  2. **Confirm Discard on Document Re-init**:
+     - Ensure `confirmDiscard()` is invoked before replacing `EditorEngine` whenever changes or active compositions are present, ensuring the OS IME's native context (`HIMC` on Win32, `NSTextInputContext` on Cocoa) is safely settled/released before surface teardown.
+- **Acceptance Tests**:
+  - Attempting to open or close a document during active composition must block and display error dialog without leaking native IME state.
+- **Dependencies**: Task 4.
 
 ---
 
