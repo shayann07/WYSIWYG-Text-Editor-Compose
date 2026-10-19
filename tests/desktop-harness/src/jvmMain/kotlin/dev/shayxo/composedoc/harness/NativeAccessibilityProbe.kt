@@ -21,18 +21,7 @@ fun runNativeAccessibilityProbe() {
     lateinit var window: javax.swing.JFrame
     lateinit var surface: EditorSurface
     var created = false
-    val fixture = "یہ اردو کتاب ہے۔ English 123 — مُحَمَّد۔ ".repeat(25) + "\nآخری سطر"
-    val initial = Document(
-        fixture.mapIndexed { index, char ->
-            TextUnit(
-                index.toLong() + 1,
-                char,
-                if (char == '\n') UnitKind.PARAGRAPH_BREAK else UnitKind.TEXT,
-                if (char == '\n') TextStyleFlags() else TextStyleFlags(bold = index < 4, italic = index in 5..8),
-                if (char == '\n') TextStyleFlags(italic = true) else TextStyleFlags(),
-            )
-        },
-    )
+    val initial = nativeAtFixtureDocument()
     val watchdog = Executors.newSingleThreadScheduledExecutor()
     watchdog.schedule({
         System.err.println("Native AT fixture deadline expired")
@@ -43,70 +32,6 @@ fun runNativeAccessibilityProbe() {
         output.write(evidenceJson(value))
         output.write("\n")
         output.flush()
-    }
-    fun onOwner(block: () -> Map<String, Any?>): Map<String, Any?> {
-        var result: Map<String, Any?>? = null
-        SwingUtilities.invokeAndWait { result = block() }
-        return checkNotNull(result)
-    }
-    fun frame(): Map<String, Any?> {
-        val f = surface.viewModel.verificationEngine.snapshot()
-        val geometry = surface.geometry()
-        val boundary = geometry?.fragments?.firstOrNull { it.page == 1 }?.let {
-            val p = geometry.paragraphs[it.paragraphIndex]
-            p.startOffset + p.layout.getLineStart(it.firstLine)
-        }
-        val index = boundary ?: 0
-        val bounds = surface.accessibleContext.accessibleText.getCharacterBounds(index)
-        val location = surface.locationOnScreen
-        fun device(rect: java.awt.Rectangle): java.awt.Rectangle {
-            val environment = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment()
-            val fallback = environment.defaultScreenDevice.defaultConfiguration
-            val config = if (fallback.bounds.contains(rect.x, rect.y)) {
-                fallback
-            } else {
-                environment.screenDevices.map {
-                    it.defaultConfiguration
-                }.firstOrNull { it.bounds.contains(rect.x, rect.y) }
-                    ?: fallback
-            }
-            val screen = config.bounds
-            val transform = config.defaultTransform
-            fun round(value: Double) =
-                kotlin.math.ceil(value - .5).coerceIn(Int.MIN_VALUE.toDouble(), Int.MAX_VALUE.toDouble()).toInt()
-            return java.awt.Rectangle(
-                screen.x + round((rect.x - screen.x) * transform.scaleX),
-                screen.y + round((rect.y - screen.y) * transform.scaleY),
-                round(rect.width * transform.scaleX),
-                round(rect.height * transform.scaleY),
-            )
-        }
-        // Installed JDK 23 JAB converts the local text rectangle and the component
-        // screen rectangle separately to device space, then translates the former.
-        val deviceBounds = bounds?.let { local ->
-            device(local).apply {
-                val origin = device(java.awt.Rectangle(location.x, location.y, surface.width, surface.height))
-                translate(origin.x, origin.y)
-            }
-        }
-        return mapOf(
-            "text" to f.visible.text,
-            "units" to
-                f.visible.units.map {
-                    listOf(it.id, it.char.code, it.kind.ordinal, it.style.bits, it.paragraphStyle.bits)
-                },
-            "selection" to listOf(f.selection.anchor, f.selection.focus), "undo" to f.undoCount, "redo" to f.redoCount,
-            "revision" to f.documentRevision, "pageCount" to geometry?.pageCount, "geometryIndex" to index,
-            "screenCharacterBounds" to bounds?.let {
-                listOf(it.x + location.x, it.y + location.y, it.width, it.height)
-            },
-            "nativeBridgeDeviceCharacterBounds" to deviceBounds?.let { listOf(it.x, it.y, it.width, it.height) },
-            "deviceScale" to
-                listOf(
-                    surface.graphicsConfiguration.defaultTransform.scaleX,
-                    surface.graphicsConfiguration.defaultTransform.scaleY,
-                ),
-        )
     }
     try {
         SwingUtilities.invokeAndWait {
@@ -127,7 +52,7 @@ fun runNativeAccessibilityProbe() {
                     "pid" to ProcessHandle.current().pid(),
                     "title" to window.title,
                     "assistiveProvider" to System.getProperty("javax.accessibility.assistive_technologies"),
-                    "frame" to frame(),
+                    "frame" to nativeAtFrame(surface),
                 )
             },
         )
@@ -140,14 +65,8 @@ fun runNativeAccessibilityProbe() {
             }
             emit(
                 onOwner {
-                    when (command) {
-                        "snapshot" -> {}
-                        "undo" -> surface.viewModel.verificationEngine.perform(EditAction.Undo)
-                        "redo" -> surface.viewModel.verificationEngine.perform(EditAction.Redo)
-                        "typography" -> surface.changeTypography(TypographyProfile.load(request["profile"] as String))
-                        else -> error("Unsupported AT fixture control")
-                    }
-                    mapOf("status" to "OK", "frame" to frame())
+                    applyNativeAtCommand(surface, request, command)
+                    mapOf("status" to "OK", "frame" to nativeAtFrame(surface))
                 },
             )
         }
@@ -155,4 +74,101 @@ fun runNativeAccessibilityProbe() {
         watchdog.shutdownNow()
         if (created) SwingUtilities.invokeAndWait { window.dispose() }
     }
+}
+
+private fun nativeAtFixtureDocument(): Document {
+    val fixture = "یہ اردو کتاب ہے۔ English 123 — مُحَمَّد۔ ".repeat(25) + "\nآخری سطر"
+    return Document(
+        fixture.mapIndexed { index, char ->
+            TextUnit(
+                index.toLong() + 1,
+                char,
+                if (char == '\n') UnitKind.PARAGRAPH_BREAK else UnitKind.TEXT,
+                if (char == '\n') TextStyleFlags() else TextStyleFlags(bold = index < 4, italic = index in 5..8),
+                if (char == '\n') TextStyleFlags(italic = true) else TextStyleFlags(),
+            )
+        },
+    )
+}
+
+/** Runs [block] on the EDT (the document owner thread) and returns its result. */
+private fun onOwner(block: () -> Map<String, Any?>): Map<String, Any?> {
+    var result: Map<String, Any?>? = null
+    SwingUtilities.invokeAndWait { result = block() }
+    return checkNotNull(result)
+}
+
+/** Must run on the EDT. */
+private fun applyNativeAtCommand(surface: EditorSurface, request: Map<*, *>, command: String) {
+    when (command) {
+        "snapshot" -> {}
+        "undo" -> surface.viewModel.verificationEngine.perform(EditAction.Undo)
+        "redo" -> surface.viewModel.verificationEngine.perform(EditAction.Redo)
+        "typography" -> surface.changeTypography(TypographyProfile.load(request["profile"] as String))
+        else -> error("Unsupported AT fixture control")
+    }
+}
+
+private fun jabRound(value: Double) =
+    kotlin.math.ceil(value - .5).coerceIn(Int.MIN_VALUE.toDouble(), Int.MAX_VALUE.toDouble()).toInt()
+
+/** Converts a screen rectangle to device space the way the installed JAB bridge does. */
+private fun jabDeviceRect(rect: java.awt.Rectangle): java.awt.Rectangle {
+    val environment = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment()
+    val fallback = environment.defaultScreenDevice.defaultConfiguration
+    val config = if (fallback.bounds.contains(rect.x, rect.y)) {
+        fallback
+    } else {
+        environment.screenDevices.map {
+            it.defaultConfiguration
+        }.firstOrNull { it.bounds.contains(rect.x, rect.y) }
+            ?: fallback
+    }
+    val screen = config.bounds
+    val transform = config.defaultTransform
+    return java.awt.Rectangle(
+        screen.x + jabRound((rect.x - screen.x) * transform.scaleX),
+        screen.y + jabRound((rect.y - screen.y) * transform.scaleY),
+        jabRound(rect.width * transform.scaleX),
+        jabRound(rect.height * transform.scaleY),
+    )
+}
+
+/** Must run on the EDT. */
+private fun nativeAtFrame(surface: EditorSurface): Map<String, Any?> {
+    val f = surface.viewModel.verificationEngine.snapshot()
+    val geometry = surface.geometry()
+    val boundary = geometry?.fragments?.firstOrNull { it.page == 1 }?.let {
+        val p = geometry.paragraphs[it.paragraphIndex]
+        p.startOffset + p.layout.getLineStart(it.firstLine)
+    }
+    val index = boundary ?: 0
+    val bounds = surface.accessibleContext.accessibleText.getCharacterBounds(index)
+    val location = surface.locationOnScreen
+    // Installed JDK 23 JAB converts the local text rectangle and the component
+    // screen rectangle separately to device space, then translates the former.
+    val deviceBounds = bounds?.let { local ->
+        jabDeviceRect(local).apply {
+            val origin = jabDeviceRect(java.awt.Rectangle(location.x, location.y, surface.width, surface.height))
+            translate(origin.x, origin.y)
+        }
+    }
+    return mapOf(
+        "text" to f.visible.text,
+        "units" to
+            f.visible.units.map {
+                listOf(it.id, it.char.code, it.kind.ordinal, it.style.bits, it.paragraphStyle.bits)
+            },
+        "selection" to listOf(f.selection.anchor, f.selection.focus), "undo" to f.undoCount, "redo" to f.redoCount,
+        "revision" to f.documentRevision, "pageCount" to geometry?.pageCount, "geometryIndex" to index,
+        "screenCharacterBounds" to bounds?.let {
+            listOf(it.x + location.x, it.y + location.y, it.width, it.height)
+        },
+        "nativeBridgeDeviceCharacterBounds" to deviceBounds?.let { listOf(it.x, it.y, it.width, it.height) },
+        "deviceScale" to
+            listOf(
+                surface.graphicsConfiguration.defaultTransform.scaleX,
+                surface.graphicsConfiguration.defaultTransform.scaleY,
+            ),
+    )
 }

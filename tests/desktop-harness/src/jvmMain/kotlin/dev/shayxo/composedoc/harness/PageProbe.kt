@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.sp
 import dev.shayxo.composedoc.domain.EditAction
 import dev.shayxo.composedoc.domain.EditorEngine
+import dev.shayxo.composedoc.domain.EditorFrame
 import dev.shayxo.composedoc.layout.PageCursor
 import dev.shayxo.composedoc.layout.TypographyProfile
 import dev.shayxo.composedoc.layout.paragraphAttributedDisplay
@@ -31,7 +32,13 @@ import java.io.File
 import java.security.MessageDigest
 
 /** GP0 experiment types are private: no schema/API freeze or production pagination claim. */
-private data class ProbeParagraph(val flow: String, val start: Int, val end: Int, val hasBreak: Boolean, val paragraph: Paragraph)
+private data class ProbeParagraph(
+    val flow: String,
+    val start: Int,
+    val end: Int,
+    val hasBreak: Boolean,
+    val paragraph: Paragraph,
+)
 private data class ProbeFragment(
     val source: ProbeParagraph,
     val line: Int,
@@ -54,17 +61,34 @@ private class ProbePlan(val profile: TypographyProfile, val flows: Map<String, D
     val pageCount get() = cursor.page + 1
     private val resolver = createFontFamilyResolver()
 
-    private fun paragraphs(flow: String, contentWidth: Int): List<ProbeParagraph> = partitionParagraphs(flows.getValue(flow)).map { span ->
-        val annotated = paragraphAttributedDisplay(span.units)
-        val p = Paragraph(
-            annotated.text,
-            TextStyle(color = androidx.compose.ui.graphics.Color.Black, fontFamily = profile.family, fontSize = 20.sp, textDirection = TextDirection.Rtl),
-            Constraints(maxWidth = contentWidth),
-            Density(1f),
-            resolver,
-            spanStyles = annotated.spanStyles,
-        )
-        ProbeParagraph(flow, span.startOffset, span.endOffset, span.hasBreak, p)
+    private fun paragraphs(flow: String, contentWidth: Int): List<ProbeParagraph> =
+        partitionParagraphs(flows.getValue(flow)).map { span ->
+            val annotated = paragraphAttributedDisplay(span.units)
+            val p = Paragraph(
+                annotated.text,
+                rtlStyle(20),
+                Constraints(maxWidth = contentWidth),
+                Density(1f),
+                resolver,
+                spanStyles = annotated.spanStyles,
+            )
+            ProbeParagraph(flow, span.startOffset, span.endOffset, span.hasBreak, p)
+        }
+
+    private fun rtlStyle(fontSize: Int) = TextStyle(
+        color = androidx.compose.ui.graphics.Color.Black,
+        fontFamily = profile.family,
+        fontSize = fontSize.sp,
+        textDirection = TextDirection.Rtl,
+    )
+
+    /** Bottom of [line] in its source paragraph: the next line top, or the paragraph height for the last line. */
+    private fun lineBottom(p: Paragraph, line: Int) = if (line + 1 < p.lineCount) p.getLineTop(line + 1) else p.height
+
+    /** Logical end of [line]; the last line of a paragraph also owns its hard break. */
+    private fun lineEnd(source: ProbeParagraph, line: Int): Int {
+        val p = source.paragraph
+        return if (line == p.lineCount - 1 && source.hasBreak) source.end + 1 else source.start + p.getLineEnd(line)
     }
 
     fun body() {
@@ -73,9 +97,9 @@ private class ProbePlan(val profile: TypographyProfile, val flows: Map<String, D
             val p = source.paragraph
             for (line in 0 until p.lineCount) {
                 val top = p.getLineTop(line)
-                val bottom = if (line + 1 < p.lineCount) p.getLineTop(line + 1) else p.height
+                val bottom = lineBottom(p, line)
                 val slot = cursor.place(bottom - top)
-                val end = if (line == p.lineCount - 1 && source.hasBreak) source.end + 1 else source.start + p.getLineEnd(line)
+                val end = lineEnd(source, line)
                 fragments += ProbeFragment(
                     source, line, source.start + p.getLineStart(line), end,
                     slot.page, margin, slot.y, contentWidth.toFloat(), top, bottom,
@@ -91,27 +115,29 @@ private class ProbePlan(val profile: TypographyProfile, val flows: Map<String, D
 
     fun table(rows: Int) {
         val cellWidth = ((width - 2 * margin) / 2).toInt()
-        for (row in 0 until rows) {
-            val cells = (0..1).map { col ->
-                paragraphs("cell-$row-$col", cellWidth - 12).flatMap { source ->
-                    (0 until source.paragraph.lineCount).map { line -> source to line }
-                }
+        for (row in 0 until rows) tableRow(row, cellWidth)
+    }
+
+    private fun tableRow(row: Int, cellWidth: Int) {
+        val cells = (0..1).map { col ->
+            paragraphs("cell-$row-$col", cellWidth - 12).flatMap { source ->
+                (0 until source.paragraph.lineCount).map { line -> source to line }
             }
-            for (slot in 0 until cells.maxOf { it.size }) {
-                val lineHeight = cells.mapNotNull { it.getOrNull(slot) }.maxOf { (s, line) ->
-                    (if (line + 1 < s.paragraph.lineCount) s.paragraph.getLineTop(line + 1) else s.paragraph.height) - s.paragraph.getLineTop(line)
-                }
-                val placed = cursor.place(lineHeight)
-                for (col in 0..1) {
-                    cells[col].getOrNull(slot)?.let { (source, line) ->
-                        val p = source.paragraph
-                        val end = if (line == p.lineCount - 1 && source.hasBreak) source.end + 1 else source.start + p.getLineEnd(line)
-                        fragments += ProbeFragment(
-                            source, line, source.start + p.getLineStart(line), end,
-                            placed.page, margin + (1 - col) * cellWidth + 6, placed.y, (cellWidth - 12).toFloat(), p.getLineTop(line),
-                            if (line + 1 < p.lineCount) p.getLineTop(line + 1) else p.height,
-                        )
-                    }
+        }
+        for (slot in 0 until cells.maxOf { it.size }) {
+            val lineHeight = cells.mapNotNull { it.getOrNull(slot) }.maxOf { (s, line) ->
+                lineBottom(s.paragraph, line) - s.paragraph.getLineTop(line)
+            }
+            val placed = cursor.place(lineHeight)
+            for (col in 0..1) {
+                cells[col].getOrNull(slot)?.let { (source, line) ->
+                    val p = source.paragraph
+                    val end = lineEnd(source, line)
+                    fragments += ProbeFragment(
+                        source, line, source.start + p.getLineStart(line), end,
+                        placed.page, margin + (1 - col) * cellWidth + 6, placed.y, (cellWidth - 12).toFloat(),
+                        p.getLineTop(line), lineBottom(p, line),
+                    )
                 }
             }
         }
@@ -161,11 +187,17 @@ private class ProbePlan(val profile: TypographyProfile, val flows: Map<String, D
                 }
             }
         }
-        images.filter { it.page == pageIndex }.forEach { canvas.drawImageRect(image, Rect.makeXYWH(margin, it.y + 8, 72f, 64f)) }
-        for ((text, top) in listOf("Urdu page experiment / اردو" to 10f, "Page ${pageIndex + 1} / $pageCount" to (height - 35f))) {
+        images.filter { it.page == pageIndex }.forEach {
+            canvas.drawImageRect(image, Rect.makeXYWH(margin, it.y + 8, 72f, 64f))
+        }
+        val decorations = listOf(
+            "Urdu page experiment / اردو" to 10f,
+            "Page ${pageIndex + 1} / $pageCount" to (height - 35f),
+        )
+        for ((text, top) in decorations) {
             val p = Paragraph(
                 text,
-                TextStyle(color = androidx.compose.ui.graphics.Color.Black, fontFamily = profile.family, fontSize = 12.sp, textDirection = TextDirection.Rtl),
+                rtlStyle(12),
                 Constraints(maxWidth = width - 96),
                 Density(1f),
                 resolver,
@@ -212,7 +244,7 @@ private class ProbePlan(val profile: TypographyProfile, val flows: Map<String, D
             fun decoration(text: String, top: Float, owner: String) {
                 val p = Paragraph(
                     text,
-                    TextStyle(color = androidx.compose.ui.graphics.Color.Black, fontFamily = profile.family, fontSize = 12.sp, textDirection = TextDirection.Rtl),
+                    rtlStyle(12),
                     Constraints(maxWidth = width - 96),
                     Density(1f),
                     resolver,
@@ -236,7 +268,11 @@ private class ProbePlan(val profile: TypographyProfile, val flows: Map<String, D
 }
 
 fun runPageProbe(args: Array<String>) {
-    val output = File(args.firstOrNull { it.startsWith("--page-output=") }?.substringAfter('=') ?: "tests/local-evidence/desktop/page-probe-${System.currentTimeMillis()}")
+    val output =
+        File(
+            args.firstOrNull { it.startsWith("--page-output=") }?.substringAfter('=')
+                ?: "tests/local-evidence/desktop/page-probe-${System.currentTimeMillis()}",
+        )
     check(output.mkdirs()) { "Use a new page evidence directory" }
     val profile = TypographyProfile.load("noto-nastaliq")
     val flows = linkedMapOf<String, Document>()
@@ -246,6 +282,22 @@ fun runPageProbe(args: Array<String>) {
     body.move(Selection(0, 4))
     body.toggleFormat(FormatKey.BOLD)
     flows["body"] = body.snapshot().committed
+    addProbeCellFlows(flows)
+    val after = checkBoundaryComposition(profile, flows, body)
+    flows["body"] = body.snapshot().committed
+    val edited = makeProbePlan(profile, flows)
+    val resized = makeProbePlan(profile, flows, 560)
+    val repeated = makeProbePlan(profile, flows)
+    check(fragmentPlacements(edited) == fragmentPlacements(repeated))
+    check(body.snapshot().committed == after.committed) // Reflow is presentation only.
+
+    writePageProbeEvidence(output, profile, flows, ProbeLayouts(edited, resized))
+}
+
+/** The edited page plan that is exported, plus the same flows reflowed at a narrower width. */
+private class ProbeLayouts(val edited: ProbePlan, val resized: ProbePlan)
+
+private fun addProbeCellFlows(flows: MutableMap<String, Document>) {
     for (row in 0 until 10) {
         for (col in 0..1) {
             val e = EditorEngine()
@@ -255,13 +307,25 @@ fun runPageProbe(args: Array<String>) {
             flows["cell-$row-$col"] = e.snapshot().committed
         }
     }
-    fun makePlan(width: Int = 600) = ProbePlan(profile, flows.toMap(), width).apply {
+}
+
+private fun makeProbePlan(profile: TypographyProfile, flows: Map<String, Document>, width: Int = 600) =
+    ProbePlan(profile, flows.toMap(), width).apply {
         body()
         image()
         table(10)
         validate()
     }
-    val plan = makePlan()
+
+private fun fragmentPlacements(plan: ProbePlan) = plan.fragments.map { listOf(it.start, it.end, it.page, it.y) }
+
+/** Synthetic IME composition across the first page boundary; returns the committed frame. */
+private fun checkBoundaryComposition(
+    profile: TypographyProfile,
+    flows: MutableMap<String, Document>,
+    body: EditorEngine,
+): EditorFrame {
+    val plan = makeProbePlan(profile, flows)
     val boundary = plan.fragments.first { it.source.flow == "body" && it.page == 1 }.start
     val upstream = plan.fragment("body", boundary, true)
     val downstream = plan.fragment("body", boundary)
@@ -269,9 +333,12 @@ fun runPageProbe(args: Array<String>) {
     body.move(Selection(boundary, boundary))
     val before = body.snapshot()
     body.inputMethod("ک候補", 1, 2)
-    check(body.snapshot().committed.text == before.committed.text.take(boundary) + "ک" + before.committed.text.drop(boundary))
+    check(
+        body.snapshot().committed.text ==
+            before.committed.text.take(boundary) + "ک" + before.committed.text.drop(boundary),
+    )
     flows["body"] = body.snapshot().visible
-    makePlan() // Synthetic composition can span a boundary without adding page gaps to text.
+    makeProbePlan(profile, flows) // Synthetic composition can span a boundary without adding page gaps to text.
     body.inputMethod("تاب", 3, null)
     val after = body.snapshot()
     check(after.committed.text == before.committed.text.take(boundary) + "کتاب" + before.committed.text.drop(boundary))
@@ -284,13 +351,16 @@ fun runPageProbe(args: Array<String>) {
     check(body.snapshot().committed == before.committed && body.snapshot().selection == before.selection)
     body.perform(EditAction.Redo)
     check(body.snapshot().committed == after.committed)
-    flows["body"] = body.snapshot().committed
-    val edited = makePlan()
-    val resized = makePlan(560)
-    val repeated = makePlan()
-    check(edited.fragments.map { listOf(it.start, it.end, it.page, it.y) } == repeated.fragments.map { listOf(it.start, it.end, it.page, it.y) })
-    check(body.snapshot().committed == after.committed) // Reflow is presentation only.
+    return after
+}
 
+private fun writePageProbeEvidence(
+    output: File,
+    profile: TypographyProfile,
+    flows: Map<String, Document>,
+    layouts: ProbeLayouts,
+) {
+    val edited = layouts.edited
     val bitmap = Bitmap().apply { allocN32Pixels(72, 64) }
     Canvas(bitmap).use { c ->
         c.clear(0xFFE4EEF5.toInt())
@@ -302,49 +372,99 @@ fun runPageProbe(args: Array<String>) {
     Image.makeFromBitmap(bitmap).use { resource ->
         val imageBytes = checkNotNull(resource.encodeToData(EncodedImageFormat.PNG)).use { it.bytes }
         File(output, "resource.png").writeBytes(imageBytes)
-        for (pageIndex in 0 until edited.pageCount) {
-            Bitmap().use { pageBitmap ->
-                pageBitmap.allocN32Pixels(edited.width, edited.height)
-                Canvas(pageBitmap).use { edited.paint(it, pageIndex, resource) }
-                Image.makeFromBitmap(pageBitmap).use { image ->
-                    checkNotNull(image.encodeToData(EncodedImageFormat.PNG)).use { File(output, "page-${pageIndex + 1}.png").writeBytes(it.bytes) }
-                }
-            }
-            DynamicMemoryWStream().use { stream ->
-                SVGCanvas.make(Rect.makeWH(edited.width.toFloat(), edited.height.toFloat()), stream).use { edited.paint(it, pageIndex, resource) }
-                val bytes = ByteArray(stream.bytesWritten())
-                check(stream.read(bytes, 0, bytes.size))
-                File(output, "page-${pageIndex + 1}.svg").writeBytes(bytes)
-            }
-            DynamicMemoryWStream().use { stream ->
-                SVGCanvas.make(Rect.makeWH(edited.width.toFloat(), edited.height.toFloat()), stream, convertTextToPaths = true, prettyXML = false).use { edited.paint(it, pageIndex, resource) }
-                val bytes = ByteArray(stream.bytesWritten())
-                check(stream.read(bytes, 0, bytes.size))
-                File(output, "page-${pageIndex + 1}.outlines.svg").writeBytes(bytes)
+        for (pageIndex in 0 until edited.pageCount) writeProbePage(output, edited, pageIndex, resource)
+        val result = pageProbeResult(output, profile, flows, layouts, imageBytes)
+        File(output, "results.json").writeText(evidenceJson(result), Charsets.UTF_8)
+        println(
+            "PASS bounded page-plan experiment: ${edited.pageCount} pages, ${edited.fragments.size} fragments; " +
+                "GP0 OPEN; evidence ${output.absolutePath}",
+        )
+    }
+    bitmap.close()
+}
+
+private fun writeProbePage(output: File, edited: ProbePlan, pageIndex: Int, resource: Image) {
+    Bitmap().use { pageBitmap ->
+        pageBitmap.allocN32Pixels(edited.width, edited.height)
+        Canvas(pageBitmap).use { edited.paint(it, pageIndex, resource) }
+        Image.makeFromBitmap(pageBitmap).use { image ->
+            checkNotNull(image.encodeToData(EncodedImageFormat.PNG)).use {
+                File(output, "page-${pageIndex + 1}.png").writeBytes(it.bytes)
             }
         }
-        val svg = File(output, "page-1.svg").readText()
-        val directPdf = runCatching { Class.forName("org.jetbrains.skia.Document") }.isSuccess
-        val result = linkedMapOf<String, Any>(
-            "status" to "EXPERIMENT_EXECUTED_GATE_OPEN", "gate" to "GP0", "timestamp" to java.time.Instant.now().toString(),
-            "fontKey" to profile.key, "pageSize" to listOf(edited.width, edited.height), "pageCount" to edited.pageCount,
-            "layoutDensity" to 1, "fontSizeSp" to 20, "exportUnitMapping" to "One captured plan unit to one PDF point in the rejected tooling candidate",
-            "resizedPageCount" to resized.pageCount, "canonicalFlows" to flows.size,
-            "canonicalUnits" to flows.values.sumOf { it.units.size },
-            "fragments" to edited.fragments.map { f ->
+    }
+    writeProbeSvg(File(output, "page-${pageIndex + 1}.svg"), edited, pageIndex, resource) { bounds, stream ->
+        SVGCanvas.make(bounds, stream)
+    }
+    writeProbeSvg(File(output, "page-${pageIndex + 1}.outlines.svg"), edited, pageIndex, resource) { bounds, stream ->
+        SVGCanvas.make(bounds, stream, convertTextToPaths = true, prettyXML = false)
+    }
+}
+
+private fun writeProbeSvg(
+    file: File,
+    edited: ProbePlan,
+    pageIndex: Int,
+    resource: Image,
+    makeCanvas: (Rect, DynamicMemoryWStream) -> Canvas,
+) {
+    DynamicMemoryWStream().use { stream ->
+        makeCanvas(Rect.makeWH(edited.width.toFloat(), edited.height.toFloat()), stream).use {
+            edited.paint(it, pageIndex, resource)
+        }
+        val bytes = ByteArray(stream.bytesWritten())
+        check(stream.read(bytes, 0, bytes.size))
+        file.writeBytes(bytes)
+    }
+}
+
+private fun pageProbeResult(
+    output: File,
+    profile: TypographyProfile,
+    flows: Map<String, Document>,
+    layouts: ProbeLayouts,
+    imageBytes: ByteArray,
+): Map<String, Any> {
+    val svg = File(output, "page-1.svg").readText()
+    val directPdf = runCatching { Class.forName("org.jetbrains.skia.Document") }.isSuccess
+    val edited = layouts.edited
+    val resized = layouts.resized
+    return linkedMapOf<String, Any>(
+        "status" to "EXPERIMENT_EXECUTED_GATE_OPEN",
+        "gate" to "GP0",
+        "timestamp" to java.time.Instant.now().toString(),
+        "fontKey" to profile.key,
+        "pageSize" to listOf(edited.width, edited.height),
+        "pageCount" to edited.pageCount,
+        "layoutDensity" to 1,
+        "fontSizeSp" to 20,
+        "exportUnitMapping" to "One captured plan unit to one PDF point in the rejected tooling candidate",
+        "resizedPageCount" to resized.pageCount,
+        "canonicalFlows" to flows.size,
+        "canonicalUnits" to flows.values.sumOf { it.units.size },
+        "fragments" to
+            edited.fragments.map { f ->
                 mapOf(
                     "flow" to f.source.flow, "start" to f.start, "end" to f.end, "page" to f.page,
                     "line" to f.line, "x" to f.x, "y" to f.y, "sourceLineTop" to f.top, "sourceLineBottom" to f.bottom,
                 )
             },
-            "mappingCoverage" to "PASS_EXACTLY_ONCE", "wholeParagraphShaping" to true,
-            "syntheticBoundaryInput" to "PASS_TEXT_ATTRIBUTES_SELECTION_ONE_SESSION_HISTORY", "deterministicReflow" to "PASS",
-            "resourceSha256" to MessageDigest.getInstance("SHA-256").digest(imageBytes).joinToString("") { "%02x".format(it) },
-            "canonicalText" to flows.mapValues { it.value.text },
-            "semanticRuns" to edited.semanticRuns(),
-            "images" to edited.images.map { mapOf("page" to it.page, "bbox" to listOf(edited.margin, it.y + 8, edited.margin + 72, it.y + 72)) },
-            "directSkikoPdfBindingAvailable" to directPdf, "svgContainsTextElements" to svg.contains("<text"),
-            "requiredFollowUp" to listOf(
+        "mappingCoverage" to "PASS_EXACTLY_ONCE",
+        "wholeParagraphShaping" to true,
+        "syntheticBoundaryInput" to "PASS_TEXT_ATTRIBUTES_SELECTION_ONE_SESSION_HISTORY",
+        "deterministicReflow" to "PASS",
+        "resourceSha256" to
+            MessageDigest.getInstance("SHA-256").digest(imageBytes).joinToString("") { "%02x".format(it) },
+        "canonicalText" to flows.mapValues { it.value.text },
+        "semanticRuns" to edited.semanticRuns(),
+        "images" to
+            edited.images.map {
+                mapOf("page" to it.page, "bbox" to listOf(edited.margin, it.y + 8, edited.margin + 72, it.y + 72))
+            },
+        "directSkikoPdfBindingAvailable" to directPdf,
+        "svgContainsTextElements" to svg.contains("<text"),
+        "requiredFollowUp" to
+            listOf(
                 "Independent SVG/PDF semantic and geometry inspection",
                 "Live editable fragment surface and native page-boundary IME",
                 "Font/resource arrival",
@@ -352,9 +472,5 @@ fun runPageProbe(args: Array<String>) {
                 "Human Urdu ink/clipping review",
                 "Physical printing and other platforms",
             ),
-        )
-        File(output, "results.json").writeText(evidenceJson(result), Charsets.UTF_8)
-        println("PASS bounded page-plan experiment: ${edited.pageCount} pages, ${edited.fragments.size} fragments; GP0 OPEN; evidence ${output.absolutePath}")
-    }
-    bitmap.close()
+    )
 }
