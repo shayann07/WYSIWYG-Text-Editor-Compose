@@ -79,7 +79,7 @@ Spotless/Ktlint, Detekt and checked-in public API dumps form separate gates.
 | Workspace, recovery, lists, links and images | Implemented with automated and separately recorded desktop evidence; some native dialog checks remain open |
 | Urdu/Nastaliq and multilingual layout | Pinned-font fixtures and visual samples; expert typography qualification remains open |
 | Pages, PDF and printing | Active page/output work; full native output fidelity remains unqualified |
-| Android, iOS and Web native integration | Target platforms; not certified by Desktop or common-code builds |
+| Android, iOS and Web native integration | Shared modules build for Android, JS and iOS (CI, iOS on macOS); shared tests run on each. Native editing on those platforms is not yet qualified |
 | Accessibility and large documents | Explicit qualification gates remain open; prototype size limits still apply |
 
 See [the writing guide](docs/guides/WRITING.md),

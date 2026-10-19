@@ -45,7 +45,7 @@ claim that the extracted code meets the static-analysis standard.
 
 Still open and not claimed: the pages/output milestone (`--pages-output-milestone`)
 was not rerun after migration; Android/JS/iOS compile or host-test success does not
-qualify native editing there (iOS compiles only on macOS); native IME, AT, PDF,
+qualify native editing there (iOS builds and simulator tests run in the macOS `ios-build` CI job); native IME, AT, PDF,
 printing and expert Urdu typography gates are unchanged.
 
 ## Resumption checkpoint (19 October, after usage interruption)

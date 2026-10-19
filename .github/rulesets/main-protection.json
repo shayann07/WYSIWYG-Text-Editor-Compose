@@ -19,7 +19,12 @@
         { "context": "pr-governance" },
         { "context": "docs-and-frozen-hashes" },
         { "context": "architecture-and-quality" },
-        { "context": "build-and-verify" }
+        { "context": "build-and-verify" },
+        { "context": "ios-build" },
+        { "context": "codeql (actions)" },
+        { "context": "codeql (java-kotlin)" },
+        { "context": "codeql (javascript-typescript)" },
+        { "context": "codeql (python)" }
       ]
     } }
   ]
