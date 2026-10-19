@@ -1,6 +1,7 @@
 package dev.shayxo.composedoc.harness
 
 import dev.shayxo.composedoc.domain.EditAction
+import dev.shayxo.composedoc.domain.EditorEngine
 import dev.shayxo.composedoc.model.Selection
 import dev.shayxo.composedoc.model.TextStyleFlags
 import dev.shayxo.composedoc.model.evidenceJson
@@ -19,17 +20,13 @@ private fun string(iterator: AttributedCharacterIterator): String = buildString 
     }
 }
 
-/** Actual attached host + real Compose layout, but injected AWT IME events, not an OS IME. */
-fun runHostChecks(surface: EditorSurface, resultFile: File = File("apps/desktop-workspace/target/host-checks.json")) {
-    runAccessibilityHostChecks(surface)
-    val e = surface.viewModel.verificationEngine
-    check((surface.parent as javax.swing.JLayeredPane).getLayer(surface) == 100)
-    check(surface.parent.findComponentAt(200, 100) === surface) {
-        "Pointer events must reach the input host, not the render layer"
-    }
-    var baselineImeCallbacks = 0
+/** Injects synthetic AWT IME text events into the host and counts them. */
+private class BaselineImeInjector(private val surface: EditorSurface) {
+    var callbacks = 0
+        private set
+
     fun event(text: String, count: Int, caret: Int?) {
-        baselineImeCallbacks++
+        callbacks++
         surface.dispatchEvent(
             InputMethodEvent(
                 surface,
@@ -41,9 +38,51 @@ fun runHostChecks(surface: EditorSurface, resultFile: File = File("apps/desktop-
             ),
         )
     }
+}
+
+/** Actual attached host + real Compose layout, but injected AWT IME events, not an OS IME. */
+fun runHostChecks(surface: EditorSurface, resultFile: File = File("apps/desktop-workspace/target/host-checks.json")) {
+    runAccessibilityHostChecks(surface)
+    val e = surface.viewModel.verificationEngine
+    check((surface.parent as javax.swing.JLayeredPane).getLayer(surface) == 100)
+    check(surface.parent.findComponentAt(200, 100) === surface) {
+        "Pointer events must reach the input host, not the render layer"
+    }
+    val ime = BaselineImeInjector(surface)
+    val queries = checkCompositionAndCommittedText(surface, e, ime)
+    checkSurrogateCaretAndInvalidCaret(surface, e, ime)
+    checkAltGrIsolation(surface, e)
+    checkFormatShortcutsLayoutUndo(surface, e)
+    runRtlHostChecks(surface)
+    val finalSurface = runJapaneseHostChecks(surface)
+    val report = evidenceJson(
+        mapOf(
+            "status" to "PASS", "committedSliceQueries" to queries,
+            "baselineImeCallbacksExecuted" to ime.callbacks,
+            "mainHostImeTextCallbacksObserved" to finalSurface.observedImeTextCallbacks,
+            "mainHostTypedKeyCallbacksObserved" to finalSurface.observedTypedKeyCallbacks,
+            "rawFFFF" to "PASS", "invalidCaretRejected" to "PASS", "altGrShortcutIsolation" to "PASS",
+            "formatShortcutsLayoutUndo" to "PASS", "accessibleEditing" to "AUTOMATED_API_PASS_OS_AT_NOT_RUN",
+            "urduArabicRtl" to "PASS", "japaneseImeHost" to "PASS", "paragraphLayout" to "PASS",
+            "hostReplacementLifecycle100x" to "PASS", "hostReplacementFailurePaths" to "PASS",
+            "scope" to
+                "Attached AWT host and real Compose layout; synthetic IME stream, not OS IME qualification. " +
+                "Observed counters cover the main host/replacement chain, not separate temporary test hosts.",
+        ),
+    )
+    resultFile.apply {
+        parentFile.mkdirs()
+        writeText(report)
+    }
+    println(report)
+    finalSurface.writeDiagnostics()
+}
+
+/** Returns the number of committed-slice queries performed. */
+private fun checkCompositionAndCommittedText(surface: EditorSurface, e: EditorEngine, ime: BaselineImeInjector): Int {
     e.replace("Hello", "Fixture")
     e.move(Selection(1, 2))
-    event("ni", 0, 2)
+    ime.event("ni", 0, 2)
     check(e.snapshot().visible.text == "Hnillo")
     check(e.snapshot().committed.text == "Hello")
     var queries = 0
@@ -60,11 +99,11 @@ fun runHostChecks(surface: EditorSurface, resultFile: File = File("apps/desktop-
     val alias = checkNotNull(surface.getTextLocation(TextHitInfo.beforeOffset(0)))
     check(start.width == 0 && start.height > 0)
     check(start.x == alias.x && start.y == alias.y)
-    event("你hao", 1, 1)
+    ime.event("你hao", 1, 1)
     check(e.snapshot().committed.text == "H你llo")
     check(e.snapshot().selection.focus == 3)
     check(string(surface.getCommittedText(0, surface.committedTextLength, null)) == "H你llo")
-    event("好", 1, null)
+    ime.event("好", 1, null)
     check(e.snapshot().visible.text == "H你好llo")
     check(e.snapshot().marked == null)
     e.perform(EditAction.Undo)
@@ -72,9 +111,13 @@ fun runHostChecks(surface: EditorSurface, resultFile: File = File("apps/desktop-
     check(e.snapshot().selection == Selection(1, 2))
     e.perform(EditAction.Undo)
     check(e.snapshot().visible.text.isEmpty())
+    return queries
+}
+
+private fun checkSurrogateCaretAndInvalidCaret(surface: EditorSurface, e: EditorEngine, ime: BaselineImeInjector) {
     e.replace("abc😀z", "Fixture")
     e.move(Selection(3, 5))
-    event("😀", 0, 1)
+    ime.event("😀", 0, 1)
     check(e.snapshot().selection.focus == 4) // Raw native caret inside a valid surrogate pair.
     surface.dispatchEvent(
         KeyEvent(
@@ -86,18 +129,21 @@ fun runHostChecks(surface: EditorSurface, resultFile: File = File("apps/desktop-
             KeyEvent.CHAR_UNDEFINED,
         ),
     )
-    event("😀", 2, null)
+    ime.event("😀", 2, null)
     check(e.snapshot().selection.focus == 3) { "User Left should snap to the emoji start, not the document start" }
     e.perform(EditAction.Undo)
     check(e.snapshot().visible.text.isEmpty())
-    event("A\uffffZ", 3, null)
+    ime.event("A\uffffZ", 3, null)
     check(e.snapshot().visible.text == "A\uffffZ") { "U+FFFF is text, not the end of an iterator" }
     check(string(surface.getCommittedText(0, 3, null)) == "A\uffffZ")
     e.perform(EditAction.Undo)
     check(e.snapshot().visible.text.isEmpty())
     val beforeInvalid = e.snapshot()
-    event("abc", 0, 99)
+    ime.event("abc", 0, 99)
     check(e.snapshot() == beforeInvalid) { "Invalid native caret must reject atomically, not silently clamp" }
+}
+
+private fun checkAltGrIsolation(surface: EditorSurface, e: EditorEngine) {
     e.replace("abc", "Fixture")
     e.move(Selection(1, 1))
     surface.dispatchEvent(
@@ -113,22 +159,26 @@ fun runHostChecks(surface: EditorSurface, resultFile: File = File("apps/desktop-
     check(e.snapshot().selection == Selection(1, 1)) { "AltGr+A must not run Select All" }
     e.perform(EditAction.Undo)
     check(e.snapshot().visible.text.isEmpty())
+}
+
+private fun dispatchCtrlShortcut(surface: EditorSurface, key: Int) {
+    surface.dispatchEvent(
+        KeyEvent(
+            surface,
+            KeyEvent.KEY_PRESSED,
+            System.currentTimeMillis(),
+            KeyEvent.CTRL_DOWN_MASK,
+            key,
+            KeyEvent.CHAR_UNDEFINED,
+        ),
+    )
+}
+
+private fun checkFormatShortcutsLayoutUndo(surface: EditorSurface, e: EditorEngine) {
     e.replace("Styled", "Fixture")
     e.selectAll()
-    fun shortcut(key: Int) {
-        surface.dispatchEvent(
-            KeyEvent(
-                surface,
-                KeyEvent.KEY_PRESSED,
-                System.currentTimeMillis(),
-                KeyEvent.CTRL_DOWN_MASK,
-                key,
-                KeyEvent.CHAR_UNDEFINED,
-            ),
-        )
-    }
-    shortcut(KeyEvent.VK_B)
-    shortcut(KeyEvent.VK_I)
+    dispatchCtrlShortcut(surface, KeyEvent.VK_B)
+    dispatchCtrlShortcut(surface, KeyEvent.VK_I)
     check(e.snapshot().visible.units.all { it.style == TextStyleFlags(true, true) })
     val styledLayout = checkNotNull(surface.view.measure).invoke(e.snapshot()).layout
     check(
@@ -140,32 +190,10 @@ fun runHostChecks(surface: EditorSurface, resultFile: File = File("apps/desktop-
             androidx.compose.ui.text.font.FontStyle.Italic,
     )
     check(checkNotNull(surface.getTextLocation(null)).height > 0)
-    shortcut(KeyEvent.VK_Z)
+    dispatchCtrlShortcut(surface, KeyEvent.VK_Z)
     check(e.snapshot().visible.units.all { it.style == TextStyleFlags(bold = true) })
-    shortcut(KeyEvent.VK_Z)
+    dispatchCtrlShortcut(surface, KeyEvent.VK_Z)
     check(e.snapshot().visible.units.all { it.style == TextStyleFlags() })
-    shortcut(KeyEvent.VK_Z)
+    dispatchCtrlShortcut(surface, KeyEvent.VK_Z)
     check(e.snapshot().visible.text.isEmpty())
-    runRtlHostChecks(surface)
-    val finalSurface = runJapaneseHostChecks(surface)
-    val report = evidenceJson(
-        mapOf(
-            "status" to "PASS", "committedSliceQueries" to queries,
-            "baselineImeCallbacksExecuted" to baselineImeCallbacks,
-            "mainHostImeTextCallbacksObserved" to finalSurface.observedImeTextCallbacks,
-            "mainHostTypedKeyCallbacksObserved" to finalSurface.observedTypedKeyCallbacks,
-            "rawFFFF" to "PASS", "invalidCaretRejected" to "PASS", "altGrShortcutIsolation" to "PASS",
-            "formatShortcutsLayoutUndo" to "PASS", "accessibleEditing" to "AUTOMATED_API_PASS_OS_AT_NOT_RUN",
-            "urduArabicRtl" to "PASS", "japaneseImeHost" to "PASS", "paragraphLayout" to "PASS",
-            "hostReplacementLifecycle100x" to "PASS", "hostReplacementFailurePaths" to "PASS",
-            "scope" to
-                "Attached AWT host and real Compose layout; synthetic IME stream, not OS IME qualification. Observed counters cover the main host/replacement chain, not separate temporary test hosts.",
-        ),
-    )
-    resultFile.apply {
-        parentFile.mkdirs()
-        writeText(report)
-    }
-    println(report)
-    finalSurface.writeDiagnostics()
 }

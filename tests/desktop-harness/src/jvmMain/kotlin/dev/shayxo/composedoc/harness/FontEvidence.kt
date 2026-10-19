@@ -56,6 +56,7 @@ fun observedFontEvidence(f: LanguageFixture, layout: TextLayoutResult): Map<Stri
         "composeObserved" to actual,
         "perCodepointFontMgrResolution" to fallback,
         "scope" to
-            "Actual Compose default font and unresolved result; FontMgr fallback diagnostic. Exact per-glyph fallback family API unavailable; do not infer linguistic or IME qualification.",
+            "Actual Compose default font and unresolved result; FontMgr fallback diagnostic. " +
+            "Exact per-glyph fallback family API unavailable; do not infer linguistic or IME qualification.",
     )
 }

@@ -1,6 +1,8 @@
 package dev.shayxo.composedoc.harness
 
 import dev.shayxo.composedoc.domain.EditAction
+import dev.shayxo.composedoc.domain.EditorEngine
+import dev.shayxo.composedoc.layout.Geometry
 import dev.shayxo.composedoc.model.FormatKey
 import dev.shayxo.composedoc.model.Selection
 import dev.shayxo.composedoc.model.WrapAffinity
@@ -12,6 +14,7 @@ import java.awt.event.InputMethodEvent
 import java.awt.font.TextHitInfo
 import java.io.File
 import java.text.AttributedString
+import javax.accessibility.AccessibleText
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -27,30 +30,7 @@ fun runPagedHostChecks(surface: EditorSurface, resultFile: File) {
     surface.view.scroll = 0f
     val geometry = checkNotNull(surface.geometry())
     check(geometry.pageCount >= 3)
-    for (paragraph in geometry.paragraphs) {
-        val sourceHeight = geometry.fragments.filter {
-            it.paragraphIndex == paragraph.index
-        }.sumOf { it.height.toDouble() }
-        val extent = paragraph.height - paragraph.layout.getLineTop(0)
-        check(abs(sourceHeight - extent) < .1) { "Pagination changed paragraph line advance/leading" }
-    }
-    check(geometry.fragments.size <= geometry.paragraphs.size + geometry.pageCount - 1) {
-        "Paragraph painting was unnecessarily repeated per line"
-    }
-    val coverage = IntArray(text.length)
-    for (f in geometry.fragments) {
-        val p = geometry.paragraphs[f.paragraphIndex]
-        val start = p.startOffset + p.layout.getLineStart(f.firstLine)
-        val end = if (f.lastLine == p.lineCount - 1 &&
-            p.hasBreak
-        ) {
-            p.endOffset + 1
-        } else {
-            p.startOffset + p.layout.getLineEnd(f.lastLine)
-        }
-        for (i in start until end) coverage[i]++
-    }
-    check(coverage.all { it == 1 }) { "Paged mapping must account for each unit exactly once" }
+    checkPagedFragmentCoverage(geometry, text)
     val firstOnPage = geometry.fragments.first { it.page == 1 }
     val p = geometry.paragraphs[firstOnPage.paragraphIndex]
     val boundary = p.startOffset + p.layout.getLineStart(firstOnPage.firstLine)
@@ -76,8 +56,47 @@ fun runPagedHostChecks(surface: EditorSurface, resultFile: File) {
     check(access.selectedText == text.substring(boundary - 3, boundary + 3)) { "Page gap leaked into selection" }
     check(checkNotNull(surface.geometry()).hasRenderedSelection(e.snapshot().selection))
     e.move(Selection(boundary, boundary))
-    val before = e.snapshot()
-    fun input(value: String, committed: Int, caret: Int?) = surface.dispatchEvent(
+    checkPageBoundaryComposition(surface, e, access, text, boundary)
+    val snapshot = e.snapshot()
+    surface.view.setPagedMode(false)
+    check(e.snapshot() == snapshot && surface.view.geometry == null && surface.view.measure == null)
+    surface.view.setPagedMode(true)
+    check(e.snapshot() == snapshot)
+    surface.view.scroll = (geometry.pageHeight / geometry.scale - 230f).coerceAtLeast(0f)
+    surface.view.ensureCaret = false
+    writePagedHostReport(resultFile, geometry)
+    println("PASS editable paged host experiment; native IME/PDF qualification OPEN")
+}
+
+private fun checkPagedFragmentCoverage(geometry: Geometry, text: String) {
+    for (paragraph in geometry.paragraphs) {
+        val sourceHeight = geometry.fragments.filter {
+            it.paragraphIndex == paragraph.index
+        }.sumOf { it.height.toDouble() }
+        val extent = paragraph.height - paragraph.layout.getLineTop(0)
+        check(abs(sourceHeight - extent) < .1) { "Pagination changed paragraph line advance/leading" }
+    }
+    check(geometry.fragments.size <= geometry.paragraphs.size + geometry.pageCount - 1) {
+        "Paragraph painting was unnecessarily repeated per line"
+    }
+    val coverage = IntArray(text.length)
+    for (f in geometry.fragments) {
+        val p = geometry.paragraphs[f.paragraphIndex]
+        val start = p.startOffset + p.layout.getLineStart(f.firstLine)
+        val end = if (f.lastLine == p.lineCount - 1 &&
+            p.hasBreak
+        ) {
+            p.endOffset + 1
+        } else {
+            p.startOffset + p.layout.getLineEnd(f.lastLine)
+        }
+        for (i in start until end) coverage[i]++
+    }
+    check(coverage.all { it == 1 }) { "Paged mapping must account for each unit exactly once" }
+}
+
+private fun dispatchPagedInput(surface: EditorSurface, value: String, committed: Int, caret: Int?) =
+    surface.dispatchEvent(
         InputMethodEvent(
             surface,
             InputMethodEvent.INPUT_METHOD_TEXT_CHANGED,
@@ -87,6 +106,16 @@ fun runPagedHostChecks(surface: EditorSurface, resultFile: File) {
             null,
         ),
     )
+
+private fun checkPageBoundaryComposition(
+    surface: EditorSurface,
+    e: EditorEngine,
+    access: AccessibleText,
+    text: String,
+    boundary: Int,
+) {
+    val before = e.snapshot()
+    fun input(value: String, committed: Int, caret: Int?) = dispatchPagedInput(surface, value, committed, caret)
     input("ک候補", 1, 2)
     check(e.snapshot().committed.text == text.take(boundary) + "ک" + text.drop(boundary))
     val composing = e.snapshot()
@@ -106,13 +135,9 @@ fun runPagedHostChecks(surface: EditorSurface, resultFile: File) {
     check(e.snapshot().committed == before.committed && e.snapshot().selection == before.selection)
     e.perform(EditAction.Redo)
     check(e.snapshot().committed == settled.committed && e.snapshot().selection == settled.selection)
-    val snapshot = e.snapshot()
-    surface.view.setPagedMode(false)
-    check(e.snapshot() == snapshot && surface.view.geometry == null && surface.view.measure == null)
-    surface.view.setPagedMode(true)
-    check(e.snapshot() == snapshot)
-    surface.view.scroll = (geometry.pageHeight / geometry.scale - 230f).coerceAtLeast(0f)
-    surface.view.ensureCaret = false
+}
+
+private fun writePagedHostReport(resultFile: File, geometry: Geometry) {
     resultFile.parentFile.mkdirs()
     resultFile.writeText(
         evidenceJson(
@@ -132,5 +157,4 @@ fun runPagedHostChecks(surface: EditorSurface, resultFile: File) {
         ),
         Charsets.UTF_8,
     )
-    println("PASS editable paged host experiment; native IME/PDF qualification OPEN")
 }
