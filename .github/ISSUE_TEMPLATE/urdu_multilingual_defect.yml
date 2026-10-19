@@ -1,0 +1,26 @@
+name: Urdu or multilingual editing defect
+description: Report Unicode, shaping, bidi, caret or native-input problems.
+body:
+  - type: markdown
+    attributes:
+      value: "ComposeDoc is multilingual. Describe the problem in your own words. Avoid private text; exact raw Unicode matters."
+  - type: textarea
+    id: specimen
+    attributes:
+      label: Text specimen and exact reproduction
+      description: Include code points or UTF-16 units for ambiguous text, and whether it was typed, pasted or delivered by a composing IME.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Build, OS, fonts, input method, zoom and display scale
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result, actual result and images
+      description: Distinguish text corruption, glyph appearance, caret/selection and export behavior.
+    validations:
+      required: true

@@ -1,0 +1,32 @@
+# ComposeDoc
+
+Multilingual WYSIWYG document editing for Compose Multiplatform.
+Package/group: dev.shayxo.composedoc. GitHub development only; no package release.
+
+## Start here
+- [Agent instructions](AGENTS.md)
+- [Claude entry](CLAUDE.md)
+- [Documentation index](docs/README.md)
+- [Owner mission and decisions](docs/project/PROJECT-JOURNAL.md)
+- [Final V6 contracts D01-D10](docs/plans/v6/editor-v6-standalone.md)
+- [Relocation amendment](docs/amendments/composedoc-relocation-v1.json)
+- [Migration checkpoint](docs/reports/composedoc-migration-progress.md)
+- [Contribution policy](CONTRIBUTING.md)
+
+## Source
+- core/model: immutable common document values and Unicode
+- core/domain: authoritative commands/history and ports
+- core/data: codecs, stores, recovery and resource IO
+- core/layout: typography and page/output geometry
+- core/ui: reusable state, rendering and platform input
+- apps/desktop-workspace: example writing workspace
+- tests/desktop-harness: executable desktop qualification commands
+
+## Verification
+- python tooling/docs/validate_docs.py
+- node tooling/verification/v6.mjs
+- ./gradlew check apiCheck
+- python tooling/verification/test_verification.py
+- python tooling/verification/verify.py --workspace-milestone
+
+Synthetic evidence is not native platform qualification. See current reports.

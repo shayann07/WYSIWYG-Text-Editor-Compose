@@ -1,0 +1,488 @@
+{
+  "asOf": "2026-10-19",
+  "purpose": "v6 planning review; no dependency adopted or upstream execution",
+  "projects": [
+    {
+      "repo": "Darkrock-Studios/ComposeTextEditor",
+      "inspection": "metadata and listed source only; upstream tests NOT RUN",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/Darkrock-Studios/ComposeTextEditor/blob/6f0a433e42169ad547ca7a5497ca30f99feadf55/README.md",
+          "sha256": "51825a99af2ee1653a97ab496aba0be7dbd734a10cc4a587653e0126d17057cf",
+          "bytes": 8879,
+          "local": "research\\v6-reuse-20261019\\sources\\Darkrock-Studios\\ComposeTextEditor\\README.md"
+        },
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/Darkrock-Studios/ComposeTextEditor/blob/6f0a433e42169ad547ca7a5497ca30f99feadf55/LICENSE",
+          "sha256": "5c459fecf561d9cbc75f9da97006920a6d4b96d73e73408109d7853bb848d6fe",
+          "bytes": 1072,
+          "local": "research\\v6-reuse-20261019\\sources\\Darkrock-Studios\\ComposeTextEditor\\LICENSE"
+        },
+        {
+          "path": "docs/design/text-input-sessions.md",
+          "url": "https://github.com/Darkrock-Studios/ComposeTextEditor/blob/6f0a433e42169ad547ca7a5497ca30f99feadf55/docs/design/text-input-sessions.md",
+          "sha256": "7361cb483f10f3d38323b5f9552825f110e50e1476d1cb8f6ec8f46845718d15",
+          "bytes": 33251,
+          "local": "research\\v6-reuse-20261019\\sources\\Darkrock-Studios\\ComposeTextEditor\\docs\\design\\text-input-sessions.md"
+        },
+        {
+          "path": "ComposeTextEditor/src/commonMain/kotlin/com/darkrockstudios/texteditor/input/ImeEditLogic.kt",
+          "url": "https://github.com/Darkrock-Studios/ComposeTextEditor/blob/6f0a433e42169ad547ca7a5497ca30f99feadf55/ComposeTextEditor/src/commonMain/kotlin/com/darkrockstudios/texteditor/input/ImeEditLogic.kt",
+          "sha256": "19afde58f5bd30acf6dbae68c10ac764574c3cc2c196727f5c6e9f84caae297f",
+          "bytes": 17921,
+          "local": "research\\v6-reuse-20261019\\sources\\Darkrock-Studios\\ComposeTextEditor\\ComposeTextEditor\\src\\commonMain\\kotlin\\com\\darkrockstudios\\texteditor\\input\\ImeEditLogic.kt"
+        },
+        {
+          "path": "ComposeTextEditor/src/skikoMain/kotlin/com/darkrockstudios/texteditor/input/SkikoTextEditorInputMethodRequest.kt",
+          "url": "https://github.com/Darkrock-Studios/ComposeTextEditor/blob/6f0a433e42169ad547ca7a5497ca30f99feadf55/ComposeTextEditor/src/skikoMain/kotlin/com/darkrockstudios/texteditor/input/SkikoTextEditorInputMethodRequest.kt",
+          "sha256": "c375d17d9609219e11dc67491fd02d59972c97b54030af7fe3d34b6c3376ca4a",
+          "bytes": 17197,
+          "local": "research\\v6-reuse-20261019\\sources\\Darkrock-Studios\\ComposeTextEditor\\ComposeTextEditor\\src\\skikoMain\\kotlin\\com\\darkrockstudios\\texteditor\\input\\SkikoTextEditorInputMethodRequest.kt"
+        },
+        {
+          "path": "ComposeTextEditor/src/desktopTest/kotlin/selection/PointerAffinityTest.kt",
+          "url": "https://github.com/Darkrock-Studios/ComposeTextEditor/blob/6f0a433e42169ad547ca7a5497ca30f99feadf55/ComposeTextEditor/src/desktopTest/kotlin/selection/PointerAffinityTest.kt",
+          "sha256": "f435bba192c5c354b8ecf4eae3ecec414d74042ff7b73ec0a1b0ab701a885efc",
+          "bytes": 6075,
+          "local": "research\\v6-reuse-20261019\\sources\\Darkrock-Studios\\ComposeTextEditor\\ComposeTextEditor\\src\\desktopTest\\kotlin\\selection\\PointerAffinityTest.kt"
+        }
+      ],
+      "branch": "main",
+      "sha": "6f0a433e42169ad547ca7a5497ca30f99feadf55",
+      "commitDate": "2026-10-18T04:01:27Z",
+      "licenseMetadata": "MIT",
+      "latestReleaseMetadata": {
+        "tag_name": "v3.1.1",
+        "published_at": "2026-10-18T04:29:03Z",
+        "prerelease": false,
+        "html_url": "https://github.com/Darkrock-Studios/ComposeTextEditor/releases/tag/v3.1.1"
+      }
+    },
+    {
+      "repo": "MohamedRejeb/compose-rich-editor",
+      "inspection": "metadata and listed source only; upstream tests NOT RUN",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/MohamedRejeb/compose-rich-editor/blob/b972d50f046615fcc96bc9bbac44e6e15eabdea7/README.md",
+          "sha256": "080bad78404118668535a68d891d5ee5b2ae0794021a4d2748dbde160fa3b83f",
+          "bytes": 11171,
+          "local": "research\\v6-reuse-20261019\\sources\\MohamedRejeb\\compose-rich-editor\\README.md"
+        },
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/MohamedRejeb/compose-rich-editor/blob/b972d50f046615fcc96bc9bbac44e6e15eabdea7/LICENSE",
+          "sha256": "188187b988999fc9f6ecdae6ba6e49e4f53f0488ec5af68acbfff3b2cf0c8722",
+          "bytes": 11343,
+          "local": "research\\v6-reuse-20261019\\sources\\MohamedRejeb\\compose-rich-editor\\LICENSE"
+        },
+        {
+          "path": "richeditor-compose/src/commonMain/kotlin/com/mohamedrejeb/richeditor/ui/BasicRichTextEditor.kt",
+          "url": "https://github.com/MohamedRejeb/compose-rich-editor/blob/b972d50f046615fcc96bc9bbac44e6e15eabdea7/richeditor-compose/src/commonMain/kotlin/com/mohamedrejeb/richeditor/ui/BasicRichTextEditor.kt",
+          "sha256": "1076a92a03dbac575d52f6e9486c79ad29c23a354c8e4fae966c8eb2e9f21d31",
+          "bytes": 29348,
+          "local": "research\\v6-reuse-20261019\\sources\\MohamedRejeb\\compose-rich-editor\\richeditor-compose\\src\\commonMain\\kotlin\\com\\mohamedrejeb\\richeditor\\ui\\BasicRichTextEditor.kt"
+        },
+        {
+          "path": "richeditor-compose/src/commonMain/kotlin/com/mohamedrejeb/richeditor/paragraph/RichParagraph.kt",
+          "url": "https://github.com/MohamedRejeb/compose-rich-editor/blob/b972d50f046615fcc96bc9bbac44e6e15eabdea7/richeditor-compose/src/commonMain/kotlin/com/mohamedrejeb/richeditor/paragraph/RichParagraph.kt",
+          "sha256": "3ee148f911435688f5cacf8511034bb901981bf883fe8cefa8549d8fe6da19a2",
+          "bytes": 15843,
+          "local": "research\\v6-reuse-20261019\\sources\\MohamedRejeb\\compose-rich-editor\\richeditor-compose\\src\\commonMain\\kotlin\\com\\mohamedrejeb\\richeditor\\paragraph\\RichParagraph.kt"
+        }
+      ],
+      "branch": "main",
+      "sha": "b972d50f046615fcc96bc9bbac44e6e15eabdea7",
+      "commitDate": "2026-10-08T16:18:02Z",
+      "licenseMetadata": "Apache-2.0",
+      "latestReleaseMetadata": {
+        "tag_name": "v1.2.0",
+        "published_at": "2026-09-05T15:03:21Z",
+        "prerelease": false,
+        "html_url": "https://github.com/MohamedRejeb/compose-rich-editor/releases/tag/v1.2.0"
+      }
+    },
+    {
+      "repo": "linreal/cascade-editor",
+      "inspection": "metadata and listed source only; upstream tests NOT RUN",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/linreal/cascade-editor/blob/29c4d4835aca9b6391fecd28b58cb5213d7a5d1d/README.md",
+          "sha256": "2b73c255cf67909654c68b63deac1c391f013b99dc4c5caca2ffd57740b2fd9a",
+          "bytes": 35600,
+          "local": "research\\v6-reuse-20261019\\sources\\linreal\\cascade-editor\\README.md"
+        },
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/linreal/cascade-editor/blob/29c4d4835aca9b6391fecd28b58cb5213d7a5d1d/LICENSE",
+          "sha256": "c5ef4e101d22baf7dadf20bcab9947177188dc3f49afc083c01cd91db8170659",
+          "bytes": 1073,
+          "local": "research\\v6-reuse-20261019\\sources\\linreal\\cascade-editor\\LICENSE"
+        },
+        {
+          "path": "docs/BlockSelectionOverview.md",
+          "url": "https://github.com/linreal/cascade-editor/blob/29c4d4835aca9b6391fecd28b58cb5213d7a5d1d/docs/BlockSelectionOverview.md",
+          "sha256": "bd947eaa30287e31fa194e2e2c6f3d5922fa3d0855c0c8094094e1bdf991994e",
+          "bytes": 16656,
+          "local": "research\\v6-reuse-20261019\\sources\\linreal\\cascade-editor\\docs\\BlockSelectionOverview.md"
+        },
+        {
+          "path": "editor/src/commonMain/kotlin/io/github/linreal/cascade/editor/ui/renderers/TextBlockField.kt",
+          "url": "https://github.com/linreal/cascade-editor/blob/29c4d4835aca9b6391fecd28b58cb5213d7a5d1d/editor/src/commonMain/kotlin/io/github/linreal/cascade/editor/ui/renderers/TextBlockField.kt",
+          "sha256": "3e3b188ed22a0cb24b58767c29ad20be47eba3c1e53482e3f5160c76a359bcfb",
+          "bytes": 34320,
+          "local": "research\\v6-reuse-20261019\\sources\\linreal\\cascade-editor\\editor\\src\\commonMain\\kotlin\\io\\github\\linreal\\cascade\\editor\\ui\\renderers\\TextBlockField.kt"
+        }
+      ],
+      "branch": "main",
+      "sha": "29c4d4835aca9b6391fecd28b58cb5213d7a5d1d",
+      "commitDate": "2026-09-17T14:28:31Z",
+      "licenseMetadata": "MIT",
+      "latestReleaseMetadata": {
+        "tag_name": "v1.9.3",
+        "published_at": "2026-09-17T15:12:10Z",
+        "prerelease": false,
+        "html_url": "https://github.com/linreal/cascade-editor/releases/tag/v1.9.3"
+      }
+    },
+    {
+      "repo": "jjrodcast/TextKit",
+      "inspection": "metadata and listed source only; upstream tests NOT RUN",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/jjrodcast/TextKit/blob/8163e757a379add25c8d2f7f1f89b30673cef3aa/README.md",
+          "sha256": "84ee102de45cfbf29b2016e803a6f32c94126a37eb5b8165f349e61ca73b170a",
+          "bytes": 36077,
+          "local": "research\\v6-reuse-20261019\\sources\\jjrodcast\\TextKit\\README.md"
+        },
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/jjrodcast/TextKit/blob/8163e757a379add25c8d2f7f1f89b30673cef3aa/LICENSE",
+          "error": "HTTP Error 404: Not Found"
+        },
+        {
+          "path": "docs/table/README.md",
+          "url": "https://github.com/jjrodcast/TextKit/blob/8163e757a379add25c8d2f7f1f89b30673cef3aa/docs/table/README.md",
+          "sha256": "e08a1fe435eda8108bf7cb911c704ca10b71df326be735002664cdc784bead84",
+          "bytes": 13977,
+          "local": "research\\v6-reuse-20261019\\sources\\jjrodcast\\TextKit\\docs\\table\\README.md"
+        },
+        {
+          "path": "LICENSE.md",
+          "url": "https://raw.githubusercontent.com/jjrodcast/TextKit/8163e757a379add25c8d2f7f1f89b30673cef3aa/LICENSE.md",
+          "local": "research/v6-reuse-20261019/sources/jjrodcast/TextKit/LICENSE.md",
+          "sha256": "ded8e4c4ec22ca3a7d410324d4aab8ace1f06c64d4ea536b2ab3568ac3de7e33",
+          "bytes": 1076
+        }
+      ],
+      "branch": "main",
+      "sha": "8163e757a379add25c8d2f7f1f89b30673cef3aa",
+      "commitDate": "2026-10-01T23:13:40Z",
+      "licenseMetadata": "MIT",
+      "latestReleaseMetadata": {
+        "tag_name": "1.0.0-rc02",
+        "published_at": "2026-10-01T23:15:08Z",
+        "prerelease": false,
+        "html_url": "https://github.com/jjrodcast/TextKit/releases/tag/1.0.0-rc02"
+      }
+    },
+    {
+      "repo": "ProseMirror/prosemirror-view",
+      "inspection": "metadata and listed source only; upstream tests NOT RUN",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/ProseMirror/prosemirror-view/blob/ca4c78e9b56f1b164c0b3758b59d8748f11b7534/LICENSE",
+          "sha256": "ef0b452ced6304db2ce78ca66de1fc7b97bab05bc1750c95df359ed3fe1d65c8",
+          "bytes": 1105,
+          "local": "research\\v6-reuse-20261019\\sources\\ProseMirror\\prosemirror-view\\LICENSE"
+        },
+        {
+          "path": "src/input.ts",
+          "url": "https://github.com/ProseMirror/prosemirror-view/blob/ca4c78e9b56f1b164c0b3758b59d8748f11b7534/src/input.ts",
+          "sha256": "33751f88e1361059693a7aabba9f0e062c732f2881fa8f512d9face48995d25c",
+          "bytes": 33009,
+          "local": "research\\v6-reuse-20261019\\sources\\ProseMirror\\prosemirror-view\\src\\input.ts"
+        },
+        {
+          "path": "src/domcoords.ts",
+          "url": "https://github.com/ProseMirror/prosemirror-view/blob/ca4c78e9b56f1b164c0b3758b59d8748f11b7534/src/domcoords.ts",
+          "sha256": "67b2a1dc40f8b8428ec75ec832aa9afbf9447363a588917f8200db720637cb5e",
+          "bytes": 23712,
+          "local": "research\\v6-reuse-20261019\\sources\\ProseMirror\\prosemirror-view\\src\\domcoords.ts"
+        }
+      ],
+      "branch": "master",
+      "sha": "ca4c78e9b56f1b164c0b3758b59d8748f11b7534",
+      "commitDate": "2026-04-01T16:43:21Z",
+      "licenseMetadata": "MIT",
+      "releaseError": "HTTP Error 404: Not Found"
+    },
+    {
+      "repo": "ProseMirror/prosemirror-transform",
+      "inspection": "metadata and listed source only; upstream tests NOT RUN",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/ProseMirror/prosemirror-transform/blob/662b7a937bafde19b7e2a83241dbc8888e257c89/LICENSE",
+          "sha256": "ef0b452ced6304db2ce78ca66de1fc7b97bab05bc1750c95df359ed3fe1d65c8",
+          "bytes": 1105,
+          "local": "research\\v6-reuse-20261019\\sources\\ProseMirror\\prosemirror-transform\\LICENSE"
+        },
+        {
+          "path": "src/map.ts",
+          "url": "https://github.com/ProseMirror/prosemirror-transform/blob/662b7a937bafde19b7e2a83241dbc8888e257c89/src/map.ts",
+          "sha256": "2e59df00bf5e2444774a15c3e50ce55dc318161cd59b4cad287f4179d8f12fda",
+          "bytes": 10962,
+          "local": "research\\v6-reuse-20261019\\sources\\ProseMirror\\prosemirror-transform\\src\\map.ts"
+        }
+      ],
+      "branch": "master",
+      "sha": "662b7a937bafde19b7e2a83241dbc8888e257c89",
+      "commitDate": "2026-04-01T16:49:29Z",
+      "licenseMetadata": "MIT",
+      "releaseError": "HTTP Error 404: Not Found"
+    },
+    {
+      "repo": "ProseMirror/prosemirror-tables",
+      "inspection": "metadata and listed source only; upstream tests NOT RUN",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/ProseMirror/prosemirror-tables/blob/eb522f25959a1e4515a4ff5ce7e3a939f19c55e9/LICENSE",
+          "sha256": "d1d2046ebbe6362f9ad8fd4d62e9074f2553f289c0e1de895a650f10ba5f4239",
+          "bytes": 1099,
+          "local": "research\\v6-reuse-20261019\\sources\\ProseMirror\\prosemirror-tables\\LICENSE"
+        },
+        {
+          "path": "src/tablemap.ts",
+          "url": "https://github.com/ProseMirror/prosemirror-tables/blob/eb522f25959a1e4515a4ff5ce7e3a939f19c55e9/src/tablemap.ts",
+          "sha256": "31504a7d98b0bd07d907693b3586ee63b4305cc4f6bf3cd9eaf7df6b529ae9d0",
+          "bytes": 11171,
+          "local": "research\\v6-reuse-20261019\\sources\\ProseMirror\\prosemirror-tables\\src\\tablemap.ts"
+        }
+      ],
+      "branch": "master",
+      "sha": "eb522f25959a1e4515a4ff5ce7e3a939f19c55e9",
+      "commitDate": "2025-12-24T03:47:32Z",
+      "licenseMetadata": "MIT",
+      "latestReleaseMetadata": {
+        "tag_name": "v1.8.5",
+        "published_at": "2025-12-24T03:47:45Z",
+        "prerelease": false,
+        "html_url": "https://github.com/ProseMirror/prosemirror-tables/releases/tag/v1.8.5"
+      }
+    },
+    {
+      "repo": "facebook/lexical",
+      "inspection": "metadata and listed source only; upstream tests NOT RUN",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/facebook/lexical/blob/3ac4eb86e55b85672b9a49fe74b13ee07f379031/LICENSE",
+          "sha256": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
+          "bytes": 1088,
+          "local": "research\\v6-reuse-20261019\\sources\\facebook\\lexical\\LICENSE"
+        },
+        {
+          "path": "packages/lexical/src/LexicalSelection.ts",
+          "url": "https://github.com/facebook/lexical/blob/3ac4eb86e55b85672b9a49fe74b13ee07f379031/packages/lexical/src/LexicalSelection.ts",
+          "sha256": "3e828cb8ef9f12eb071dab06065e37ec7a1daaedb521b520ce9d5cf563c8e805",
+          "bytes": 164159,
+          "local": "research\\v6-reuse-20261019\\sources\\facebook\\lexical\\packages\\lexical\\src\\LexicalSelection.ts"
+        }
+      ],
+      "branch": "main",
+      "sha": "3ac4eb86e55b85672b9a49fe74b13ee07f379031",
+      "commitDate": "2026-10-19T07:04:56Z",
+      "licenseMetadata": "MIT",
+      "latestReleaseMetadata": {
+        "tag_name": "v0.52.0",
+        "published_at": "2026-09-28T15:31:40Z",
+        "prerelease": false,
+        "html_url": "https://github.com/facebook/lexical/releases/tag/v0.52.0"
+      }
+    },
+    {
+      "repo": "yjs/yjs",
+      "inspection": "metadata and listed source only; upstream tests NOT RUN",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/yjs/yjs/blob/47a49409e480752068c1aeb91f6fc1a6ea071a95/LICENSE",
+          "sha256": "341baa53605ed85d6f95782322854cca56c655ebc7fd4712649b8e7afc6020ff",
+          "bytes": 1211,
+          "local": "research\\v6-reuse-20261019\\sources\\yjs\\yjs\\LICENSE"
+        },
+        {
+          "path": "README.md",
+          "url": "https://github.com/yjs/yjs/blob/47a49409e480752068c1aeb91f6fc1a6ea071a95/README.md",
+          "sha256": "95570a4871e948fc9ca78c2b8afd681fb6e420747da976ecd43214463bfa1547",
+          "bytes": 64091,
+          "local": "research\\v6-reuse-20261019\\sources\\yjs\\yjs\\README.md"
+        },
+        {
+          "path": "src/utils/UndoManager.js",
+          "url": "https://github.com/yjs/yjs/blob/47a49409e480752068c1aeb91f6fc1a6ea071a95/src/utils/UndoManager.js",
+          "sha256": "03aa18a4902b4c07c5b8563137e9fc5ca1ab47952798694735225b3f11ef9dea",
+          "bytes": 18694,
+          "local": "research\\v6-reuse-20261019\\sources\\yjs\\yjs\\src\\utils\\UndoManager.js"
+        }
+      ],
+      "branch": "main",
+      "sha": "47a49409e480752068c1aeb91f6fc1a6ea071a95",
+      "commitDate": "2026-10-18T11:05:13Z",
+      "licenseMetadata": "NOASSERTION",
+      "latestReleaseMetadata": {
+        "tag_name": "v13.6.33",
+        "published_at": "2026-09-23T16:37:33Z",
+        "prerelease": false,
+        "html_url": "https://github.com/yjs/yjs/releases/tag/v13.6.33"
+      }
+    },
+    {
+      "repo": "y-crdt/y-crdt",
+      "inspection": "metadata and listed source only; upstream tests NOT RUN",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/y-crdt/y-crdt/blob/ac339600c712642e556895426113c3f9c117de39/LICENSE",
+          "sha256": "b6d81564e9c46473907bd3c09d4d5ab0f21cfbe6ac35d46daf1bdb0423182a5b",
+          "bytes": 1153,
+          "local": "research\\v6-reuse-20261019\\sources\\y-crdt\\y-crdt\\LICENSE"
+        },
+        {
+          "path": "README.md",
+          "url": "https://github.com/y-crdt/y-crdt/blob/ac339600c712642e556895426113c3f9c117de39/README.md",
+          "sha256": "4fee94d8f0134468aff1241dc37b307e2ef8e780779552df37e8f9032a130e77",
+          "bytes": 10050,
+          "local": "research\\v6-reuse-20261019\\sources\\y-crdt\\y-crdt\\README.md"
+        }
+      ],
+      "branch": "main",
+      "sha": "ac339600c712642e556895426113c3f9c117de39",
+      "commitDate": "2026-09-30T07:36:52Z",
+      "licenseMetadata": "NOASSERTION",
+      "releaseError": "HTTP Error 403: rate limit exceeded"
+    },
+    {
+      "repo": "automerge/automerge",
+      "inspection": "metadata and listed source only; upstream tests NOT RUN",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/automerge/automerge/blob/f4b14f0f05c6d39cbf648788a1bed108947792e4/LICENSE",
+          "local": "research/v6-reuse-20261019/sources/automerge/automerge/LICENSE",
+          "sha256": "7a06f577e39ec132eb8657abc3471f81f668ff3810a160db79b9b18a9568242b",
+          "bytes": 1075
+        },
+        {
+          "path": "README.md",
+          "url": "https://github.com/automerge/automerge/blob/f4b14f0f05c6d39cbf648788a1bed108947792e4/README.md",
+          "local": "research/v6-reuse-20261019/sources/automerge/automerge/README.md",
+          "sha256": "09f34f7a71708a1a0db593301525c34499a9838198de24add914c0e7773dd9eb",
+          "bytes": 8670
+        }
+      ],
+      "error": "HTTP Error 403: rate limit exceeded",
+      "sha": "f4b14f0f05c6d39cbf648788a1bed108947792e4",
+      "pinEvidence": "successful GitHub metadata read earlier in this session; later API rate-limited"
+    },
+    {
+      "repo": "ConaMobileDev/PdfKmp",
+      "inspection": "metadata and listed source only; upstream tests NOT RUN",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/ConaMobileDev/PdfKmp/blob/9985a335c4db0c0ee93d1f1d73468ced4e41de08/LICENSE",
+          "local": "research/v6-reuse-20261019/sources/ConaMobileDev/PdfKmp/LICENSE",
+          "sha256": "dffb895fbec0f42016c223bd8563830bf31a64ef994186c449d5a3329aa0efea",
+          "bytes": 11288
+        },
+        {
+          "path": "README.md",
+          "url": "https://github.com/ConaMobileDev/PdfKmp/blob/9985a335c4db0c0ee93d1f1d73468ced4e41de08/README.md",
+          "error": "HTTP Error 404: Not Found"
+        },
+        {
+          "path": "pdfkmp/src/jvmMain/kotlin/com/conamobile/pdfkmp/render/JvmPdfCanvas.kt",
+          "url": "https://github.com/ConaMobileDev/PdfKmp/blob/9985a335c4db0c0ee93d1f1d73468ced4e41de08/pdfkmp/src/jvmMain/kotlin/com/conamobile/pdfkmp/render/JvmPdfCanvas.kt",
+          "local": "research/v6-reuse-20261019/sources/ConaMobileDev/PdfKmp/pdfkmp/src/jvmMain/kotlin/com/conamobile/pdfkmp/render/JvmPdfCanvas.kt",
+          "sha256": "6d5b219c01a6b375acf1336a69bfd37a2f18da1042739ed9962696df56d08de2",
+          "bytes": 26035
+        }
+      ],
+      "error": "HTTP Error 403: rate limit exceeded",
+      "sha": "9985a335c4db0c0ee93d1f1d73468ced4e41de08",
+      "pinEvidence": "successful GitHub metadata read earlier in this session; later API rate-limited"
+    },
+    {
+      "repo": "big-jared/kmpdf",
+      "inspection": "metadata and listed source only; upstream tests NOT RUN",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/big-jared/kmpdf/blob/c78cc86b264b8cb5f9ed4e2630f43c68bf72b1b0/LICENSE",
+          "local": "research/v6-reuse-20261019/sources/big-jared/kmpdf/LICENSE",
+          "sha256": "ae9010dfc5a61d760d90f0cfd9669e70330da1270b1670c0f6c669d530a65cd6",
+          "bytes": 1068
+        },
+        {
+          "path": "kmpdf/src/jvmMain/kotlin/io/github/bigboyapps/kmpdf/KmPdfGenerator.jvm.kt",
+          "url": "https://github.com/big-jared/kmpdf/blob/c78cc86b264b8cb5f9ed4e2630f43c68bf72b1b0/kmpdf/src/jvmMain/kotlin/io/github/bigboyapps/kmpdf/KmPdfGenerator.jvm.kt",
+          "local": "research/v6-reuse-20261019/sources/big-jared/kmpdf/kmpdf/src/jvmMain/kotlin/io/github/bigboyapps/kmpdf/KmPdfGenerator.jvm.kt",
+          "sha256": "46584fd88a7d96861492a4f77dabbb51347c18943c60e88d131b44e877f2b9ab",
+          "bytes": 6719
+        }
+      ],
+      "error": "HTTP Error 403: rate limit exceeded",
+      "sha": "c78cc86b264b8cb5f9ed4e2630f43c68bf72b1b0",
+      "pinEvidence": "successful GitHub metadata read earlier in this session; later API rate-limited"
+    },
+    {
+      "repo": "yuroyami/KitePDF",
+      "inspection": "metadata and listed source only; upstream tests NOT RUN",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/yuroyami/KitePDF/blob/d177c784e50e3f58e0220b6476c55c566ba7f678/LICENSE",
+          "local": "research/v6-reuse-20261019/sources/yuroyami/KitePDF/LICENSE",
+          "sha256": "4cb4a0ad2d8f8b06ae451eabb3255878db929859de44f777fac3e9a03ea56c31",
+          "bytes": 11338
+        },
+        {
+          "path": "README.md",
+          "url": "https://github.com/yuroyami/KitePDF/blob/d177c784e50e3f58e0220b6476c55c566ba7f678/README.md",
+          "local": "research/v6-reuse-20261019/sources/yuroyami/KitePDF/README.md",
+          "sha256": "4707d4b2549c39ec4aae7ceacef01274d2c8ca52de2728772611b8fe3bf883fd",
+          "bytes": 22761
+        }
+      ],
+      "error": "HTTP Error 403: rate limit exceeded",
+      "sha": "d177c784e50e3f58e0220b6476c55c566ba7f678",
+      "pinEvidence": "successful GitHub metadata read earlier in this session; later API rate-limited"
+    },
+    {
+      "repo": "unicode-org/icu",
+      "inspection": "metadata and listed source only; upstream tests NOT RUN",
+      "files": [],
+      "error": "HTTP Error 403: rate limit exceeded"
+    },
+    {
+      "repo": "harfbuzz/harfbuzz",
+      "inspection": "metadata and listed source only; upstream tests NOT RUN",
+      "files": [],
+      "error": "HTTP Error 403: rate limit exceeded"
+    },
+    {
+      "repo": "JetBrains/compose-multiplatform",
+      "inspection": "metadata and listed source only; upstream tests NOT RUN",
+      "files": [],
+      "error": "HTTP Error 403: rate limit exceeded"
+    }
+  ]
+}

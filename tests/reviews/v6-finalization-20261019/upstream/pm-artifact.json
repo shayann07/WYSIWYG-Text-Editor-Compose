@@ -1,0 +1,20 @@
+{
+  "version": "1.42.6",
+  "url": "https://registry.npmjs.org/prosemirror-view/-/prosemirror-view-1.42.6.tgz",
+  "integrity": "sha512-3g25f6hKV2bBxo3puH3EcYWmmVNSH0iWmNsMVT7sugDSpA025jgpOLarcDWr39SdzPjYMaiYtRdNtXialPSjEQ==",
+  "files": [
+    {
+      "path": "reviews/v6-finalization-20261019/upstream/pm-1.42.6-package.json",
+      "sha256": "79841007db65e2d7abf34585ae8accff299081c2f2731b81c138afef050dd29a"
+    },
+    {
+      "path": "reviews/v6-finalization-20261019/upstream/pm-1.42.6-LICENSE",
+      "sha256": "ef0b452ced6304db2ce78ca66de1fc7b97bab05bc1750c95df359ed3fe1d65c8"
+    },
+    {
+      "path": "reviews/v6-finalization-20261019/upstream/pm-1.42.6-input.ts",
+      "sha256": "58b78c5da37cb9cc255e494c72566c1013eae4972a4b093cca866a6b7de255e4"
+    }
+  ],
+  "execution": "NOT RUN"
+}

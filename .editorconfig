@@ -1,0 +1,20 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+
+[*.{kt,kts}]
+ktlint_code_style = intellij_idea
+ktlint_function_naming_ignore_when_annotated_with = Composable
+# Protocol fixtures and generated Unicode table literals must remain exact.
+max_line_length = off
+# Related value types/functions intentionally share files named for their domain.
+ktlint_standard_filename = disabled
+# Explicit package boundaries are enforced by architectureCheck, including FQNs.
+ktlint_standard_no-wildcard-imports = disabled
+# Preserve explicit braces; ktlint 1.5 fails to converge on inherited compact branches.
+ktlint_standard_if-else-wrapping = disabled

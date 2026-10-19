@@ -1,0 +1,779 @@
+![TextKit](imgs/text_kit_banner.png)
+
+# TextKit
+
+TextKit is a rope-backed, piece-table rich-text editor engine for **Compose Multiplatform**
+(Android, iOS, Desktop/JVM and Web — Wasm & JS). It ships a `TextKitState` holder, ready-made
+editor composables, a formatting bar, link popups, **paragraph alignment** (left / center / right /
+justify), **text direction** (LTR / RTL for scripts such as Arabic or Hebrew), a generalized **trigger** system (mentions, hashtags, slash commands), **embedded blocks**
+(images and other non-renderable content as clickable placeholders, plus fully **editable tables**),
+full **undo/redo** with coalescing, lossless (de)serialization to a **ProseMirror-style JSON
+document**, and export to (and import from) **HTML** and **GitHub Flavored Markdown**.
+
+Unlike editors that round-trip through HTML or Markdown, TextKit persists a structured JSON document
+(`type: "doc"` → block nodes → inline runs with marks), so styling, lists, links and inline tokens
+(mentions, hashtags) survive an exact load → edit → export cycle. When you need to share the content,
+`toHtml()` and `toMarkdown()` emit those formats on demand, and `importHtml()` / `importMarkdown()`
+load them back (see [Reading the content](#reading-the-content)).
+
+
+## Table of contents
+
+- [Installation](#installation)
+- [Quick start](#quick-start)
+- [Editor state](#editor-state)
+- [Reading the content](#reading-the-content)
+- [Inline styling](#inline-styling)
+- [Text style (color & size)](#text-style-color--size)
+- [Lists](#lists)
+- [Text alignment](#text-alignment)
+- [Text direction (LTR / RTL)](#text-direction-ltr--rtl)
+- [Links](#links)
+- [Triggers: mentions, hashtags & slash commands](#triggers-mentions-hashtags--slash-commands)
+- [Embedded blocks](#embedded-blocks)
+- [Undo / redo](#undo--redo)
+- [Formatting bar](#formatting-bar)
+- [Theming (light & dark)](#theming-light--dark)
+- [Configuration](#configuration)
+- [Read-only / viewer mode](#read-only--viewer-mode)
+- [Document format](#document-format)
+
+## Installation
+[![Publish to Maven Central](https://github.com/jjrodcast/TextKit/actions/workflows/publish.yml/badge.svg)](https://github.com/jjrodcast/TextKit/actions/workflows/publish.yml)
+![GitHub Release](https://img.shields.io/github/v/release/jjrodcast/textkit)
+
+Text Kit is available on `mavenCentral()`.
+
+Check the latest version
+
+```kotlin
+implementation("io.github.jjrodcast:textkit:$version_code")
+```
+
+## Quick start
+
+Create a state with `rememberTextKitState` and hand it to `TextKitEditor`:
+
+```kotlin
+import androidx.compose.runtime.Composable
+import com.jjrodcast.textkit.ui.TextKitEditor
+import com.jjrodcast.textkit.ui.state.rememberTextKitState
+
+@Composable
+fun MyEditor() {
+    // `json` is a ProseMirror-style document. "{}" starts an empty editor.
+    val state = rememberTextKitState(json = "{}")
+
+    TextKitEditor(state = state)
+}
+```
+
+`TextKitEditor` is built on `BasicTextField`; there is also an outlined variant,
+`TextKitEditorOutlined`, with the same parameters (`modifier`, `onUrlClicked`, `state`).
+
+## Editor state
+
+`TextKitState` is the single source of truth. Keep one instance per editor and observe its snapshot
+state to drive your UI:
+
+```kotlin
+val state = rememberTextKitState(
+    json = document,          // initial document (ProseMirror-style JSON)
+    // configuration = ...    // colors, default font size, triggers, viewerMode (see Configuration)
+)
+```
+
+Read-only (viewer) mode, colors, the default font size and triggers are all set on the
+`configuration` — see [Configuration](#configuration) and [Read-only / viewer mode](#read-only--viewer-mode).
+
+Observable properties you can read in composition:
+
+| Property | Type | Description |
+|---|---|---|
+| `textFieldValue` | `TextFieldValue` | Current rendered text + selection. |
+| `lastMarks` | `Set<Mark>` | Marks active at the caret/selection (drives toggle highlights). |
+| `lastListItem` | `TextEditorDecoratorItem` | List kind at the caret (numbered / bulleted / task / none). |
+| `activeLink` | `TextKitLinkInfo?` | Link under the caret, or `null`. Observe it to show a link popup. |
+| `activeTrigger` | `TextKitTrigger?` | The trigger currently being composed (`@`/`#`/`/`…), or `null`. Drives which candidate set the popup shows. |
+| `tokenQuery` | `String?` | Text typed after the active trigger char, or `null` when no trigger is being composed. |
+| `activeEmbed` | `EmbedInfo?` | The embedded block under the caret/tap, or `null`. Observe it to show an embed popup. |
+| `activeColorAnchor` | `Rect?` | Window bounds the color picker is anchored to while open, or `null`. Observe it to show `TextKitColorsPopup`. |
+| `currentTextColor` | `Color?` | The selection's current text color, or `null` when it has none. Seeds the color picker's marked swatch. |
+| `currentTextAlign` | `TextAlign?` | Alignment of the paragraph(s) at the caret/selection, or `null` for a "mixed" selection (paragraphs with differing alignment). Marks the active alignment button. |
+| `currentTextDirection` | `TextDirection?` | Writing direction (`Ltr` / `Rtl`) of the paragraph(s) at the caret/selection, or `null` for a "mixed" selection. Marks the active direction button. |
+| `activeAlignAnchor` | `Rect?` | Window bounds the alignment picker is anchored to while open, or `null`. Observe it to show `TextKitAlignPopup`. |
+| `canUndo` / `canRedo` | `Boolean` | Whether an undo / redo step is available (drives toolbar button enablement). |
+| `viewerTextValue` | `Pair<AnnotatedString, Map<String, InlineTextContent>>` | Rendered content for read-only display. |
+
+## Reading the content
+
+```kotlin
+// Plain text of the current document:
+val plain: String = state.textFieldValue.text
+
+// The full structured document (ProseMirror-style JSON) — use this to persist:
+val json: String = state.toJson()
+
+// The same document as HTML — use this to export/share:
+val html: String = state.toHtml()
+
+// …or as GitHub Flavored Markdown:
+val markdown: String = state.toMarkdown()
+```
+
+`toJson()` is lossless: marks, lists, links and inline tokens (mentions, hashtags) are all preserved.
+
+`toHtml()` is **export only** — the editor is still loaded from, and persisted as, the JSON produced
+by `toJson()`. It emits semantic markup (`<strong>`, `<em>`, `<blockquote>`, …) rather than inline
+styles; the one exception is a text style (colour + font size), which has no semantic equivalent and
+becomes a `<span style="…">`. Paragraph alignment is emitted as `style="text-align:…"` on the block
+(only when it is not the default `left`), and a right-to-left block (`<p>`, `<hN>`, `<ul>`, `<ol>`,
+`<blockquote>`) carries the native `dir="rtl"` attribute (LTR, the default, is never emitted). Task items keep a real, enabled `<input type="checkbox">` so
+the exported markup stays interactive, and inline tokens carry their identity on `data-type` / `data-id`:
+
+```html
+<p>Hi <span data-type="mention" data-id="42">@ada</span></p>
+<ul data-type="taskList">
+  <li data-type="taskItem" data-checked="true"><input type="checkbox" checked><p>done</p></li>
+</ul>
+```
+
+`toMarkdown()` is **export only** too, and targets **GitHub Flavored Markdown** — task lists, tables
+and `~~strikethrough~~` are all native. It is deliberately **lossy**: marks GFM has no syntax for
+(underline, highlight, a colour/size text style, paragraph alignment, text direction) fall back to
+inline HTML (`<u>`, `<mark>`, `<span style="…">`, `<p style="text-align:…">`, `<p dir="rtl">`); an
+RTL list or blockquote is wrapped in a `<div dir="rtl">` block, since their Markdown syntax takes no
+attributes (an LTR list nested in an RTL one gets a `<div dir="ltr">`, so it does not render RTL). Inline tokens become plain `@label` /
+`#label` text (their `data-id` identity is dropped), and a blank paragraph has no Markdown form. Keep
+`toJson()` for a lossless round-trip;
+reach for `toMarkdown()` when sharing to a Markdown surface (READMEs, chat, notes).
+
+```markdown
+Hi @ada
+
+- [x] done
+```
+
+### Importing HTML or Markdown
+
+`importHtml(html)` and `importMarkdown(markdown)` replace the document with the converted content (the
+same conversion paste uses). Both read back what the exporters emit, including `dir="rtl"` and, for
+Markdown, the `<p dir="rtl">` / `<div dir="rtl">` fallbacks. Like the exports, the conversion is lossy
+for anything the format cannot carry — keep `toJson()` for persistence.
+
+```kotlin
+state.importHtml("<p dir=\"rtl\">مرحبا</p>")
+state.importMarkdown("<div dir=\"rtl\">\n\n- واحد\n- اثنان\n\n</div>")
+```
+
+## Inline styling
+
+Each toggle takes the **desired** on/off value (`true` = apply, `false` = remove) and returns whether
+the document changed. With a collapsed caret the change is remembered as a *stored mark*, so the next
+typed characters inherit it; with a selection it is applied to the selected range.
+
+```kotlin
+state.applyBold(selected = true)
+state.applyItalic(selected = true)
+state.applyUnderline(selected = true)
+state.applyStrikeThrough(selected = true)
+state.applyHighlight(selected = true)
+```
+
+The highlight background follows the theme's `highlight` role (a warm amber that adapts to light/dark)
+and is painted translucently so a range selection stays visible over highlighted text. Pin a fixed
+color with `highlightColor { … }` in the [Configuration](#configuration) to override the theme.
+
+## Text style (color & size)
+
+`applyTextStyle` sets the font size (in the document's font-size units) and an optional hex color
+(`#RRGGBB` / `#AARRGGBB`, or `null` to leave the color unset) over the current selection:
+
+```kotlin
+state.applyTextStyle(fontSize = 20, color = "#EC4A41")
+state.applyTextStyle(fontSize = 16, color = null) // size only
+```
+
+## Lists
+
+Toggle ordered (numbered) and unordered (bulleted) lists over the paragraph(s) the selection touches.
+Like the mark toggles, they take the desired state and return whether the document changed:
+
+```kotlin
+state.toggleOrderedList(selected = true)   // convert to a numbered list
+state.toggleUnorderedList(selected = true) // convert to a bulleted list
+state.toggleOrderedList(selected = false)  // back to plain paragraphs
+```
+
+The document format also supports **task lists** (checkbox items); these render (including their
+checkboxes in viewer mode) when present in the loaded document. The current caret's list kind is
+exposed via `state.lastListItem`.
+
+## Text alignment
+
+Set the horizontal alignment of the paragraph(s) the selection touches. Unlike the inline marks,
+alignment is a **paragraph attribute**, not a character mark: it retags whole paragraphs, so it
+applies to the entire paragraph even with a collapsed caret (no text needs to be selected).
+
+`applyTextAlignment` takes a `TextAlign` (`Left`, `Center`, `Right`, `Justify`) and returns whether
+the document changed:
+
+```kotlin
+import com.jjrodcast.textkit.editor.core.parser.TextAlign
+
+state.applyTextAlignment(TextAlign.Center)
+state.applyTextAlignment(TextAlign.Right)
+state.applyTextAlignment(TextAlign.Justify)
+state.applyTextAlignment(TextAlign.Left)   // back to the default
+```
+
+The alignment at the caret is exposed via `state.currentTextAlign` (`TextAlign?`); it is `null` when
+the selection spans paragraphs with differing alignment (a "mixed" selection). Alignment
+round-trips losslessly through the JSON document as the ProseMirror/TipTap `textAlign` attribute on
+`paragraph` and `heading` nodes (see [Document format](#document-format)); the default `Left` is
+written as `"left"`.
+
+### Alignment popup
+
+TextKit ships `TextKitAlignPopup`, a small picker with the four alignment options that marks the
+active one from `state.currentTextAlign`. Drive it the same way as the color and link popups — via
+editor state. Render it in the same `Box` as the editor:
+
+```kotlin
+import com.jjrodcast.textkit.ui.TextKitAlignPopup
+
+Box {
+    TextKitEditor(state = state)
+    TextKitAlignPopup(state = state) // defaults: applies the pick + closes the popup
+}
+```
+
+**Related state APIs:** `state.openAlignPicker(bounds)` / `state.dismissAlignPicker()` (show/hide the
+popup) and `state.activeAlignAnchor` (observable anchor, non-null while open). The formatting bar's
+alignment button hands you its bounds via `onTextAlignClick` (see [Formatting bar](#formatting-bar)).
+
+## Text direction (LTR / RTL)
+
+Set the writing direction of the paragraph(s) the selection touches — `Ltr` (the default) or `Rtl`
+for right-to-left scripts such as Arabic or Hebrew. Like alignment it is a **paragraph attribute**,
+so it works with a collapsed caret. `applyTextDirection` returns whether the document changed:
+
+```kotlin
+import com.jjrodcast.textkit.editor.core.parser.TextDirection
+
+state.applyTextDirection(TextDirection.Rtl)
+state.applyTextDirection(TextDirection.Ltr)   // back to the default
+```
+
+Lists and blockquotes carry the direction on the **container node**, not per item: with the caret
+inside a list or a quote, the whole list / quote flips. A **nested list is its own node** — changing
+direction inside it leaves the parent list alone, and changing the parent leaves the nested list
+alone (select across both to change both). An adjacent list of another kind is a separate node too.
+The paragraphs of a list or quote follow its direction (RTL wins if they disagree), and a task list,
+which has no `dir` of its own, follows its container.
+
+An RTL paragraph renders with a right-to-left base direction, and its default `Left` alignment
+follows the direction (it starts at the right edge); an explicit center / right / justify is kept.
+List markers and the quote bar move to the right edge, in both the editor and viewer mode.
+
+The direction at the caret is exposed via `state.currentTextDirection` (`TextDirection?`, `null` for a
+mixed selection). `TextKitAlignPopup` includes **Left to right** / **Right to left** buttons next to
+the alignment options, so the formatting bar's alignment button covers both.
+
+Direction round-trips through the JSON document as the `dir` attribute on `paragraph`, `heading`,
+`blockquote`, `bulletList` and `orderedList` (see [Document format](#document-format)), through HTML as
+`dir="rtl"`, and through Markdown via its inline-HTML fallbacks (see
+[Reading the content](#reading-the-content)).
+
+## Links
+
+Links are edited through a small popup. Wire `TextKitLinkPopup` inside the same container as the
+editor, and use the state APIs to apply/remove:
+
+```kotlin
+import androidx.compose.foundation.layout.Box
+import com.jjrodcast.textkit.ui.TextKitEditor
+import com.jjrodcast.textkit.ui.TextKitLinkPopup
+
+Box {
+    TextKitEditor(
+        state = state,
+        // Fires when a link is clicked/opened (e.g. open it in a browser):
+        onUrlClicked = { url, text, range -> /* ... */ },
+    )
+    TextKitLinkPopup(
+        state = state,
+        onEdit = { link -> state.updateLinkText(newText = link.text, url = link.url, range = link.range) },
+        onRemove = { link -> state.removeLink(link.range) },
+    )
+}
+```
+
+State APIs:
+
+```kotlin
+state.applyLink()                                  // open the link editor for the selection/word
+state.updateLink(url = "https://…", range = range) // add/replace a link over a range
+state.removeLink(range = range)                    // remove a link
+state.dismissLinkPopup()                           // hide the popup
+```
+
+`state.activeLink` (a `TextKitLinkInfo` with `text`, `url`, `range`) is non-null while the caret sits
+on a link — that is what `TextKitLinkPopup` observes.
+
+## Triggers: mentions, hashtags & slash commands
+
+A **trigger** is the generalized "type a character to open a popup" mechanism. Every trigger shares
+the same detection, query tracking and popup anchoring; they only differ in what picking a suggestion
+does:
+
+- **Atomic token triggers** insert an *indivisible inline node* that is persisted to JSON and
+  round-trips exactly. `@` **mentions** and `#` **hashtags** are built in. A token behaves as a single
+  unit (the caret skips over it, Backspace removes the whole chip) and can carry marks (bold, italic,
+  color, …) over the whole chip.
+- **Ephemeral command triggers** run an *action* and persist nothing. `/` **slash commands** are built
+  in (apply a heading/list, or run any custom callback).
+
+A mention serializes as `{ "type": "mention", "attrs": { "id": "111", "label": "Jorge Rodriguez" } }`
+and a hashtag as `{ "type": "hashtag", "attrs": { "id": "1", "label": "kotlin" } }`. The trigger char
+(`@`, `#`, `/`) is presentation only — it is never stored in `attrs`.
+
+### 1. Enable the triggers
+
+Register the triggers you want; each trigger's chip color is configurable and each trigger char must
+be unique (the builder validates this):
+
+```kotlin
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.Color
+import com.jjrodcast.textkit.editor.models.TextKitTrigger
+import com.jjrodcast.textkit.editor.models.createTextKitConfiguration
+
+val configuration = remember {
+    createTextKitConfiguration {
+        addTrigger { TextKitTrigger.TextKitMentionTrigger() }                            // '@' (blue)
+        addTrigger { TextKitTrigger.TextKitHashtagTrigger(color = Color(0xFF2E7D32)) }   // '#' (green)
+        addTrigger { TextKitTrigger.TextKitSlashTrigger() }                              // '/' commands
+    }
+}
+val state = rememberTextKitState(json = document, configuration = configuration)
+```
+
+Observe the in-progress trigger with `state.activeTrigger` and the typed query with `state.tokenQuery`.
+
+### 2. Atomic tokens (@ mentions, # hashtags)
+
+Use a single `TextKitTokenPopup` for every atomic-token trigger and pick the candidate list from the
+active trigger. On tap it commits via `state.selectToken(id, label)`, replacing the `<char>query` with
+the atomic node. Place it in the same `Box` as the editor:
+
+```kotlin
+import com.jjrodcast.textkit.ui.TextKitTokenPopup
+import com.jjrodcast.textkit.ui.model.TextKitTokenSuggestion
+
+val users = listOf(
+    TextKitTokenSuggestion(id = "111", label = "Jorge Rodriguez"),
+    TextKitTokenSuggestion(id = "222", label = "Ada Lovelace"),
+)
+val tags = listOf(
+    TextKitTokenSuggestion(id = "1", label = "kotlin"),
+    TextKitTokenSuggestion(id = "2", label = "compose"),
+)
+
+Box {
+    TextKitEditor(state = state)
+    // One popup serves every atomic-token trigger; choose candidates by the active trigger.
+    TextKitTokenPopup(state = state) { trigger ->
+        when (trigger) {
+            is TextKitTrigger.TextKitHashtagTrigger -> tags
+            else -> users
+        }
+    }
+}
+```
+
+`state.dismissToken()` cancels an in-progress token. The popup accepts an optional `filter`
+(default: case-insensitive label match) and ignores ephemeral command triggers (those are served by
+`TextKitSlashCommandPopup`, below).
+
+> **Backward compatibility:** the mention-only helpers still work as thin aliases —
+> `TextKitMentionPopup(state, candidates)`, `TextKitMentionSuggestion`, `state.selectMention(...)`,
+> and `state.dismissMention()`.
+
+### 3. Slash commands (ephemeral)
+
+Slash commands run an action instead of inserting a node. Use `TextKitSlashCommandPopup` with a list
+of `TextKitCommand`. Picking one removes the `/query` the user typed and then runs the command:
+
+```kotlin
+import com.jjrodcast.textkit.ui.TextKitSlashCommandPopup
+import com.jjrodcast.textkit.ui.model.TextKitCommand
+
+val commands = listOf(
+    TextKitCommand.heading(1),                     // built-in: apply Heading 1
+    TextKitCommand.heading(2, label = "Title 2"),  // built-in with a custom label
+    TextKitCommand.bulletList(),                    // built-in: bulleted list
+    TextKitCommand.orderedList(),                   // built-in: numbered list
+    // Custom: the action receives the live TextKitState — do anything the editor exposes:
+    TextKitCommand.custom(id = "date", label = "Insert date") { it.insertText("2026-07-15") },
+)
+
+Box {
+    TextKitEditor(state = state)
+    TextKitTokenPopup(state = state) { /* users / tags */ emptyList() }
+    TextKitSlashCommandPopup(state = state, commands = commands)
+}
+```
+
+**Built-in command factories:** `TextKitCommand.heading(level, label)`,
+`TextKitCommand.bulletList(label)`, `TextKitCommand.orderedList(label)`, and
+`TextKitCommand.custom(id, label, action)`. The custom `action: (TextKitState) -> Unit` gets the live
+state, so it can call `insertText`, `applyHeading`, `toggleOrderedList`, apply marks, or anything else
+the editor exposes.
+
+**Related state APIs:** `state.runCommand(command)` (remove `/query` + run the action),
+`state.insertText(text)` (insert plain text at the caret), `state.applyHeading(level)` (apply an H1–H6
+font size).
+
+## Embedded blocks
+
+An **embedded block** is a non-renderable node (a table, an image, a linked document, …) that lives
+inline in the text as a single **clickable placeholder**. The editor stores the block's full JSON
+verbatim and shows only a one-line label where it sits; tapping the placeholder opens a popup so you
+can view, edit or remove it. The block behaves as one atomic unit and its JSON round-trips losslessly.
+
+Insert, update and remove embeds through `TextKitState`:
+
+```kotlin
+import androidx.compose.ui.geometry.Offset
+import com.jjrodcast.textkit.editor.core.parser.EmbedTypes
+
+// Insert at the caret as a single undo step. `rawJson` is the whole block object as a String.
+state.insertEmbed(
+    embedType = EmbedTypes.Table,   // "table", "image", "document", or any custom type string
+    rawJson = tableJson,
+    label = "📊 Table",             // one-line placeholder shown in the editor
+)
+
+state.updateActiveEmbed(rawJson = newTableJson) // replace the JSON of the open embed
+state.removeActiveEmbed()                        // remove the open embed and close the popup
+state.dismissEmbedPopup()                        // just close the popup
+
+state.openEmbedAt(position = Offset(x, y))       // open the popup if a tap hit a placeholder
+```
+
+Built-in embed types live in `EmbedTypes`: `Table` (`"table"`), `Image` (`"image"`) and
+`Document` (`"document"`). Any other type string works too — TextKit stores and returns it unchanged.
+
+`TextKitEditor` already detects taps on placeholders (it calls `openEmbedAt`), so you only need to
+render `TextKitEmbedPopup` in the same `Box` as the editor. It observes `state.activeEmbed` (an
+`EmbedInfo` with `range`, `embedType` and `rawJson`) and anchors itself over the placeholder:
+
+```kotlin
+import com.jjrodcast.textkit.ui.TextKitEmbedPopup
+
+Box {
+    TextKitEditor(state = state)
+    TextKitEmbedPopup(state = state) // defaults onClose → dismissEmbedPopup(), onRemove → removeActiveEmbed()
+}
+```
+
+### Editable tables
+
+`table` embeds get a full **editable, Notion-style grid** inside the popup — no extra wiring needed.
+`TextKitEmbedPopup` renders `TextKitEditableTable` for `EmbedTypes.Table` and defaults its `onSync` to
+`state.updateActiveEmbed(...)`, so users can add/remove rows and columns, merge and split cells (true
+`colspan`/`rowspan`), toggle header cells and edit text inline. Every change **auto-syncs** back to the
+document (there is no manual save step), the table carries its **own undo/redo**, and its JSON
+round-trips losslessly as a `table` block.
+
+You can also host the table yourself — it's a self-contained composable taking just `rawJson` and an
+`onSync` callback:
+
+```kotlin
+import com.jjrodcast.textkit.ui.table.TextKitEditableTable
+
+TextKitEditableTable(rawJson = tableJson, onSync = { updated -> /* persist updated table JSON */ })
+```
+
+See **[docs/table](docs/table/README.md)** for the interaction model, merge/split rules, the `table`
+JSON shape, theming and layout details.
+
+To let users insert embeds from the `/` menu, wrap `insertEmbed` in a custom slash command:
+
+```kotlin
+TextKitCommand.custom(id = "table", label = "Insert table") { it.insertEmbed(EmbedTypes.Table, tableJson, "📊 Table") }
+```
+
+**Enabling / disabling embeds.** Set `embedsEnabled { false }` in the configuration (see
+[Configuration](#configuration)) to turn the feature off: `insertEmbed` and `openEmbedAt` become
+no-ops, so no new embeds can be inserted and tapping an existing placeholder won't open its popup.
+Existing embeds still render as placeholders and round-trip losslessly in JSON. To drive it from a UI
+button, build two states and swap the one you hand to `rememberTextKitState`, or gate your own insert
+button on the same flag.
+
+## Undo / redo
+
+TextKit keeps a bounded edit history (default 100 steps) that restores both the document and the
+caret. Consecutive same-kind edits (typing, deleting) **coalesce** into one step and break on word
+boundaries; discrete actions (formatting, list toggles, token inserts, embed and link operations)
+are each their own step. History is always on — no configuration required — and is cleared on `load`.
+
+```kotlin
+state.undo()   // returns false if there is nothing to undo
+state.redo()   // returns false if there is nothing to redo
+
+state.canUndo  // observable; use it to enable/disable a toolbar button
+state.canRedo
+```
+
+`TextKitEditor` and `TextKitEditorOutlined` already handle the keyboard shortcuts: **Ctrl/Cmd+Z**
+(undo), **Ctrl/Cmd+Shift+Z** and **Ctrl+Y** (redo). See the formatting bar below for wiring the
+toolbar buttons.
+
+## Formatting bar
+
+TextKit ships a ready-made toolbar. Keep a `TextKitFormattingBarState` and sync it from the editor so
+the toggles reflect the caret; forward each toolbar action to the matching `state` method:
+
+```kotlin
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.Color
+import com.jjrodcast.textkit.ui.TextKitFormattingBar
+import com.jjrodcast.textkit.ui.TextKitScreen
+import com.jjrodcast.textkit.ui.state.rememberTextKitFormattingBarState
+
+// `colors` is the palette exposed as `barState.colors` for the text-color popup (see below);
+// it defaults to TextKitPickerPallete.DefaultPallete.
+val barState = rememberTextKitFormattingBarState(colors = TextKitPickerPallete.DefaultPallete)
+
+// Mirror the caret's active marks/list into the bar so toggles highlight correctly:
+LaunchedEffect(state.lastMarks, state.lastListItem) {
+    barState.syncFrom(state.lastMarks, state.lastListItem)
+}
+
+TextKitScreen { // MaterialTheme + Scaffold wrapper (optional)
+    TextKitFormattingBar(
+        barState = barState,
+        selectedColor = Color.Yellow,
+        onBoldClick = state::applyBold,
+        onItalicClick = state::applyItalic,
+        onUnderlineClick = state::applyUnderline,
+        onStrikeThroughClick = state::applyStrikeThrough,
+        onHighlightClick = state::applyHighlight,
+        onLinkClick = { state.applyLink() },
+        onTextAndColorClick = { state.openColorPicker(it) },
+        onTextAlignClick = { state.openAlignPicker(it) },
+        onOrderedListClick = state::toggleOrderedList,
+        onBulletedListClick = state::toggleUnorderedList,
+        onUndoClick = { state.undo() },
+        onRedoClick = { state.redo() },
+        canUndo = state.canUndo,
+        canRedo = state.canRedo,
+    )
+    Box {
+        TextKitEditor(state = state)
+        TextKitLinkPopup(state = state, /* onEdit / onRemove */)
+        TextKitColorsPopup(state = state, colors = barState.colors)
+        TextKitAlignPopup(state = state)
+        TextKitTokenPopup(state = state) { /* users / tags by active trigger */ users }
+        TextKitSlashCommandPopup(state = state, commands = commands)
+    }
+}
+```
+
+Each `on…Click` receives a `Boolean` (the new toggle value), except the two picker buttons —
+`onTextAndColorClick` and `onTextAlignClick` — which hand you the button's bounds (`Rect`) so their
+popups can anchor to it (see [Text color popup](#text-color-popup) and
+[Text alignment](#text-alignment)). `TextKitFormattingBarState` exposes `isBold`, `isItalic`,
+`isUnderline`, `isStrikethrough`, `isHighlight`, `isLink`, `isNumberedList`, `isBulletedList`,
+`isCheckList`.
+
+### Text color popup
+
+The palette button is different: `onTextAndColorClick` is **not** a toggle — it hands you the button's
+bounds in window coordinates (`Rect`). Wire it to `state.openColorPicker(bounds)` and render
+`TextKitColorsPopup` next to the editor. It follows the same pattern as [Links](#links): the popup is
+driven by editor state (`state.activeColorAnchor`), applies the pick back to the document, and marks
+the selection's current color (`state.currentTextColor`) so it round-trips both ways.
+
+```kotlin
+import com.jjrodcast.textkit.ui.TextKitColorsPopup
+
+TextKitFormattingBar(
+    barState = barState,
+    selectedColor = Color.Yellow,
+    onTextAndColorClick = { bounds -> state.openColorPicker(bounds) }, // open the picker
+    // … other on…Click handlers
+)
+
+Box {
+    TextKitEditor(state = state)
+    // Palette to show; a leading "no color" swatch (emits null → reset to default) is always added.
+    TextKitColorsPopup(state = state, colors = barState.colors)
+}
+```
+
+`TextKitColorsPopup` positions itself relative to the button (below it, flipping above when it would
+overflow the bottom and clamping horizontally, so it always fits the screen) and closes automatically
+once a color is picked. By default it applies the pick with
+`state.applyTextColor(hex)` (or resets to the configured color on the "no color" swatch); override
+`onColorSelected` / `onClose` to customize. The palette also has a default
+(`TextKitPickerPallete.DefaultPallete`), so `colors` is optional.
+
+**Related state APIs:** `state.openColorPicker(bounds)` / `state.dismissColorPicker()` (show/hide),
+`state.activeColorAnchor` (observable anchor, non-null while open), `state.applyTextColor(hex)`
+(set only the color, keeping the current font size; `null` resets to the default color), and
+`state.currentTextColor` (`Color?`, the selection's current color or `null`).
+
+## Theming (light & dark)
+
+TextKit ships a light/dark-aware theme built on a Material 3–style role system. Every TextKit UI
+piece — the editor, formatting bar and popups — reads its colors, typography and shapes from
+`TextKitTheme`, so the whole editor follows one palette and switches with the system.
+
+| Light | Dark |
+|-------|------|
+| ![TextKit light theme](imgs/text_kit_light.png) | ![TextKit dark theme](imgs/text_kit_dark.png) |
+
+Wrap your UI in the `TextKitTheme` provider (or use `TextKitScreen`, which already does), then read
+tokens through the `TextKitTheme` accessor:
+
+```kotlin
+TextKitTheme(darkTheme = isSystemInDarkTheme()) {
+    Box {
+        TextKitFormattingBar(barState = barState, /* … */)
+        TextKitEditor(state = state)
+        // popups…
+    }
+}
+
+// Read tokens anywhere inside that scope:
+TextKitTheme.colors.primary
+TextKitTheme.typography.fontFamily
+TextKitTheme.shapes.medium
+```
+
+Override individual color roles without touching the rest — the light/dark factories expose every
+role as a parameter that defaults to its token:
+
+```kotlin
+TextKitTheme(
+    darkTheme = isDark,
+    colors = TextKitColors.dark(primary = myBrandColor),   // only primary changes
+) { /* … */ }
+```
+
+Reading `TextKitTheme.colors` must happen inside a `TextKitTheme { }` scope (there is no silent
+fallback). For the full color-role reference, the pairing rule, how to choose between similar roles,
+and guidance on customizing typography/shapes, see **[docs/theming](docs/theming/README.md)**.
+
+## Configuration
+
+`createTextKitConfiguration { }` builds the editor configuration with a small DSL:
+
+```kotlin
+import androidx.compose.ui.graphics.Color
+import com.jjrodcast.textkit.editor.models.TextKitTrigger
+import com.jjrodcast.textkit.editor.models.createTextKitConfiguration
+
+val configuration = createTextKitConfiguration {
+    highlightColor { Color.Yellow }                          // optional: pin the highlight background; omit to follow the theme's `highlight` role
+    linkColor { Color(0xFF1B75D0) }
+    textColor { Color(0xFF000000) }
+    fontSize { 14 }                                          // default font size
+    viewerMode { false }                                     // true = read-only viewer
+    embedsEnabled { true }                                   // false = disable inserting/opening embeds
+    addTrigger { TextKitTrigger.TextKitMentionTrigger() }    // '@' mentions
+    addTrigger { TextKitTrigger.TextKitHashtagTrigger() }    // '#' hashtags
+    addTrigger { TextKitTrigger.TextKitSlashTrigger() }      // '/' slash commands
+}
+```
+
+Pass it to `rememberTextKitState(json = …, configuration = configuration)`. Each trigger's chip color
+is configurable via its constructor (e.g. `TextKitMentionTrigger(color = …)`), and each trigger char
+must be unique (the builder throws on duplicates). At runtime you can resolve a trigger with
+`configuration.triggerFor('#')` (by char) or `configuration.triggerForType("hashtag")` (by node type).
+
+## Read-only / viewer mode
+
+Set `viewerMode { true }` on the configuration to load a document for display without editing, and
+render `annotatedStringForViewer` (it includes inline content such as task-list checkboxes):
+
+```kotlin
+val configuration = createTextKitConfiguration { viewerMode { true } }
+val state = rememberTextKitState(json = document, configuration = configuration)
+
+val (annotated, inlineContent) = state.viewerTextValue
+Text(text = annotated, inlineContent = inlineContent)
+```
+
+## Document format
+
+TextKit reads and writes a **ProseMirror-style JSON document**: a root `doc` whose `content` is a
+list of block nodes; each block holds inline runs, and inline runs carry `marks`.
+
+```json
+{
+  "type": "doc",
+  "content": [
+    {
+      "type": "paragraph",
+      "attrs": { "textAlign": "center" },
+      "content": [
+        { "type": "text", "text": "Hello " },
+        { "type": "text", "marks": [{ "type": "bold" }], "text": "world" },
+        { "type": "mention", "attrs": { "id": "111", "label": "Jorge Rodriguez" } },
+        { "type": "hashtag", "attrs": { "id": "1", "label": "kotlin" } }
+      ]
+    },
+    {
+      "type": "bulletList",
+      "content": [
+        { "type": "listItem", "content": [
+          { "type": "paragraph", "content": [{ "type": "text", "text": "First item" }] }
+        ]}
+      ]
+    }
+  ]
+}
+```
+
+**Block nodes:** `paragraph`, `heading` (`attrs.level` 1–6), `orderedList`, `bulletList`, `taskList`,
+`blockquote`, plus `listItem` / `taskItem` (`attrs.checked`) inside lists. `paragraph` and `heading`
+also carry an optional `attrs.textAlign` (`"left"` | `"center"` | `"right"` | `"justify"`); the
+default `"left"` is written on export, and any unrecognized value coerces back to `"left"` on load.
+`paragraph`, `heading`, `blockquote`, `bulletList` and `orderedList` carry `attrs.dir` (`"ltr"` |
+`"rtl"`): the default `"ltr"` is always written and any unrecognized value coerces to `"ltr"`. On a
+list or blockquote it applies to that node's own paragraphs; a nested `bulletList` / `orderedList`
+keeps its own `dir` (it does not inherit its parent list's). `taskList` has no `dir` of its own and
+follows its container.
+
+```json
+{ "type": "bulletList", "attrs": { "dir": "rtl" }, "content": [
+  { "type": "listItem", "content": [
+    { "type": "paragraph", "content": [{ "type": "text", "text": "مرحبا" }] }
+  ]}
+]}
+```
+
+**Inline nodes:** `text`, `hardBreak`, and atomic trigger tokens `mention` and `hashtag` (both with
+`attrs.id`, `attrs.label`). Slash (`/`) commands are ephemeral actions and are **not** persisted as
+nodes.
+
+**Embedded blocks:** rendered inline as clickable placeholders but persisted as their own block node,
+keyed on `type` — built-in kinds are `table`, `image` and `document` (any custom type is preserved).
+The block's original JSON is stored verbatim, so it round-trips unchanged:
+
+```json
+{ "type": "image", "attrs": { "src": "text_kit_banner" } }
+```
+
+`table` embeds are fully editable in the popup and serialize as a ProseMirror `table`
+(`tableRow` → `tableCell` / `tableHeader` with `colspan` / `rowspan` / `colwidth`) — see
+**[docs/table](docs/table/README.md)** for the shape and editor.
+
+**Marks** (on inline runs): `bold`, `italic`, `underline`, `strike`, `highlight`, `link`
+(`attrs.href`, `attrs.target`), and `textStyle` (`attrs.color`, `attrs.fontSize`).
+
+Unknown node or mark types are ignored on load, so documents remain forward-compatible.

@@ -1,0 +1,130 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:PageFragments.kt$line == 0 &amp;&amp; count &lt; hs.size &amp;&amp; count &lt; r.orphans &amp;&amp; !cursor.atTop</ID>
+    <ID>ComplexCondition:PageFragments.kt$prior != null &amp;&amp; prior.paragraphIndex == line.paragraphIndex &amp;&amp; prior.page == line.page &amp;&amp; prior.lastLine + 1 == line.firstLine &amp;&amp; kotlin.math.abs(prior.sourceBottom - line.sourceTop) &lt; .01f &amp;&amp; kotlin.math.abs(prior.top + prior.height - line.top) &lt; .01f</ID>
+    <ID>ComplexCondition:PrintSnapshot.kt$PrintSnapshot$format.imageableX &gt; 0 || format.imageableY &gt; 0 || format.imageableWidth &lt; format.width || format.imageableHeight &lt; format.height</ID>
+    <ID>CyclomaticComplexMethod:Geometry.kt$Geometry$fun breakAndEmptySelectionRects(selection: Selection): List&lt;androidx.compose.ui.geometry.Rect&gt;</ID>
+    <ID>CyclomaticComplexMethod:PageFragments.kt$fun planPageFragments( paragraphs: List&lt;PageParagraphMetrics&gt;, pageHeight: Float, margin: Float, gap: Float, properties: List&lt;ParagraphProperties&gt; = emptyList(), density: Float = 1f, explicitBefore: Set&lt;Int&gt; = emptySet(), header: Float = 0f, footer: Float = 0f, ): FragmentPlan</ID>
+    <ID>LongMethod:PageFragments.kt$fun planPageFragments( paragraphs: List&lt;PageParagraphMetrics&gt;, pageHeight: Float, margin: Float, gap: Float, properties: List&lt;ParagraphProperties&gt; = emptyList(), density: Float = 1f, explicitBefore: Set&lt;Int&gt; = emptySet(), header: Float = 0f, footer: Float = 0f, ): FragmentPlan</ID>
+    <ID>LongParameterList:OutputPagePlan.kt$( document: Document, revision: Long, key: String, paragraphs: List&lt;ParagraphLayout&gt;, gap: Float, measure: (RunningFlow, String) -&gt; TextLayoutResult, )</ID>
+    <ID>LongParameterList:PageFragments.kt$( paragraphs: List&lt;PageParagraphMetrics&gt;, pageHeight: Float, margin: Float, gap: Float, properties: List&lt;ParagraphProperties&gt; = emptyList(), density: Float = 1f, explicitBefore: Set&lt;Int&gt; = emptySet(), header: Float = 0f, footer: Float = 0f, )</ID>
+    <ID>LongParameterList:PageFragments.kt$( paragraphs: List&lt;ParagraphLayout&gt;, pageHeight: Float, margin: Float, gap: Float, properties: List&lt;ParagraphProperties&gt; = emptyList(), density: Float = 1f, explicitBefore: Set&lt;Int&gt; = emptySet(), header: Float = 0f, footer: Float = 0f, )</ID>
+    <ID>LoopWithTooManyJumpStatements:PageFragments.kt$while</ID>
+    <ID>MagicNumber:Geometry.kt$Geometry$1.5f</ID>
+    <ID>MagicNumber:Geometry.kt$Geometry$8f</ID>
+    <ID>MagicNumber:OutputPagePlan.kt$.01f</ID>
+    <ID>MagicNumber:OutputPagePlan.kt$12f</ID>
+    <ID>MagicNumber:OutputPagePlan.kt$2000</ID>
+    <ID>MagicNumber:OutputPagePlan.kt$4</ID>
+    <ID>MagicNumber:OutputPagePlan.kt$9</ID>
+    <ID>MagicNumber:OutputPagePlan.kt$DocumentPagePlan$.02f</ID>
+    <ID>MagicNumber:PageFragments.kt$.01f</ID>
+    <ID>MagicNumber:PageFragments.kt$32</ID>
+    <ID>MagicNumber:PageFragments.kt$PageCursor$.01f</ID>
+    <ID>MagicNumber:PrintSnapshot.kt$PrintSnapshot$.25</ID>
+    <ID>MagicNumber:PrintSnapshot.kt$PrintSnapshot$16_000_000</ID>
+    <ID>MagicNumber:PrintSnapshot.kt$PrintSnapshot$300</ID>
+    <ID>MagicNumber:PrintSnapshot.kt$PrintSnapshot$72</ID>
+    <ID>MagicNumber:PrintSnapshot.kt$PrintSnapshot$96f</ID>
+    <ID>MagicNumber:PrintSnapshot.kt$PrintSnapshot.&lt;no name provided&gt;$300</ID>
+    <ID>MagicNumber:PrintSnapshot.kt$PrintSnapshot.Builder$1024</ID>
+    <ID>MagicNumber:PrintSnapshot.kt$PrintSnapshot.Builder$200</ID>
+    <ID>MagicNumber:PrintSnapshot.kt$PrintSnapshot.Builder$64L</ID>
+    <ID>MagicNumber:PrintSnapshot.kt$PrintSnapshot.Builder$8</ID>
+    <ID>MagicNumber:Typography.kt$0xff000000L</ID>
+    <ID>MagicNumber:Typography.kt$0xff174ea6</ID>
+    <ID>MagicNumber:Typography.kt$TypographyProfile.Companion$26</ID>
+    <ID>MaxLineLength:Geometry.kt$Geometry$fun</ID>
+    <ID>MaxLineLength:Geometry.kt$Geometry$fun getParagraphDirection(documentOffset: Int): ResolvedTextDirection</ID>
+    <ID>MaxLineLength:Geometry.kt$Geometry$fun paragraphTop(p: ParagraphLayout, line: Int): Float</ID>
+    <ID>MaxLineLength:Geometry.kt$Geometry$if (p.image != null)return p.imageLeft + (if ((documentOffset == p.startOffset) == (p.baseDirection == ResolvedTextDirection.Rtl))p.imageWidth else 0f)</ID>
+    <ID>MaxLineLength:Geometry.kt$Geometry$rects += androidx.compose.ui.geometry.Rect(c.left - if (rtl)stripWidth else 0f, c.top, c.left + if (rtl)0f else stripWidth, c.bottom)</ID>
+    <ID>MaxLineLength:Geometry.kt$Geometry$val fragments: List&lt;ParagraphFragment&gt; = paragraphs.map { ParagraphFragment(it.index, 0, it.lineCount - 1, 0f, it.height, it.top, 0) }</ID>
+    <ID>MaxLineLength:Geometry.kt$Geometry$val line = if (wrapAffinity == WrapAffinity.UPSTREAM &amp;&amp; p.isSoftWrapBoundary(local)) p.layout.getLineForOffset(local - 1) else p.layout.getLineForOffset(local)</ID>
+    <ID>MaxLineLength:Geometry.kt$ParagraphLayout$fun isSoftWrapBoundary(local: Int): Boolean</ID>
+    <ID>MaxLineLength:Geometry.kt$fun</ID>
+    <ID>MaxLineLength:Geometry.kt$fun paragraphBaseDirection(units: List&lt;TextUnit&gt;, fallback: ResolvedTextDirection): ResolvedTextDirection</ID>
+    <ID>MaxLineLength:Geometry.kt$fun partitionParagraphs(document: Document): List&lt;ParagraphSpan&gt;</ID>
+    <ID>MaxLineLength:Geometry.kt$if (fallbackRtl) java.text.Bidi.DIRECTION_DEFAULT_RIGHT_TO_LEFT else java.text.Bidi.DIRECTION_DEFAULT_LEFT_TO_RIGHT</ID>
+    <ID>MaxLineLength:Geometry.kt$measurer.measure(annotated, style = paraStyle, constraints = Constraints(minWidth = textWidth, maxWidth = textWidth))</ID>
+    <ID>MaxLineLength:ListTypography.kt$val props = paragraphs().filter { it.properties.item.isNotEmpty() }.associate { it.properties.item to it.properties }</ID>
+    <ID>MaxLineLength:OutputPagePlan.kt$DocumentPagePlan$f.firstLine &gt;= 0 &amp;&amp; f.lastLine &lt; p.lineCount &amp;&amp; local &gt;= box.contentTop - .02f &amp;&amp; local + f.height &lt;= box.contentBottom + .02f</ID>
+    <ID>MaxLineLength:OutputPagePlan.kt$DocumentPagePlan$require(cells.size == cells.distinct().size &amp;&amp; cells.size == paragraphs.sumOf { it.lineCount }) { "Page plan dropped/duplicated body lines" }</ID>
+    <ID>MaxLineLength:OutputPagePlan.kt$DocumentPagePlan$require(nextStart &gt;= paintedEnd &amp;&amp; p.text.substring(paintedEnd, nextStart).all { it.isWhitespace() }) { "Non-whitespace gap/overlap in shaped line source ranges" }</ID>
+    <ID>MaxLineLength:OutputPagePlan.kt$DocumentPagePlan$require(start == offset &amp;&amp; end &gt;= start) { "Page plan lost or repeated source units at$offset: paragraph=${p.index}, lines=${f.firstLine}..${f.lastLine}, start=$start, end=$end, text=${p.text}" }</ID>
+    <ID>MaxLineLength:OutputPagePlan.kt$PageBox</ID>
+    <ID>MaxLineLength:OutputPagePlan.kt$RunningPlacement</ID>
+    <ID>MaxLineLength:OutputPagePlan.kt$fun</ID>
+    <ID>MaxLineLength:OutputPagePlan.kt$require(reserves.sum() &lt; height - 2 * margin) { "Header/footer leave no body area; shorten them, reduce size or margins" }</ID>
+    <ID>MaxLineLength:OutputPagePlan.kt$result = DocumentPagePlan(document, revision, key, width, height, margin, gap, paragraphs.toList(), fragments.fragments.toList(), List(fragments.pages) { PageBox(it, width, height, margin, margin + reserves[0], width - margin, height - margin - reserves[1]) }, running.toList(), fragments.relaxations)</ID>
+    <ID>MaxLineLength:OutputPagePlan.kt$running += RunningPlacement(page, index == 0, flow.id, text, margin, if (index == 0)margin else height - margin - layout.size.height, layout)</ID>
+    <ID>MaxLineLength:OutputPagePlan.kt$val explicit = document.paragraphs().filter { it.start &gt; 0 &amp;&amp; document.units[it.start - 1].structuralBreak == StructuralBreak.PAGE }.map { it.index }.toSet()</ID>
+    <ID>MaxLineLength:OutputPagePlan.kt$val fragments = pageFragments(paragraphs, height, margin, gap, document.paragraphs().map { it.properties }, 1f, explicit, reserves[0], reserves[1])</ID>
+    <ID>MaxLineLength:PageFragments.kt$)</ID>
+    <ID>MaxLineLength:PageFragments.kt$FragmentPlan</ID>
+    <ID>MaxLineLength:PageFragments.kt$PageCursor$class</ID>
+    <ID>MaxLineLength:PageFragments.kt$PageCursor$require(lineHeight.isFinite() &amp;&amp; lineHeight &gt; 0 &amp;&amp; lineHeight &lt;= capacity + .01f) { "A line/image exceeds the body area; reduce running content, font size or margins" }</ID>
+    <ID>MaxLineLength:PageFragments.kt$PageParagraphMetrics$require(lineTops.isNotEmpty() &amp;&amp; height.isFinite() &amp;&amp; height &gt; 0 &amp;&amp; lineTops.all { it.isFinite() } &amp;&amp; lineTops.zipWithNext().all { (a, b) -&gt; b &gt; a } &amp;&amp; lineTops.last() &lt; height)</ID>
+    <ID>MaxLineLength:PageFragments.kt$ParagraphFragment$data</ID>
+    <ID>MaxLineLength:PageFragments.kt$fun heights(p: PageParagraphMetrics)</ID>
+    <ID>MaxLineLength:PageFragments.kt$if</ID>
+    <ID>MaxLineLength:PageFragments.kt$if (before &lt; v.spaceBefore * density)relaxed += "Paragraph${p.index + 1}: excessive space-before constrained to preserve first line"</ID>
+    <ID>MaxLineLength:PageFragments.kt$if (line == 0 &amp;&amp; count &lt; hs.size &amp;&amp; count &lt; r.orphans)relaxed += "Paragraph${p.index + 1}: orphan request relaxed for available body area"</ID>
+    <ID>MaxLineLength:PageFragments.kt$lines += ParagraphFragment(p.index, line, line, top, top + hs[line], slot.page * (pageHeight + gap) + slot.y - margin, slot.page)</ID>
+    <ID>MaxLineLength:PageFragments.kt$relaxed += "Paragraph${p.index + 1}: widow/orphan request cannot fit; forward progress takes priority"</ID>
+    <ID>MaxLineLength:PageFragments.kt$require(hs.all { it &gt; 0 &amp;&amp; it.isFinite() &amp;&amp; it &lt;= cursor.capacity + .01f }) { "Paragraph${p.index + 1} has an indivisible line/image larger than the body area" }</ID>
+    <ID>MaxLineLength:PageFragments.kt$return FragmentPlan(fragments.toList(), pages, pages * pageHeight + (pages - 1) * gap - 2 * margin, relaxed.distinct())</ID>
+    <ID>MaxLineLength:PrintSnapshot.kt$PrintSnapshot$class</ID>
+    <ID>MaxLineLength:PrintSnapshot.kt$PrintSnapshot$fun</ID>
+    <ID>MaxLineLength:PrintSnapshot.kt$PrintSnapshot$if (format.imageableX &gt; 0 || format.imageableY &gt; 0 || format.imageableWidth &lt; format.width || format.imageableHeight &lt; format.height)add("Printer has unprintable margins; actual size may clip. Fit scales uniformly to the printable area")</ID>
+    <ID>MaxLineLength:PrintSnapshot.kt$PrintSnapshot$if (kotlin.math.abs(format.width - documentToPoints(plan.width)) &gt; .25 || kotlin.math.abs(format.height - documentToPoints(plan.height)) &gt; .25)add("Printer paper differs from the captured document; pages will not be repaginated")</ID>
+    <ID>MaxLineLength:PrintSnapshot.kt$PrintSnapshot$surface.makeImageSnapshot().use { image -&gt; image.encodeToData(EncodedImageFormat.PNG)!!.use { data -&gt; javax.imageio.ImageIO.read(ByteArrayInputStream(data.bytes)) } }</ID>
+    <ID>MaxLineLength:PrintSnapshot.kt$PrintSnapshot.&lt;no name provided&gt;$val factor = if (fit)minOf(actual.imageableWidth / width, actual.imageableHeight / height) else 1.0</ID>
+    <ID>MaxLineLength:PrintSnapshot.kt$PrintSnapshot.Builder$Image.makeFromBitmap(images.getValue(p.image.resource).asSkiaBitmap()).use { image -&gt; canvas.drawImageRect(image, Rect.makeXYWH(plan.margin + p.imageLeft, y, p.imageWidth, p.height)) }</ID>
+    <ID>MaxLineLength:PrintSnapshot.kt$PrintSnapshot.Builder$canvas.clipRect(Rect.makeLTRB(0f, (y - 2f).coerceAtLeast(0f), plan.width, (y + f.height + 2f).coerceAtMost(plan.height)))</ID>
+    <ID>MaxLineLength:PrintSnapshot.kt$PrintSnapshot.Builder$canvas.drawCircle(plan.margin + marker.left + marker.bulletRadius, y + marker.opticalCenter, marker.bulletRadius, paint)</ID>
+    <ID>MaxLineLength:PrintSnapshot.kt$PrintSnapshot.Builder$check(javax.swing.SwingUtilities.isEventDispatchThread()) { "Capture paragraph pictures on the editor owner thread" }</ID>
+    <ID>MaxLineLength:PrintSnapshot.kt$PrintSnapshot.Builder$class</ID>
+    <ID>MaxLineLength:PrintSnapshot.kt$PrintSnapshot.Builder$private val images = plan.document.units.mapNotNull { it.image?.resource }.distinct().associateWith { requireNotNull(bitmap(it)) { "Image decoding pending; wait and retry preview" } }</ID>
+    <ID>MaxLineLength:PrintSnapshot.kt$PrintSnapshot.Builder$require(outputUnicodeIssues(plan.document).isEmpty()) { "Output refused; source unchanged. ${outputUnicodeIssues(plan.document).take(8).joinToString("; ")}" }</ID>
+    <ID>MaxLineLength:PrintSnapshot.kt$PrintSnapshot.Builder$require(pictures.sumOf { it.approximateBytesUsed.toLong() } &lt;= 64L * 1024 * 1024) { "Captured print pictures exceed64MiB" }</ID>
+    <ID>MaxLineLength:PrintSnapshot.kt$PrintSnapshot.Builder$synchronized(marker.layout.multiParagraph) { TextPainter.paint(canvas.asComposeCanvas(), marker.layout) }</ID>
+    <ID>MaxLineLength:Typography.kt$TypographyProfile.Companion$val manifest = SimpleJson(File(fontsDir.parentFile, "fonts.json").readText(Charsets.UTF_8)).parse() as Map&lt;*, *&gt;</ID>
+    <ID>MaxLineLength:Typography.kt$TypographyProfile.Companion$val requestedFamily = checkNotNull(org.jetbrains.skia.FontMgr.default.makeFromFile(file.path)).use { it.familyName }</ID>
+    <ID>MaxLineLength:Typography.kt$fontSize = if (s.size == 0) androidx.compose.ui.unit.TextUnit.Unspecified else with(androidx.compose.ui.unit.Density(1f)) { s.size.toSp() }</ID>
+    <ID>MaxLineLength:Typography.kt$fontStyle = if (s.italic) androidx.compose.ui.text.font.FontStyle.Italic else androidx.compose.ui.text.font.FontStyle.Normal</ID>
+    <ID>MaxLineLength:Typography.kt$fontWeight = if (s.bold) androidx.compose.ui.text.font.FontWeight.Bold else androidx.compose.ui.text.font.FontWeight.Normal</ID>
+    <ID>NestedBlockDepth:PageFragments.kt$fun planPageFragments( paragraphs: List&lt;PageParagraphMetrics&gt;, pageHeight: Float, margin: Float, gap: Float, properties: List&lt;ParagraphProperties&gt; = emptyList(), density: Float = 1f, explicitBefore: Set&lt;Int&gt; = emptySet(), header: Float = 0f, footer: Float = 0f, ): FragmentPlan</ID>
+    <ID>NestedBlockDepth:PrintSnapshot.kt$PrintSnapshot.Builder$fun next()</ID>
+    <ID>ReturnCount:Geometry.kt$Geometry$fun caret(offset: Int, primary: Boolean = true, wrapAffinity: WrapAffinity = WrapAffinity.DOWNSTREAM): androidx.compose.ui.geometry.Rect</ID>
+    <ID>ReturnCount:Geometry.kt$Geometry$fun hasRenderedSelection(selection: Selection): Boolean</ID>
+    <ID>ReturnCount:Geometry.kt$Geometry$fun paragraphForOffset(documentOffset: Int): ParagraphLayout</ID>
+    <ID>UnusedParameter:ListTypography.kt$defaultSize: Int</ID>
+    <ID>UnusedPrivateProperty:Geometry.kt$val imageResource = image?.let { document.resources[it.resource] }</ID>
+    <ID>UseCheckOrError:Geometry.kt$Geometry$throw IllegalStateException("Geometry has no paragraphs")</ID>
+    <ID>WildcardImport:Geometry.kt$import androidx.compose.runtime.*</ID>
+    <ID>WildcardImport:Geometry.kt$import androidx.compose.ui.text.*</ID>
+    <ID>WildcardImport:Geometry.kt$import dev.shayxo.composedoc.domain.*</ID>
+    <ID>WildcardImport:Geometry.kt$import dev.shayxo.composedoc.model.*</ID>
+    <ID>WildcardImport:Geometry.kt$import java.awt.*</ID>
+    <ID>WildcardImport:Geometry.kt$import java.awt.datatransfer.*</ID>
+    <ID>WildcardImport:Geometry.kt$import java.awt.event.*</ID>
+    <ID>WildcardImport:Geometry.kt$import javax.accessibility.*</ID>
+    <ID>WildcardImport:Geometry.kt$import javax.swing.*</ID>
+    <ID>WildcardImport:Geometry.kt$import kotlin.math.*</ID>
+    <ID>WildcardImport:ListTypography.kt$import dev.shayxo.composedoc.domain.*</ID>
+    <ID>WildcardImport:ListTypography.kt$import dev.shayxo.composedoc.model.*</ID>
+    <ID>WildcardImport:OutputPagePlan.kt$import dev.shayxo.composedoc.domain.*</ID>
+    <ID>WildcardImport:OutputPagePlan.kt$import dev.shayxo.composedoc.model.*</ID>
+    <ID>WildcardImport:PageFragments.kt$import dev.shayxo.composedoc.domain.*</ID>
+    <ID>WildcardImport:PageFragments.kt$import dev.shayxo.composedoc.model.*</ID>
+    <ID>WildcardImport:PrintSnapshot.kt$import dev.shayxo.composedoc.domain.*</ID>
+    <ID>WildcardImport:PrintSnapshot.kt$import dev.shayxo.composedoc.model.*</ID>
+    <ID>WildcardImport:PrintSnapshot.kt$import java.awt.print.*</ID>
+    <ID>WildcardImport:PrintSnapshot.kt$import org.jetbrains.skia.*</ID>
+    <ID>WildcardImport:Typography.kt$import dev.shayxo.composedoc.domain.*</ID>
+    <ID>WildcardImport:Typography.kt$import dev.shayxo.composedoc.model.*</ID>
+  </CurrentIssues>
+</SmellBaseline>

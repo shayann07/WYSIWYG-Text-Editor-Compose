@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en-US
+reviews:
+  profile: assertive
+  request_changes_workflow: false
+  high_level_summary: false
+  high_level_summary_in_walkthrough: true
+  # The schema has no auto-title boolean. Use forbidden opt-in sentinels, never
+  # an empty substring that could accidentally match every human title.
+  high_level_summary_placeholder: "COMPOSEDOC_FORBIDDEN_AI_SUMMARY_TRIGGER"
+  auto_title_placeholder: "COMPOSEDOC_FORBIDDEN_AI_TITLE_TRIGGER"
+  path_instructions:
+    - path: "core/model/**"
+      instructions: "Check pure common Kotlin boundaries, exact raw UTF-16, pinned Unicode segmentation and immutable identity semantics. No UI, IO, data, app or Compose imports."
+    - path: "core/domain/**"
+      instructions: "Check single-owner transactions, attributed history, native versus grapheme ranges, partial commitment, cancellation and final V6 D01–D10 contracts. Reject outward UI/data/app dependencies."
+    - path: "core/{layout,ui}/**"
+      instructions: "Review multilingual/Nastaliq metrics, bidi caret associations, one-time transforms and immutable UDF state. No app-shell dependencies. Synthetic tests do not prove native qualification."
+    - path: "docs/**"
+      instructions: "Flag any changed sealed specification bytes or unrecorded relocation. Read the relocation amendment and preserve all 48 historical and 33 V6 hashes. Do not rewrite human PR titles or descriptions; leave feedback as review comments."
+    - path: "**"
+      instructions: "Respect human-authored contribution policy. Never replace or inject a summary into a human PR description. Do not claim automated checks prove human authorship."

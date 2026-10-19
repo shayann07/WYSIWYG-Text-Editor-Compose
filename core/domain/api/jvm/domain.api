@@ -1,0 +1,650 @@
+public final class dev/shayxo/composedoc/domain/CanonicalProbeBasis {
+	public fun <init> (JLjava/util/List;J)V
+	public final fun component1 ()J
+	public final fun component2 ()Ljava/util/List;
+	public final fun component3 ()J
+	public final fun copy (JLjava/util/List;J)Ldev/shayxo/composedoc/domain/CanonicalProbeBasis;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/CanonicalProbeBasis;JLjava/util/List;JILjava/lang/Object;)Ldev/shayxo/composedoc/domain/CanonicalProbeBasis;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDocumentRevision ()J
+	public final fun getIdentityGeneration ()J
+	public final fun getUnitIds ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class dev/shayxo/composedoc/domain/CanonicalProbeEdit {
+}
+
+public final class dev/shayxo/composedoc/domain/CanonicalProbeEdit$Attributes : dev/shayxo/composedoc/domain/CanonicalProbeEdit {
+	public fun <init> (IILdev/shayxo/composedoc/model/TextStyleFlags;)V
+	public final fun component1 ()I
+	public final fun component2 ()I
+	public final fun component3 ()Ldev/shayxo/composedoc/model/TextStyleFlags;
+	public final fun copy (IILdev/shayxo/composedoc/model/TextStyleFlags;)Ldev/shayxo/composedoc/domain/CanonicalProbeEdit$Attributes;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/CanonicalProbeEdit$Attributes;IILdev/shayxo/composedoc/model/TextStyleFlags;ILjava/lang/Object;)Ldev/shayxo/composedoc/domain/CanonicalProbeEdit$Attributes;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEnd ()I
+	public final fun getStart ()I
+	public final fun getStyle ()Ldev/shayxo/composedoc/model/TextStyleFlags;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/CanonicalProbeEdit$Move : dev/shayxo/composedoc/domain/CanonicalProbeEdit {
+	public fun <init> (III)V
+	public final fun component1 ()I
+	public final fun component2 ()I
+	public final fun component3 ()I
+	public final fun copy (III)Ldev/shayxo/composedoc/domain/CanonicalProbeEdit$Move;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/CanonicalProbeEdit$Move;IIIILjava/lang/Object;)Ldev/shayxo/composedoc/domain/CanonicalProbeEdit$Move;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDestination ()I
+	public final fun getEnd ()I
+	public final fun getStart ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/CanonicalProbeEdit$Replace : dev/shayxo/composedoc/domain/CanonicalProbeEdit {
+	public fun <init> (IILjava/lang/String;Ldev/shayxo/composedoc/model/TextStyleFlags;Z)V
+	public synthetic fun <init> (IILjava/lang/String;Ldev/shayxo/composedoc/model/TextStyleFlags;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()I
+	public final fun component2 ()I
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ldev/shayxo/composedoc/model/TextStyleFlags;
+	public final fun component5 ()Z
+	public final fun copy (IILjava/lang/String;Ldev/shayxo/composedoc/model/TextStyleFlags;Z)Ldev/shayxo/composedoc/domain/CanonicalProbeEdit$Replace;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/CanonicalProbeEdit$Replace;IILjava/lang/String;Ldev/shayxo/composedoc/model/TextStyleFlags;ZILjava/lang/Object;)Ldev/shayxo/composedoc/domain/CanonicalProbeEdit$Replace;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEnd ()I
+	public final fun getParagraphBreaks ()Z
+	public final fun getStart ()I
+	public final fun getStyle ()Ldev/shayxo/composedoc/model/TextStyleFlags;
+	public final fun getText ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/CanonicalProbeOutcome : java/lang/Enum {
+	public static final field Applied Ldev/shayxo/composedoc/domain/CanonicalProbeOutcome;
+	public static final field DeferredComposition Ldev/shayxo/composedoc/domain/CanonicalProbeOutcome;
+	public static final field DeferredOwnerBusy Ldev/shayxo/composedoc/domain/CanonicalProbeOutcome;
+	public static final field Rejected Ldev/shayxo/composedoc/domain/CanonicalProbeOutcome;
+	public static final field RejectedBasis Ldev/shayxo/composedoc/domain/CanonicalProbeOutcome;
+	public static final field RequiresExternalHistory Ldev/shayxo/composedoc/domain/CanonicalProbeOutcome;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Ldev/shayxo/composedoc/domain/CanonicalProbeOutcome;
+	public static fun values ()[Ldev/shayxo/composedoc/domain/CanonicalProbeOutcome;
+}
+
+public final class dev/shayxo/composedoc/domain/CapturedRange {
+	public fun <init> (Ljava/util/List;Ljava/lang/Long;Ljava/lang/Long;ZZ)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Ljava/lang/Long;
+	public final fun component3 ()Ljava/lang/Long;
+	public final fun component4 ()Z
+	public final fun component5 ()Z
+	public final fun copy (Ljava/util/List;Ljava/lang/Long;Ljava/lang/Long;ZZ)Ldev/shayxo/composedoc/domain/CapturedRange;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/CapturedRange;Ljava/util/List;Ljava/lang/Long;Ljava/lang/Long;ZZILjava/lang/Object;)Ldev/shayxo/composedoc/domain/CapturedRange;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBackwards ()Z
+	public final fun getCollapsed ()Z
+	public final fun getIds ()Ljava/util/List;
+	public final fun getLeft ()Ljava/lang/Long;
+	public final fun getRight ()Ljava/lang/Long;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/ClipboardCapture {
+	public fun <init> (Ldev/shayxo/composedoc/domain/FindBasis;Ldev/shayxo/composedoc/model/Selection;J)V
+	public final fun component1 ()Ldev/shayxo/composedoc/domain/FindBasis;
+	public final fun component2 ()Ldev/shayxo/composedoc/model/Selection;
+	public final fun component3 ()J
+	public final fun copy (Ldev/shayxo/composedoc/domain/FindBasis;Ldev/shayxo/composedoc/model/Selection;J)Ldev/shayxo/composedoc/domain/ClipboardCapture;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/ClipboardCapture;Ldev/shayxo/composedoc/domain/FindBasis;Ldev/shayxo/composedoc/model/Selection;JILjava/lang/Object;)Ldev/shayxo/composedoc/domain/ClipboardCapture;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBasis ()Ldev/shayxo/composedoc/domain/FindBasis;
+	public final fun getSelection ()Ldev/shayxo/composedoc/model/Selection;
+	public final fun getSessionRevision ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class dev/shayxo/composedoc/domain/DocumentCodec {
+	public abstract fun decode ([B)Ldev/shayxo/composedoc/model/Document;
+	public abstract fun encode (Ldev/shayxo/composedoc/model/Document;)[B
+}
+
+public abstract interface class dev/shayxo/composedoc/domain/DocumentRepository {
+	public abstract fun load (Ljava/lang/String;)Ldev/shayxo/composedoc/model/Document;
+	public abstract fun save (Ljava/lang/String;Ldev/shayxo/composedoc/model/Document;)V
+}
+
+public abstract interface class dev/shayxo/composedoc/domain/EditAction {
+}
+
+public final class dev/shayxo/composedoc/domain/EditAction$Format : dev/shayxo/composedoc/domain/EditAction {
+	public fun <init> (Ldev/shayxo/composedoc/domain/CapturedRange;Ldev/shayxo/composedoc/model/FormatKey;Z)V
+	public final fun component1 ()Ldev/shayxo/composedoc/domain/CapturedRange;
+	public final fun component2 ()Ldev/shayxo/composedoc/model/FormatKey;
+	public final fun component3 ()Z
+	public final fun copy (Ldev/shayxo/composedoc/domain/CapturedRange;Ldev/shayxo/composedoc/model/FormatKey;Z)Ldev/shayxo/composedoc/domain/EditAction$Format;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/EditAction$Format;Ldev/shayxo/composedoc/domain/CapturedRange;Ldev/shayxo/composedoc/model/FormatKey;ZILjava/lang/Object;)Ldev/shayxo/composedoc/domain/EditAction$Format;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getKey ()Ldev/shayxo/composedoc/model/FormatKey;
+	public final fun getTarget ()Ldev/shayxo/composedoc/domain/CapturedRange;
+	public final fun getValue ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/EditAction$FormatAttributes : dev/shayxo/composedoc/domain/EditAction {
+	public fun <init> (Ldev/shayxo/composedoc/domain/CapturedRange;Ljava/lang/Boolean;Ljava/lang/Boolean;)V
+	public final fun component1 ()Ldev/shayxo/composedoc/domain/CapturedRange;
+	public final fun component2 ()Ljava/lang/Boolean;
+	public final fun component3 ()Ljava/lang/Boolean;
+	public final fun copy (Ldev/shayxo/composedoc/domain/CapturedRange;Ljava/lang/Boolean;Ljava/lang/Boolean;)Ldev/shayxo/composedoc/domain/EditAction$FormatAttributes;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/EditAction$FormatAttributes;Ldev/shayxo/composedoc/domain/CapturedRange;Ljava/lang/Boolean;Ljava/lang/Boolean;ILjava/lang/Object;)Ldev/shayxo/composedoc/domain/EditAction$FormatAttributes;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBold ()Ljava/lang/Boolean;
+	public final fun getItalic ()Ljava/lang/Boolean;
+	public final fun getTarget ()Ldev/shayxo/composedoc/domain/CapturedRange;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/EditAction$Move : dev/shayxo/composedoc/domain/EditAction {
+	public fun <init> (Ldev/shayxo/composedoc/domain/CapturedRange;ZLdev/shayxo/composedoc/model/TypingSide;Ldev/shayxo/composedoc/model/WrapAffinity;)V
+	public synthetic fun <init> (Ldev/shayxo/composedoc/domain/CapturedRange;ZLdev/shayxo/composedoc/model/TypingSide;Ldev/shayxo/composedoc/model/WrapAffinity;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ldev/shayxo/composedoc/domain/CapturedRange;
+	public final fun component2 ()Z
+	public final fun component3 ()Ldev/shayxo/composedoc/model/TypingSide;
+	public final fun component4 ()Ldev/shayxo/composedoc/model/WrapAffinity;
+	public final fun copy (Ldev/shayxo/composedoc/domain/CapturedRange;ZLdev/shayxo/composedoc/model/TypingSide;Ldev/shayxo/composedoc/model/WrapAffinity;)Ldev/shayxo/composedoc/domain/EditAction$Move;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/EditAction$Move;Ldev/shayxo/composedoc/domain/CapturedRange;ZLdev/shayxo/composedoc/model/TypingSide;Ldev/shayxo/composedoc/model/WrapAffinity;ILjava/lang/Object;)Ldev/shayxo/composedoc/domain/EditAction$Move;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getPrimary ()Z
+	public final fun getSide ()Ldev/shayxo/composedoc/model/TypingSide;
+	public final fun getTarget ()Ldev/shayxo/composedoc/domain/CapturedRange;
+	public final fun getWrapAffinity ()Ldev/shayxo/composedoc/model/WrapAffinity;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/EditAction$OutlineMove : dev/shayxo/composedoc/domain/EditAction {
+	public fun <init> (Ljava/lang/Long;)V
+	public final fun component1 ()Ljava/lang/Long;
+	public final fun copy (Ljava/lang/Long;)Ldev/shayxo/composedoc/domain/EditAction$OutlineMove;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/EditAction$OutlineMove;Ljava/lang/Long;ILjava/lang/Object;)Ldev/shayxo/composedoc/domain/EditAction$OutlineMove;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAnchor ()Ljava/lang/Long;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/EditAction$Paragraph : dev/shayxo/composedoc/domain/EditAction {
+	public fun <init> (Ljava/util/List;Ldev/shayxo/composedoc/model/ParagraphDirection;Ldev/shayxo/composedoc/model/ParagraphAlignment;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;)V
+	public synthetic fun <init> (Ljava/util/List;Ldev/shayxo/composedoc/model/ParagraphDirection;Ldev/shayxo/composedoc/model/ParagraphAlignment;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Ldev/shayxo/composedoc/model/ParagraphDirection;
+	public final fun component3 ()Ldev/shayxo/composedoc/model/ParagraphAlignment;
+	public final fun component4 ()Ljava/lang/Integer;
+	public final fun component5 ()Ljava/lang/Integer;
+	public final fun component6 ()Ljava/lang/Integer;
+	public final fun copy (Ljava/util/List;Ldev/shayxo/composedoc/model/ParagraphDirection;Ldev/shayxo/composedoc/model/ParagraphAlignment;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;)Ldev/shayxo/composedoc/domain/EditAction$Paragraph;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/EditAction$Paragraph;Ljava/util/List;Ldev/shayxo/composedoc/model/ParagraphDirection;Ldev/shayxo/composedoc/model/ParagraphAlignment;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;ILjava/lang/Object;)Ldev/shayxo/composedoc/domain/EditAction$Paragraph;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAfter ()Ljava/lang/Integer;
+	public final fun getAlignment ()Ldev/shayxo/composedoc/model/ParagraphAlignment;
+	public final fun getAnchors ()Ljava/util/List;
+	public final fun getBefore ()Ljava/lang/Integer;
+	public final fun getDirection ()Ldev/shayxo/composedoc/model/ParagraphDirection;
+	public final fun getLine ()Ljava/lang/Integer;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/EditAction$Redo : dev/shayxo/composedoc/domain/EditAction {
+	public static final field INSTANCE Ldev/shayxo/composedoc/domain/EditAction$Redo;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/EditAction$Replace : dev/shayxo/composedoc/domain/EditAction {
+	public fun <init> (Ldev/shayxo/composedoc/domain/CapturedRange;Ljava/lang/String;)V
+	public fun <init> (Ldev/shayxo/composedoc/domain/CapturedRange;Ljava/lang/String;Ljava/lang/String;)V
+	public fun <init> (Ldev/shayxo/composedoc/domain/CapturedRange;Ljava/lang/String;Ljava/lang/String;Z)V
+	public fun <init> (Ldev/shayxo/composedoc/domain/CapturedRange;Ljava/lang/String;Ljava/lang/String;ZLdev/shayxo/composedoc/model/TextStyleFlags;)V
+	public fun <init> (Ldev/shayxo/composedoc/domain/CapturedRange;Ljava/lang/String;Ljava/lang/String;ZLdev/shayxo/composedoc/model/TextStyleFlags;Ldev/shayxo/composedoc/model/TypingSide;)V
+	public fun <init> (Ldev/shayxo/composedoc/domain/CapturedRange;Ljava/lang/String;Ljava/lang/String;ZLdev/shayxo/composedoc/model/TextStyleFlags;Ldev/shayxo/composedoc/model/TypingSide;Z)V
+	public synthetic fun <init> (Ldev/shayxo/composedoc/domain/CapturedRange;Ljava/lang/String;Ljava/lang/String;ZLdev/shayxo/composedoc/model/TextStyleFlags;Ldev/shayxo/composedoc/model/TypingSide;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ldev/shayxo/composedoc/domain/CapturedRange;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Z
+	public final fun component5 ()Ldev/shayxo/composedoc/model/TextStyleFlags;
+	public final fun component6 ()Ldev/shayxo/composedoc/model/TypingSide;
+	public final fun component7 ()Z
+	public final fun copy (Ldev/shayxo/composedoc/domain/CapturedRange;Ljava/lang/String;Ljava/lang/String;ZLdev/shayxo/composedoc/model/TextStyleFlags;Ldev/shayxo/composedoc/model/TypingSide;Z)Ldev/shayxo/composedoc/domain/EditAction$Replace;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/EditAction$Replace;Ldev/shayxo/composedoc/domain/CapturedRange;Ljava/lang/String;Ljava/lang/String;ZLdev/shayxo/composedoc/model/TextStyleFlags;Ldev/shayxo/composedoc/model/TypingSide;ZILjava/lang/Object;)Ldev/shayxo/composedoc/domain/EditAction$Replace;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDeleteSide ()Ldev/shayxo/composedoc/model/TypingSide;
+	public final fun getExactUtf16 ()Z
+	public final fun getKind ()Ljava/lang/String;
+	public final fun getParagraphBreaks ()Z
+	public final fun getStyle ()Ldev/shayxo/composedoc/model/TextStyleFlags;
+	public final fun getTarget ()Ldev/shayxo/composedoc/domain/CapturedRange;
+	public final fun getText ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/EditAction$Structure : dev/shayxo/composedoc/domain/EditAction {
+	public fun <init> (Ldev/shayxo/composedoc/domain/CapturedRange;Ljava/util/List;Ldev/shayxo/composedoc/domain/StructureCommand;)V
+	public final fun component1 ()Ldev/shayxo/composedoc/domain/CapturedRange;
+	public final fun component2 ()Ljava/util/List;
+	public final fun component3 ()Ldev/shayxo/composedoc/domain/StructureCommand;
+	public final fun copy (Ldev/shayxo/composedoc/domain/CapturedRange;Ljava/util/List;Ldev/shayxo/composedoc/domain/StructureCommand;)Ldev/shayxo/composedoc/domain/EditAction$Structure;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/EditAction$Structure;Ldev/shayxo/composedoc/domain/CapturedRange;Ljava/util/List;Ldev/shayxo/composedoc/domain/StructureCommand;ILjava/lang/Object;)Ldev/shayxo/composedoc/domain/EditAction$Structure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAnchors ()Ljava/util/List;
+	public final fun getCommand ()Ldev/shayxo/composedoc/domain/StructureCommand;
+	public final fun getTarget ()Ldev/shayxo/composedoc/domain/CapturedRange;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/EditAction$TextAttributes : dev/shayxo/composedoc/domain/EditAction {
+	public fun <init> (Ldev/shayxo/composedoc/domain/CapturedRange;Ldev/shayxo/composedoc/model/TextStylePatch;)V
+	public final fun component1 ()Ldev/shayxo/composedoc/domain/CapturedRange;
+	public final fun component2 ()Ldev/shayxo/composedoc/model/TextStylePatch;
+	public final fun copy (Ldev/shayxo/composedoc/domain/CapturedRange;Ldev/shayxo/composedoc/model/TextStylePatch;)Ldev/shayxo/composedoc/domain/EditAction$TextAttributes;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/EditAction$TextAttributes;Ldev/shayxo/composedoc/domain/CapturedRange;Ldev/shayxo/composedoc/model/TextStylePatch;ILjava/lang/Object;)Ldev/shayxo/composedoc/domain/EditAction$TextAttributes;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getPatch ()Ldev/shayxo/composedoc/model/TextStylePatch;
+	public final fun getTarget ()Ldev/shayxo/composedoc/domain/CapturedRange;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/EditAction$Undo : dev/shayxo/composedoc/domain/EditAction {
+	public static final field INSTANCE Ldev/shayxo/composedoc/domain/EditAction$Undo;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/EditorEngine {
+	public fun <init> ()V
+	public fun <init> (Ldev/shayxo/composedoc/model/Document;)V
+	public fun <init> (Ldev/shayxo/composedoc/model/Document;Lkotlin/jvm/functions/Function0;)V
+	public synthetic fun <init> (Ldev/shayxo/composedoc/model/Document;Lkotlin/jvm/functions/Function0;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun abortComposition ()V
+	public final fun applyCanonicalProbe (Ldev/shayxo/composedoc/domain/CanonicalProbeBasis;Ljava/util/List;Ldev/shayxo/composedoc/model/Selection;)Ldev/shayxo/composedoc/domain/CanonicalProbeOutcome;
+	public final fun applyRecoveredDraft (Ldev/shayxo/composedoc/domain/RecoveredDraft;)Ldev/shayxo/composedoc/domain/RecoveryApplyResult;
+	public final fun applyStructure (Ldev/shayxo/composedoc/domain/ClipboardCapture;Ldev/shayxo/composedoc/domain/StructureCommand;)Z
+	public final fun cancelPendingOnTeardown ()V
+	public final fun capture (Ldev/shayxo/composedoc/model/Selection;)Ldev/shayxo/composedoc/domain/CapturedRange;
+	public static synthetic fun capture$default (Ldev/shayxo/composedoc/domain/EditorEngine;Ldev/shayxo/composedoc/model/Selection;ILjava/lang/Object;)Ldev/shayxo/composedoc/domain/CapturedRange;
+	public final fun captureFindBasis ()Ldev/shayxo/composedoc/domain/FindBasis;
+	public final fun captureRecoveryDraft ()Ldev/shayxo/composedoc/domain/RecoveredDraft;
+	public final fun captureRecoveryReplacement (Ldev/shayxo/composedoc/model/Document;Ldev/shayxo/composedoc/model/Selection;)Ldev/shayxo/composedoc/domain/RecoveredDraft;
+	public final fun checkSettlementWatchdog (J)Z
+	public static synthetic fun checkSettlementWatchdog$default (Ldev/shayxo/composedoc/domain/EditorEngine;JILjava/lang/Object;)Z
+	public final fun clipboardApply (Ldev/shayxo/composedoc/domain/ClipboardCapture;Ldev/shayxo/composedoc/domain/RichFragment;Ljava/lang/String;Z)Z
+	public static synthetic fun clipboardApply$default (Ldev/shayxo/composedoc/domain/EditorEngine;Ldev/shayxo/composedoc/domain/ClipboardCapture;Ldev/shayxo/composedoc/domain/RichFragment;Ljava/lang/String;ZILjava/lang/Object;)Z
+	public final fun clipboardCapture ()Ldev/shayxo/composedoc/domain/ClipboardCapture;
+	public final fun compositionCaptureToken ()Ljava/lang/Object;
+	public final fun delete (Z)V
+	public final fun formatState (Ldev/shayxo/composedoc/model/FormatKey;)Ljava/lang/Boolean;
+	public final fun getImeEpoch ()J
+	public final fun getOnChange ()Lkotlin/jvm/functions/Function1;
+	public final fun getOnEvent ()Lkotlin/jvm/functions/Function1;
+	public final fun getOnSettlementRequested ()Lkotlin/jvm/functions/Function0;
+	public final fun getSettlementRequestedAt ()Ljava/lang/Long;
+	public final fun getSettlementTimedOut ()Z
+	public final fun inputMethod (Ljava/lang/String;ILjava/lang/Integer;)V
+	public final fun inputMethodCaret (I)V
+	public final fun installCanonicalProbeHistory (Lkotlin/jvm/functions/Function1;)V
+	public final fun move (Ldev/shayxo/composedoc/model/Selection;ZLdev/shayxo/composedoc/model/TypingSide;Ldev/shayxo/composedoc/model/WrapAffinity;)V
+	public static synthetic fun move$default (Ldev/shayxo/composedoc/domain/EditorEngine;Ldev/shayxo/composedoc/model/Selection;ZLdev/shayxo/composedoc/model/TypingSide;Ldev/shayxo/composedoc/model/WrapAffinity;ILjava/lang/Object;)V
+	public final fun nativeStructureAdmission (Ljava/lang/String;)Z
+	public final fun navigateOutline (Ljava/lang/Long;)Z
+	public final fun outline ()Ljava/util/List;
+	public final fun ownsRecoveryDraft (Ldev/shayxo/composedoc/domain/RecoveredDraft;)Z
+	public final fun paragraphAlignmentState ()Ldev/shayxo/composedoc/model/ParagraphAlignment;
+	public final fun paragraphDirectionState ()Ldev/shayxo/composedoc/model/ParagraphDirection;
+	public final fun paragraphState (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public final fun partialCommit (ILdev/shayxo/composedoc/model/Selection;)V
+	public static synthetic fun partialCommit$default (Ldev/shayxo/composedoc/domain/EditorEngine;ILdev/shayxo/composedoc/model/Selection;ILjava/lang/Object;)V
+	public final fun perform (Ldev/shayxo/composedoc/domain/EditAction;)V
+	public final fun recoveryCompositionEvidence ()Ljava/lang/String;
+	public final fun replace (Ljava/lang/String;Ljava/lang/String;ZLdev/shayxo/composedoc/model/Selection;Ldev/shayxo/composedoc/model/TypingSide;)V
+	public static synthetic fun replace$default (Ldev/shayxo/composedoc/domain/EditorEngine;Ljava/lang/String;Ljava/lang/String;ZLdev/shayxo/composedoc/model/Selection;Ldev/shayxo/composedoc/model/TypingSide;ILjava/lang/Object;)V
+	public final fun replaceExact (Ljava/lang/String;Ljava/lang/String;Ldev/shayxo/composedoc/model/Selection;Z)V
+	public static synthetic fun replaceExact$default (Ldev/shayxo/composedoc/domain/EditorEngine;Ljava/lang/String;Ljava/lang/String;Ldev/shayxo/composedoc/model/Selection;ZILjava/lang/Object;)V
+	public final fun replaceFound (Ldev/shayxo/composedoc/domain/FindBasis;Ljava/util/List;Ljava/lang/String;Z)Ldev/shayxo/composedoc/domain/FindReplaceResult;
+	public final fun retargetComposition (Ldev/shayxo/composedoc/model/Selection;)V
+	public final fun selectAll ()V
+	public final fun setOnChange (Lkotlin/jvm/functions/Function1;)V
+	public final fun setOnEvent (Lkotlin/jvm/functions/Function1;)V
+	public final fun setOnSettlementRequested (Lkotlin/jvm/functions/Function0;)V
+	public final fun setParagraphProperties (Ldev/shayxo/composedoc/model/ParagraphDirection;Ldev/shayxo/composedoc/model/ParagraphAlignment;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;)V
+	public static synthetic fun setParagraphProperties$default (Ldev/shayxo/composedoc/domain/EditorEngine;Ldev/shayxo/composedoc/model/ParagraphDirection;Ldev/shayxo/composedoc/model/ParagraphAlignment;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;ILjava/lang/Object;)V
+	public final fun setTextStyle (Ldev/shayxo/composedoc/model/TextStylePatch;)V
+	public final fun snapshot ()Ldev/shayxo/composedoc/domain/EditorFrame;
+	public final fun structure (Ldev/shayxo/composedoc/domain/StructureCommand;)V
+	public final fun surroundingCommittedText ()Ljava/lang/String;
+	public final fun textStyleState (Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public final fun toggleFormat (Ldev/shayxo/composedoc/model/FormatKey;)V
+}
+
+public final class dev/shayxo/composedoc/domain/EditorFrame {
+	public fun <init> (Ldev/shayxo/composedoc/model/Document;Ldev/shayxo/composedoc/model/Document;Ldev/shayxo/composedoc/model/Selection;Lkotlin/ranges/IntRange;JJIIZLjava/lang/String;Ldev/shayxo/composedoc/model/TextStyleFlags;JJ)V
+	public final fun component1 ()Ldev/shayxo/composedoc/model/Document;
+	public final fun component10 ()Ljava/lang/String;
+	public final fun component11 ()Ldev/shayxo/composedoc/model/TextStyleFlags;
+	public final fun component12 ()J
+	public final fun component13 ()J
+	public final fun component2 ()Ldev/shayxo/composedoc/model/Document;
+	public final fun component3 ()Ldev/shayxo/composedoc/model/Selection;
+	public final fun component4 ()Lkotlin/ranges/IntRange;
+	public final fun component5 ()J
+	public final fun component6 ()J
+	public final fun component7 ()I
+	public final fun component8 ()I
+	public final fun component9 ()Z
+	public final fun copy (Ldev/shayxo/composedoc/model/Document;Ldev/shayxo/composedoc/model/Document;Ldev/shayxo/composedoc/model/Selection;Lkotlin/ranges/IntRange;JJIIZLjava/lang/String;Ldev/shayxo/composedoc/model/TextStyleFlags;JJ)Ldev/shayxo/composedoc/domain/EditorFrame;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/EditorFrame;Ldev/shayxo/composedoc/model/Document;Ldev/shayxo/composedoc/model/Document;Ldev/shayxo/composedoc/model/Selection;Lkotlin/ranges/IntRange;JJIIZLjava/lang/String;Ldev/shayxo/composedoc/model/TextStyleFlags;JJILjava/lang/Object;)Ldev/shayxo/composedoc/domain/EditorFrame;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCommitted ()Ldev/shayxo/composedoc/model/Document;
+	public final fun getDocumentRevision ()J
+	public final fun getIdentityGeneration ()J
+	public final fun getMarked ()Lkotlin/ranges/IntRange;
+	public final fun getNotice ()Ljava/lang/String;
+	public final fun getRecoveryBasisRevision ()J
+	public final fun getRedoCount ()I
+	public final fun getSelection ()Ldev/shayxo/composedoc/model/Selection;
+	public final fun getSessionRevision ()J
+	public final fun getTypingStyle ()Ldev/shayxo/composedoc/model/TextStyleFlags;
+	public final fun getUndoCount ()I
+	public final fun getVisible ()Ldev/shayxo/composedoc/model/Document;
+	public final fun getWaiting ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/FindBasis {
+	public fun <init> (Ldev/shayxo/composedoc/model/Document;JLjava/lang/Object;)V
+	public final fun component1 ()Ldev/shayxo/composedoc/model/Document;
+	public final fun component2 ()J
+	public final fun component3 ()Ljava/lang/Object;
+	public final fun copy (Ldev/shayxo/composedoc/model/Document;JLjava/lang/Object;)Ldev/shayxo/composedoc/domain/FindBasis;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/FindBasis;Ldev/shayxo/composedoc/model/Document;JLjava/lang/Object;ILjava/lang/Object;)Ldev/shayxo/composedoc/domain/FindBasis;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDocument ()Ldev/shayxo/composedoc/model/Document;
+	public final fun getOwner ()Ljava/lang/Object;
+	public final fun getRevision ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/FindMatch {
+	public fun <init> (IIZ)V
+	public final fun component1 ()I
+	public final fun component2 ()I
+	public final fun component3 ()Z
+	public final fun copy (IIZ)Ldev/shayxo/composedoc/domain/FindMatch;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/FindMatch;IIZILjava/lang/Object;)Ldev/shayxo/composedoc/domain/FindMatch;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEditable ()Z
+	public final fun getEnd ()I
+	public final fun getStart ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/FindReplaceKt {
+	public static final fun findLiteral (Ldev/shayxo/composedoc/model/Document;Ljava/lang/String;)Ljava/util/List;
+}
+
+public final class dev/shayxo/composedoc/domain/FindReplaceResult : java/lang/Enum {
+	public static final field Applied Ldev/shayxo/composedoc/domain/FindReplaceResult;
+	public static final field Busy Ldev/shayxo/composedoc/domain/FindReplaceResult;
+	public static final field Invalid Ldev/shayxo/composedoc/domain/FindReplaceResult;
+	public static final field NoChange Ldev/shayxo/composedoc/domain/FindReplaceResult;
+	public static final field Stale Ldev/shayxo/composedoc/domain/FindReplaceResult;
+	public static final field TooLarge Ldev/shayxo/composedoc/domain/FindReplaceResult;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Ldev/shayxo/composedoc/domain/FindReplaceResult;
+	public static fun values ()[Ldev/shayxo/composedoc/domain/FindReplaceResult;
+}
+
+public final class dev/shayxo/composedoc/domain/RecoveredDraft {
+	public fun <init> (Ldev/shayxo/composedoc/model/Document;Ldev/shayxo/composedoc/model/Document;Ldev/shayxo/composedoc/model/Selection;JJLjava/lang/Object;)V
+	public final fun component1 ()Ldev/shayxo/composedoc/model/Document;
+	public final fun component2 ()Ldev/shayxo/composedoc/model/Document;
+	public final fun component3 ()Ldev/shayxo/composedoc/model/Selection;
+	public final fun component4 ()J
+	public final fun component5 ()J
+	public final fun component6 ()Ljava/lang/Object;
+	public final fun copy (Ldev/shayxo/composedoc/model/Document;Ldev/shayxo/composedoc/model/Document;Ldev/shayxo/composedoc/model/Selection;JJLjava/lang/Object;)Ldev/shayxo/composedoc/domain/RecoveredDraft;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/RecoveredDraft;Ldev/shayxo/composedoc/model/Document;Ldev/shayxo/composedoc/model/Document;Ldev/shayxo/composedoc/model/Selection;JJLjava/lang/Object;ILjava/lang/Object;)Ldev/shayxo/composedoc/domain/RecoveredDraft;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBasis ()Ldev/shayxo/composedoc/model/Document;
+	public final fun getBasisIdentityGeneration ()J
+	public final fun getBasisRevision ()J
+	public final fun getDocument ()Ldev/shayxo/composedoc/model/Document;
+	public final fun getOwnerScope ()Ljava/lang/Object;
+	public final fun getSelection ()Ldev/shayxo/composedoc/model/Selection;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/RecoveryApplyResult : java/lang/Enum {
+	public static final field Applied Ldev/shayxo/composedoc/domain/RecoveryApplyResult;
+	public static final field NoChange Ldev/shayxo/composedoc/domain/RecoveryApplyResult;
+	public static final field RecoveryBaseChanged Ldev/shayxo/composedoc/domain/RecoveryApplyResult;
+	public static final field RecoveryBusy Ldev/shayxo/composedoc/domain/RecoveryApplyResult;
+	public static final field RecoveryRejected Ldev/shayxo/composedoc/domain/RecoveryApplyResult;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Ldev/shayxo/composedoc/domain/RecoveryApplyResult;
+	public static fun values ()[Ldev/shayxo/composedoc/domain/RecoveryApplyResult;
+}
+
+public final class dev/shayxo/composedoc/domain/RichFragment {
+	public static final field Companion Ldev/shayxo/composedoc/domain/RichFragment$Companion;
+	public fun <init> (Ldev/shayxo/composedoc/model/Document;Ljava/util/List;)V
+	public final fun component1 ()Ldev/shayxo/composedoc/model/Document;
+	public final fun component2 ()Ljava/util/List;
+	public final fun copy (Ldev/shayxo/composedoc/model/Document;Ljava/util/List;)Ldev/shayxo/composedoc/domain/RichFragment;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/RichFragment;Ldev/shayxo/composedoc/model/Document;Ljava/util/List;ILjava/lang/Object;)Ldev/shayxo/composedoc/domain/RichFragment;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getComplete ()Ljava/util/List;
+	public final fun getDocument ()Ldev/shayxo/composedoc/model/Document;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/RichFragment$Companion {
+	public final fun capture (Ldev/shayxo/composedoc/domain/ClipboardCapture;)Ldev/shayxo/composedoc/domain/RichFragment;
+}
+
+public abstract interface class dev/shayxo/composedoc/domain/RichFragmentCodec {
+	public abstract fun decode ([B)Ldev/shayxo/composedoc/domain/RichFragment;
+	public abstract fun encode (Ldev/shayxo/composedoc/domain/RichFragment;)[B
+	public abstract fun getMaximumEncodedBytes ()I
+}
+
+public abstract interface class dev/shayxo/composedoc/domain/StructureCommand {
+}
+
+public final class dev/shayxo/composedoc/domain/StructureCommand$Enter : dev/shayxo/composedoc/domain/StructureCommand {
+	public fun <init> (Z)V
+	public final fun component1 ()Z
+	public final fun copy (Z)Ldev/shayxo/composedoc/domain/StructureCommand$Enter;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/StructureCommand$Enter;ZILjava/lang/Object;)Ldev/shayxo/composedoc/domain/StructureCommand$Enter;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getSameItem ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/StructureCommand$ImageProperties : dev/shayxo/composedoc/domain/StructureCommand {
+	public fun <init> (ILjava/lang/String;)V
+	public final fun component1 ()I
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (ILjava/lang/String;)Ldev/shayxo/composedoc/domain/StructureCommand$ImageProperties;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/StructureCommand$ImageProperties;ILjava/lang/String;ILjava/lang/Object;)Ldev/shayxo/composedoc/domain/StructureCommand$ImageProperties;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAlt ()Ljava/lang/String;
+	public final fun getWidth ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/StructureCommand$Indent : dev/shayxo/composedoc/domain/StructureCommand {
+	public static final field INSTANCE Ldev/shayxo/composedoc/domain/StructureCommand$Indent;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/StructureCommand$InsertImage : dev/shayxo/composedoc/domain/StructureCommand {
+	public fun <init> (Ldev/shayxo/composedoc/model/ImageBlock;Ldev/shayxo/composedoc/model/ImageResource;)V
+	public final fun component1 ()Ldev/shayxo/composedoc/model/ImageBlock;
+	public final fun component2 ()Ldev/shayxo/composedoc/model/ImageResource;
+	public final fun copy (Ldev/shayxo/composedoc/model/ImageBlock;Ldev/shayxo/composedoc/model/ImageResource;)Ldev/shayxo/composedoc/domain/StructureCommand$InsertImage;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/StructureCommand$InsertImage;Ldev/shayxo/composedoc/model/ImageBlock;Ldev/shayxo/composedoc/model/ImageResource;ILjava/lang/Object;)Ldev/shayxo/composedoc/domain/StructureCommand$InsertImage;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getData ()Ldev/shayxo/composedoc/model/ImageResource;
+	public final fun getImage ()Ldev/shayxo/composedoc/model/ImageBlock;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/StructureCommand$Link : dev/shayxo/composedoc/domain/StructureCommand {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Ldev/shayxo/composedoc/domain/StructureCommand$Link;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/StructureCommand$Link;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ldev/shayxo/composedoc/domain/StructureCommand$Link;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getLabel ()Ljava/lang/String;
+	public final fun getUri ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/StructureCommand$ListType : dev/shayxo/composedoc/domain/StructureCommand {
+	public fun <init> (Ldev/shayxo/composedoc/model/ListKind;)V
+	public final fun component1 ()Ldev/shayxo/composedoc/model/ListKind;
+	public final fun copy (Ldev/shayxo/composedoc/model/ListKind;)Ldev/shayxo/composedoc/domain/StructureCommand$ListType;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/StructureCommand$ListType;Ldev/shayxo/composedoc/model/ListKind;ILjava/lang/Object;)Ldev/shayxo/composedoc/domain/StructureCommand$ListType;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getKind ()Ldev/shayxo/composedoc/model/ListKind;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/StructureCommand$MarkerStyle : dev/shayxo/composedoc/domain/StructureCommand {
+	public fun <init> (Ldev/shayxo/composedoc/model/MarkerTypography;)V
+	public final fun component1 ()Ldev/shayxo/composedoc/model/MarkerTypography;
+	public final fun copy (Ldev/shayxo/composedoc/model/MarkerTypography;)Ldev/shayxo/composedoc/domain/StructureCommand$MarkerStyle;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/StructureCommand$MarkerStyle;Ldev/shayxo/composedoc/model/MarkerTypography;ILjava/lang/Object;)Ldev/shayxo/composedoc/domain/StructureCommand$MarkerStyle;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getTypography ()Ldev/shayxo/composedoc/model/MarkerTypography;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/StructureCommand$Outdent : dev/shayxo/composedoc/domain/StructureCommand {
+	public static final field INSTANCE Ldev/shayxo/composedoc/domain/StructureCommand$Outdent;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/StructureCommand$PageBreak : dev/shayxo/composedoc/domain/StructureCommand {
+	public static final field INSTANCE Ldev/shayxo/composedoc/domain/StructureCommand$PageBreak;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/StructureCommand$Pages : dev/shayxo/composedoc/domain/StructureCommand {
+	public fun <init> (Ldev/shayxo/composedoc/model/PageSettings;)V
+	public final fun component1 ()Ldev/shayxo/composedoc/model/PageSettings;
+	public final fun copy (Ldev/shayxo/composedoc/model/PageSettings;)Ldev/shayxo/composedoc/domain/StructureCommand$Pages;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/StructureCommand$Pages;Ldev/shayxo/composedoc/model/PageSettings;ILjava/lang/Object;)Ldev/shayxo/composedoc/domain/StructureCommand$Pages;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getSettings ()Ldev/shayxo/composedoc/model/PageSettings;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/StructureCommand$Pagination : dev/shayxo/composedoc/domain/StructureCommand {
+	public fun <init> (Ldev/shayxo/composedoc/model/PaginationRules;)V
+	public final fun component1 ()Ldev/shayxo/composedoc/model/PaginationRules;
+	public final fun copy (Ldev/shayxo/composedoc/model/PaginationRules;)Ldev/shayxo/composedoc/domain/StructureCommand$Pagination;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/StructureCommand$Pagination;Ldev/shayxo/composedoc/model/PaginationRules;ILjava/lang/Object;)Ldev/shayxo/composedoc/domain/StructureCommand$Pagination;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getRules ()Ldev/shayxo/composedoc/model/PaginationRules;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/StructureCommand$ReplaceImage : dev/shayxo/composedoc/domain/StructureCommand {
+	public fun <init> (Ljava/lang/String;Ldev/shayxo/composedoc/model/ImageResource;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ldev/shayxo/composedoc/model/ImageResource;
+	public final fun copy (Ljava/lang/String;Ldev/shayxo/composedoc/model/ImageResource;)Ldev/shayxo/composedoc/domain/StructureCommand$ReplaceImage;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/StructureCommand$ReplaceImage;Ljava/lang/String;Ldev/shayxo/composedoc/model/ImageResource;ILjava/lang/Object;)Ldev/shayxo/composedoc/domain/StructureCommand$ReplaceImage;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getData ()Ldev/shayxo/composedoc/model/ImageResource;
+	public final fun getResource ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/StructureCommand$Restart : dev/shayxo/composedoc/domain/StructureCommand {
+	public fun <init> (I)V
+	public final fun component1 ()I
+	public final fun copy (I)Ldev/shayxo/composedoc/domain/StructureCommand$Restart;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/StructureCommand$Restart;IILjava/lang/Object;)Ldev/shayxo/composedoc/domain/StructureCommand$Restart;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getValue ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/StructureCommand$Role : dev/shayxo/composedoc/domain/StructureCommand {
+	public fun <init> (I)V
+	public final fun component1 ()I
+	public final fun copy (I)Ldev/shayxo/composedoc/domain/StructureCommand$Role;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/StructureCommand$Role;IILjava/lang/Object;)Ldev/shayxo/composedoc/domain/StructureCommand$Role;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getLevel ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/StructureCommand$Running : dev/shayxo/composedoc/domain/StructureCommand {
+	public fun <init> (Ldev/shayxo/composedoc/model/RunningContent;)V
+	public final fun component1 ()Ldev/shayxo/composedoc/model/RunningContent;
+	public final fun copy (Ldev/shayxo/composedoc/model/RunningContent;)Ldev/shayxo/composedoc/domain/StructureCommand$Running;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/StructureCommand$Running;Ldev/shayxo/composedoc/model/RunningContent;ILjava/lang/Object;)Ldev/shayxo/composedoc/domain/StructureCommand$Running;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getValue ()Ldev/shayxo/composedoc/model/RunningContent;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/StructureCommandsKt {
+	public static final fun structureEdit (Ldev/shayxo/composedoc/model/Document;Ldev/shayxo/composedoc/model/Selection;Ljava/util/List;Ldev/shayxo/composedoc/domain/StructureCommand;Lkotlin/jvm/functions/Function0;)Lkotlin/Pair;
+}
+

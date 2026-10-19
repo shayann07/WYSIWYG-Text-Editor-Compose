@@ -1,0 +1,82 @@
+[versions]
+agp = "9.3.0"
+kotlin = "2.4.10"
+compose = "1.12.1"
+material3 = "1.12.0-alpha03"
+material-icons-extended = "1.7.3"
+dokka = "2.2.0"
+
+ksoup = "0.6.0"
+jetbrainsMarkdown = "0.7.9"
+coil = "3.6.2"
+kotlinx-serialization = "1.11.0"
+
+vanniktech-maven-publish = "0.37.0"
+
+java = "17"
+
+# For sample
+androidx-appcompat = "1.8.0"
+activity-compose = "1.13.0"
+richeditor = "1.2.1"
+coroutines = "1.11.0"
+ktor = "3.6.0"
+android-minSdk = "23"
+# Navigation 2.10.0-beta01, the pairing for Compose Multiplatform 1.12.1, needs 24. The libraries stay on 23.
+android-sample-minSdk = "24"
+android-compileSdk = "37"
+lifecycle = "2.11.0"
+navigation = "2.10.0-beta01"
+
+[libraries]
+ksoup-html = { module = "com.mohamedrejeb.ksoup:ksoup-html", version.ref = "ksoup" }
+ksoup-entities = { module = "com.mohamedrejeb.ksoup:ksoup-entities", version.ref = "ksoup" }
+jetbrains-markdown = { module = "org.jetbrains:markdown", version.ref = "jetbrainsMarkdown" }
+
+compose-runtime = { group = "org.jetbrains.compose.runtime", name = "runtime", version.ref = "compose" }
+compose-foundation = { group = "org.jetbrains.compose.foundation", name = "foundation", version.ref = "compose" }
+compose-ui = { group = "org.jetbrains.compose.ui", name = "ui", version.ref = "compose" }
+compose-material = { group = "org.jetbrains.compose.material", name = "material", version.ref = "compose" }
+compose-material3 = { group = "org.jetbrains.compose.material3", name = "material3", version.ref = "material3" }
+compose-material-icons-extended = { group = "org.jetbrains.compose.material", name = "material-icons-extended", version.ref = "material-icons-extended" }
+compose-components-resources = { group = "org.jetbrains.compose.components", name = "components-resources", version.ref = "compose" }
+compose-ui-test = { group = "org.jetbrains.compose.ui", name = "ui-test", version.ref = "compose" }
+compose-ui-test-junit4 = { group = "org.jetbrains.compose.ui", name = "ui-test-junit4", version.ref = "compose" }
+
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+
+gradlePlugin-android = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+gradlePlugin-jetbrainsCompose = { module = "org.jetbrains.compose:compose-gradle-plugin", version.ref = "compose" }
+gradlePlugin-kotlin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+gradlePlugin-composeCompiler = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
+vanniktech-maven-publish = { module = "com.vanniktech.maven.publish:com.vanniktech.maven.publish.gradle.plugin", version.ref = "vanniktech-maven-publish" }
+
+# For sample
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidx-appcompat" }
+activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity-compose" }
+richeditor-compose = { module = "com.mohamedrejeb.richeditor:richeditor-compose", version.ref = "richeditor" }
+
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "coroutines" }
+
+coil-svg = { module = "io.coil-kt.coil3:coil-svg", version.ref = "coil" }
+coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
+
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
+ktor-client-js = { module = "io.ktor:ktor-client-js", version.ref = "ktor" }
+ktor-client-wasm = { module = "io.ktor:ktor-client-js-wasm-js", version.ref = "ktor" }
+
+lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "navigation" }
+
+[plugins]
+androidKotlinMultiplatformLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
+androidApplication = { id = "com.android.application", version.ref = "agp" }
+kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "compose" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+bcv = "org.jetbrains.kotlinx.binary-compatibility-validator:0.18.2"

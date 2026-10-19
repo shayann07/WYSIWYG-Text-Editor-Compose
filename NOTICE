@@ -1,0 +1,34 @@
+ComposeDoc
+Copyright 2026 shayann07 and ComposeDoc contributors.
+
+Deliverable licensing boundary
+Apache License 2.0 covers the reusable Compose Multiplatform editor library,
+validation suites and sample applications authored for this repository.
+The owner's future full commercial/cloud document application is a separate
+deliverable. Its future code, hosted services and branding are not granted
+under this repository's license merely because they consume ComposeDoc.
+Third-party material retains its original license; this notice does not
+relicense upstream source, fonts, Unicode data or reference documents.
+
+Third-party attribution ledger
+Unicode 16.0 data: Copyright Unicode, Inc.; the Unicode data license travels
+with the pinned data in the historical validation archive and model resources.
+Complete license: tests/desktop-harness/src/jvmMain/resources/unicode/LICENSE.txt.
+The generated common model tables and common-test corpus derive from those data.
+Noto Nastaliq Urdu and Noto Sans Arabic: retain the bundled font copyright
+notices and SIL Open Font License 1.1, including any Reserved Font Names.
+Gulzar: retain its bundled copyright notice and SIL Open Font License 1.1.
+Complete bundled font notice: tests/suites/urdu/u0/fonts/OFL.txt.
+Pinned upstream URLs, versions and hashes: tests/suites/urdu/u0/fonts.json.
+Noto Nastaliq Urdu: Copyright 2022 The Noto Project Authors.
+Noto Sans Arabic: Copyright 2022 The Noto Project Authors.
+Gulzar: Copyright 2021 The Gulzar Project Authors.
+Kotlin, Compose Multiplatform, Skiko and Skia: retain applicable upstream
+Apache-2.0/BSD and transitive notices in any redistribution.
+Upstream reference snapshots in the test/research archive retain their
+co-located licenses, source URLs and revision/hash ledgers. Inspection of a
+reference does not imply incorporation into the runtime.
+
+The build and dependency inventory must distinguish runtime dependencies,
+test-only tools and reference-only snapshots. This NOTICE supplements, and
+does not replace, the complete upstream license files distributed with them.

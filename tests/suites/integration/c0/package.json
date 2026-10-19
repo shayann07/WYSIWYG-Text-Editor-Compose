@@ -1,0 +1,10 @@
+{
+  "name": "editor-c0-candidate-experiment",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "description": "Isolated replication compatibility experiment; no production algorithm selected",
+  "dependencies": {
+    "yjs": "13.6.33"
+  }
+}

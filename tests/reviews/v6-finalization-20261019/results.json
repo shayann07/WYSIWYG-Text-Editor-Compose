@@ -1,0 +1,220 @@
+{
+  "status": "PASS",
+  "runtime": "v24.20.0",
+  "platform": "win32",
+  "results": [
+    {
+      "name": "B2 reproduce unchanged frozen-model zero-commit defect",
+      "status": "PASS",
+      "evidence": {
+        "baselineDefect": "zero accepted preceding AB island",
+        "expectedWithoutBug": "0123456789",
+        "actual": "0AB3456789"
+      }
+    },
+    {
+      "name": "B2 corrected zero commit preserves islands, baseline, selection and rollback",
+      "status": "PASS",
+      "evidence": {
+        "markPreserved": [
+          3,
+          5
+        ],
+        "afterCancel": "0123456789"
+      }
+    },
+    {
+      "name": "B2 positive cut still accepts earlier islands and bridge exactly",
+      "status": "PASS",
+      "evidence": {
+        "afterCancel": "0AB3X56789"
+      }
+    },
+    {
+      "name": "B2 zero commit does not accept rectangular cell-clearing prelude",
+      "status": "PASS",
+      "evidence": {
+        "cellPreludeAccepted": false
+      }
+    },
+    {
+      "name": "B1 explicit abort cancels composition-target format; terminal accept applies it",
+      "status": "PASS",
+      "evidence": [
+        {
+          "ending": "cancel",
+          "text": "Hello a",
+          "formatOutcome": "Cancelled",
+          "groups": 2
+        },
+        {
+          "ending": "commit",
+          "text": "Hello ab",
+          "formatOutcome": "Applied",
+          "groups": 3
+        }
+      ]
+    },
+    {
+      "name": "F01 FIFO Undo/Format/Undo consumes attempted action, no leaked slot",
+      "status": "PASS",
+      "evidence": [
+        {
+          "ending": "cancel",
+          "queuedFormat": "CompositionCancelled",
+          "nextIndependentUndoWorked": true
+        },
+        {
+          "ending": "commit",
+          "queuedFormat": "TargetDeleted",
+          "nextIndependentUndoWorked": true
+        }
+      ]
+    },
+    {
+      "name": "F03 explicit reconversion acceptance supersedes old committed footprint before abort",
+      "status": "PASS",
+      "evidence": [
+        {
+          "acceptedSecondPrefix": false,
+          "committedBeforeAbort": "aXYd",
+          "abortDoesNotDeleteAcceptedText": true
+        },
+        {
+          "acceptedSecondPrefix": true,
+          "committedBeforeAbort": "aPd",
+          "abortDoesNotDeleteAcceptedText": true
+        }
+      ]
+    },
+    {
+      "name": "F05 actual Yjs binary string loss and reversible numeric-unit transport",
+      "status": "PASS",
+      "evidence": {
+        "version": "13.6.33",
+        "stringSource": [
+          1575,
+          55357,
+          1576
+        ],
+        "stringPeer": [
+          1575,
+          65533,
+          1576
+        ],
+        "numericRoundtripUnits": 65536,
+        "scope": "JS Yjs transport only; no Yrs/Automerge FFI qualification"
+      }
+    },
+    {
+      "name": "F06 actual nested Yjs Undo risk and flat boundary witness preserving peer units",
+      "status": "PASS",
+      "evidence": {
+        "nestedVisibleAfterUndo": "سلام دنیا",
+        "nestedPeerTextSurvives": false,
+        "flatAfterUndo": "سلام دنیا پیاری",
+        "scope": "One split/peer-insert witness, not arbitrary structural undo proof; hidden CRDT content is not necessarily permanently erased"
+      }
+    },
+    {
+      "name": "F02/B8 span closure deduplicates coverage without hiding duplicate flow ownership",
+      "status": "PASS",
+      "evidence": {
+        "rectangles": 18,
+        "closure": [
+          0,
+          0,
+          2,
+          3
+        ],
+        "distinctCells": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      }
+    },
+    {
+      "name": "F02 merge relocates node anchors before retiring empty flow containers",
+      "status": "PASS",
+      "evidence": {
+        "nodeAnchor": {
+          "id": "comment",
+          "node": "p2",
+          "flow": "fa",
+          "offset": 2,
+          "deleted": false
+        },
+        "containerAnchor": {
+          "id": "container",
+          "cell": "b",
+          "flow": "fb",
+          "deleted": true,
+          "orphanReason": "ContainerRetired"
+        },
+        "scope": "Small semantic mapping witness; not implemented rich-table engine"
+      }
+    },
+    {
+      "name": "F07 old marker vote and per-item intrinsic widths are unstable",
+      "status": "PASS",
+      "evidence": {
+        "oldSizeSequence": [
+          24,
+          18,
+          28
+        ],
+        "newSize": 24,
+        "scope": "Policy arithmetic, not a measured renderer or optical baseline test"
+      }
+    },
+    {
+      "name": "F04 document-wide causal staging preserves local frontier until explicit settlement",
+      "status": "PASS",
+      "evidence": {
+        "applied": [
+          1,
+          2
+        ],
+        "scope": "Queue/frontier policy only, not a CRDT/browser implementation"
+      }
+    },
+    {
+      "name": "F09 recovery quota refuses admission without FIFO eviction and preserves durable-base pins",
+      "status": "PASS",
+      "evidence": {
+        "drafts": 10,
+        "accountedDiskBytes": 3048576,
+        "metadataBytes": 401,
+        "scope": "Bounded accounting model, not process/power-loss or heap proof"
+      }
+    },
+    {
+      "name": "B6 geometric inverse is a relation, strict bijection is invalid for coincident stops",
+      "status": "PASS",
+      "evidence": {
+        "scope": "Counterexample to universal unique inverse; real glyph/caret qualification remains Q0"
+      }
+    },
+    {
+      "name": "B3 Android contract normalization differs from strict internal range admission",
+      "status": "PASS",
+      "evidence": {
+        "source": "Android InputConnection.setComposingRegion documented clipping and order normalization",
+        "scope": "Normalizer contract model, not Android device execution"
+      }
+    }
+  ],
+  "sourceHashes": {
+    "verify.mjs": "7744d385f23dee365ffe3cce00ec186a13389195d3cff097adb09ef73ac91969",
+    "frozenDocumentModel": "9e01a4bcb5af95782b5d4fdb2cd26558f04287589e28981267a55cb998787c10",
+    "yjsPackage": "98fdd1ee9edadf72f4608f5bfd8aa4a9f23fca05d2c56b11f5d0520cf267f85d",
+    "yjsDist": "a514c183100fc375eb46df9cb58acaf0deabbf414d2508841336179b1cb45107"
+  },
+  "limits": [
+    "Specification witnesses only; no production edits",
+    "Synthetic input, no native IME/browser/AT/PDF execution",
+    "Grid/recovery/geometry-policy witnesses are bounded models, not production implementations"
+  ]
+}

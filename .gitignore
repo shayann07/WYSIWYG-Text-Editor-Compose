@@ -2,7 +2,14 @@
 /research/tools/
 **/node_modules/
 **/target/
+**/build/
 **/.gradle/
+**/.kotlin/
+local.properties
+/tooling/local/
+/tests/local-evidence/
+/apps/desktop-workspace/local-evidence/
+/tests/archive/research/native-layout-source/skia-release/out/
 **/__pycache__/
 # Generated native build artifacts
 /research/native-layout-source/skia-release/out/
@@ -16,6 +23,7 @@
 *.pdb
 *.exp
 *.jar
+!gradle/wrapper/gradle-wrapper.jar
 *.zip
 *.pyc
 # Local editor/OS state and credentials

@@ -1,0 +1,37 @@
+{
+  "version": "5.2.0",
+  "date": "2026-10-17",
+  "status": "PRODUCT_REPLAN_INTEGRATION_DESIGN_UNQUALIFIED",
+  "productRoadmap": "PRODUCT-ROADMAP.md",
+  "normativeLibraryPlan": "plan-v5.2.md",
+  "standalone": "editor-v5.2-standalone.md",
+  "historicalManifests": [
+    "v5-freeze-manifest.json",
+    "v5.1-spec-manifest.json"
+  ],
+  "implementationChanged": false,
+  "published": false,
+  "newGateStatus": {
+    "S0": "NOT_RUN",
+    "C0": "NOT_RUN",
+    "C1": "NOT_RUN",
+    "R0": "NOT_RUN",
+    "I0": "NOT_RUN",
+    "U0": "NOT_RUN",
+    "U1": "NOT_RUN",
+    "U2": "NOT_RUN",
+    "U3": "NOT_RUN",
+    "U4": "NOT_RUN",
+    "U5": "NOT_RUN"
+  },
+  "previousGates": "G0-G8, GL and GP0-GP3 retain their actual evidence; no advancement from this replan",
+  "hashes": {
+    "PRODUCT-ROADMAP.md": "1ec0db0b0a8b2f460a0b75259aac1bfa6baf912fb5ddda89f2014082cf206839",
+    "FEATURE-CATALOG.md": "01990771895e5516d81bf24f7d8f6533240db0887a201f59f03321ef601ed823",
+    "URDU-ACCEPTANCE.md": "20406d231d128d867b3983bd3123c22eba2721beeffa09dea4fd5aabf683f172",
+    "v5.2-integration-amendment.md": "e11290994d0a1af613e95b4b6388205cab370fa9540a9a150883be66af8a469c",
+    "plan-v5.2.md": "b53bef5e6439f72c10cbab021629b1efbd24a7c5dfb0be33f105fa32645fe266",
+    "editor-v5.2-standalone.md": "7443cfd3af974e635f29d30b26bf47c3a3a8c59be13bb0f361d6c640e8b2bbc6",
+    "planning/build_v5_2_docs.py": "0c4b12749caad4149b74e4193f2d8f3e39a337d592eda42890cf5a2d3c98851d"
+  }
+}

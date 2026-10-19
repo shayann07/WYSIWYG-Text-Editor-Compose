@@ -1,0 +1,502 @@
+{
+  "version": 1,
+  "authority": "Owner approved ComposeDoc dev.shayxo.composedoc and eight-directory cleanup on 2026-10-19",
+  "originalManifests": [
+    {
+      "originalPath": "v5-freeze-manifest.json",
+      "path": "docs/archive/specs/v5.0/v5-freeze-manifest.json",
+      "sha256": "b4e7a7b4e5afa2161d394fc1ff8437279436dc8e35ecd93845a786f736eb6cdc"
+    },
+    {
+      "originalPath": "v5.1-spec-manifest.json",
+      "path": "docs/archive/specs/v5.1/v5.1-spec-manifest.json",
+      "sha256": "87a2f23b19dd4960d68863643a57c1dc550a26e397c66de272b787b3b49ebc0f"
+    },
+    {
+      "originalPath": "docs/plans/v6/v6-freeze-record.json",
+      "path": "docs/plans/v6/v6-freeze-record.json",
+      "sha256": "b1099f24c2a79a894417c39136455b3316c6d26aa59ca115b50cc08dc184bc18"
+    }
+  ],
+  "protected": [
+    {
+      "originalPath": "editor-v5-standalone.md",
+      "path": "docs/archive/specs/v5.0/editor-v5-standalone.md",
+      "sha256": "7949a736473b5756c1e448500904d412cca4168ad7efee1db314561d9255e16e"
+    },
+    {
+      "originalPath": "plan-v5.md",
+      "path": "docs/archive/specs/v5.0/plan-v5.md",
+      "sha256": "78b32765c0533d3e42a76c16fb186c21718d9c5f68cbc5f4ff7c704f1b2e797e"
+    },
+    {
+      "originalPath": "v5-freeze-decision.md",
+      "path": "docs/archive/specs/v5.0/v5-freeze-decision.md",
+      "sha256": "4335e5378cc7254d5f1331ac0b66efa5c49b0ddb746034d05fdb53b2eec7f6c2"
+    },
+    {
+      "originalPath": "v5-qualification-matrix.csv",
+      "path": "docs/archive/specs/v5.0/v5-qualification-matrix.csv",
+      "sha256": "9ccb9c6ccaac680e096d932fa05233621178364264fae062a46677af50fdb66b"
+    },
+    {
+      "originalPath": "v5-validation-report.md",
+      "path": "docs/archive/specs/v5.0/v5-validation-report.md",
+      "sha256": "26311a20fee9e462de5dc7f85abe3b462e9c5155f0a1a4298d3f4bc9444db380"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/awt-boundary-output.txt",
+      "path": "tests/suites/codex/run-20261016-20/awt-boundary-output.txt",
+      "sha256": "ed2b198520e0d944005c0d6740cb535ce41a6c0e0744db6f9ec1305aa13e37f1"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/awt-contract-model.mjs",
+      "path": "tests/suites/codex/run-20261016-20/awt-contract-model.mjs",
+      "sha256": "f90a5ff974b435211f2aefa388d7421dfebc4ebfda404cc50991220942207e26"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/AwtBoundaryProbe.java",
+      "path": "tests/suites/codex/run-20261016-20/AwtBoundaryProbe.java",
+      "sha256": "3dee7d1c7a448451a54699fe7230b5e2cb0bc199a43b1b0c85308f4465554054"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/candidate-b-coordinator.mjs",
+      "path": "tests/suites/codex/run-20261016-20/candidate-b-coordinator.mjs",
+      "sha256": "2ad62940f6c21b0fa00e2cbea9fa39ae4671cfc4e9f1a2e0738d79fa2e405898"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/canonical-codec.mjs",
+      "path": "tests/suites/codex/run-20261016-20/canonical-codec.mjs",
+      "sha256": "54c3dc596b5ad33d32832dc600abfc58304a600d3e3e13c404ddf1747a55aa30"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/document-model-base.mjs",
+      "path": "tests/suites/codex/run-20261016-20/document-model-base.mjs",
+      "sha256": "c702ea4c4adcfca938bf5f458ffb8caf3ae02c60eee19f22268a079e522f6b70"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/document-model.mjs",
+      "path": "tests/suites/codex/run-20261016-20/document-model.mjs",
+      "sha256": "9e01a4bcb5af95782b5d4fdb2cd26558f04287589e28981267a55cb998787c10"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/document-tree.mjs",
+      "path": "tests/suites/codex/run-20261016-20/document-tree.mjs",
+      "sha256": "5104a51318e6699555fc408b30295fd0c168fc23f2a2eb41f9b54b7666447b78"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/failure-1792100791672.json",
+      "path": "tests/suites/codex/run-20261016-20/failure-1792100791672.json",
+      "sha256": "d5d1ecc8c358d56ba7b710b0b9b4f25661fe5f24f796b48b0df1776c03a11781"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/failure-1792100941695.json",
+      "path": "tests/suites/codex/run-20261016-20/failure-1792100941695.json",
+      "sha256": "4c7ee04ebc413bc0e40d0edab5454a97ffbd641a480bf9606faea67015cdf5e7"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/gemini-input-hashes.json",
+      "path": "tests/suites/codex/run-20261016-20/gemini-input-hashes.json",
+      "sha256": "222e3a4a84788f07f953b7464b8df1e899a3df2c1e832fe8efe07e4052b8279e"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/gemini-repair-counterexamples.json",
+      "path": "tests/suites/codex/run-20261016-20/gemini-repair-counterexamples.json",
+      "sha256": "a6a6bc5b309638ec3e40323d2e3adb57f759ff85c8b0b05677520f17b65f8c05"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/gemini-reproduction.json",
+      "path": "tests/suites/codex/run-20261016-20/gemini-reproduction.json",
+      "sha256": "cb49cd590ddd5f21477804fe125d6e32f2649125d637fc7f41746b5eac025af0"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/gemini-storage-audit.json",
+      "path": "tests/suites/codex/run-20261016-20/gemini-storage-audit.json",
+      "sha256": "6bc9d28ac7b2ebf05ed0a3c773c19292ba38b896a706db4050616d9af894a1a2"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/integrated-model.mjs",
+      "path": "tests/suites/codex/run-20261016-20/integrated-model.mjs",
+      "sha256": "d9184239fd52f973deb595557cd2e506ba3eb4d630e21ac47ad2024b27cbf644"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/publish-v5.py",
+      "path": "tests/suites/codex/run-20261016-20/publish-v5.py",
+      "sha256": "050ba97168a4f47cfc2051917bec8a65ae9c0d075c97a434755b7038e0f5ebfb"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/README.md",
+      "path": "tests/suites/codex/run-20261016-20/README.md",
+      "sha256": "da5e1f9c373c3c510d5b31b8c4a232526a7a40ff44c5fb33f9d772b8d827c73f"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/recovery-model.mjs",
+      "path": "tests/suites/codex/run-20261016-20/recovery-model.mjs",
+      "sha256": "84f359bc3ab9d53b83e286ddcf06377a03962dfb14ed37467e4281db6947005d"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/request-contract.mjs",
+      "path": "tests/suites/codex/run-20261016-20/request-contract.mjs",
+      "sha256": "205ea355e0e9f78095a9ca643bf109894c6f80a8d7c123bb207443d170f2adae"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/results.json",
+      "path": "tests/suites/codex/run-20261016-20/results.json",
+      "sha256": "b0375b5374e585b8affa1767e03f10fd6b98b74e270df51d1b1ae27e8a75f50f"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/structural-model.mjs",
+      "path": "tests/suites/codex/run-20261016-20/structural-model.mjs",
+      "sha256": "aeca8f7c28b3ce023e41e61de850f31cde7a3b6c77c0ccabfe0c9a7e7cdf4e08"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/test-document-mutations.mjs",
+      "path": "tests/suites/codex/run-20261016-20/test-document-mutations.mjs",
+      "sha256": "3422f629c06d7c7dc1eec4df73eaf6198df37301dbd9617f6678be01f30ac2af"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/test-document.mjs",
+      "path": "tests/suites/codex/run-20261016-20/test-document.mjs",
+      "sha256": "29aa261d927a4ebd996a234a6bd9f6162c019012917186275811bf8bc269586f"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/test-integrated.mjs",
+      "path": "tests/suites/codex/run-20261016-20/test-integrated.mjs",
+      "sha256": "bd0b3afe098469ff3a109806eeb0a85b2f80dbfff8f6e435ed534d6262d837b4"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/test-measure.mjs",
+      "path": "tests/suites/codex/run-20261016-20/test-measure.mjs",
+      "sha256": "64f9c2abde01f13cafe8e67e7a79443dcf71e8a16813cb90564bd7887f700072"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/test-recovery.mjs",
+      "path": "tests/suites/codex/run-20261016-20/test-recovery.mjs",
+      "sha256": "fe7b5f7e9045ff04b1ff3b8a12abe3f4297ae1e78ebc02f7c1ed4a436b8cf98d"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/test-repairs.mjs",
+      "path": "tests/suites/codex/run-20261016-20/test-repairs.mjs",
+      "sha256": "2d452d47069276f897fbd1fafc8dbc3a06c1b922b495c8bd9dd10f1a7b8652fa"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/test-unicode.mjs",
+      "path": "tests/suites/codex/run-20261016-20/test-unicode.mjs",
+      "sha256": "8148c24d8be8ce19893910f2a58d8c7dea114140bb0eb2b3d189bf0db2e29c8c"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/test-v5.mjs",
+      "path": "tests/suites/codex/run-20261016-20/test-v5.mjs",
+      "sha256": "d6c7be35764bbaaf199bbc89ca4f1d657e6e32d7a0d4caec046e061e17393118"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/unicode/DerivedCoreProperties.txt",
+      "path": "tests/suites/codex/run-20261016-20/unicode/DerivedCoreProperties.txt",
+      "sha256": "39d35161f2954497f69e08bdb9e701493f476a3d30222de20028feda36c1dabd"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/unicode/emoji-data.txt",
+      "path": "tests/suites/codex/run-20261016-20/unicode/emoji-data.txt",
+      "sha256": "f1365a5173eee18e1f98b240cdc492e84a25f1ce7e0c9d1094eb29c41a22696a"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/unicode/GraphemeBreakProperty.txt",
+      "path": "tests/suites/codex/run-20261016-20/unicode/GraphemeBreakProperty.txt",
+      "sha256": "c29360bd6f7132811d701d29069541e827eb44bfc4c8fbde8c370d6982689dc1"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/unicode/GraphemeBreakTest-16.0.0.txt",
+      "path": "tests/suites/codex/run-20261016-20/unicode/GraphemeBreakTest-16.0.0.txt",
+      "sha256": "ee2b9354d270ac061b29f09662cafea06341d77e704b8cc6bd72aaeeda363cb5"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/unicode/LICENSE.txt",
+      "path": "tests/suites/codex/run-20261016-20/unicode/LICENSE.txt",
+      "sha256": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/unicode/source.json",
+      "path": "tests/suites/codex/run-20261016-20/unicode/source.json",
+      "sha256": "e8dcf3a439131ae24a3b44c0fe4cbe1a982bf07ab02a0a8acb797e5c515e10a2"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/unicode/sources.json",
+      "path": "tests/suites/codex/run-20261016-20/unicode/sources.json",
+      "sha256": "cd0c04636d3f4d3c6c5970cda7f9ff3e2c11195cce5f17c37db932ab48473b20"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/unicode-grapheme.mjs",
+      "path": "tests/suites/codex/run-20261016-20/unicode-grapheme.mjs",
+      "sha256": "c9ce9ad7d9965d4c9dce64c610ecd950db1197c83d25c88b7baac89e8fe84309"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/v5-integration-contract.md",
+      "path": "tests/suites/codex/run-20261016-20/v5-integration-contract.md",
+      "sha256": "62f92c04c2d9b99da35e06ca7feabf5ea779aa238d667d11e01ec3b8fc57cfae"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/v5-recovery-contract.md",
+      "path": "tests/suites/codex/run-20261016-20/v5-recovery-contract.md",
+      "sha256": "ef93f3cee702a289fc636addef3c5cb32355bdc327620d921b42eef8417aef43"
+    },
+    {
+      "originalPath": "validation/codex/run-20261016-20/verify.mjs",
+      "path": "tests/suites/codex/run-20261016-20/verify.mjs",
+      "sha256": "0ebd4071948ea244b683994f9a4ad79852dda59341485b694be859cf7c30ebaf"
+    },
+    {
+      "originalPath": "plan-v5.1.md",
+      "path": "docs/archive/specs/v5.1/plan-v5.1.md",
+      "sha256": "be0620bc9191ba0872b17e3ac762ad97776ca2af269d9e54c7a71d6724d8d3db"
+    },
+    {
+      "originalPath": "editor-v5.1-standalone.md",
+      "path": "docs/archive/specs/v5.1/editor-v5.1-standalone.md",
+      "sha256": "2f0d0b02cb62ba4728e8f77c63f5cf74e90e04ea40a4abf6b11d7002940bd495"
+    },
+    {
+      "originalPath": "v5.1-scope-amendment.md",
+      "path": "docs/archive/specs/v5.1/v5.1-scope-amendment.md",
+      "sha256": "1d9186a94bb3179d8cff927e007b1c5b206ad11ee136547e804cae414058225c"
+    },
+    {
+      "originalPath": "docs/plans/v6/editor-v6-standalone.md",
+      "path": "docs/plans/v6/editor-v6-standalone.md",
+      "sha256": "51b0471269af6c6b2e758907c893321e84a64690c4ad42ba40c1645f1b3024cd"
+    },
+    {
+      "originalPath": "docs/plans/v6/final-contract-decisions.md",
+      "path": "docs/plans/v6/final-contract-decisions.md",
+      "sha256": "dd1d43d50c414fef61af1573d69842f66d499ff48c239050d0020041a087433e"
+    },
+    {
+      "originalPath": "docs/plans/v6/freeze-decision.md",
+      "path": "docs/plans/v6/freeze-decision.md",
+      "sha256": "12ccd34609ec733b5360bfe1b7e68deb604bac59294997370c10b267bdb293ad"
+    },
+    {
+      "originalPath": "docs/plans/v6/plan-v6.md",
+      "path": "docs/plans/v6/plan-v6.md",
+      "sha256": "51b0471269af6c6b2e758907c893321e84a64690c4ad42ba40c1645f1b3024cd"
+    },
+    {
+      "originalPath": "docs/plans/v6/source.md",
+      "path": "docs/plans/v6/source.md",
+      "sha256": "f506a6fcbf7ac114ef4c6bf141f878a380bc83d2443f0cb2f55030539718c232"
+    },
+    {
+      "originalPath": "docs/plans/v6/v6-plan-manifest.json",
+      "path": "docs/plans/v6/v6-plan-manifest.json",
+      "sha256": "660913904c311298adca6a3baa93cabc0f9c034f4fd83420dd22d6f410bff991"
+    },
+    {
+      "originalPath": "docs/prompts/argon-v6-review-prompt.md",
+      "path": "docs/prompts/argon-v6-review-prompt.md",
+      "sha256": "68dbeb82c901bb3a8a7017ba427878810fcc22ab8e346acf90989fbcfb16c864"
+    },
+    {
+      "originalPath": "docs/prompts/v6-next-session.md",
+      "path": "docs/prompts/v6-next-session.md",
+      "sha256": "36bf949e1e6658b17daaf06f34275146ff673328861415996fe342bece72e8f9"
+    },
+    {
+      "originalPath": "docs/relocations.json",
+      "path": "docs/archive/sealed-tooling/v6/docs/relocations.json",
+      "sha256": "03f3f69f2c34bd9f29942bf10765289c9449c72e80106cbbbb565f57755605b1"
+    },
+    {
+      "originalPath": "docs/reports/v6-final-review-disposition-20261019.md",
+      "path": "docs/reports/v6-final-review-disposition-20261019.md",
+      "sha256": "f5bcd8fae012f4534d64630194eb36a861a9325fcf6d2e096a72f3fccc3c1584"
+    },
+    {
+      "originalPath": "planning/build_v6_docs.py",
+      "path": "docs/archive/sealed-tooling/v6/planning/build_v6_docs.py",
+      "sha256": "10e2ce46657e1e7a8b59d985b467064ef037310753145e4cdefb792a1326a972"
+    },
+    {
+      "originalPath": "planning/doc_paths.py",
+      "path": "docs/archive/sealed-tooling/v6/planning/doc_paths.py",
+      "sha256": "ef5f447114046f58d39355cca7b88201647a3367c03c02d82db01953bdeab676"
+    },
+    {
+      "originalPath": "planning/research_v6.py",
+      "path": "docs/archive/sealed-tooling/v6/planning/research_v6.py",
+      "sha256": "f79e1462c3e6372e912f7840e00cc994e2394725170a472603f93e069d58886b"
+    },
+    {
+      "originalPath": "planning/v6_contract_corrections.py",
+      "path": "docs/archive/sealed-tooling/v6/planning/v6_contract_corrections.py",
+      "sha256": "461f3ba1ef214964187fd012f177c4fb3a08598a6c5c4b3ae90c70aa510808cd"
+    },
+    {
+      "originalPath": "research/v6-reuse-20261019/ledger.json",
+      "path": "tests/archive/research/v6-reuse-20261019/ledger.json",
+      "sha256": "591ce90157514327fed67882b7204a98e3d27188d687cfc1bcfcbc27b83eeb74"
+    },
+    {
+      "originalPath": "reviews/v6-finalization-20261019/antigravity-argon.md",
+      "path": "tests/reviews/v6-finalization-20261019/antigravity-argon.md",
+      "sha256": "04d77a34ed9f7c1b78b64c7189f4b1fa2ffe166f3e1611a95a8f9dabb25cd113"
+    },
+    {
+      "originalPath": "reviews/v6-finalization-20261019/before-hashes.json",
+      "path": "tests/reviews/v6-finalization-20261019/before-hashes.json",
+      "sha256": "e51d5c06e2e8d58774b88f1bd87de03f5fe4e790ee9cbc0e64d56db555a0b774"
+    },
+    {
+      "originalPath": "reviews/v6-finalization-20261019/chatbot-argon.md",
+      "path": "tests/reviews/v6-finalization-20261019/chatbot-argon.md",
+      "sha256": "249b8b3b7160cd286c9c2e79bc3346456071a73c715f7620faaa0055730c80e0"
+    },
+    {
+      "originalPath": "reviews/v6-finalization-20261019/inherited-results.json",
+      "path": "tests/reviews/v6-finalization-20261019/inherited-results.json",
+      "sha256": "690679537929d7ae25ace1beb87a0ea467331b19d030ce860bfb40694bd92583"
+    },
+    {
+      "originalPath": "reviews/v6-finalization-20261019/results.json",
+      "path": "tests/reviews/v6-finalization-20261019/results.json",
+      "sha256": "00f6913cd387ae9af67838c06bec5e1560afd144c9b9baba96205479ac0641a9"
+    },
+    {
+      "originalPath": "reviews/v6-finalization-20261019/run-inherited.mjs",
+      "path": "tests/reviews/v6-finalization-20261019/run-inherited.mjs",
+      "sha256": "b1992ac92689092afd9875b59781254af30ed9aadbbeeb495affe16472762f26"
+    },
+    {
+      "originalPath": "reviews/v6-finalization-20261019/upstream/cascade-versions.txt",
+      "path": "tests/reviews/v6-finalization-20261019/upstream/cascade-versions.txt",
+      "sha256": "d736a905c1db7e8da0d490fa06a2c5035094185e3f554cfe06888b93aa5242e8"
+    },
+    {
+      "originalPath": "reviews/v6-finalization-20261019/upstream/kite-notice.txt",
+      "path": "tests/reviews/v6-finalization-20261019/upstream/kite-notice.txt",
+      "sha256": "76cc9635d1dfb0f1db298d7ce138217751485fb57bed8af6b34240cab77181e2"
+    },
+    {
+      "originalPath": "reviews/v6-finalization-20261019/upstream/kite-versions.txt",
+      "path": "tests/reviews/v6-finalization-20261019/upstream/kite-versions.txt",
+      "sha256": "5e88512f9f5763c87122c06fd5eb81ab8d3c17fd035dd46e7613d67853cd8e44"
+    },
+    {
+      "originalPath": "reviews/v6-finalization-20261019/upstream/ledger.json",
+      "path": "tests/reviews/v6-finalization-20261019/upstream/ledger.json",
+      "sha256": "4717709d9aebf9aa97333360586c017b515e33a3621d087bffcc159d0fe9007c"
+    },
+    {
+      "originalPath": "reviews/v6-finalization-20261019/upstream/pm-1.42.6-LICENSE",
+      "path": "tests/reviews/v6-finalization-20261019/upstream/pm-1.42.6-LICENSE",
+      "sha256": "ef0b452ced6304db2ce78ca66de1fc7b97bab05bc1750c95df359ed3fe1d65c8"
+    },
+    {
+      "originalPath": "reviews/v6-finalization-20261019/upstream/pm-1.42.6-input.ts",
+      "path": "tests/reviews/v6-finalization-20261019/upstream/pm-1.42.6-input.ts",
+      "sha256": "58b78c5da37cb9cc255e494c72566c1013eae4972a4b093cca866a6b7de255e4"
+    },
+    {
+      "originalPath": "reviews/v6-finalization-20261019/upstream/pm-1.42.6-package.json",
+      "path": "tests/reviews/v6-finalization-20261019/upstream/pm-1.42.6-package.json",
+      "sha256": "79841007db65e2d7abf34585ae8accff299081c2f2731b81c138afef050dd29a"
+    },
+    {
+      "originalPath": "reviews/v6-finalization-20261019/upstream/pm-artifact.json",
+      "path": "tests/reviews/v6-finalization-20261019/upstream/pm-artifact.json",
+      "sha256": "8edddbb9b0f27df418f5fe73da696b685bb6fc57fde416e6e1a4018e00fc6c3b"
+    },
+    {
+      "originalPath": "reviews/v6-finalization-20261019/upstream/pm-forward.txt",
+      "path": "tests/reviews/v6-finalization-20261019/upstream/pm-forward.txt",
+      "sha256": "1b8d98151d3e333c247fc1c06846ca0b30cb540caed592aae9c76351c488a1de"
+    },
+    {
+      "originalPath": "reviews/v6-finalization-20261019/upstream/pm-npm.txt",
+      "path": "tests/reviews/v6-finalization-20261019/upstream/pm-npm.txt",
+      "sha256": "329dada11ccab0e7207d3953f72162953ae9b1879e722ae7960ca528ef32a560"
+    },
+    {
+      "originalPath": "reviews/v6-finalization-20261019/upstream/rich-versions.txt",
+      "path": "tests/reviews/v6-finalization-20261019/upstream/rich-versions.txt",
+      "sha256": "63303d30b480ac2f24d4080b6652aeb5318cd6fa4b02ac0f6ef23cfe838c3505"
+    },
+    {
+      "originalPath": "reviews/v6-finalization-20261019/verify.mjs",
+      "path": "tests/reviews/v6-finalization-20261019/verify.mjs",
+      "sha256": "7744d385f23dee365ffe3cce00ec186a13389195d3cff097adb09ef73ac91969"
+    }
+  ],
+  "sealedOriginals": {
+    "docs/relocations.json": "docs/archive/sealed-tooling/v6/docs/relocations.json",
+    "planning/doc_paths.py": "docs/archive/sealed-tooling/v6/planning/doc_paths.py",
+    "planning/build_v6_docs.py": "docs/archive/sealed-tooling/v6/planning/build_v6_docs.py",
+    "planning/research_v6.py": "docs/archive/sealed-tooling/v6/planning/research_v6.py",
+    "planning/v6_contract_corrections.py": "docs/archive/sealed-tooling/v6/planning/v6_contract_corrections.py"
+  },
+  "prefixes": {
+    "research/tools/": "tooling/local/",
+    "research/": "tests/archive/research/",
+    "research_notes/": "docs/archive/research-notes/",
+    "validation/": "tests/suites/",
+    "reviews/": "tests/reviews/",
+    "planning/": "tooling/docs/",
+    "desktop-prototype/": "apps/desktop-workspace/"
+  },
+  "paths": {
+    "editor-v5-standalone.md": "docs/archive/specs/v5.0/editor-v5-standalone.md",
+    "plan-v5.md": "docs/archive/specs/v5.0/plan-v5.md",
+    "v5-freeze-decision.md": "docs/archive/specs/v5.0/v5-freeze-decision.md",
+    "v5-freeze-manifest.json": "docs/archive/specs/v5.0/v5-freeze-manifest.json",
+    "v5-qualification-matrix.csv": "docs/archive/specs/v5.0/v5-qualification-matrix.csv",
+    "v5-validation-report.md": "docs/archive/specs/v5.0/v5-validation-report.md",
+    "editor-v5.1-standalone.md": "docs/archive/specs/v5.1/editor-v5.1-standalone.md",
+    "plan-v5.1.md": "docs/archive/specs/v5.1/plan-v5.1.md",
+    "v5.1-scope-amendment.md": "docs/archive/specs/v5.1/v5.1-scope-amendment.md",
+    "v5.1-spec-manifest.json": "docs/archive/specs/v5.1/v5.1-spec-manifest.json",
+    "antigravity-plan-diff.md": "docs/archive/antigravity/antigravity-plan-diff.md",
+    "antigravity-validation-matrix.csv": "docs/archive/antigravity/antigravity-validation-matrix.csv",
+    "antigravity-validation-prompt.md": "docs/archive/antigravity/antigravity-validation-prompt.md",
+    "antigravity-validation-report.md": "docs/archive/antigravity/antigravity-validation-report.md",
+    "argon-v6-review-prompt.md": "docs/prompts/argon-v6-review-prompt.md",
+    "editor-4.11.0-review-prompt.md": "docs/archive/v4/editor-4.11.0-review-prompt.md",
+    "editor-4.11.0-standalone-review.md": "docs/archive/v4/editor-4.11.0-standalone-review.md",
+    "editor-4.12.0-review-prompt.md": "docs/archive/v4/editor-4.12.0-review-prompt.md",
+    "editor-4.12.0-standalone-review.md": "docs/archive/v4/editor-4.12.0-standalone-review.md",
+    "editor-4.13.0-review-prompt.md": "docs/archive/v4/editor-4.13.0-review-prompt.md",
+    "editor-4.13.0-standalone-review.md": "docs/archive/v4/editor-4.13.0-standalone-review.md",
+    "editor-4.14.0-review-prompt.md": "docs/archive/v4/editor-4.14.0-review-prompt.md",
+    "editor-4.14.0-standalone-review.md": "docs/archive/v4/editor-4.14.0-standalone-review.md",
+    "editor-4.15.0-review-prompt.md": "docs/archive/v4/editor-4.15.0-review-prompt.md",
+    "editor-4.15.0-standalone-review.md": "docs/archive/v4/editor-4.15.0-standalone-review.md",
+    "editor-v5.2-standalone.md": "docs/plans/v5.2/editor-v5.2-standalone.md",
+    "editor-v6-standalone.md": "docs/plans/v6/editor-v6-standalone.md",
+    "FEATURE-CATALOG.md": "docs/project/FEATURE-CATALOG.md",
+    "gemini-review-prompt.md": "docs/archive/research/gemini-review-prompt.md",
+    "orig_task.txt": "docs/archive/research/orig_task.txt",
+    "plan-v1.md": "docs/archive/early-plans/plan-v1.md",
+    "plan-v2.md": "docs/archive/early-plans/plan-v2.md",
+    "plan-v3.md": "docs/archive/early-plans/plan-v3.md",
+    "plan-v4.md": "docs/archive/v4/plan-v4.md",
+    "plan-v5.2.md": "docs/plans/v5.2/plan-v5.2.md",
+    "plan-v6.md": "docs/plans/v6/plan-v6.md",
+    "prior_attempt.txt": "docs/archive/research/prior_attempt.txt",
+    "PRODUCT-ROADMAP.md": "docs/project/PRODUCT-ROADMAP.md",
+    "progress.md": "docs/archive/research/progress.md",
+    "PROJECT-JOURNAL.md": "docs/project/PROJECT-JOURNAL.md",
+    "URDU-ACCEPTANCE.md": "docs/project/URDU-ACCEPTANCE.md",
+    "v5.2-integration-amendment.md": "docs/plans/v5.2/v5.2-integration-amendment.md",
+    "v5.2-plan-manifest.json": "docs/plans/v5.2/v5.2-plan-manifest.json",
+    "v6-plan-manifest.json": "docs/plans/v6/v6-plan-manifest.json",
+    "reports/Argon host lifecycle prompt.md": "docs/reports/Argon host lifecycle prompt.md",
+    "reports/Editor library reuse decision.md": "docs/reports/Editor library reuse decision.md",
+    "reports/independent-live-ui-audit-20261019.md": "docs/reports/independent-live-ui-audit-20261019.md",
+    "reports/overnight-progress.md": "docs/reports/overnight-progress.md",
+    "reports/structured-milestone-completion-audit.md": "docs/reports/structured-milestone-completion-audit.md",
+    "reports/v6-plan-validation-20261019.md": "docs/reports/v6-plan-validation-20261019.md",
+    "reports/visual-multilingual-repairs-20261019.md": "docs/reports/visual-multilingual-repairs-20261019.md",
+    "desktop-prototype/WRITING.md": "docs/guides/WRITING.md",
+    "desktop-prototype/RECOVERY.md": "docs/guides/RECOVERY.md",
+    "desktop-prototype/ACCESSIBILITY.md": "docs/guides/ACCESSIBILITY.md",
+    "planning/v6-core.md": "docs/plans/v6/source.md"
+  },
+  "previousRelocationRecord": "docs/archive/sealed-tooling/v6/docs/relocations.json"
+}

@@ -1,0 +1,36 @@
+{
+  "relocations": [
+    {
+      "from": "apps/desktop-workspace/pom.xml",
+      "to": "tests/archive/pre-gradle-source-20261019/pom.xml",
+      "hashes": {
+        "pom.xml": "36466c45290569fe5e541c4a14f577275395696a37e57658c8a78810802ad6e0"
+      }
+    },
+    {
+      "from": "apps/desktop-workspace/validation",
+      "to": "tests/archive/desktop-validation",
+      "hashes": {
+        "antigravity-input-audit.md": "2cd29f728588029f4a006ac065fda4ac7c69fda77201eb1fd1a1010f5614ccbb",
+        "antigravity-input-results.json": "99e6af91390d53b218237f54aaadca71ebe05f66569e86766f6fd3d5e5b40ed1",
+        "continuation-report.md": "796c689e0941a34bf29f501dbdb4ef8bcfedd90d36ac4a4359f999f8cfe41703",
+        "critical-correctness-repair.md": "2e213ec25d47f630e7b64d624c0280b3f9e67c5f05753373c195d16e73be047d",
+        "critical-correctness-results.json": "a6855fc029ce6a9c7def3eb3d123dc4c3c4b5937227572fd1ee50894fa138e3e",
+        "dependencies.txt": "733082083232ef236ca8d68dd732cb6543e2f55d5218291a27fa72234ed62e1c",
+        "file-ui-checks.json": "8e6453f9dcca8b527fe8d27c4424289e4bcab0deed13601b96e1576f7039e978",
+        "format-ui-checks.json": "c5c5acf42c183e68f3a14c39689ee8a6ffe7432f432db8d16ec7356f03aa52df",
+        "formatting-report.md": "b9ea281b54d7397d8899fa22312af2bd37dc28a22b0ad6164e397a2db8a5a774",
+        "frozen-v5-check.json": "6af7a973351b82a88f128cb36121a05d7b3199abf3d5ebf5842a34e60adcfd43",
+        "host-checks.json": "5f8a68475f9c90a4925dc1b31e5dbcffc0ee40b555a4ce20e434b8ef35778a24",
+        "kernel-checks.txt": "84165bf04e12a7abaa54bbb74b68436a27bf698788d0bfdaab566c518b93ede5",
+        "launcher-check.json": "7fbc8dd7a66466f0250ae69b68bfa74b3699b0f0a3d4a710dc421ddf0a11d70b",
+        "paragraph-layout-audit.md": "a4839133c1c305a59ac6983989d8f5af33c3fb7ad9a0d791eb651bc1b724b16f",
+        "paragraph-layout-results.json": "93f2abaf57cf8305c4521b610637f696df8e38a0b79069ea08e0562e24a7d113",
+        "report.md": "43ef5adc02ad0e11a59fbfd3b519fde192dca9356709c765afb00ac1960597d1",
+        "source-hashes.json": "82565af00fdeaa3342ca56b3c83a06814c5c18278ae18fd36032286189cc5ea6",
+        "stress-checks.txt": "b31c306d62581d5ec92728e0b3bc71c4677aa73073df2cfa6c3e23ca9588acb9",
+        "ui-checks.json": "087d8391acc5c7a1ac1e68470a18d756020de7bd2458fcd1571ac31d8141ad8e"
+      }
+    }
+  ]
+}

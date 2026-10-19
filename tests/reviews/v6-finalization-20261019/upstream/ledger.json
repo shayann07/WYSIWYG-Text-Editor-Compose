@@ -1,0 +1,97 @@
+[
+  {
+    "id": "rich-versions",
+    "url": "https://raw.githubusercontent.com/MohamedRejeb/compose-rich-editor/b972d50f046615fcc96bc9bbac44e6e15eabdea7/gradle/libs.versions.toml",
+    "file": "reviews/v6-finalization-20261019/upstream/rich-versions.txt",
+    "sha256": "63303d30b480ac2f24d4080b6652aeb5318cd6fa4b02ac0f6ef23cfe838c3505",
+    "lines": [
+      "kotlin = \"2.4.10\"",
+      "compose = \"1.12.1\"",
+      "activity-compose = \"1.13.0\"",
+      "coil-compose = { module = \"io.coil-kt.coil3:coil-compose\", version.ref = \"coil\" }",
+      "gradlePlugin-jetbrainsCompose = { module = \"org.jetbrains.compose:compose-gradle-plugin\", version.ref = \"compose\" }",
+      "gradlePlugin-kotlin = { module = \"org.jetbrains.kotlin:kotlin-gradle-plugin\", version.ref = \"kotlin\" }",
+      "activity-compose = { module = \"androidx.activity:activity-compose\", version.ref = \"activity-compose\" }",
+      "richeditor-compose = { module = \"com.mohamedrejeb.richeditor:richeditor-compose\", version.ref = \"richeditor\" }",
+      "lifecycle-viewmodel-compose = { module = \"org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose\", version.ref = \"lifecycle\" }",
+      "navigation-compose = { module = \"org.jetbrains.androidx.navigation:navigation-compose\", version.ref = \"navigation\" }"
+    ]
+  },
+  {
+    "id": "cascade-versions",
+    "url": "https://raw.githubusercontent.com/linreal/cascade-editor/29c4d4835aca9b6391fecd28b58cb5213d7a5d1d/gradle/libs.versions.toml",
+    "file": "reviews/v6-finalization-20261019/upstream/cascade-versions.txt",
+    "sha256": "d736a905c1db7e8da0d490fa06a2c5035094185e3f554cfe06888b93aa5242e8",
+    "lines": [
+      "kotlin = \"2.3.21\"",
+      "androidx-activity-compose = { module = \"androidx.activity:activity-compose\", version.ref = \"androidx-activity\" }",
+      "androidx-lifecycle-viewmodelCompose = { module = \"org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose\", version.ref = \"androidx-lifecycle\" }",
+      "androidx-lifecycle-runtimeCompose = { module = \"org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose\", version.ref = \"androidx-lifecycle\" }"
+    ]
+  },
+  {
+    "id": "kite-versions",
+    "url": "https://raw.githubusercontent.com/yuroyami/KitePDF/d177c784e50e3f58e0220b6476c55c566ba7f678/gradle/libs.versions.toml",
+    "file": "reviews/v6-finalization-20261019/upstream/kite-versions.txt",
+    "sha256": "5e88512f9f5763c87122c06fd5eb81ab8d3c17fd035dd46e7613d67853cd8e44",
+    "lines": [
+      "kotlin = \"2.4.21\"",
+      "activityCompose = \"1.14.0-alpha03\"",
+      "kiteplayer-compose = { module = \"io.github.yuroyami:kiteplayer-compose\", version.ref = \"kiteplayer\" }",
+      "android-activity-compose = { module = \"androidx.activity:activity-compose\", version.ref = \"activityCompose\" }",
+      "compose-multiplatform = ["
+    ]
+  },
+  {
+    "id": "kite-notice",
+    "url": "https://raw.githubusercontent.com/yuroyami/KitePDF/d177c784e50e3f58e0220b6476c55c566ba7f678/NOTICE",
+    "file": "reviews/v6-finalization-20261019/upstream/kite-notice.txt",
+    "sha256": "76cc9635d1dfb0f1db298d7ce138217751485fb57bed8af6b34240cab77181e2"
+  },
+  {
+    "id": "pm-npm",
+    "url": "https://registry.npmjs.org/prosemirror-view/latest",
+    "file": "reviews/v6-finalization-20261019/upstream/pm-npm.txt",
+    "sha256": "329dada11ccab0e7207d3953f72162953ae9b1879e722ae7960ca528ef32a560",
+    "summary": {
+      "version": "1.42.6",
+      "repository": {
+        "url": "git+https://code.haverbeke.berlin/prosemirror/prosemirror-view.git",
+        "type": "git"
+      },
+      "dist": {
+        "shasum": "d72d3ddafdc9c97db870f051f5cdd7c872eb53fc",
+        "tarball": "https://registry.npmjs.org/prosemirror-view/-/prosemirror-view-1.42.6.tgz",
+        "fileCount": 24,
+        "integrity": "sha512-3g25f6hKV2bBxo3puH3EcYWmmVNSH0iWmNsMVT7sugDSpA025jgpOLarcDWr39SdzPjYMaiYtRdNtXialPSjEQ==",
+        "signatures": [
+          {
+            "sig": "MEYCIQD4guRhyZDbRV1gGt7qu54XaSCJWEg5r0Ch7+jy5WaVuQIhAOb4H3CcjxV+DEW7AX2+Phqg1y7giDl31HPXQakXsL89",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          },
+          {
+            "sig": "MEUCIQCPDgh5xQvRosfXe7gVCt8AAR5yOmdAGPEeIr34Sb3+mwIgbiQaH16YifTlM/0xnm0xPoh+uWsN556oWOLBjoXOFuM=",
+            "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+          }
+        ],
+        "unpackedSize": 905889
+      }
+    }
+  },
+  {
+    "id": "pm-forward",
+    "url": "https://raw.githubusercontent.com/ProseMirror/prosemirror-view/ca4c78e9b56f1b164c0b3758b59d8748f11b7534/README.md",
+    "file": "reviews/v6-finalization-20261019/upstream/pm-forward.txt",
+    "sha256": "1b8d98151d3e333c247fc1c06846ca0b30cb540caed592aae9c76351c488a1de"
+  },
+  {
+    "id": "automerge-release",
+    "url": "https://api.github.com/repos/automerge/automerge/releases/latest",
+    "error": "HTTP Error 403: rate limit exceeded"
+  },
+  {
+    "id": "kite-release",
+    "url": "https://api.github.com/repos/yuroyami/KitePDF/releases/latest",
+    "error": "HTTP Error 403: rate limit exceeded"
+  }
+]

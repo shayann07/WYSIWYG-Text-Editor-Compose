@@ -1,0 +1,23 @@
+{
+  "version": "5.1.0",
+  "date": "2026-10-17",
+  "status": "OWNER_APPROVED_SCOPE_AMENDMENT_PAGINATION_DESIGN_UNQUALIFIED",
+  "normativeSource": "plan-v5.1.md",
+  "standalone": "editor-v5.1-standalone.md",
+  "previousFrozenManifest": "v5-freeze-manifest.json",
+  "previousFrozenTag": "spec-v5.0.0",
+  "gates": {
+    "GL": "NOT_RUN",
+    "GP0": "NOT_RUN",
+    "GP1": "NOT_RUN",
+    "GP2": "NOT_RUN",
+    "GP3": "NOT_RUN"
+  },
+  "implementationChanged": false,
+  "published": false,
+  "hashes": {
+    "plan-v5.1.md": "be0620bc9191ba0872b17e3ac762ad97776ca2af269d9e54c7a71d6724d8d3db",
+    "editor-v5.1-standalone.md": "2f0d0b02cb62ba4728e8f77c63f5cf74e90e04ea40a4abf6b11d7002940bd495",
+    "v5.1-scope-amendment.md": "1d9186a94bb3179d8cff927e007b1c5b206ad11ee136547e804cae414058225c"
+  }
+}

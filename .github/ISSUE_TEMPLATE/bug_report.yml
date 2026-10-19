@@ -1,0 +1,26 @@
+name: Bug report
+description: Report a reproducible editor defect in your own words.
+body:
+  - type: markdown
+    attributes:
+      value: "Write this report yourself. Do not paste an AI-generated report. For security vulnerabilities use private reporting, not this form."
+  - type: textarea
+    id: problem
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction and build/platform identity
+      description: Include commands, commit, OS, font and input method where relevant. Remove private documents and credentials.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence and verification scope
+      description: Distinguish actual OS interaction from synthetic or headless tests.
+    validations:
+      required: true

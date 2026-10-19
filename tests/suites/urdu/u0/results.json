@@ -1,0 +1,1076 @@
+{
+  "schemaVersion": "1.2.0",
+  "gate": "U0",
+  "status": "PROFILE_AND_CORPUS_ESTABLISHED",
+  "outcomes": {
+    "corpusIntegrity": "PASS",
+    "engineBehavior": "PASS",
+    "fontMetadata": "PASS",
+    "composeLayout": "PROBED",
+    "nativeInput": "OPEN",
+    "humanReview": "NOT RUN"
+  },
+  "timestamp": "2026-10-18T01:55:00+05:00",
+  "environment": {
+    "os": "win32",
+    "pythonVersion": "3.12.10",
+    "fontToolsVersion": "4.64.0",
+    "kotlinVersion": "2.2.20",
+    "composeDesktopVersion": "1.12.1"
+  },
+  "qualificationHonestyNotice": {
+    "syntheticCorpusQualified": true,
+    "candidateFontBytesPinned": true,
+    "engineBehaviorQualified": true,
+    "composeLayoutProbeExecuted": true,
+    "faultDetectionQualified": true,
+    "preservationChecksQualified": true,
+    "contactSheetGenerated": true,
+    "humanLinguisticReviewStatus": "NOT RUN",
+    "nativeHostInputAndGeometryQualification": "OPEN",
+    "notes": "Gate U0 establishes pinned font binaries, OFL licenses, 305 deterministic fixtures across 11 required categories, real Kotlin EditorEngine execution across all 267 executable fixtures (formatting, exact undo/redo, composition, DocumentFiles save/load, surrogate code units), real Compose Paragraph layout probes across all 3 fonts, and mutation fault detection. Per URDU-ACCEPTANCE.md, human linguistic evaluation by proficient Urdu readers and calligraphers is NOT RUN at U0, and native OS/IME integration qualification remains OPEN for subsequent gates U1 through U5."
+  },
+  "sourceAndFontHashes": {
+    "desktop-prototype/src/main/kotlin/editor/UrduChecks.kt": {
+      "sha256": "48f6046a17562381942ae7718b6d4de81eff6e028f9a599a406f4cfb98597bd4",
+      "sizeBytes": 26044
+    },
+    "desktop-prototype/src/main/kotlin/editor/DesktopEditor.kt": {
+      "sha256": "e4f7ff42caba9b843561c9bae332455888f995ec6d31149cc15a5e186532ac07",
+      "sizeBytes": 94143
+    },
+    "desktop-prototype/src/main/kotlin/editor/JapaneseHostChecks.kt": {
+      "sha256": "8b946bada9a54b97253b2572fc63621b821effc1a1e8548d519ad3cbfb2f5273",
+      "sizeBytes": 96841
+    },
+    "validation/urdu/u0/verify.py": {
+      "sha256": "99f1d07a7cc61cfd0baa9ff762d7c5acb319629f00374049cde464ba73dc1a0e",
+      "sizeBytes": 35678
+    },
+    "validation/urdu/u0/generate_fixtures.py": {
+      "sha256": "13dfbe4efa3c7a7445250571aae0f5080a6ba43149f4395b39ad2b6fe92d3eb5",
+      "sizeBytes": 53050
+    },
+    "validation/urdu/u0/fixtures.json": {
+      "sha256": "57c2c79a0bc089329a8064d48728fb9d67c8bee9624a9f46865899ee9d9afbaa",
+      "sizeBytes": 512583
+    },
+    "validation/urdu/u0/fonts.json": {
+      "sha256": "60c6f496fad4805dfdf6889b59e037d31a7d3287f5a6fc483f7dca4808bb372c",
+      "sizeBytes": 4116
+    },
+    "validation/urdu/u0/fonts/OFL.txt": {
+      "sha256": "14ecb0a94c84c5e9c67104edab55528244a55dbfa65323d2ebd85c15afcc153f",
+      "sizeBytes": 4251
+    },
+    "validation/urdu/u0/fonts/NotoNastaliqUrdu[wght].ttf": {
+      "sha256": "98a4787f34eb6fde57fb9a1121a8f216301196ab0da98ea110cad581be8abbcd",
+      "sizeBytes": 690304
+    },
+    "validation/urdu/u0/fonts/Gulzar-Regular.ttf": {
+      "sha256": "246337973ac64e8b70fe611405dcf32a395a8885c4497dc45dbc4975d3ac0831",
+      "sizeBytes": 963496
+    },
+    "validation/urdu/u0/fonts/NotoSansArabic[wdth,wght].ttf": {
+      "sha256": "63111b5b2e074dd48cc67692e0a2726d86ee94c1c37fe8598257b7b4e87e869e",
+      "sizeBytes": 844676
+    }
+  },
+  "perFixtureExecutionStatus": {
+    "UTXT-001": "EXECUTED_PASS",
+    "UTXT-002": "EXECUTED_PASS",
+    "UTXT-003": "EXECUTED_PASS",
+    "UTXT-004": "EXECUTED_PASS",
+    "UTXT-005": "EXECUTED_PASS",
+    "UTXT-006": "EXECUTED_PASS",
+    "UTXT-007": "EXECUTED_PASS",
+    "UTXT-008": "EXECUTED_PASS",
+    "UTXT-009": "EXECUTED_PASS",
+    "UTXT-010": "EXECUTED_PASS",
+    "UTXT-011": "EXECUTED_PASS",
+    "UTXT-012": "EXECUTED_PASS",
+    "UTXT-013": "EXECUTED_PASS",
+    "UTXT-014": "EXECUTED_PASS",
+    "UTXT-015": "EXECUTED_PASS",
+    "UTXT-016": "EXECUTED_PASS",
+    "UTXT-017": "EXECUTED_PASS",
+    "UTXT-018": "EXECUTED_PASS",
+    "UTXT-019": "EXECUTED_PASS",
+    "UTXT-020": "EXECUTED_PASS",
+    "UTXT-021": "EXECUTED_PASS",
+    "UTXT-022": "EXECUTED_PASS",
+    "UTXT-023": "EXECUTED_PASS",
+    "UTXT-024": "EXECUTED_PASS",
+    "UTXT-025": "EXECUTED_PASS",
+    "UTXT-026": "EXECUTED_PASS",
+    "UTXT-027": "EXECUTED_PASS",
+    "UTXT-028": "EXECUTED_PASS",
+    "UTXT-029": "EXECUTED_PASS",
+    "UTXT-030": "EXECUTED_PASS",
+    "UTXT-031": "EXECUTED_PASS",
+    "UTXT-032": "EXECUTED_PASS",
+    "UTXT-033": "EXECUTED_PASS",
+    "UTXT-034": "EXECUTED_PASS",
+    "UTXT-035": "EXECUTED_PASS",
+    "UTXT-036": "EXECUTED_PASS",
+    "UTXT-037": "EXECUTED_PASS",
+    "UTXT-038": "EXECUTED_PASS",
+    "UTXT-039": "EXECUTED_PASS",
+    "UTXT-040": "EXECUTED_PASS",
+    "UTXT-041": "EXECUTED_PASS",
+    "UTXT-042": "EXECUTED_PASS",
+    "UTXT-043": "EXECUTED_PASS",
+    "UTXT-044": "EXECUTED_PASS",
+    "UTXT-045": "EXECUTED_PASS",
+    "UTXT-046": "EXECUTED_PASS",
+    "UTXT-047": "EXECUTED_PASS",
+    "UTXT-048": "EXECUTED_PASS",
+    "UTXT-049": "EXECUTED_PASS",
+    "UTXT-050": "EXECUTED_PASS",
+    "UTXT-051": "EXECUTED_PASS",
+    "UTXT-052": "EXECUTED_PASS",
+    "UTXT-053": "EXECUTED_PASS",
+    "UTXT-054": "EXECUTED_PASS",
+    "UTXT-055": "EXECUTED_PASS",
+    "UTXT-056": "EXECUTED_PASS",
+    "UTXT-057": "EXECUTED_PASS",
+    "UTXT-058": "EXECUTED_PASS",
+    "UTXT-059": "EXECUTED_PASS",
+    "UTXT-060": "EXECUTED_PASS",
+    "UTXT-061": "EXECUTED_PASS",
+    "UTXT-062": "EXECUTED_PASS",
+    "UTXT-063": "EXECUTED_PASS",
+    "UTXT-064": "EXECUTED_PASS",
+    "UTXT-065": "EXECUTED_PASS",
+    "UTXT-066": "EXECUTED_PASS",
+    "UTXT-067": "EXECUTED_PASS",
+    "UTXT-068": "EXECUTED_PASS",
+    "UTXT-069": "EXECUTED_PASS",
+    "UTXT-070": "EXECUTED_PASS",
+    "UTXT-071": "EXECUTED_PASS",
+    "UTXT-072": "EXECUTED_PASS",
+    "UTXT-073": "EXECUTED_PASS",
+    "UTXT-074": "EXECUTED_PASS",
+    "UTXT-075": "EXECUTED_PASS",
+    "UTXT-076": "EXECUTED_PASS",
+    "UTXT-077": "EXECUTED_PASS",
+    "UTXT-078": "EXECUTED_PASS",
+    "UTXT-079": "EXECUTED_PASS",
+    "UTXT-080": "EXECUTED_PASS",
+    "UTXT-081": "EXECUTED_PASS",
+    "UTXT-082": "EXECUTED_PASS",
+    "UTXT-083": "EXECUTED_PASS",
+    "UTXT-084": "EXECUTED_PASS",
+    "UTXT-085": "EXECUTED_PASS",
+    "UTXT-086": "EXECUTED_PASS",
+    "UTXT-087": "EXECUTED_PASS",
+    "UTXT-088": "EXECUTED_PASS",
+    "UTXT-089": "EXECUTED_PASS",
+    "UTXT-090": "EXECUTED_PASS",
+    "UTXT-091": "EXECUTED_PASS",
+    "UTXT-092": "EXECUTED_PASS",
+    "UTXT-093": "EXECUTED_PASS",
+    "UTXT-094": "EXECUTED_PASS",
+    "UTXT-095": "EXECUTED_PASS",
+    "UTXT-096": "EXECUTED_PASS",
+    "UTXT-097": "EXECUTED_PASS",
+    "UTXT-098": "EXECUTED_PASS",
+    "UTXT-099": "EXECUTED_PASS",
+    "UTXT-100": "EXECUTED_PASS",
+    "UTXT-101": "EXECUTED_PASS",
+    "UTXT-102": "EXECUTED_PASS",
+    "UTXT-103": "EXECUTED_PASS",
+    "UTXT-104": "EXECUTED_PASS",
+    "UTXT-105": "EXECUTED_PASS",
+    "UTXT-106": "EXECUTED_PASS",
+    "UTXT-107": "EXECUTED_PASS",
+    "UTXT-108": "EXECUTED_PASS",
+    "UTXT-109": "EXECUTED_PASS",
+    "UTXT-110": "EXECUTED_PASS",
+    "UTXT-111": "EXECUTED_PASS",
+    "UTXT-112": "EXECUTED_PASS",
+    "UTXT-113": "EXECUTED_PASS",
+    "UTXT-114": "EXECUTED_PASS",
+    "UTXT-115": "EXECUTED_PASS",
+    "UTXT-116": "EXECUTED_PASS",
+    "UTXT-117": "EXECUTED_PASS",
+    "UTXT-118": "EXECUTED_PASS",
+    "UTXT-119": "EXECUTED_PASS",
+    "UTXT-120": "EXECUTED_PASS",
+    "UTXT-121": "EXECUTED_PASS",
+    "UTXT-122": "EXECUTED_PASS",
+    "UTXT-123": "EXECUTED_PASS",
+    "UTXT-124": "EXECUTED_PASS",
+    "UTXT-125": "EXECUTED_PASS",
+    "UTXT-126": "EXECUTED_PASS",
+    "UTXT-127": "EXECUTED_PASS",
+    "UTXT-128": "EXECUTED_PASS",
+    "UTXT-129": "EXECUTED_PASS",
+    "UTXT-130": "EXECUTED_PASS",
+    "UTXT-131": "EXECUTED_PASS",
+    "UTXT-132": "EXECUTED_PASS",
+    "UTXT-133": "EXECUTED_PASS",
+    "UTXT-134": "EXECUTED_PASS",
+    "UTXT-135": "EXECUTED_PASS",
+    "UTXT-136": "EXECUTED_PASS",
+    "UTXT-137": "EXECUTED_PASS",
+    "UTXT-138": "EXECUTED_PASS",
+    "UTXT-139": "EXECUTED_PASS",
+    "UTXT-140": "EXECUTED_PASS",
+    "UTXT-141": "EXECUTED_PASS",
+    "UTXT-142": "EXECUTED_PASS",
+    "UTXT-143": "EXECUTED_PASS",
+    "UTXT-144": "EXECUTED_PASS",
+    "UTXT-145": "EXECUTED_PASS",
+    "UTXT-146": "EXECUTED_PASS",
+    "UTXT-147": "EXECUTED_PASS",
+    "UTXT-148": "EXECUTED_PASS",
+    "UTXT-149": "EXECUTED_PASS",
+    "UTXT-150": "EXECUTED_PASS",
+    "UTXT-151": "EXECUTED_PASS",
+    "UTXT-152": "EXECUTED_PASS",
+    "UTXT-153": "EXECUTED_PASS",
+    "UTXT-154": "EXECUTED_PASS",
+    "UTXT-155": "EXECUTED_PASS",
+    "UTXT-156": "EXECUTED_PASS",
+    "UTXT-157": "EXECUTED_PASS",
+    "UTXT-158": "EXECUTED_PASS",
+    "UTXT-159": "EXECUTED_PASS",
+    "UTXT-160": "EXECUTED_PASS",
+    "UTXT-161": "EXECUTED_PASS",
+    "UTXT-162": "EXECUTED_PASS",
+    "UTXT-163": "EXECUTED_PASS",
+    "UTXT-164": "EXECUTED_PASS",
+    "UTXT-165": "EXECUTED_PASS",
+    "UTXT-166": "EXECUTED_PASS",
+    "UTXT-167": "EXECUTED_PASS",
+    "UTXT-168": "EXECUTED_PASS",
+    "UTXT-169": "EXECUTED_PASS",
+    "UTXT-170": "EXECUTED_PASS",
+    "UTXT-171": "EXECUTED_PASS",
+    "UTXT-172": "EXECUTED_PASS",
+    "UTXT-173": "EXECUTED_PASS",
+    "UTXT-174": "EXECUTED_PASS",
+    "UTXT-175": "EXECUTED_PASS",
+    "UTXT-176": "EXECUTED_PASS",
+    "UTXT-177": "EXECUTED_PASS",
+    "UTXT-178": "EXECUTED_PASS",
+    "UTXT-179": "EXECUTED_PASS",
+    "UTXT-180": "EXECUTED_PASS",
+    "UTXT-181": "EXECUTED_PASS",
+    "UTXT-182": "EXECUTED_PASS",
+    "UTXT-183": "EXECUTED_PASS",
+    "UTXT-184": "EXECUTED_PASS",
+    "UTXT-185": "EXECUTED_PASS",
+    "UTXT-186": "EXECUTED_PASS",
+    "UTXT-187": "EXECUTED_PASS",
+    "UTXT-188": "EXECUTED_PASS",
+    "UTXT-189": "EXECUTED_PASS",
+    "UTXT-190": "EXECUTED_PASS",
+    "UTXT-191": "EXECUTED_PASS",
+    "UTXT-192": "CORPUS_ONLY",
+    "UTXT-193": "CORPUS_ONLY",
+    "UTXT-194": "CORPUS_ONLY",
+    "UTXT-195": "CORPUS_ONLY",
+    "UTXT-196": "CORPUS_ONLY",
+    "UTXT-197": "CORPUS_ONLY",
+    "UTXT-198": "CORPUS_ONLY",
+    "UTXT-199": "CORPUS_ONLY",
+    "UTXT-200": "CORPUS_ONLY",
+    "UTXT-201": "CORPUS_ONLY",
+    "UTXT-202": "CORPUS_ONLY",
+    "UTXT-203": "CORPUS_ONLY",
+    "UTXT-204": "CORPUS_ONLY",
+    "UTXT-205": "CORPUS_ONLY",
+    "UTXT-206": "CORPUS_ONLY",
+    "UTXT-207": "CORPUS_ONLY",
+    "UTXT-208": "CORPUS_ONLY",
+    "UTXT-209": "CORPUS_ONLY",
+    "UTXT-210": "CORPUS_ONLY",
+    "UTXT-211": "CORPUS_ONLY",
+    "UTXT-212": "CORPUS_ONLY",
+    "UTXT-213": "CORPUS_ONLY",
+    "UTXT-214": "CORPUS_ONLY",
+    "UTXT-215": "CORPUS_ONLY",
+    "UTXT-216": "CORPUS_ONLY",
+    "UTXT-217": "CORPUS_ONLY",
+    "UTXT-218": "CORPUS_ONLY",
+    "UTXT-219": "CORPUS_ONLY",
+    "UTXT-220": "EXECUTED_PASS",
+    "UTXT-221": "EXECUTED_PASS",
+    "UTXT-222": "EXECUTED_PASS",
+    "UTXT-223": "EXECUTED_PASS",
+    "UTXT-224": "EXECUTED_PASS",
+    "UTXT-225": "EXECUTED_PASS",
+    "UTXT-226": "EXECUTED_PASS",
+    "UTXT-227": "EXECUTED_PASS",
+    "UTXT-228": "EXECUTED_PASS",
+    "UTXT-229": "EXECUTED_PASS",
+    "UTXT-230": "EXECUTED_PASS",
+    "UTXT-231": "EXECUTED_PASS",
+    "UTXT-232": "EXECUTED_PASS",
+    "UTXT-233": "EXECUTED_PASS",
+    "UTXT-234": "EXECUTED_PASS",
+    "UTXT-235": "EXECUTED_PASS",
+    "UTXT-236": "EXECUTED_PASS",
+    "UTXT-237": "EXECUTED_PASS",
+    "UTXT-238": "EXECUTED_PASS",
+    "UTXT-239": "EXECUTED_PASS",
+    "UTXT-240": "EXECUTED_PASS",
+    "UTXT-241": "EXECUTED_PASS",
+    "UTXT-242": "EXECUTED_PASS",
+    "UTXT-243": "EXECUTED_PASS",
+    "UTXT-244": "EXECUTED_PASS",
+    "UTXT-245": "EXECUTED_PASS",
+    "UTXT-246": "EXECUTED_PASS",
+    "UTXT-247": "EXECUTED_PASS",
+    "UTXT-248": "EXECUTED_PASS",
+    "UTXT-249": "EXECUTED_PASS",
+    "UTXT-250": "EXECUTED_PASS",
+    "UTXT-251": "EXECUTED_PASS",
+    "UTXT-252": "EXECUTED_PASS",
+    "UTXT-253": "EXECUTED_PASS",
+    "UTXT-254": "EXECUTED_PASS",
+    "UTXT-255": "EXECUTED_PASS",
+    "UTXT-256": "EXECUTED_PASS",
+    "UTXT-257": "EXECUTED_PASS",
+    "UTXT-258": "EXECUTED_PASS",
+    "UTXT-259": "EXECUTED_PASS",
+    "UTXT-260": "EXECUTED_PASS",
+    "UTXT-261": "EXECUTED_PASS",
+    "UTXT-262": "EXECUTED_PASS",
+    "UTXT-263": "EXECUTED_PASS",
+    "UTXT-264": "EXECUTED_PASS",
+    "UTXT-265": "EXECUTED_PASS",
+    "UTXT-266": "EXECUTED_PASS",
+    "UTXT-267": "EXECUTED_PASS",
+    "UTXT-268": "FUTURE_STRUCTURAL_PAGE",
+    "UTXT-269": "FUTURE_STRUCTURAL_PAGE",
+    "UTXT-270": "FUTURE_STRUCTURAL_PAGE",
+    "UTXT-271": "FUTURE_STRUCTURAL_PAGE",
+    "UTXT-272": "FUTURE_STRUCTURAL_PAGE",
+    "UTXT-273": "FUTURE_STRUCTURAL_PAGE",
+    "UTXT-274": "FUTURE_STRUCTURAL_PAGE",
+    "UTXT-275": "FUTURE_STRUCTURAL_PAGE",
+    "UTXT-276": "FUTURE_STRUCTURAL_PAGE",
+    "UTXT-277": "FUTURE_STRUCTURAL_PAGE",
+    "UTXT-278": "EXECUTED_PASS",
+    "UTXT-279": "EXECUTED_PASS",
+    "UTXT-280": "EXECUTED_PASS",
+    "UTXT-281": "EXECUTED_PASS",
+    "UTXT-282": "EXECUTED_PASS",
+    "UTXT-283": "EXECUTED_PASS",
+    "UTXT-284": "EXECUTED_PASS",
+    "UTXT-285": "EXECUTED_PASS",
+    "UTXT-286": "EXECUTED_PASS",
+    "UTXT-287": "EXECUTED_PASS",
+    "UTXT-288": "EXECUTED_PASS",
+    "UTXT-289": "EXECUTED_PASS",
+    "UTXT-290": "EXECUTED_PASS",
+    "UTXT-291": "EXECUTED_PASS",
+    "UTXT-292": "EXECUTED_PASS",
+    "UTXT-293": "EXECUTED_PASS",
+    "UTXT-294": "EXECUTED_PASS",
+    "UTXT-295": "EXECUTED_PASS",
+    "UTXT-296": "EXECUTED_PASS",
+    "UTXT-297": "EXECUTED_PASS",
+    "UTXT-298": "EXECUTED_PASS",
+    "UTXT-299": "EXECUTED_PASS",
+    "UTXT-300": "EXECUTED_PASS",
+    "UTXT-301": "EXECUTED_PASS",
+    "UTXT-302": "EXECUTED_PASS",
+    "UTXT-303": "EXECUTED_PASS",
+    "UTXT-304": "EXECUTED_PASS",
+    "UTXT-305": "EXECUTED_PASS"
+  },
+  "fontVerification": [
+    {
+      "familyName": "Noto Nastaliq Urdu",
+      "fileName": "NotoNastaliqUrdu[wght].ttf",
+      "style": "Nastaliq",
+      "role": "PRIMARY_CANDIDATE",
+      "sizeBytes": 690304,
+      "sha256": "98a4787f34eb6fde57fb9a1121a8f216301196ab0da98ea110cad581be8abbcd",
+      "fsType": "0x0",
+      "installableEmbedding": true,
+      "hasCursiveAttachment": true,
+      "copyrightNotice": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/nastaliq)",
+      "licenseDescription": "SIL Open Font License, Version 1.1",
+      "licenseUrl": "https://scripts.sil.org/OFL",
+      "nameTableProvenanceVerified": true,
+      "verified": true
+    },
+    {
+      "familyName": "Gulzar",
+      "fileName": "Gulzar-Regular.ttf",
+      "style": "Nastaliq",
+      "role": "SECONDARY_CANDIDATE",
+      "sizeBytes": 963496,
+      "sha256": "246337973ac64e8b70fe611405dcf32a395a8885c4497dc45dbc4975d3ac0831",
+      "fsType": "0x0",
+      "installableEmbedding": true,
+      "hasCursiveAttachment": true,
+      "copyrightNotice": "Copyright 2021 The Gulzar Project Authors (http://github.com/googlefonts/gulzar/)",
+      "licenseDescription": "SIL Open Font License, Version 1.1",
+      "licenseUrl": "https://scripts.sil.org/OFL",
+      "nameTableProvenanceVerified": true,
+      "verified": true
+    },
+    {
+      "familyName": "Noto Sans Arabic",
+      "fileName": "NotoSansArabic[wdth,wght].ttf",
+      "style": "Naskh",
+      "role": "FALLBACK",
+      "sizeBytes": 844676,
+      "sha256": "63111b5b2e074dd48cc67692e0a2726d86ee94c1c37fe8598257b7b4e87e869e",
+      "fsType": "0x0",
+      "installableEmbedding": true,
+      "hasCursiveAttachment": false,
+      "copyrightNotice": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/arabic)",
+      "licenseDescription": "SIL Open Font License, Version 1.1",
+      "licenseUrl": "https://scripts.sil.org/OFL",
+      "nameTableProvenanceVerified": true,
+      "verified": true
+    }
+  ],
+  "licenseVerification": {
+    "oflLicensePresent": true,
+    "path": "D:\\Work\\WYSIWYG-Text-Editor-Compose\\validation\\urdu\\u0\\fonts\\OFL.txt",
+    "license": "SIL Open Font License, Version 1.1",
+    "upstreamAuthorsVerified": [
+      "The Noto Project Authors",
+      "The Gulzar Project Authors"
+    ],
+    "verified": true
+  },
+  "corpusVerification": {
+    "totalFixtures": 305,
+    "categoryCounts": {
+      "common_prose": 28,
+      "letter_distinctions": 34,
+      "marks_and_joining": 30,
+      "mixed_scripts_and_numbers": 30,
+      "bidi_controls": 26,
+      "malformed_and_utf16_edge_cases": 23,
+      "formatting_and_undo_redo": 20,
+      "nastaliq_geometry": 28,
+      "spacing_and_justification": 26,
+      "structure_and_future_page_cells": 32,
+      "input_and_mutation": 28
+    },
+    "scopeCounts": {
+      "EXECUTABLE_PROTOTYPE": 267,
+      "CORPUS_ONLY": 28,
+      "FUTURE_STRUCTURAL_PAGE": 10
+    },
+    "firstId": "UTXT-001",
+    "lastId": "UTXT-305",
+    "allSequential": true,
+    "allFieldsPresent": true,
+    "fidelityVerified": true
+  },
+  "preservationVerification": {
+    "canonicalInvarianceChecks": 90,
+    "formattingUndoRedoChecks": 20,
+    "bidiIsolateChecks": 26,
+    "passed": true,
+    "failures": []
+  },
+  "openTypeLayoutProbe": {
+    "probeMetrics": [
+      {
+        "familyName": "Noto Nastaliq Urdu",
+        "fileName": "NotoNastaliqUrdu[wght].ttf",
+        "style": "Nastaliq",
+        "role": "PRIMARY_CANDIDATE",
+        "unitsPerEm": 1000,
+        "hheaAscent": 1904,
+        "hheaDescent": -596,
+        "hheaLineGap": 0,
+        "winAscent": 1904,
+        "winDescent": 1382,
+        "typoAscender": 1904,
+        "typoDescender": -596,
+        "totalVerticalSpan": 2500,
+        "verticalSpanRatio": 2.5,
+        "composeParagraphObservedHeightPx": 65,
+        "hasCursiveAttachment": true,
+        "cursiveLookupCount": 1
+      },
+      {
+        "familyName": "Gulzar",
+        "fileName": "Gulzar-Regular.ttf",
+        "style": "Nastaliq",
+        "role": "SECONDARY_CANDIDATE",
+        "unitsPerEm": 1000,
+        "hheaAscent": 1500,
+        "hheaDescent": -1200,
+        "hheaLineGap": 0,
+        "winAscent": 1494,
+        "winDescent": 900,
+        "typoAscender": 1500,
+        "typoDescender": -1200,
+        "totalVerticalSpan": 2700,
+        "verticalSpanRatio": 2.7,
+        "composeParagraphObservedHeightPx": 70,
+        "hasCursiveAttachment": true,
+        "cursiveLookupCount": 1
+      },
+      {
+        "familyName": "Noto Sans Arabic",
+        "fileName": "NotoSansArabic[wdth,wght].ttf",
+        "style": "Naskh",
+        "role": "FALLBACK",
+        "unitsPerEm": 1000,
+        "hheaAscent": 1374,
+        "hheaDescent": -738,
+        "hheaLineGap": 0,
+        "winAscent": 1431,
+        "winDescent": 738,
+        "typoAscender": 1374,
+        "typoDescender": -738,
+        "totalVerticalSpan": 2112,
+        "verticalSpanRatio": 2.112,
+        "composeParagraphObservedHeightPx": 55,
+        "hasCursiveAttachment": false,
+        "cursiveLookupCount": 0
+      }
+    ],
+    "concerns": {
+      "verticalMetricsObservation": [
+        {
+          "observation": "High Nastaliq Vertical Metrics",
+          "details": "Noto Nastaliq Urdu (vertical span ratio 2.50x UPEM) and Gulzar (2.70x UPEM) exhibit significantly taller vertical metrics than standard Latin (1.20x-1.40x) or Naskh (2.112x). Ascent-minus-descent ratio represents font design bounds, not a proven universal minimum line height or observed clipping. Compose Paragraph layout probe at 26sp observed line heights: 65px (Noto Nastaliq Urdu), 70px (Gulzar), and 55px (Noto Sans Arabic). Visual clipping and line-spacing acceptability remain unresolved hypotheses pending human calligraphic review (NOT RUN at U0)."
+        },
+        {
+          "observation": "Sub-pixel Cursive Baseline Drift",
+          "details": "Because Nastaliq cascades diagonally down-left using GPOS 'curs' entry/exit anchors, rounding errors in sub-pixel text layout engines can accumulate across long cascading ligatures if fractional pixel coordinates are rounded prematurely."
+        }
+      ],
+      "fallbackDiscontinuityConcerns": [
+        {
+          "concern": "Flat-Baseline Naskh Discontinuity",
+          "severity": "HIGH_TYPOGRAPHIC_DISCONTINUITY",
+          "details": "Fallback font Noto Sans Arabic operates on a strictly horizontal flat baseline (no 'curs' cursive attachment). When glyphs missing from Nastaliq fall back to Noto Sans Arabic mid-sentence or mid-word, jarring vertical step-downs occur. Per URDU-ACCEPTANCE.md, Naskh can only serve as an emergency fallback, not a substitute for Nastaliq."
+        }
+      ],
+      "embeddingAndRedistribution": {
+        "status": "QUALIFIED_OFL_INSTALLABLE",
+        "details": "All 3 pinned font binaries have OS/2.fsType == 0x0000 (Installable Embedding) under SIL OFL 1.1, allowing uninhibited PDF document embedding, font subsetting, and open-source application bundling."
+      }
+    },
+    "probeExecuted": true
+  },
+  "kotlinHarness": {
+    "gate": "U0",
+    "harness": "Kotlin Compose & EditorEngine",
+    "timestamp": "2026-10-17T21:33:43.618928600Z",
+    "totalFixtures": 305,
+    "scopeBreakdown": {
+      "EXECUTABLE_PROTOTYPE": 267,
+      "CORPUS_ONLY": 28,
+      "FUTURE_STRUCTURAL_PAGE": 10
+    },
+    "engineHarness": {
+      "executableCount": 267,
+      "testedCount": 267,
+      "passedCount": 267,
+      "formattingChecked": 20,
+      "undoRedoChecked": 19,
+      "compositionChecked": 28,
+      "saveLoadChecked": 267,
+      "surrogateChecked": 23,
+      "status": "PASS"
+    },
+    "composeLayoutProbe": {
+      "fontsTested": 3,
+      "specimensPerFont": 5,
+      "totalMeasurements": 15,
+      "renderedImages": [
+        "layout-probe-noto_nastaliq_urdu-prose.png",
+        "layout-probe-noto_nastaliq_urdu-ligatures.png",
+        "layout-probe-noto_nastaliq_urdu-tashkeel.png",
+        "layout-probe-noto_nastaliq_urdu-mixed.png",
+        "layout-probe-noto_nastaliq_urdu-poetry.png",
+        "layout-probe-gulzar-prose.png",
+        "layout-probe-gulzar-ligatures.png",
+        "layout-probe-gulzar-tashkeel.png",
+        "layout-probe-gulzar-mixed.png",
+        "layout-probe-gulzar-poetry.png",
+        "layout-probe-noto_sans_arabic-prose.png",
+        "layout-probe-noto_sans_arabic-ligatures.png",
+        "layout-probe-noto_sans_arabic-tashkeel.png",
+        "layout-probe-noto_sans_arabic-mixed.png",
+        "layout-probe-noto_sans_arabic-poetry.png"
+      ],
+      "measurements": [
+        {
+          "font": "Noto Nastaliq Urdu",
+          "role": "PRIMARY_CANDIDATE",
+          "specimen": "prose",
+          "width": 800.0,
+          "height": 65.0,
+          "lineCount": 1,
+          "minIntrinsicWidth": 70.0,
+          "maxIntrinsicWidth": 572.0,
+          "cursorAt0": {
+            "left": 800.0,
+            "top": -3.8146973e-06,
+            "bottom": 65.0
+          },
+          "cursorAtEnd": {
+            "left": 228.7799,
+            "top": -3.8146973e-06,
+            "bottom": 65.0
+          },
+          "lines": [
+            {
+              "lineIndex": 0,
+              "top": -1.0,
+              "bottom": 65.0,
+              "left": 228.7799,
+              "right": 800.0
+            }
+          ]
+        },
+        {
+          "font": "Noto Nastaliq Urdu",
+          "role": "PRIMARY_CANDIDATE",
+          "specimen": "ligatures",
+          "width": 800.0,
+          "height": 65.0,
+          "lineCount": 1,
+          "minIntrinsicWidth": 85.0,
+          "maxIntrinsicWidth": 398.0,
+          "cursorAt0": {
+            "left": 800.0,
+            "top": -3.8146973e-06,
+            "bottom": 65.0
+          },
+          "cursorAtEnd": {
+            "left": 402.7459,
+            "top": -3.8146973e-06,
+            "bottom": 65.0
+          },
+          "lines": [
+            {
+              "lineIndex": 0,
+              "top": -1.0,
+              "bottom": 65.0,
+              "left": 402.7459,
+              "right": 800.0
+            }
+          ]
+        },
+        {
+          "font": "Noto Nastaliq Urdu",
+          "role": "PRIMARY_CANDIDATE",
+          "specimen": "tashkeel",
+          "width": 800.0,
+          "height": 65.0,
+          "lineCount": 1,
+          "minIntrinsicWidth": 57.0,
+          "maxIntrinsicWidth": 288.0,
+          "cursorAt0": {
+            "left": 800.0,
+            "top": -3.8146973e-06,
+            "bottom": 65.0
+          },
+          "cursorAtEnd": {
+            "left": 512.80396,
+            "top": -3.8146973e-06,
+            "bottom": 65.0
+          },
+          "lines": [
+            {
+              "lineIndex": 0,
+              "top": -1.0,
+              "bottom": 65.0,
+              "left": 512.80396,
+              "right": 800.0
+            }
+          ]
+        },
+        {
+          "font": "Noto Nastaliq Urdu",
+          "role": "PRIMARY_CANDIDATE",
+          "specimen": "mixed",
+          "width": 800.0,
+          "height": 65.0,
+          "lineCount": 1,
+          "minIntrinsicWidth": 70.0,
+          "maxIntrinsicWidth": 472.0,
+          "cursorAt0": {
+            "left": 800.0,
+            "top": -3.8146973e-06,
+            "bottom": 65.0
+          },
+          "cursorAtEnd": {
+            "left": 328.87988,
+            "top": -3.8146973e-06,
+            "bottom": 65.0
+          },
+          "lines": [
+            {
+              "lineIndex": 0,
+              "top": -1.0,
+              "bottom": 65.0,
+              "left": 328.87988,
+              "right": 800.0
+            }
+          ]
+        },
+        {
+          "font": "Noto Nastaliq Urdu",
+          "role": "PRIMARY_CANDIDATE",
+          "specimen": "poetry",
+          "width": 800.0,
+          "height": 130.0,
+          "lineCount": 2,
+          "minIntrinsicWidth": 52.0,
+          "maxIntrinsicWidth": 220.0,
+          "cursorAt0": {
+            "left": 823.4,
+            "top": -3.8146973e-06,
+            "bottom": 65.0
+          },
+          "cursorAtEnd": {
+            "left": 580.89795,
+            "top": 65.0,
+            "bottom": 130.0
+          },
+          "lines": [
+            {
+              "lineIndex": 0,
+              "top": -1.0,
+              "bottom": 65.0,
+              "left": 580.94995,
+              "right": 800.0
+            },
+            {
+              "lineIndex": 1,
+              "top": 65.0,
+              "bottom": 130.0,
+              "left": 580.89795,
+              "right": 800.0
+            }
+          ]
+        },
+        {
+          "font": "Gulzar",
+          "role": "SECONDARY_CANDIDATE",
+          "specimen": "prose",
+          "width": 800.0,
+          "height": 70.0,
+          "lineCount": 1,
+          "minIntrinsicWidth": 54.0,
+          "maxIntrinsicWidth": 490.0,
+          "cursorAt0": {
+            "left": 800.0,
+            "top": -0.20000076,
+            "bottom": 70.0
+          },
+          "cursorAtEnd": {
+            "left": 310.28992,
+            "top": -0.20000076,
+            "bottom": 70.0
+          },
+          "lines": [
+            {
+              "lineIndex": 0,
+              "top": -1.0,
+              "bottom": 70.0,
+              "left": 310.28992,
+              "right": 800.0
+            }
+          ]
+        },
+        {
+          "font": "Gulzar",
+          "role": "SECONDARY_CANDIDATE",
+          "specimen": "ligatures",
+          "width": 800.0,
+          "height": 70.0,
+          "lineCount": 1,
+          "minIntrinsicWidth": 71.0,
+          "maxIntrinsicWidth": 331.0,
+          "cursorAt0": {
+            "left": 800.0,
+            "top": -0.20000076,
+            "bottom": 70.0
+          },
+          "cursorAtEnd": {
+            "left": 469.35803,
+            "top": -0.20000076,
+            "bottom": 70.0
+          },
+          "lines": [
+            {
+              "lineIndex": 0,
+              "top": -1.0,
+              "bottom": 70.0,
+              "left": 469.35803,
+              "right": 800.0
+            }
+          ]
+        },
+        {
+          "font": "Gulzar",
+          "role": "SECONDARY_CANDIDATE",
+          "specimen": "tashkeel",
+          "width": 800.0,
+          "height": 70.0,
+          "lineCount": 1,
+          "minIntrinsicWidth": 43.0,
+          "maxIntrinsicWidth": 227.0,
+          "cursorAt0": {
+            "left": 800.0,
+            "top": -0.20000076,
+            "bottom": 70.0
+          },
+          "cursorAtEnd": {
+            "left": 573.41,
+            "top": -0.20000076,
+            "bottom": 70.0
+          },
+          "lines": [
+            {
+              "lineIndex": 0,
+              "top": -1.0,
+              "bottom": 70.0,
+              "left": 573.41,
+              "right": 800.0
+            }
+          ]
+        },
+        {
+          "font": "Gulzar",
+          "role": "SECONDARY_CANDIDATE",
+          "specimen": "mixed",
+          "width": 800.0,
+          "height": 70.0,
+          "lineCount": 1,
+          "minIntrinsicWidth": 62.0,
+          "maxIntrinsicWidth": 398.0,
+          "cursorAt0": {
+            "left": 800.0,
+            "top": -0.20000076,
+            "bottom": 70.0
+          },
+          "cursorAtEnd": {
+            "left": 402.33,
+            "top": -0.20000076,
+            "bottom": 70.0
+          },
+          "lines": [
+            {
+              "lineIndex": 0,
+              "top": -1.0,
+              "bottom": 70.0,
+              "left": 402.33,
+              "right": 800.0
+            }
+          ]
+        },
+        {
+          "font": "Gulzar",
+          "role": "SECONDARY_CANDIDATE",
+          "specimen": "poetry",
+          "width": 800.0,
+          "height": 140.0,
+          "lineCount": 2,
+          "minIntrinsicWidth": 43.0,
+          "maxIntrinsicWidth": 199.0,
+          "cursorAt0": {
+            "left": 814.17004,
+            "top": -0.20000076,
+            "bottom": 70.0
+          },
+          "cursorAtEnd": {
+            "left": 601.802,
+            "top": 69.8,
+            "bottom": 140.0
+          },
+          "lines": [
+            {
+              "lineIndex": 0,
+              "top": -1.0,
+              "bottom": 70.0,
+              "left": 608.0159,
+              "right": 800.0
+            },
+            {
+              "lineIndex": 1,
+              "top": 69.0,
+              "bottom": 140.0,
+              "left": 601.802,
+              "right": 800.0
+            }
+          ]
+        },
+        {
+          "font": "Noto Sans Arabic",
+          "role": "FALLBACK",
+          "specimen": "prose",
+          "width": 800.0,
+          "height": 55.0,
+          "lineCount": 1,
+          "minIntrinsicWidth": 91.0,
+          "maxIntrinsicWidth": 699.0,
+          "cursorAt0": {
+            "left": 800.0,
+            "top": 0.08800125,
+            "bottom": 55.0
+          },
+          "cursorAtEnd": {
+            "left": 101.276,
+            "top": 0.08800125,
+            "bottom": 55.0
+          },
+          "lines": [
+            {
+              "lineIndex": 0,
+              "top": 0.0,
+              "bottom": 55.0,
+              "left": 101.276,
+              "right": 800.0
+            }
+          ]
+        },
+        {
+          "font": "Noto Sans Arabic",
+          "role": "FALLBACK",
+          "specimen": "ligatures",
+          "width": 800.0,
+          "height": 55.0,
+          "lineCount": 1,
+          "minIntrinsicWidth": 108.0,
+          "maxIntrinsicWidth": 522.0,
+          "cursorAt0": {
+            "left": 800.0,
+            "top": 0.08800125,
+            "bottom": 55.0
+          },
+          "cursorAtEnd": {
+            "left": 278.518,
+            "top": 0.08800125,
+            "bottom": 55.0
+          },
+          "lines": [
+            {
+              "lineIndex": 0,
+              "top": 0.0,
+              "bottom": 55.0,
+              "left": 278.518,
+              "right": 800.0
+            }
+          ]
+        },
+        {
+          "font": "Noto Sans Arabic",
+          "role": "FALLBACK",
+          "specimen": "tashkeel",
+          "width": 800.0,
+          "height": 55.0,
+          "lineCount": 1,
+          "minIntrinsicWidth": 60.0,
+          "maxIntrinsicWidth": 374.0,
+          "cursorAt0": {
+            "left": 800.0,
+            "top": 0.08800125,
+            "bottom": 55.0
+          },
+          "cursorAtEnd": {
+            "left": 426.06802,
+            "top": 0.08800125,
+            "bottom": 55.0
+          },
+          "lines": [
+            {
+              "lineIndex": 0,
+              "top": 0.0,
+              "bottom": 55.0,
+              "left": 426.06802,
+              "right": 800.0
+            }
+          ]
+        },
+        {
+          "font": "Noto Sans Arabic",
+          "role": "FALLBACK",
+          "specimen": "mixed",
+          "width": 800.0,
+          "height": 55.0,
+          "lineCount": 1,
+          "minIntrinsicWidth": 72.0,
+          "maxIntrinsicWidth": 480.0,
+          "cursorAt0": {
+            "left": 800.0,
+            "top": 0.08800125,
+            "bottom": 55.0
+          },
+          "cursorAtEnd": {
+            "left": 320.35205,
+            "top": 0.08800125,
+            "bottom": 55.0
+          },
+          "lines": [
+            {
+              "lineIndex": 0,
+              "top": 0.0,
+              "bottom": 55.0,
+              "left": 320.35205,
+              "right": 800.0
+            }
+          ]
+        },
+        {
+          "font": "Noto Sans Arabic",
+          "role": "FALLBACK",
+          "specimen": "poetry",
+          "width": 800.0,
+          "height": 110.0,
+          "lineCount": 2,
+          "minIntrinsicWidth": 52.0,
+          "maxIntrinsicWidth": 253.0,
+          "cursorAt0": {
+            "left": 815.6,
+            "top": 0.08800125,
+            "bottom": 55.0
+          },
+          "cursorAtEnd": {
+            "left": 547.22797,
+            "top": 55.087997,
+            "bottom": 110.0
+          },
+          "lines": [
+            {
+              "lineIndex": 0,
+              "top": 0.0,
+              "bottom": 55.0,
+              "left": 558.27795,
+              "right": 800.0
+            },
+            {
+              "lineIndex": 1,
+              "top": 55.0,
+              "bottom": 110.0,
+              "left": 547.22797,
+              "right": 800.0
+            }
+          ]
+        }
+      ],
+      "status": "PASS"
+    },
+    "faultDetection": {
+      "letterSubstitutionCaught": true,
+      "undoStyleLossCaught": true,
+      "surrogateAlterationCaught": true,
+      "mutationsTested": 3,
+      "status": "PASS"
+    },
+    "status": "PASS"
+  },
+  "contactSheet": "contact_sheet.html"
+}

@@ -1,0 +1,21 @@
+name: Feature request
+description: Describe a document-editing workflow in your own words.
+body:
+  - type: textarea
+    id: workflow
+    attributes:
+      label: User problem and desired workflow
+      description: Write this yourself; do not paste generated proposals.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Library versus application scope
+      description: Include relevant F01–F46 feature IDs and target platforms if known.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Existing alternatives and acceptance examples
