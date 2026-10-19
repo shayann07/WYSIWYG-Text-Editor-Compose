@@ -16,6 +16,13 @@ import java.nio.file.StandardOpenOption
 import java.security.MessageDigest
 import java.util.UUID
 
+private const val DIGEST_BYTES = 32
+private const val MIN_RECORD_BYTES = 40
+private const val FINGERPRINT_PREFIX_LENGTH = 16
+private const val READ_BUFFER_BYTES = 65536
+private const val MAX_REMEMBERED_OPENS = 256
+private const val EXACT_DOCUMENT_MAGIC = 0x41584544 // AXED
+
 /** Private local envelopes. Not Java serialization, a public API, or a power-loss guarantee. */
 object WorkspaceBytes {
     const val MAX = 24_000_000
@@ -32,8 +39,8 @@ object WorkspaceBytes {
         return raw + MessageDigest.getInstance("SHA-256").digest(raw)
     }
     fun <T> unpack(b: ByteArray, magic: Int, body: (DataInputStream) -> T): T {
-        require(b.size in 40..MAX + 32) { "Incomplete/oversized local record" }
-        val raw = b.copyOfRange(0, b.size - 32)
+        require(b.size in MIN_RECORD_BYTES..MAX + DIGEST_BYTES) { "Incomplete/oversized local record" }
+        val raw = b.copyOfRange(0, b.size - DIGEST_BYTES)
         require(
             MessageDigest.isEqual(MessageDigest.getInstance("SHA-256").digest(raw), b.copyOfRange(raw.size, b.size)),
         ) {
@@ -64,7 +71,7 @@ object WorkspaceBytes {
         require(n in 0..MAX && n <= i.available())
         return i.readNBytes(n)
     }
-    fun read(p: Path, max: Int = MAX + 32) = Files.newInputStream(p).use {
+    fun read(p: Path, max: Int = MAX + DIGEST_BYTES) = Files.newInputStream(p).use {
         it.readNBytes(max + 1).also { b ->
             require(
                 b.size <= max,
@@ -104,7 +111,8 @@ object WorkspaceBytes {
 }
 
 data class FileFingerprint(val exists: Boolean, val size: Long = 0, val sha256: String = "") {
-    override fun toString() = if (exists) "$size bytes · SHA256 ${sha256.take(16)}…" else "Missing file"
+    override fun toString() =
+        if (exists) "$size bytes · SHA256 ${sha256.take(FINGERPRINT_PREFIX_LENGTH)}…" else "Missing file"
     companion object {
         fun capture(path: Path): FileFingerprint {
             check(!javax.swing.SwingUtilities.isEventDispatchThread())
@@ -113,7 +121,7 @@ data class FileFingerprint(val exists: Boolean, val size: Long = 0, val sha256: 
             val digest = MessageDigest.getInstance("SHA-256")
             var size = 0L
             Files.newInputStream(path).use { stream ->
-                val b = ByteArray(65536)
+                val b = ByteArray(READ_BUFFER_BYTES)
                 while (true) {
                     val n = stream.read(b)
                     if (n < 0)break
@@ -137,7 +145,7 @@ object SafeDocumentIO {
     private val opened = java.util.IdentityHashMap<Document, Pair<Path, FileFingerprint>>()
 
     @Synchronized fun remember(d: Document, p: Path, b: ByteArray) {
-        if (opened.size >= 256)opened.clear()
+        if (opened.size >= MAX_REMEMBERED_OPENS)opened.clear()
         opened[d] = p.toAbsolutePath().normalize() to FileFingerprint(true, b.size.toLong(), WorkspaceBytes.hash(b))
     }
 
@@ -183,7 +191,7 @@ object SafeDocumentIO {
 
 /** Recovery-only identity sidecar around the existing validated document codec. */
 object ExactDocument {
-    fun encode(d: Document) = WorkspaceBytes.pack(0x41584544) { o ->
+    fun encode(d: Document) = WorkspaceBytes.pack(EXACT_DOCUMENT_MAGIC) { o ->
         WorkspaceBytes.bytes(o, DocumentFiles.encode(d))
         o.writeBoolean(d.rootBlockId != null)
         d.rootBlockId?.let(o::writeLong)
@@ -194,7 +202,7 @@ object ExactDocument {
             it.followingBlockId?.let(o::writeLong)
         }
     }
-    fun decode(b: ByteArray) = WorkspaceBytes.unpack(b, 0x41584544) { i ->
+    fun decode(b: ByteArray) = WorkspaceBytes.unpack(b, EXACT_DOCUMENT_MAGIC) { i ->
         val d = DocumentFiles.decode(WorkspaceBytes.bytes(i))
         val root = if (i.readBoolean())i.readLong() else null
         require(i.readInt() == d.units.size)

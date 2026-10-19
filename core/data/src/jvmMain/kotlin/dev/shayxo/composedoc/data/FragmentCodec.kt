@@ -11,12 +11,15 @@ import java.io.DataOutputStream
 object FragmentCodec : RichFragmentCodec {
     override val maximumEncodedBytes get() = MAX_BYTES
     const val MAX_BYTES = DocumentFiles.MAX_ENCODED_BYTES + DocumentFiles.MAX_UNITS + 32
+    private const val MAGIC = 0x41534652 // ASFR
+    private const val VERSION = 5
+    private const val MIN_ENCODED_BYTES = 17
     override fun encode(f: RichFragment): ByteArray {
         val bytes = DocumentFiles.encode(f.document)
         val out = ByteArrayOutputStream()
         DataOutputStream(out).use {
-            it.writeInt(0x41534652)
-            it.writeInt(5)
+            it.writeInt(MAGIC)
+            it.writeInt(VERSION)
             it.writeInt(f.complete.size)
             f.complete.forEach { flag -> it.writeByte(if (flag)1 else 0) }
             it.writeInt(bytes.size)
@@ -25,11 +28,11 @@ object FragmentCodec : RichFragmentCodec {
         return out.toByteArray()
     }
     override fun decode(bytes: ByteArray): RichFragment {
-        require(bytes.size in 17..MAX_BYTES)
+        require(bytes.size in MIN_ENCODED_BYTES..MAX_BYTES)
         return DataInputStream(ByteArrayInputStream(bytes)).use { i ->
-            require(i.readInt() == 0x41534652 && i.readInt() in 1..5) { "Unsupported rich fragment" }
+            require(i.readInt() == MAGIC && i.readInt() in 1..VERSION) { "Unsupported rich fragment" }
             val n = i.readInt()
-            require(n in 1..DocumentFiles.MAX_UNITS + 1 && n <= i.available() - 4)
+            require(n in 1..DocumentFiles.MAX_UNITS + 1 && n <= i.available() - Int.SIZE_BYTES)
             val flags = List(n) {
                 val v = i.readUnsignedByte()
                 require(v in 0..1)

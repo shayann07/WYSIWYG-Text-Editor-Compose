@@ -51,6 +51,45 @@ object DocumentFiles : DocumentCodec, DocumentRepository {
     private const val DIGEST = 32
     const val MAX_ENCODED_BYTES = 20_000_000
 
+    // Format versions that introduced each section or record layout.
+    private const val VERSION_PARAGRAPH_BITS = 4
+    private const val VERSION_RICH_RECORDS = 5
+    private const val VERSION_STRUCTURE = 6
+    private const val VERSION_MARKER_TYPOGRAPHY = 7
+    private const val VERSION_PAGE_SETTINGS = 8
+    private const val VERSION_PAGE_EXTENSIONS = 9
+
+    // Exact legacy payload layouts: fixed header bytes plus bytes per unit record.
+    private const val V1_HEADER = 12
+    private const val V1_UNIT_BYTES = 3
+    private const val V2_HEADER = 13
+    private const val V2_UNIT_BYTES = 4
+    private const val V4_HEADER = 14
+    private const val V4_UNIT_BYTES = 5
+    private const val RICH_UNIT_BYTES = 17
+    private const val MIN_STRUCTURE_BYTES = 20
+
+    // Field length limits of the structure and page extension sections.
+    private const val MAX_ID_LENGTH = 64
+    private const val MAX_URI_LENGTH = 2048
+    private const val MAX_ALT_LENGTH = 2048
+    private const val MAX_MIME_LENGTH = 16
+    private const val RUNNING_ID_LENGTH = 36
+    private const val MAX_RUNNING_TEXT_LENGTH = 512
+
+    // Image resource budgets.
+    private const val MAX_RESOURCES = 32
+    private const val MAX_IMAGE_DIMENSION = 8192
+    private const val MAX_TOTAL_PIXELS = 16_000_000
+    private const val MIN_IMAGE_BYTES = 12
+    private const val MAX_TOTAL_IMAGE_BYTES = 9_000_000
+
+    private const val LEGACY_STYLE_BITS = 3
+    private const val BREAK_BEFORE_FLAG = 1
+    private const val KEEP_WITH_NEXT_FLAG = 2
+    private const val KEEP_LINES_FLAG = 4
+    private const val PAGINATION_FLAGS = 7
+
     override fun encode(document: Document): ByteArray {
         require(document.units.size <= MAX_UNITS) { "Prototype files are limited to $MAX_UNITS UTF-16 units." }
         validateStructure(document)
@@ -106,7 +145,7 @@ object DocumentFiles : DocumentCodec, DocumentRepository {
     }
 
     override fun decode(bytes: ByteArray): Document {
-        require(bytes.size in 12 + DIGEST..MAX_ENCODED_BYTES) { "Invalid or oversized prototype file" }
+        require(bytes.size in V1_HEADER + DIGEST..MAX_ENCODED_BYTES) { "Invalid or oversized prototype file" }
         val payload = bytes.copyOfRange(0, bytes.size - DIGEST)
         require(
             MessageDigest.isEqual(
@@ -121,93 +160,89 @@ object DocumentFiles : DocumentCodec, DocumentRepository {
             val version = input.readInt()
             require(version in 1..VERSION) { "Unsupported prototype file version" }
             val count = input.readInt()
-            require(
-                count in 0..MAX_UNITS &&
-                    (
-                        if (version >= 6) {
-                            payload.size >= HEADER + count * 17 + 20
-                        } else {
-                            payload.size == when (version) {
-                                1 -> 12 + count * 3
-                                4 -> 14 + count * 5
-                                5 -> HEADER + count * 17
-                                else -> 13 + count * 4
-                            }
-                        }
-                        ),
-            ) { "Invalid file length" }
+            require(count in 0..MAX_UNITS && validLength(payload.size, version, count)) { "Invalid file length" }
             val startStyle = if (version == 1) {
                 TextStyleFlags()
-            } else if (version >= 5) {
+            } else if (version >= VERSION_RICH_RECORDS) {
                 readStyle(input)
             } else {
                 legacyStyle(input.readUnsignedByte())
             }
-            val startParagraph = if (version >= 5) {
-                readParagraph(input)
-            } else if (version == 4) {
-                ParagraphProperties.fromBits(input.readUnsignedByte())
-            } else {
-                ParagraphProperties()
-            }
+            val startParagraph = readVersionedParagraph(input, version)
             val document = Document(
-                List(count) { index ->
-                    val char = input.readChar()
-                    val tag = input.readUnsignedByte()
-                    require(tag in 0..(if (version >= 6)2 else 1)) { "Unknown unit kind" }
-                    val kind = UnitKind.entries[tag]
-                    require(kind != UnitKind.PARAGRAPH_BREAK || char == '\n' || (version >= 9 && char == '\u000c')) {
-                        "Invalid paragraph break"
-                    }
-                    val (style, paragraphStyle) = if (version == 1) {
-                        TextStyleFlags() to TextStyleFlags()
-                    } else {
-                        val bits = if (version >= 5) readStyle(input) else legacyStyle(input.readUnsignedByte())
-                        if (kind == UnitKind.PARAGRAPH_BREAK) {
-                            TextStyleFlags() to bits
-                        } else {
-                            bits to TextStyleFlags()
-                        }
-                    }
-                    val properties = if (version >= 5) {
-                        readParagraph(input)
-                    } else if (version == 4) {
-                        ParagraphProperties.fromBits(input.readUnsignedByte())
-                    } else {
-                        ParagraphProperties()
-                    }
-                    require(kind == UnitKind.PARAGRAPH_BREAK || properties == ParagraphProperties()) {
-                        "Text units cannot own paragraph properties"
-                    }
-                    TextUnit(index.toLong() + 1, char, kind, style, paragraphStyle, properties)
-                },
+                List(count) { index -> readUnit(input, version, index) },
                 startStyle,
                 startParagraph,
             )
-            if (version >= 6) {
-                readStructure(input, document, version).let { d ->
-                    val result = if (version >= 8) {
-                        val paper = input.readUnsignedByte()
-                        require(paper in PaperSize.entries.indices)
-                        d.copy(
-                            pageSettings = PageSettings(
-                                PaperSize.entries[paper],
-                                input.readBoolean(),
-                                input.readUnsignedByte(),
-                            ),
-                        )
-                    } else {
-                        d
-                    }
-                    val extended = if (version >= 9)readPageExtensions(input, result) else result
-                    require(input.available() == 0)
-                    validateStructure(extended)
-                    extended
-                }
+            if (version >= VERSION_STRUCTURE) readSections(input, document, version) else document
+        }
+    }
+
+    private fun validLength(size: Int, version: Int, count: Int): Boolean = if (version >= VERSION_STRUCTURE) {
+        size >= HEADER + count * RICH_UNIT_BYTES + MIN_STRUCTURE_BYTES
+    } else {
+        size == when (version) {
+            1 -> V1_HEADER + count * V1_UNIT_BYTES
+            VERSION_PARAGRAPH_BITS -> V4_HEADER + count * V4_UNIT_BYTES
+            VERSION_RICH_RECORDS -> HEADER + count * RICH_UNIT_BYTES
+            else -> V2_HEADER + count * V2_UNIT_BYTES
+        }
+    }
+
+    private fun readVersionedParagraph(input: DataInputStream, version: Int) = if (version >= VERSION_RICH_RECORDS) {
+        readParagraph(input)
+    } else if (version == VERSION_PARAGRAPH_BITS) {
+        ParagraphProperties.fromBits(input.readUnsignedByte())
+    } else {
+        ParagraphProperties()
+    }
+
+    private fun readUnit(input: DataInputStream, version: Int, index: Int): TextUnit {
+        val char = input.readChar()
+        val tag = input.readUnsignedByte()
+        require(tag in 0..(if (version >= VERSION_STRUCTURE)2 else 1)) { "Unknown unit kind" }
+        val kind = UnitKind.entries[tag]
+        val pageBreak = version >= VERSION_PAGE_EXTENSIONS && char == '\u000c'
+        require(kind != UnitKind.PARAGRAPH_BREAK || char == '\n' || pageBreak) {
+            "Invalid paragraph break"
+        }
+        val (style, paragraphStyle) = if (version == 1) {
+            TextStyleFlags() to TextStyleFlags()
+        } else {
+            val bits = if (version >= VERSION_RICH_RECORDS) readStyle(input) else legacyStyle(input.readUnsignedByte())
+            if (kind == UnitKind.PARAGRAPH_BREAK) {
+                TextStyleFlags() to bits
             } else {
-                document
+                bits to TextStyleFlags()
             }
         }
+        val properties = readVersionedParagraph(input, version)
+        require(kind == UnitKind.PARAGRAPH_BREAK || properties == ParagraphProperties()) {
+            "Text units cannot own paragraph properties"
+        }
+        return TextUnit(index.toLong() + 1, char, kind, style, paragraphStyle, properties)
+    }
+
+    /** Version 6+ trailing sections, read in file order; the payload must end exactly after them. */
+    private fun readSections(input: DataInputStream, document: Document, version: Int): Document {
+        val d = readStructure(input, document, version)
+        val result = if (version >= VERSION_PAGE_SETTINGS) {
+            val paper = input.readUnsignedByte()
+            require(paper in PaperSize.entries.indices)
+            d.copy(
+                pageSettings = PageSettings(
+                    PaperSize.entries[paper],
+                    input.readBoolean(),
+                    input.readUnsignedByte(),
+                ),
+            )
+        } else {
+            d
+        }
+        val extended = if (version >= VERSION_PAGE_EXTENSIONS)readPageExtensions(input, result) else result
+        require(input.available() == 0)
+        validateStructure(extended)
+        return extended
     }
 
     private class BoundedBytes(private val max: Int) : ByteArrayOutputStream() {
@@ -239,8 +274,8 @@ object DocumentFiles : DocumentCodec, DocumentRepository {
             o.writeByte(v.heading)
             o.writeByte(v.list.ordinal)
             o.writeShort(v.restart)
-            text(o, v.item, 64)
-            text(o, v.parent, 64)
+            text(o, v.item, MAX_ID_LENGTH)
+            text(o, v.parent, MAX_ID_LENGTH)
             o.writeByte(v.markerTypography.font.ordinal)
             o.writeByte(v.markerTypography.size)
         }
@@ -251,8 +286,8 @@ object DocumentFiles : DocumentCodec, DocumentRepository {
             ).filterNotNull().distinct()
         o.writeInt(links.size)
         for (l in links) {
-            text(o, l.id, 64)
-            text(o, l.uri, 2048)
+            text(o, l.id, MAX_ID_LENGTH)
+            text(o, l.uri, MAX_URI_LENGTH)
         }
         o.writeInt(if (d.startStyle.link == null) -1 else links.indexOf(d.startStyle.link))
         val linked = d.units.withIndex().filter { it.value.style.link != null || it.value.paragraphStyle.link != null }
@@ -266,36 +301,59 @@ object DocumentFiles : DocumentCodec, DocumentRepository {
         for ((index, u) in images) {
             o.writeInt(index)
             val im = u.image!!
-            text(o, im.resource, 64)
+            text(o, im.resource, MAX_ID_LENGTH)
             o.writeShort(im.width)
-            text(o, im.alt, 2048)
+            text(o, im.alt, MAX_ALT_LENGTH)
         }
         o.writeInt(d.resources.size)
         for ((id, r) in d.resources.toSortedMap()) {
-            text(o, id, 64)
+            text(o, id, MAX_ID_LENGTH)
             o.writeInt(r.width)
             o.writeInt(r.height)
-            text(o, r.mime, 16)
+            text(o, r.mime, MAX_MIME_LENGTH)
             val bytes = r.bytes()
             o.writeInt(bytes.size)
             o.write(bytes)
         }
     }
+
+    /** Reads a section count that is bounded by [max] and by the remaining four-byte entries. */
+    private fun count(i: DataInputStream, max: Int): Int =
+        i.readInt().also { require(it in 0..max && it <= i.available() / Int.SIZE_BYTES) }
+
     private fun readStructure(i: DataInputStream, base: Document, version: Int): Document {
-        fun count(max: Int): Int = i.readInt().also { require(it in 0..max && it <= i.available() / 4) }
-        var d = base
-        val paragraphs = d.paragraphs()
+        var d = base.patchParagraphs(readParagraphPatches(i, base, version))
+        val links = List(count(i, MAX_UNITS + 1)) { LinkValue(text(i, MAX_ID_LENGTH), text(i, MAX_URI_LENGTH)) }
+        require(links.map { it.id }.distinct().size == links.size)
+        val root = i.readInt()
+        require(root in -1 until links.size)
+        if (root >= 0)d = d.copy(startStyle = d.startStyle.copy(link = links[root]))
+        val units = d.units.toMutableList()
+        readLinkedUnits(i, units, links)
+        readImageUnits(i, units)
+        val resources = readResources(i)
+        return d.copy(units = units, resources = resources).let {
+            if (version < VERSION_MARKER_TYPOGRAPHY)it.migrateMarkerTypography() else it
+        }
+    }
+
+    private fun readParagraphPatches(
+        i: DataInputStream,
+        base: Document,
+        version: Int,
+    ): HashMap<Long?, ParagraphProperties> {
+        val paragraphs = base.paragraphs()
         val patches = HashMap<Long?, ParagraphProperties>()
-        repeat(count(paragraphs.size)) {
+        repeat(count(i, paragraphs.size)) {
             val at = i.readInt()
             require(at in paragraphs.indices && !patches.containsKey(paragraphs[at].anchor))
             val h = i.readUnsignedByte()
             val k = i.readUnsignedByte()
             require(k in ListKind.entries.indices)
             val restart = i.readUnsignedShort()
-            val item = text(i, 64)
-            val parent = text(i, 64)
-            val marker = if (version >= 7) {
+            val item = text(i, MAX_ID_LENGTH)
+            val parent = text(i, MAX_ID_LENGTH)
+            val marker = if (version >= VERSION_MARKER_TYPOGRAPHY) {
                 val font = i.readUnsignedByte()
                 require(font in 1 until StoredFont.entries.size)
                 MarkerTypography(StoredFont.entries[font], i.readUnsignedByte())
@@ -312,15 +370,12 @@ object DocumentFiles : DocumentCodec, DocumentRepository {
                     markerTypography = marker,
                 )
         }
-        d = d.patchParagraphs(patches)
-        val links = List(count(MAX_UNITS + 1)) { LinkValue(text(i, 64), text(i, 2048)) }
-        require(links.map { it.id }.distinct().size == links.size)
-        val root = i.readInt()
-        require(root in -1 until links.size)
-        if (root >= 0)d = d.copy(startStyle = d.startStyle.copy(link = links[root]))
-        val units = d.units.toMutableList()
+        return patches
+    }
+
+    private fun readLinkedUnits(i: DataInputStream, units: MutableList<TextUnit>, links: List<LinkValue>) {
         val used = HashSet<Int>()
-        repeat(count(MAX_UNITS)) {
+        repeat(count(i, MAX_UNITS)) {
             val at = i.readInt()
             val link = i.readInt()
             require(at in units.indices && used.add(at) && link in links.indices && units[at].kind != UnitKind.IMAGE)
@@ -334,36 +389,44 @@ object DocumentFiles : DocumentCodec, DocumentRepository {
                     u.copy(style = u.style.copy(link = links[link]))
                 }
         }
-        used.clear()
-        repeat(count(MAX_UNITS)) {
+    }
+
+    private fun readImageUnits(i: DataInputStream, units: MutableList<TextUnit>) {
+        val used = HashSet<Int>()
+        repeat(count(i, MAX_UNITS)) {
             val at = i.readInt()
             require(at in units.indices && used.add(at) && units[at].kind == UnitKind.IMAGE)
-            units[at] = units[at].copy(image = ImageBlock(text(i, 64), i.readUnsignedShort(), text(i, 2048)))
+            units[at] = units[at].copy(
+                image = ImageBlock(text(i, MAX_ID_LENGTH), i.readUnsignedShort(), text(i, MAX_ALT_LENGTH)),
+            )
         }
+    }
+
+    private fun readResources(i: DataInputStream): HashMap<String, ImageResource> {
         val resources = HashMap<String, ImageResource>()
         var bytesTotal = 0L
         var pixelsTotal = 0L
-        repeat(count(32)) {
-            val id = text(i, 64)
+        repeat(count(i, MAX_RESOURCES)) {
+            val id = text(i, MAX_ID_LENGTH)
             val w = i.readInt()
             val h = i.readInt()
-            val mime = text(i, 16)
-            require(w in 1..8192 && h in 1..8192)
+            val mime = text(i, MAX_MIME_LENGTH)
+            require(w in 1..MAX_IMAGE_DIMENSION && h in 1..MAX_IMAGE_DIMENSION)
             pixelsTotal += w.toLong() * h
-            require(pixelsTotal <= 16_000_000) { "Aggregate decoded image dimensions exceed limits" }
+            require(pixelsTotal <= MAX_TOTAL_PIXELS) { "Aggregate decoded image dimensions exceed limits" }
             val size = i.readInt()
-            require(size in 12..ImageDecoder.MAX_BYTES && size <= i.available())
+            require(size in MIN_IMAGE_BYTES..ImageDecoder.MAX_BYTES && size <= i.available())
             bytesTotal += size
-            require(bytesTotal <= 9_000_000)
+            require(bytesTotal <= MAX_TOTAL_IMAGE_BYTES)
             val bytes = i.readNBytes(size)
             val (actual, r) = ImageDecoder.validate(bytes)
             require(id == actual && r.width == w && r.height == h && r.mime == mime && resources.put(id, r) == null)
         }
-        return d.copy(units = units, resources = resources).let { if (version < 7)it.migrateMarkerTypography() else it }
+        return resources
     }
 
     private fun legacyStyle(bits: Int): TextStyleFlags {
-        require(bits in 0..3)
+        require(bits in 0..LEGACY_STYLE_BITS)
         return TextStyleFlags.fromBits(bits)
     }
     private fun writeStyle(out: DataOutputStream, s: TextStyleFlags) {
@@ -377,7 +440,10 @@ object DocumentFiles : DocumentCodec, DocumentRepository {
         o.writeInt(ps.size)
         for (p in ps) {
             val r = p.properties.pagination
-            o.writeByte((if (r.breakBefore)1 else 0) or (if (r.keepWithNext)2 else 0) or (if (r.keepLines)4 else 0))
+            val breakBefore = if (r.breakBefore) BREAK_BEFORE_FLAG else 0
+            val keepWithNext = if (r.keepWithNext) KEEP_WITH_NEXT_FLAG else 0
+            val keepLines = if (r.keepLines) KEEP_LINES_FLAG else 0
+            o.writeByte(breakBefore or keepWithNext or keepLines)
             o.writeByte(r.widows)
             o.writeByte(r.orphans)
         }
@@ -389,8 +455,8 @@ object DocumentFiles : DocumentCodec, DocumentRepository {
         for (flow in listOf(d.running.header, d.running.footer)) {
             o.writeBoolean(flow != null)
             if (flow != null) {
-                text(o, flow.id, 36)
-                text(o, flow.text, 512)
+                text(o, flow.id, RUNNING_ID_LENGTH)
+                text(o, flow.text, MAX_RUNNING_TEXT_LENGTH)
                 writeStyle(o, flow.style)
                 o.writeByte(flow.direction.ordinal)
                 o.writeByte(flow.alignment.ordinal)
@@ -403,20 +469,20 @@ object DocumentFiles : DocumentCodec, DocumentRepository {
         require(i.readInt() == ps.size)
         val props = ps.associate { p ->
             val flags = i.readUnsignedByte()
-            require(flags in 0..7)
+            require(flags in 0..PAGINATION_FLAGS)
             p.anchor to
                 p.properties.copy(
                     pagination = PaginationRules(
-                        flags and 1 != 0,
-                        flags and 2 != 0,
-                        flags and 4 != 0,
+                        flags and BREAK_BEFORE_FLAG != 0,
+                        flags and KEEP_WITH_NEXT_FLAG != 0,
+                        flags and KEEP_LINES_FLAG != 0,
                         i.readUnsignedByte(),
                         i.readUnsignedByte(),
                     ),
                 )
         }
         val n = i.readInt()
-        require(n in 0..base.units.size && n <= i.available() / 4)
+        require(n in 0..base.units.size && n <= i.available() / Int.SIZE_BYTES)
         val indices = List(n) { i.readInt() }
         require(
             indices.distinct().size == n &&
@@ -427,8 +493,8 @@ object DocumentFiles : DocumentCodec, DocumentRepository {
         require(digits in PageDigits.entries.indices)
         fun flow(): RunningFlow? {
             if (!i.readBoolean())return null
-            val id = text(i, 36)
-            val raw = text(i, 512)
+            val id = text(i, RUNNING_ID_LENGTH)
+            val raw = text(i, MAX_RUNNING_TEXT_LENGTH)
             val style = readStyle(i)
             val dir = i.readUnsignedByte()
             val align = i.readUnsignedByte()

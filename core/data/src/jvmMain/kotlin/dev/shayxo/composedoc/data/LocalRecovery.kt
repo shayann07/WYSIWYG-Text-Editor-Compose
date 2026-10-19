@@ -50,6 +50,10 @@ class LocalRecoveryStore(val root: Path, val interruption: (String) -> Unit = {}
         )
         private const val MAGIC = 0x41535243
         private const val MAX_RECORD = 21_000_000
+        private const val DIGEST_BYTES = 32
+        private const val MAX_PATH_LENGTH = 32768
+        private const val MIN_RECORD_BYTES = 80
+        private const val MIN_DOCUMENT_BYTES = 44
         fun encode(copy: LocalCopy): ByteArray {
             require(copy.sequence > 0)
             val bytes = ByteArrayOutputStream()
@@ -61,7 +65,7 @@ class LocalRecoveryStore(val root: Path, val interruption: (String) -> Unit = {}
                 out.writeLong(copy.timestamp)
                 out.writeBoolean(copy.originalPath != null)
                 copy.originalPath?.let { value ->
-                    require(value.length <= 32768)
+                    require(value.length <= MAX_PATH_LENGTH)
                     out.writeInt(value.length)
                     value.forEach { out.writeChar(it.code) }
                 }
@@ -70,12 +74,12 @@ class LocalRecoveryStore(val root: Path, val interruption: (String) -> Unit = {}
                 out.write(doc)
             }
             val body = bytes.toByteArray()
-            require(body.size + 32 <= MAX_RECORD)
+            require(body.size + DIGEST_BYTES <= MAX_RECORD)
             return body + MessageDigest.getInstance("SHA-256").digest(body)
         }
         fun decode(bytes: ByteArray): LocalCopy {
-            require(bytes.size in 80..MAX_RECORD) { "Incomplete recovery record" }
-            val body = bytes.copyOfRange(0, bytes.size - 32)
+            require(bytes.size in MIN_RECORD_BYTES..MAX_RECORD) { "Incomplete recovery record" }
+            val body = bytes.copyOfRange(0, bytes.size - DIGEST_BYTES)
             require(
                 MessageDigest.isEqual(
                     MessageDigest.getInstance("SHA-256").digest(body),
@@ -94,13 +98,13 @@ class LocalRecoveryStore(val root: Path, val interruption: (String) -> Unit = {}
                 require(time > 0)
                 val original = if (input.readBoolean()) {
                     val count = input.readInt()
-                    require(count in 0..32768)
+                    require(count in 0..MAX_PATH_LENGTH)
                     CharArray(count) { input.readChar() }.concatToString()
                 } else {
                     null
                 }
                 val size = input.readInt()
-                require(size in 44..DocumentFiles.MAX_ENCODED_BYTES && input.available() == size)
+                require(size in MIN_DOCUMENT_BYTES..DocumentFiles.MAX_ENCODED_BYTES && input.available() == size)
                 LocalCopy(session, seq, time, original, DocumentFiles.decode(input.readNBytes(size)))
             }
         }
@@ -124,6 +128,7 @@ class LocalRecoveryStore(val root: Path, val interruption: (String) -> Unit = {}
         val dir = directory(session)
         Files.createDirectories(dir)
         val channel = FileChannel.open(dir.resolve("active.lock"), StandardOpenOption.CREATE, StandardOpenOption.WRITE)
+        var acquired = false
         try {
             return Lease(
                 session,
@@ -132,10 +137,10 @@ class LocalRecoveryStore(val root: Path, val interruption: (String) -> Unit = {}
                 checkNotNull(channel.tryLock()) {
                     "Recovery copy is active in another window"
                 },
-            )
-        } catch (failure: Throwable) {
-            channel.close()
-            throw failure
+            ).also { acquired = true }
+        } finally {
+            // Any failure, including an unchecked one, must not leak the channel.
+            if (!acquired) channel.close()
         }
     }
     private fun readEntry(dir: Path): LocalRecoveryEntry {
@@ -143,15 +148,7 @@ class LocalRecoveryStore(val root: Path, val interruption: (String) -> Unit = {}
         val valid = ArrayList<LocalCopy>()
         for (name in listOf("copy-0.bin", "copy-1.bin")) {
             val path = dir.resolve(name)
-            if (Files.exists(path)) {
-                try {
-                    val copy = Files.newInputStream(path).use { decode(it.readNBytes(MAX_RECORD + 1)) }
-                    require(copy.session == dir.fileName.toString()) { "Recovery owner mismatch" }
-                    valid += copy
-                } catch (e: Exception) {
-                    failures += "$name: ${e.message}"
-                }
-            }
+            if (Files.exists(path)) readCopy(dir, name, path, valid, failures)
         }
         if (Files.exists(dir.resolve("pending.tmp"))) failures += "An interrupted unpublished write was ignored"
         return LocalRecoveryEntry(
@@ -161,6 +158,25 @@ class LocalRecoveryStore(val root: Path, val interruption: (String) -> Unit = {}
             },
             failures.takeIf { it.isNotEmpty() }?.joinToString("; "),
         )
+    }
+
+    // Reason: a recovery slot that fails to read for any reason (IO, truncation, checksum, decode)
+    // is reported as a failure next to the other slot; it must never abort the scan.
+    @Suppress("TooGenericExceptionCaught")
+    private fun readCopy(
+        dir: Path,
+        name: String,
+        path: Path,
+        valid: MutableList<LocalCopy>,
+        failures: MutableList<String>,
+    ) {
+        try {
+            val copy = Files.newInputStream(path).use { decode(it.readNBytes(MAX_RECORD + 1)) }
+            require(copy.session == dir.fileName.toString()) { "Recovery owner mismatch" }
+            valid += copy
+        } catch (e: Exception) {
+            failures += "$name: ${e.message}"
+        }
     }
     fun scan(): List<LocalRecoveryEntry> {
         io()
