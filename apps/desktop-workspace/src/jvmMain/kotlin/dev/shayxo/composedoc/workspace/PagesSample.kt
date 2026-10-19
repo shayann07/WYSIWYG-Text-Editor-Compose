@@ -1,7 +1,6 @@
 package dev.shayxo.composedoc.workspace
 
 import dev.shayxo.composedoc.data.ImageDecoder
-import dev.shayxo.composedoc.domain.EditorEngine
 import dev.shayxo.composedoc.domain.StructureCommand
 import dev.shayxo.composedoc.model.Document
 import dev.shayxo.composedoc.model.ImageBlock
@@ -23,10 +22,12 @@ import dev.shayxo.composedoc.model.UnitKind
 import dev.shayxo.composedoc.model.paragraphs
 import dev.shayxo.composedoc.model.patchParagraphs
 import dev.shayxo.composedoc.model.validateStructure
+import dev.shayxo.composedoc.ui.EditorIntent
+import dev.shayxo.composedoc.ui.EditorViewModel
 
 /** Self-authored disposable specimen, not proficient-reader typography approval. */
 fun pagesWritingSample(): Document {
-    val e = EditorEngine()
+    val e = EditorViewModel()
     val paragraphs = ArrayList<String>()
     for (n in 1..10) {
         paragraphs += "باب $n — تحریر، صفحات اور مطالعہ"
@@ -37,35 +38,35 @@ fun pagesWritingSample(): Document {
         if (n == 2 || n == 7)paragraphs += "تصویر $n"
         paragraphs += "اختتام $n: یہ نمونہ انسانی لسانی و خطاطی جائزے کا متبادل نہیں۔"
     }
-    e.replace(paragraphs.joinToString("\n"), "Pages sample", paragraphBreaks = true)
+    e.dispatch(EditorIntent.Type(paragraphs.joinToString("\n"), "Pages sample", paragraphBreaks = true))
     for (n in 1..10) {
         fun at(text: String) = e.snapshot().committed.text.indexOf(text).also { check(it >= 0) }
         var pos = at("باب $n —")
-        e.move(Selection(pos, pos))
-        e.structure(StructureCommand.Role(1))
-        e.setParagraphProperties(ParagraphDirection.RTL, ParagraphAlignment.START)
-        e.structure(StructureCommand.Pagination(PaginationRules(keepWithNext = true)))
+        e.dispatch(EditorIntent.Select(Selection(pos, pos)))
+        e.dispatch(EditorIntent.Structure(StructureCommand.Role(1)))
+        e.dispatch(EditorIntent.SetParagraphProperties(ParagraphDirection.RTL, ParagraphAlignment.START))
+        e.dispatch(EditorIntent.Structure(StructureCommand.Pagination(PaginationRules(keepWithNext = true))))
         pos = at("فہرست $n:")
-        e.move(Selection(pos, pos))
-        e.structure(StructureCommand.ListType(ListKind.NUMBER))
-        e.setParagraphProperties(ParagraphDirection.RTL, ParagraphAlignment.START)
+        e.dispatch(EditorIntent.Select(Selection(pos, pos)))
+        e.dispatch(EditorIntent.Structure(StructureCommand.ListType(ListKind.NUMBER)))
+        e.dispatch(EditorIntent.SetParagraphProperties(ParagraphDirection.RTL, ParagraphAlignment.START))
         pos = at("English child $n —")
-        e.move(Selection(pos, pos))
-        e.structure(StructureCommand.ListType(ListKind.BULLET))
-        e.structure(StructureCommand.Indent)
-        e.setParagraphProperties(ParagraphDirection.LTR, ParagraphAlignment.START)
+        e.dispatch(EditorIntent.Select(Selection(pos, pos)))
+        e.dispatch(EditorIntent.Structure(StructureCommand.ListType(ListKind.BULLET)))
+        e.dispatch(EditorIntent.Structure(StructureCommand.Indent))
+        e.dispatch(EditorIntent.SetParagraphProperties(ParagraphDirection.LTR, ParagraphAlignment.START))
         pos = at("example.org")
         if (n == 1) {
-            e.move(Selection(pos, pos + 11))
-            e.structure(StructureCommand.Link("https://example.org/urdu"))
+            e.dispatch(EditorIntent.Select(Selection(pos, pos + 11)))
+            e.dispatch(EditorIntent.Structure(StructureCommand.Link("https://example.org/urdu")))
         }
     }
     val image = ImageDecoder.validate(samplePng())
     for (n in listOf(2, 7)) {
         val label = "تصویر $n"
         val pos = e.snapshot().committed.text.indexOf(label)
-        e.move(Selection(pos, pos + label.length))
-        e.structure(StructureCommand.InsertImage(ImageBlock(image.first, 240, "مقامی نیلا دائرہ اور دو لکیریں — generated illustration"), image.second))
+        e.dispatch(EditorIntent.Select(Selection(pos, pos + label.length)))
+        e.dispatch(EditorIntent.Structure(StructureCommand.InsertImage(ImageBlock(image.first, 240, "مقامی نیلا دائرہ اور دو لکیریں — generated illustration"), image.second)))
     }
     var d = e.snapshot().committed
     val chapterStarts = d.paragraphs().filter { d.text.substring(it.start, it.end).startsWith("باب ") }.map { it.start }.toSet()

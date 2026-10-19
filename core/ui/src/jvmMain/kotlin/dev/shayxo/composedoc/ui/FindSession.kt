@@ -20,12 +20,12 @@ class FindSession(private val surface: () -> EditorSurface) {
     val current get() = matches.getOrNull(active)
     fun admitted(): Boolean {
         val s = surface()
-        val f = s.engine.snapshot()
+        val f = s.viewModel.snapshot()
         return !s.disposed && !s.retired && s.admissionAllowed && f.marked == null && !f.waiting
     }
     fun refresh() {
-        val engine = surface().engine
-        val f = engine.snapshot()
+        val viewModel = surface().viewModel
+        val f = viewModel.snapshot()
         val wasBlocked = blocked
         blocked = !admitted()
         if (blocked) {
@@ -36,7 +36,7 @@ class FindSession(private val surface: () -> EditorSurface) {
         }
         if (!wasBlocked && basis?.document === f.committed && basis?.revision == f.recoveryBasisRevision) return
         val oldStart = current?.start ?: f.selection.start
-        basis = engine.captureFindBasis()
+        basis = viewModel.captureFindBasis()
         matches = findLiteral(f.committed, query)
         active = if (matches.isEmpty()) -1 else matches.indexOfFirst { it.start >= oldStart }.let { if (it < 0) 0 else it }
     }
@@ -56,7 +56,7 @@ class FindSession(private val surface: () -> EditorSurface) {
         val s = surface()
         val match = current ?: return
         if (!admitted()) return
-        if (match.editable) s.engine.move(Selection(match.start, match.end))
+        if (match.editable) s.viewModel.dispatch(EditorIntent.Select(Selection(match.start, match.end)))
         s.view.findReveal = Selection(match.start, match.end)
         s.repaint()
     }
@@ -66,7 +66,7 @@ class FindSession(private val surface: () -> EditorSurface) {
         val captured = basis ?: return FindReplaceResult.Invalid
         val targets = if (all) matches else listOfNotNull(current)
         if (targets.isEmpty() || targets.any { !it.editable }) return FindReplaceResult.Invalid
-        val result = surface().engine.replaceFound(captured, targets, value, all)
+        val result = surface().viewModel.dispatch(EditorIntent.ReplaceFound(captured, targets, value, all))
         basis = null
         refresh()
         reveal()

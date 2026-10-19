@@ -75,31 +75,31 @@ fun runWorkspaceHostChecks(result: File) {
         println("PASS workspace host $label")
     }
     test("actual image mouse handlers drag once / Escape cancels / stale basis refuses") {
-        val index = surface.engine.snapshot().committed.units.indexOfFirst { it.kind == UnitKind.IMAGE }
-        edt { surface.engine.move(Selection(index, index + 1)) }
+        val index = surface.viewModel.verificationEngine.snapshot().committed.units.indexOfFirst { it.kind == UnitKind.IMAGE }
+        edt { surface.viewModel.verificationEngine.move(Selection(index, index + 1)) }
         waitFor("image reveal") { imageHandles(surface) != null }
         edt {
-            val c = surface.engine.snapshot()
+            val c = surface.viewModel.verificationEngine.snapshot()
             val handles = imageHandles(surface)!!
             val x = handles.right.x + 6
             val y = handles.right.y + 6
             surface.mouseListeners.forEach { it.mousePressed(MouseEvent(surface, MouseEvent.MOUSE_PRESSED, 1, 0, x, y, 1, false, MouseEvent.BUTTON1)) }
             check(surface.imageResize != null)
             surface.mouseMotionListeners.forEach { it.mouseDragged(MouseEvent(surface, MouseEvent.MOUSE_DRAGGED, 2, InputEvent.BUTTON1_DOWN_MASK, x + 40, y, 1, false)) }
-            check(surface.engine.snapshot().committed == c.committed && surface.engine.snapshot().undoCount == c.undoCount)
+            check(surface.viewModel.verificationEngine.snapshot().committed == c.committed && surface.viewModel.verificationEngine.snapshot().undoCount == c.undoCount)
             surface.mouseListeners.forEach { it.mouseReleased(MouseEvent(surface, MouseEvent.MOUSE_RELEASED, 3, 0, x + 40, y, 1, false, MouseEvent.BUTTON1)) }
             // Letter landscape is1056 document units fitted to996 AWT units here.
             // A40px gesture therefore adds42 document units (integer requested width).
-            check(surface.width == 1020 && surface.engine.snapshot().committed.units[index].image!!.width == 282 && surface.engine.snapshot().undoCount == c.undoCount + 1)
-            surface.engine.perform(EditAction.Undo)
-            check(surface.engine.snapshot().committed == c.committed)
+            check(surface.width == 1020 && surface.viewModel.verificationEngine.snapshot().committed.units[index].image!!.width == 282 && surface.viewModel.verificationEngine.snapshot().undoCount == c.undoCount + 1)
+            surface.viewModel.verificationEngine.perform(EditAction.Undo)
+            check(surface.viewModel.verificationEngine.snapshot().committed == c.committed)
             val h = imageHandles(surface)!!
             val xx = h.right.x + 6
             val yy = h.right.y + 6
             surface.mouseListeners.forEach { it.mousePressed(MouseEvent(surface, MouseEvent.MOUSE_PRESSED, 4, 0, xx, yy, 1, false, MouseEvent.BUTTON1)) }
             surface.keyListeners.forEach { it.keyPressed(KeyEvent(surface, KeyEvent.KEY_PRESSED, 5, 0, KeyEvent.VK_ESCAPE, KeyEvent.CHAR_UNDEFINED)) }
             surface.mouseListeners.forEach { it.mouseReleased(MouseEvent(surface, MouseEvent.MOUSE_RELEASED, 6, 0, xx + 80, yy, 1, false, MouseEvent.BUTTON1)) }
-            check(surface.engine.snapshot().committed == c.committed && surface.imageResize == null)
+            check(surface.viewModel.verificationEngine.snapshot().committed == c.committed && surface.imageResize == null)
         }
     }
     test("all image zoom transforms and continuous/paged handler geometry") {
@@ -111,23 +111,23 @@ fun runWorkspaceHostChecks(result: File) {
                 }
                 waitFor("zoom geometry") { surface.geometry() != null }
                 edt {
-                    val f = surface.engine.snapshot()
+                    val f = surface.viewModel.verificationEngine.snapshot()
                     val h = imageHandles(surface)!!
                     val x = h.right.x + 6
                     val y = h.right.y + 6
                     surface.mouseListeners.forEach { it.mousePressed(MouseEvent(surface, MouseEvent.MOUSE_PRESSED, 10, 0, x, y, 1, false, MouseEvent.BUTTON1)) }
                     surface.mouseListeners.forEach { it.mouseReleased(MouseEvent(surface, MouseEvent.MOUSE_RELEASED, 11, 0, x + (40 * zoom).toInt(), y, 1, false, MouseEvent.BUTTON1)) }
-                    check(surface.engine.snapshot().committed.units[f.selection.start].image!!.width == 282)
-                    surface.engine.perform(EditAction.Undo)
-                    check(surface.engine.snapshot().committed == f.committed)
+                    check(surface.viewModel.verificationEngine.snapshot().committed.units[f.selection.start].image!!.width == 282)
+                    surface.viewModel.verificationEngine.perform(EditAction.Undo)
+                    check(surface.viewModel.verificationEngine.snapshot().committed == f.committed)
                 }
             }
         }
     }
     test("bounded owner capture, publication receipt, active hidden, lifecycle resolution") {
         edt {
-            surface.engine.move(Selection(6, 6))
-            surface.engine.inputMethod("کِ 新 👩🏽‍💻", 0, 2)
+            surface.viewModel.verificationEngine.move(Selection(6, 6))
+            surface.viewModel.verificationEngine.inputMethod("کِ 新 👩🏽‍💻", 0, 2)
             (w.rootPane.getClientProperty("editor.unfinishedRecovery") as UnfinishedController).flush()
         }
         waitFor("durable active") {
@@ -136,7 +136,7 @@ fun runWorkspaceHostChecks(result: File) {
             (state["published"] as Long) > 0 && state["pending"] == false && state["running"] == false
         }
         check(UnfinishedStore(LocalRecoveryStore(dir.resolve("recovery/unfinished-records"))).scan().isEmpty())
-        edt { surface.engine.abortComposition() }
+        edt { surface.viewModel.verificationEngine.abortComposition() }
         waitFor("lifecycle resolution") {
             val c = w.rootPane.getClientProperty("editor.unfinishedRecovery") as UnfinishedController
             return@waitFor !c.status().contains("pending") && c.status().startsWith("No unresolved")
@@ -196,7 +196,7 @@ fun runWorkspaceHostChecks(result: File) {
         lateinit var controller: UnfinishedController
         edt {
             surface.recoverySession.retainedPreimage = pre
-            surface.statusChanged(surface.engine.snapshot())
+            surface.statusChanged(surface.viewModel.verificationEngine.snapshot())
             controller = w.rootPane.getClientProperty("editor.unfinishedRecovery") as UnfinishedController
             controller.flush()
         }
@@ -213,7 +213,7 @@ fun runWorkspaceHostChecks(result: File) {
         edt {
             staleDecision = controller.captureDiscardBeforeClose()
             surface.recoverySession.retainedPreimage = updated
-            surface.statusChanged(surface.engine.snapshot())
+            surface.statusChanged(surface.viewModel.verificationEngine.snapshot())
             controller.flush()
         }
         waitFor("updated retained publication") {
@@ -229,7 +229,7 @@ fun runWorkspaceHostChecks(result: File) {
         edt {
             selectedDecision = controller.captureDiscardBeforeClose()
             surface.quarantinedCallbacks += arrival
-            surface.statusChanged(surface.engine.snapshot())
+            surface.statusChanged(surface.viewModel.verificationEngine.snapshot())
             controller.flush()
         }
         waitFor("new independent arrival published") {
@@ -239,7 +239,7 @@ fun runWorkspaceHostChecks(result: File) {
         edt {
             selectedDecision {
                 surface.recoverySession.resolveRetainedDraft(updated)
-                surface.statusChanged(surface.engine.snapshot())
+                surface.statusChanged(surface.viewModel.verificationEngine.snapshot())
             }
         }
         waitFor("selected close snapshot resolves old record only") { surface.recoverySession.snapshotRetainedDrafts().isEmpty() && !controller.decisionBusy() }
@@ -250,11 +250,11 @@ fun runWorkspaceHostChecks(result: File) {
     test("noncancelable callback capacity preserves sixteen records and visibly suspends admission") {
         edt {
             surface.pauseForRecoveryCapture("Owned synthetic capacity setup")
-            val accepted = surface.engine.snapshot().committed
+            val accepted = surface.viewModel.verificationEngine.snapshot().committed
             repeat(17) { n -> surface.dispatchEvent(java.awt.event.InputMethodEvent(surface, java.awt.event.InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, java.text.AttributedString("callback-$n کِ").iterator, 0, java.awt.font.TextHitInfo.leading(1), null)) }
             check(surface.quarantinedCallbacks.size == 16 && surface.quarantinedCallbacks[0].text == "callback-0 کِ")
             check(!surface.admissionAllowed && surface.recoveryCaptureFailure!!.contains("RecoveryCaptureFailed") && surface.recoveryCaptureFailure!!.contains("could not be retained"))
-            check(surface.engine.snapshot().committed == accepted)
+            check(surface.viewModel.verificationEngine.snapshot().committed == accepted)
         }
     }
     test("discard completion removes its captured row after selection changes during IO") {

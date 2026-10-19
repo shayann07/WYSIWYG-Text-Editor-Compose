@@ -23,7 +23,7 @@
     <ID>LongMethod:EditorCanvas.kt$fun measureWith(frame: EditorFrame, awtW: Int, awtH: Int): Geometry</ID>
     <ID>LongMethod:EditorSurface.kt$EditorSurface$fun abortAndRetireComposition(replaceHost: Boolean): EditorSurface?</ID>
     <ID>LongMethod:EditorSurface.kt$EditorSurface$override fun getLocationOffset(x: Int, y: Int): TextHitInfo?</ID>
-    <ID>LongParameterList:EditorSurface.kt$EditorSurface$( val engine: EditorEngine, val view: ViewState, val diagnostics: File? = null, val trace: ImeTrace? = null, var recoveryHooks: RecoveryHooks = RecoveryHooks(), var recoverySession: RecoverySession = RecoverySession(), val services: EditorPlatformServices = EditorPlatformServices.unavailable, val viewModel: EditorViewModel = EditorViewModel(engine), )</ID>
+    <ID>LongParameterList:EditorSurface.kt$EditorSurface$( val viewModel: EditorViewModel, val view: ViewState, val diagnostics: File? = null, val trace: ImeTrace? = null, var recoveryHooks: RecoveryHooks = RecoveryHooks(), var recoverySession: RecoverySession = RecoverySession(), val services: EditorPlatformServices = EditorPlatformServices.unavailable, )</ID>
     <ID>LoopWithTooManyJumpStatements:EditorCanvas.kt$for</ID>
     <ID>LoopWithTooManyJumpStatements:EditorSurface.kt$EditorSurface$for</ID>
     <ID>MagicNumber:EditorCanvas.kt$.12f</ID>
@@ -152,8 +152,6 @@
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface$clipboardMessage = if (success) (if (cut) "Cut" else "Copied rich + plain text") else "Cut target changed; content kept"</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface$context.firePropertyChange(AccessibleContext.ACCESSIBLE_CARET_PROPERTY, old.selection.focus, current.selection.focus)</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface$context.firePropertyChange(AccessibleContext.ACCESSIBLE_VISIBLE_DATA_PROPERTY, null, current.documentRevision)</ID>
-    <ID>MaxLineLength:EditorSurface.kt$EditorSurface$engine.move(Selection(if (extend) Graphemes.snap(text, s.anchor, false) else target.offset, target.offset, target.primary, wrapAffinity = target.wrapAffinity), target.primary, if (target.offset &lt; s.focus) TypingSide.RIGHT else TypingSide.LEFT)</ID>
-    <ID>MaxLineLength:EditorSurface.kt$EditorSurface$engine.replace("", "Delete", range = Selection(at, other), deleteSide = if (back) TypingSide.LEFT else TypingSide.RIGHT)</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface$f.writeText("{\"text\":${quoted(s.visible.text)},\"anchor\":${s.selection.anchor},\"focus\":${s.selection.focus},\"undo\":${s.undoCount},\"redo\":${s.redoCount},\"documentRevision\":${s.documentRevision},\"sessionRevision\":${s.sessionRevision},\"composing\":${s.marked != null},\"waiting\":${s.waiting},\"focused\":$isFocusOwner,\"keyTypedEvents\":$keyEvents,\"imeTextEvents\":$imeEvents,\"activeImeEpoch\":$activeImeEpoch,\"recoveryStatus\":${quoted(recoveryStatus.name)},\"contextQualified\":$contextQualified,\"setupSucceeded\":$setupSucceeded,\"nativeQualified\":$nativeQualified,\"admissionAllowed\":$admissionAllowed,\"quarantinedCallbacks\":${quarantinedCallbacks.size},\"retainedDraft\":${quoted(draftStr)},\"recoveryFailures\":[$failuresJson],\"notice\":${quoted(s.notice)}}")</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface$for (p in document.paragraphs().take(target.index + 1)) resolved = resolveParagraphDirection(document.units.subList(p.start, p.end), p.properties, resolved)</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface$fun style(doc: Document, i: Int)</ID>
@@ -192,29 +190,35 @@
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface$val reader = clipboardReaderForChecks ?: { plain: Boolean -&gt; RichClipboard.read(Toolkit.getDefaultToolkit().systemClipboard, plain, codec = services.fragments) }</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface$val removed = if (oldEnd &gt; prefix) AccessibleTextSequence(prefix, oldEnd, before.substring(prefix, oldEnd)) else null</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface$val removedDuringTeardown = disposed || (wasAttached &amp;&amp; (parent !== initialParent || (wasDisplayable &amp;&amp; !initialParent.isDisplayable)))</ID>
+    <ID>MaxLineLength:EditorSurface.kt$EditorSurface$val success = !cut || viewModel.dispatch(EditorIntent.ApplyClipboard(captured, null, plain = "", cut = true))</ID>
+    <ID>MaxLineLength:EditorSurface.kt$EditorSurface$viewModel.dispatch(EditorIntent.Select(Selection(if (extend) Graphemes.snap(text, s.anchor, false) else target.offset, target.offset, target.primary, wrapAffinity = target.wrapAffinity), target.primary, if (target.offset &lt; s.focus) TypingSide.RIGHT else TypingSide.LEFT))</ID>
+    <ID>MaxLineLength:EditorSurface.kt$EditorSurface$viewModel.dispatch(EditorIntent.Type("", "Delete", range = Selection(at, other), deleteSide = if (back) TypingSide.LEFT else TypingSide.RIGHT))</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface$while (end &lt; current.visible.units.size &amp;&amp; style(old.visible, end) == previous &amp;&amp; style(current.visible, end) == next) end++</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface$while (suffix &lt; minOf(before.length, after.length) - prefix &amp;&amp; before[before.lastIndex - suffix] == after[after.lastIndex - suffix]) suffix++</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface$x = g.x + p.contentLeft + if (p.layout.getParagraphDirection(localA) == androidx.compose.ui.text.style.ResolvedTextDirection.Rtl) max(x1, x2) else min(x1, x2)</ID>
-    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$command &amp;&amp; e.keyCode == KeyEvent.VK_U -&gt; if (admissionAllowed) engine.toggleFormat(FormatKey.UNDERLINE)</ID>
+    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$command &amp;&amp; e.keyCode == KeyEvent.VK_B -&gt; if (admissionAllowed) viewModel.dispatch(EditorIntent.ToggleFormat(FormatKey.BOLD))</ID>
+    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$command &amp;&amp; e.keyCode == KeyEvent.VK_I -&gt; if (admissionAllowed) viewModel.dispatch(EditorIntent.ToggleFormat(FormatKey.ITALIC))</ID>
+    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$command &amp;&amp; e.keyCode == KeyEvent.VK_U -&gt; if (admissionAllowed) viewModel.dispatch(EditorIntent.ToggleFormat(FormatKey.UNDERLINE))</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$command &amp;&amp; e.keyCode == KeyEvent.VK_Z -&gt; viewModel.dispatch(EditorIntent.Command(if (e.isShiftDown) EditAction.Redo else EditAction.Undo))</ID>
-    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$e.keyCode == KeyEvent.VK_ENTER -&gt; if (admissionAllowed) engine.replace("\n", "Enter", paragraphBreaks = !e.isShiftDown)</ID>
-    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$e.keyCode == KeyEvent.VK_ESCAPE &amp;&amp; (published.marked != null || published.waiting || engine.settlementTimedOut)</ID>
+    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$e.keyCode == KeyEvent.VK_ENTER -&gt; if (admissionAllowed) viewModel.dispatch(EditorIntent.Type("\n", "Enter", paragraphBreaks = !e.isShiftDown))</ID>
+    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$e.keyCode == KeyEvent.VK_ESCAPE &amp;&amp; (published.marked != null || published.waiting || viewModel.settlementTimedOut)</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$e.keyCode in arrayOf(KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, KeyEvent.VK_UP, KeyEvent.VK_DOWN, KeyEvent.VK_HOME, KeyEvent.VK_END, KeyEvent.VK_PAGE_UP, KeyEvent.VK_PAGE_DOWN) -&gt; navigate(e.keyCode, e.isShiftDown, command)</ID>
-    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$engine.move(Selection(dragAnchor, pos), side = pointerSide(e.point, pos), wrapAffinity = pointerWrapAffinity(e.point, pos))</ID>
-    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$hit(e.point)?.let { engine.move(Selection(dragAnchor, it), wrapAffinity = pointerWrapAffinity(e.point, it)) }</ID>
-    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$if (admissionAllowed &amp;&amp; !retired &amp;&amp; !disposed &amp;&amp; resizeViewKey() == imageResizeView)drag.finish(engine, e.x)</ID>
+    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$hit(e.point)?.let { viewModel.dispatch(EditorIntent.Select(Selection(dragAnchor, it), wrapAffinity = pointerWrapAffinity(e.point, it))) }</ID>
+    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$if (admissionAllowed &amp;&amp; !retired &amp;&amp; !disposed &amp;&amp; resizeViewKey() == imageResizeView)drag.finish(viewModel, e.x)</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$imageResize = ImageResizeGesture(c, im, e.x, 1f / checkNotNull(geometry()).scale, h.right.contains(e.point))</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$recordDiagnosticEvent("Input method callback quarantined: recovery status is $recoveryStatus; ambiguous native text not admitted")</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$recordDiagnosticEvent("Native image seam refused; input paused until explicit host recovery. Inspect capture status; callback is never replayed.")</ID>
-    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$trace?.record("awt-text", "text=$text; committed=$committed; caret=$caret; leading=${e.caret?.isLeadingEdge}; locale=${inputContext?.locale}", engine.snapshot())</ID>
-    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$trace?.record("awt-text-quarantined", "text=$text; committed=$committed; caret=$caret; status=$recoveryStatus; admissionAllowed=false", engine.snapshot())</ID>
-    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$trace?.record("key-pressed", "code=${e.keyCode}; modifiers=${e.modifiersEx}; locale=${inputContext?.locale}", engine.snapshot())</ID>
+    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$trace?.record("awt-text", "text=$text; committed=$committed; caret=$caret; leading=${e.caret?.isLeadingEdge}; locale=${inputContext?.locale}", viewModel.snapshot())</ID>
+    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$trace?.record("awt-text-quarantined", "text=$text; committed=$committed; caret=$caret; status=$recoveryStatus; admissionAllowed=false", viewModel.snapshot())</ID>
+    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$trace?.record("key-pressed", "code=${e.keyCode}; modifiers=${e.modifiersEx}; locale=${inputContext?.locale}", viewModel.snapshot())</ID>
+    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$val success = admissionAllowed &amp;&amp; viewModel.dispatch(EditorIntent.ApplyClipboard(captured, data.rich, data.plain))</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$val text = e.text?.let { iterator -&gt; buildString { for (index in iterator.beginIndex until iterator.endIndex) append(iterator.setIndex(index)) } } ?: ""</ID>
+    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$viewModel.dispatch(EditorIntent.Select(Selection(dragAnchor, pos), side = pointerSide(e.point, pos), wrapAffinity = pointerWrapAffinity(e.point, pos)))</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface.AccessibleEditor$Rectangle(((g.x + p.contentLeft + r.left) / g.scale).toInt(), ((g.y + top + r.top) / g.scale).toInt(), (r.width / g.scale).toInt(), (r.height / g.scale).toInt())</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface.AccessibleEditor$check(!retired &amp;&amp; !disposed &amp;&amp; admissionAllowed) { "Editor input is paused; accessibility edits were not admitted" }</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface.AccessibleEditor$check(published.marked == null &amp;&amp; !published.waiting) { "Finish native composition before clipboard commands" }</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface.AccessibleEditor$if (!retired &amp;&amp; !disposed &amp;&amp; admissionAllowed) add(AccessibleState.EDITABLE) else remove(AccessibleState.EDITABLE)</ID>
-    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.AccessibleEditor$if (bold != null || italic != null) viewModel.dispatch(EditorIntent.Command(EditAction.FormatAttributes(engine.capture(target), bold, italic)))</ID>
+    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.AccessibleEditor$if (bold != null || italic != null) viewModel.dispatch(EditorIntent.Command(EditAction.FormatAttributes(viewModel.capture(target), bold, italic)))</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface.AccessibleEditor$if (requireAdmission) checkEditable() else check(!retired &amp;&amp; !disposed) { "Retired accessibility surface" }</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface.AccessibleEditor$override fun getSelectedText(): String?</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface.AccessibleEditor$require</ID>
@@ -222,16 +226,20 @@
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface.AccessibleEditor$return@onOwner Rectangle(((g.x + p.contentLeft + r.left) / g.scale).toInt(), ((g.y + top + r.top) / g.scale).toInt(), 0, (r.height / g.scale).toInt())</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface.AccessibleEditor$return@onOwner Rectangle((minOf(g.caret(p.endOffset).left, c.left) / g.scale).roundToInt(), (c.top / g.scale).roundToInt(), (p.imageWidth / g.scale).roundToInt(), (p.height / g.scale).roundToInt())</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface.AccessibleEditor$val it = (if (part == AccessibleText.WORD)BreakIterator.getWordInstance() else BreakIterator.getSentenceInstance()).apply { setText(text) }</ID>
-    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.RecoveryHooks$EditorSurface(prev.engine, prev.view, prev.diagnostics, prev.trace, prev.recoveryHooks, prev.recoverySession, prev.services, prev.viewModel)</ID>
+    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.AccessibleEditor$viewModel.dispatch(EditorIntent.ReplaceExact(text, "AccessibilityReplaceAll", Selection(0, published.visible.units.size)))</ID>
+    <ID>MaxLineLength:EditorSurface.kt$EditorSurface.RecoveryHooks$EditorSurface(prev.viewModel, prev.view, prev.diagnostics, prev.trace, prev.recoveryHooks, prev.recoverySession, prev.services)</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface.RecoveryHooks$val</ID>
     <ID>MaxLineLength:EditorSurface.kt$EditorSurface.RecoveryHooks$val removeNotifyContext: (java.awt.im.InputContext, Component) -&gt; Unit = { ctx, comp -&gt; ctx.removeNotify(comp) }</ID>
     <ID>MaxLineLength:EditorSurface.kt$RecoveryReport$status == RecoveryStatus.RECOVERED_QUALIFIED &amp;&amp; setupSucceeded &amp;&amp; replacementCreated &amp;&amp; containerAttached</ID>
     <ID>MaxLineLength:EditorSurface.kt$RecoverySession$if (selected == null) selected = incomingSelection?.takeIf { retained.containsKey(it) } ?: retained.keys.lastOrNull()</ID>
+    <ID>MaxLineLength:EditorViewModel.kt$EditorViewModel$is EditorIntent.ApplyClipboard -&gt; engine.clipboardApply(intent.capture, intent.fragment, intent.plain, intent.cut)</ID>
+    <ID>MaxLineLength:EditorViewModel.kt$EditorViewModel$is EditorIntent.ReplaceExact -&gt; engine.replaceExact(intent.text, intent.kind, intent.range, intent.paragraphBreaks)</ID>
     <ID>MaxLineLength:FindSession.kt$FindSession$active = if (matches.isEmpty()) -1 else matches.indexOfFirst { it.start &gt;= oldStart }.let { if (it &lt; 0) 0 else it }</ID>
     <ID>MaxLineLength:ImageResources.kt$ImageResources$private val executor = java.util.concurrent.Executors.newSingleThreadExecutor { r -&gt; Thread(r, "image-decoder").apply { isDaemon = true } }</ID>
     <ID>MaxLineLength:ImageResources.kt$ImageResources$val loaded = runCatching { org.jetbrains.skia.Image.makeFromEncoded(resource.bytes()).toComposeImageBitmap() }.getOrNull()</ID>
     <ID>MaxLineLength:ImageResources.kt$ImageResources$while</ID>
     <ID>MaxLineLength:ImageWorkflow.kt$ImageResizeGesture$class</ID>
+    <ID>MaxLineLength:ImageWorkflow.kt$ImageResizeGesture$return n == image.width || viewModel.dispatch(EditorIntent.ApplyStructure(capture, StructureCommand.ImageProperties(n, image.alt)))</ID>
     <ID>MaxLineLength:ImageWorkflow.kt$return ImageHandleGeometry(bounds, Rectangle(bounds.x - 6, cy - 6, 12, 12), Rectangle(bounds.x + bounds.width - 6, cy - 6, 12, 12))</ID>
     <ID>MaxLineLength:ImageWorkflow.kt$val bounds = Rectangle(((g.x + p.imageLeft) / g.scale).toInt(), ((g.y + fragment.top) / g.scale).toInt(), (p.imageWidth / g.scale).toInt().coerceAtLeast(1), (p.height / g.scale).toInt().coerceAtLeast(1))</ID>
     <ID>MaxLineLength:ImageWorkflow.kt$val p = surface.geometry()?.paragraphs?.firstOrNull { it.startOffset == f.selection.start &amp;&amp; it.image != null } ?: return null</ID>
@@ -268,56 +276,6 @@
     <ID>TooGenericExceptionCaught:EditorSurface.kt$EditorSurface.&lt;no name provided&gt;$e: Exception</ID>
     <ID>TooGenericExceptionCaught:RichClipboard.kt$RichClipboard$e: Exception</ID>
     <ID>TooManyFunctions:EditorSurface.kt$EditorSurface : JComponentInputMethodRequestsAccessible</ID>
-    <ID>TooManyFunctions:EditorSurface.kt$EditorSurface$AccessibleEditor : AccessibleJComponentAccessibleEditableText</ID>
     <ID>UnusedParameter:EditorSurface.kt$EditorSurface$admitQuarantined: Boolean = false</ID>
-    <ID>WildcardImport:EditorCanvas.kt$import androidx.compose.runtime.*</ID>
-    <ID>WildcardImport:EditorCanvas.kt$import androidx.compose.ui.text.*</ID>
-    <ID>WildcardImport:EditorCanvas.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:EditorCanvas.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:EditorCanvas.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:EditorCanvas.kt$import java.awt.*</ID>
-    <ID>WildcardImport:EditorCanvas.kt$import java.awt.datatransfer.*</ID>
-    <ID>WildcardImport:EditorCanvas.kt$import java.awt.event.*</ID>
-    <ID>WildcardImport:EditorCanvas.kt$import javax.accessibility.*</ID>
-    <ID>WildcardImport:EditorCanvas.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:EditorCanvas.kt$import kotlin.math.*</ID>
-    <ID>WildcardImport:EditorSurface.kt$import androidx.compose.runtime.*</ID>
-    <ID>WildcardImport:EditorSurface.kt$import androidx.compose.ui.text.*</ID>
-    <ID>WildcardImport:EditorSurface.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:EditorSurface.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:EditorSurface.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:EditorSurface.kt$import java.awt.*</ID>
-    <ID>WildcardImport:EditorSurface.kt$import java.awt.datatransfer.*</ID>
-    <ID>WildcardImport:EditorSurface.kt$import java.awt.event.*</ID>
-    <ID>WildcardImport:EditorSurface.kt$import javax.accessibility.*</ID>
-    <ID>WildcardImport:EditorSurface.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:EditorSurface.kt$import kotlin.math.*</ID>
-    <ID>WildcardImport:EditorViewState.kt$import androidx.compose.runtime.*</ID>
-    <ID>WildcardImport:EditorViewState.kt$import androidx.compose.ui.text.*</ID>
-    <ID>WildcardImport:EditorViewState.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:EditorViewState.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:EditorViewState.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:EditorViewState.kt$import java.awt.*</ID>
-    <ID>WildcardImport:EditorViewState.kt$import java.awt.datatransfer.*</ID>
-    <ID>WildcardImport:EditorViewState.kt$import java.awt.event.*</ID>
-    <ID>WildcardImport:EditorViewState.kt$import javax.accessibility.*</ID>
-    <ID>WildcardImport:EditorViewState.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:EditorViewState.kt$import kotlin.math.*</ID>
-    <ID>WildcardImport:FindSession.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:FindSession.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:FindSession.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:ImageResources.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:ImageWorkflow.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:ImageWorkflow.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:ImageWorkflow.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:ImageWorkflow.kt$import java.awt.*</ID>
-    <ID>WildcardImport:ImeTrace.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:ImeTrace.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:ImeTrace.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:RichClipboard.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:RichClipboard.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:RichClipboard.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:RichClipboard.kt$import java.awt.datatransfer.*</ID>
-    <ID>WildcardImport:RichClipboard.kt$import java.io.*</ID>
   </CurrentIssues>
 </SmellBaseline>

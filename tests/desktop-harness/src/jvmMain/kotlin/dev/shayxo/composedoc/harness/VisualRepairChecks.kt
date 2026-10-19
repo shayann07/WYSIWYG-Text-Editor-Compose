@@ -208,7 +208,7 @@ fun runVisualRepairChecks(result: File) {
         await("Mounted measure") { surface.view.measure != null }
         test("VR-HANDLERS: actual modal validation correction/cancel/stale and link Remove event") {
             owner {
-                val e = surface.engine
+                val e = surface.viewModel.verificationEngine
                 val at = e.snapshot().committed.units.indexOfFirst { it.style.link != null }
                 e.move(Selection(at + 2, at + 2))
                 val before = e.snapshot()
@@ -279,7 +279,7 @@ fun runVisualRepairChecks(result: File) {
         }
         test("VR-OUTLINE: cell hits only, current section follows focus/Find; keyboard activation stays separate") {
             owner {
-                val e = surface.engine
+                val e = surface.viewModel.verificationEngine
                 ui.outlinePane.isVisible = true
                 w!!.setSize(1020, 865)
                 w!!.validate()
@@ -327,7 +327,7 @@ fun runVisualRepairChecks(result: File) {
                     }
                     await("Matrix renderer") { surface.view.measure != null && surface.view.geometry?.typographyKey?.contains(":zoom=$zoom") == true }
                     owner {
-                        val engine = surface.engine
+                        val engine = surface.viewModel.verificationEngine
                         val before = engine.snapshot().committed
                         val g = checkNotNull(surface.geometry())
                         for (p in g.paragraphs) {
@@ -378,7 +378,7 @@ fun runVisualRepairChecks(result: File) {
                                 surface.view.measure != null && surface.view.geometry?.typographyKey?.contains(":zoom=$zoom") == true
                             }
                             owner {
-                                val before = surface.engine.snapshot()
+                                val before = surface.viewModel.verificationEngine.snapshot()
                                 val g = checkNotNull(surface.geometry())
                                 val paragraphs = before.committed.paragraphs()
                                 check(g.paragraphs.count { it.marker != null } == 24)
@@ -420,7 +420,7 @@ fun runVisualRepairChecks(result: File) {
                                 check(sibling.contentLeft == child.contentLeft && sibling.contentWidth == child.contentWidth) { "Same-direction siblings have different shared lanes" }
                                 check(abs(sibling.marker!!.left - childMarker.left) < .1f) { "Sibling marker edges differ" }
                                 check(childMarker.rtl != rtl) { "Child marker direction was coupled to parent nesting side" }
-                                check(surface.engine.snapshot() == before)
+                                check(surface.viewModel.verificationEngine.snapshot() == before)
                                 matrix += mapOf("language" to "targeted-mixed", "rootRtl" to rtl, "size" to size, "numbers" to listOf(1, 9, 10, 99, 100, 9999), "alignments" to ParagraphAlignment.entries.map { it.name }, "paged" to paged, "zoom" to zoom, "status" to "PASS")
                                 if (zoom == 1f && size == 26 && !paged) {
                                     val bitmap = java.awt.image.BufferedImage(w!!.width, w!!.height, 1)

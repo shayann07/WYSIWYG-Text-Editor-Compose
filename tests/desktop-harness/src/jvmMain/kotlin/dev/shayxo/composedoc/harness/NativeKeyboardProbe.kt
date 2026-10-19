@@ -86,7 +86,7 @@ fun runNativeKeyboardProbe(args: Array<String>) {
         return checkNotNull(result)
     }
     fun snapshot(): Map<String, Any?> {
-        val frame = surface.engine.snapshot()
+        val frame = surface.viewModel.verificationEngine.snapshot()
         val find = window.rootPane.getClientProperty("editor.find") as? FindReplaceUi
         return mapOf(
             "text" to frame.visible.text, "selection" to listOf(frame.selection.anchor, frame.selection.focus),
@@ -278,7 +278,7 @@ fun runNativeKeyboardProbe(args: Array<String>) {
                             paged = paged,
                         )
                         surface = checkNotNull(windowCurrentSurface(window))
-                        check(surface.engine.snapshot().committed.same(saved))
+                        check(surface.viewModel.verificationEngine.snapshot().committed.same(saved))
                         window.title = "Astra Reopened Writing ${ProcessHandle.current().pid()}"
                         mapOf("status" to "REOPENED_FROM_DISK", "title" to window.title, "frame" to snapshot())
                     },
@@ -304,8 +304,8 @@ fun runNativeKeyboardProbe(args: Array<String>) {
                 )
                 "clean" -> emit(
                     owner {
-                        check(surface.engine.snapshot().marked == null) { "Native composition must settle before fixture cleanup" }
-                        while (surface.engine.snapshot().undoCount > 0) surface.engine.perform(EditAction.Undo)
+                        check(surface.viewModel.verificationEngine.snapshot().marked == null) { "Native composition must settle before fixture cleanup" }
+                        while (surface.viewModel.verificationEngine.snapshot().undoCount > 0) surface.viewModel.verificationEngine.perform(EditAction.Undo)
                         mapOf("status" to "CLEAN", "frame" to snapshot())
                     },
                 )

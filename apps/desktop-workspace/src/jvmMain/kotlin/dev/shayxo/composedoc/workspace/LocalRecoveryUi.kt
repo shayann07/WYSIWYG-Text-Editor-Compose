@@ -4,6 +4,7 @@ import dev.shayxo.composedoc.data.LocalRecoveryEntry
 import dev.shayxo.composedoc.data.LocalRecoveryStore
 import dev.shayxo.composedoc.data.WorkspaceStore
 import dev.shayxo.composedoc.data.workspacePositionsValid
+import dev.shayxo.composedoc.ui.EditorIntent
 import dev.shayxo.composedoc.ui.findSurface
 import java.nio.file.Path
 import javax.swing.DefaultListModel
@@ -117,7 +118,7 @@ fun showLocalRecovery(
             if (metadata != null) {
                 (restored.rootPane.getClientProperty("editor.zoomPicker") as JComboBox<*>).selectedIndex = listOf(.5f, .75f, 1f).indexOf(metadata.zoom)
                 findSurface(restored)!!.let { s ->
-                    s.engine.move(metadata.selection)
+                    s.viewModel.dispatch(EditorIntent.Select(metadata.selection))
                     if (metadata.viewportWidth == s.width && metadata.viewportHeight == s.height) {
                         s.view.scroll = metadata.scroll
                         s.view.ensureCaret = false

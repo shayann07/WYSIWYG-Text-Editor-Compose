@@ -292,7 +292,7 @@ fun main(args: Array<String>) {
                             attempts = 0
                             return@addActionListener
                         }
-                        if (pagedCheck && surface.view.geometry?.revision != surface.engine.snapshot().documentRevision) {
+                        if (pagedCheck && surface.view.geometry?.revision != surface.viewModel.verificationEngine.snapshot().documentRevision) {
                             if (++attempts <= 50) return@addActionListener
                             error("Paged surface did not render current document")
                         }

@@ -104,27 +104,5 @@
     <ID>UnusedParameter:ListTypography.kt$defaultSize: Int</ID>
     <ID>UnusedPrivateProperty:Geometry.kt$val imageResource = image?.let { document.resources[it.resource] }</ID>
     <ID>UseCheckOrError:Geometry.kt$Geometry$throw IllegalStateException("Geometry has no paragraphs")</ID>
-    <ID>WildcardImport:Geometry.kt$import androidx.compose.runtime.*</ID>
-    <ID>WildcardImport:Geometry.kt$import androidx.compose.ui.text.*</ID>
-    <ID>WildcardImport:Geometry.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:Geometry.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:Geometry.kt$import java.awt.*</ID>
-    <ID>WildcardImport:Geometry.kt$import java.awt.datatransfer.*</ID>
-    <ID>WildcardImport:Geometry.kt$import java.awt.event.*</ID>
-    <ID>WildcardImport:Geometry.kt$import javax.accessibility.*</ID>
-    <ID>WildcardImport:Geometry.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:Geometry.kt$import kotlin.math.*</ID>
-    <ID>WildcardImport:ListTypography.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:ListTypography.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:OutputPagePlan.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:OutputPagePlan.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:PageFragments.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:PageFragments.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:PrintSnapshot.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:PrintSnapshot.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:PrintSnapshot.kt$import java.awt.print.*</ID>
-    <ID>WildcardImport:PrintSnapshot.kt$import org.jetbrains.skia.*</ID>
-    <ID>WildcardImport:Typography.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:Typography.kt$import dev.shayxo.composedoc.model.*</ID>
   </CurrentIssues>
 </SmellBaseline>

@@ -26,6 +26,7 @@ extensions.configure<DetektExtension> {
     buildUponDefaultConfig = true
     // Pre-migration prototype findings are recorded per module; new findings fail the build.
     baseline = file("detekt-baseline.xml")
+    config.setFrom(rootProject.file("build-logic/config/detekt.yml"))
     source.setFrom(fileTree("src") { include("**/*.kt"); exclude("**/generated/**") })
 }
 tasks.register("ktlintCheck") { dependsOn("spotlessCheck") }

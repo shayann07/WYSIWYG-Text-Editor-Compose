@@ -1,0 +1,18 @@
+# Project overrides on top of Detekt's default configuration (buildUponDefaultConfig).
+# Keep this list short; every entry needs a reason.
+
+complexity:
+  CyclomaticComplexMethod:
+    # A flat `when` mapping each intent/command to one call is the MVI dispatch shape;
+    # its branches are not decision complexity.
+    ignoreSimpleWhenEntries: true
+  TooManyFunctions:
+    # Facades such as EditorViewModel expose one small function per query. Count only
+    # the public surface a reader must understand.
+    thresholdInFiles: 20
+    thresholdInClasses: 20
+    thresholdInInterfaces: 20
+    thresholdInObjects: 20
+    thresholdInEnums: 20
+    ignorePrivate: true
+    ignoreOverridden: true

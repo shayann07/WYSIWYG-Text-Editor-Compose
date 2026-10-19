@@ -367,7 +367,7 @@ fun runConnectedWritingChecks(result: File) {
                     }
                     await("zoom measure") { s.view.measure != null && s.view.geometry?.typographyKey?.contains(":zoom=$zoom") == true }
                     owner {
-                        val before = s.engine.snapshot()
+                        val before = s.viewModel.verificationEngine.snapshot()
                         val g = checkNotNull(s.geometry())
                         val p = g.paragraphs[0]
                         check(g.scale > 0 && p.layout.size.height > 0)
@@ -390,7 +390,7 @@ fun runConnectedWritingChecks(result: File) {
                         } else {
                             check(kotlin.math.abs(g.fragments.first().top - 8) < .1)
                         }
-                        check(s.engine.snapshot() == before)
+                        check(s.viewModel.verificationEngine.snapshot() == before)
                     }
                 }
             }
@@ -417,28 +417,28 @@ fun runConnectedWritingChecks(result: File) {
                     val k = KeyEvent(s, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), (if (shift)InputEvent.SHIFT_DOWN_MASK else 0), code, KeyEvent.CHAR_UNDEFINED)
                     s.keyListeners.forEach { it.keyPressed(k) }
                 }
-                s.engine.move(Selection(0, 0))
+                s.viewModel.verificationEngine.move(Selection(0, 0))
                 key(KeyEvent.VK_PAGE_DOWN, true)
-                check(s.engine.snapshot().selection.focus > 0 && s.engine.snapshot().selection.anchor == 0)
+                check(s.viewModel.verificationEngine.snapshot().selection.focus > 0 && s.viewModel.verificationEngine.snapshot().selection.anchor == 0)
                 key(KeyEvent.VK_PAGE_UP)
-                check(s.engine.snapshot().selection.collapsed)
-                val before = s.engine.snapshot()
+                check(s.viewModel.verificationEngine.snapshot().selection.collapsed)
+                val before = s.viewModel.verificationEngine.snapshot()
                 s.view.changeZoom(1f)
                 s.view.setPagedMode(false)
-                check(s.engine.snapshot() == before)
+                check(s.viewModel.verificationEngine.snapshot() == before)
                 val counts = writingCounts(EditorEngine(doc("کِتاب\u200c X 123 😀 \u200d")).snapshot())
                 check(counts.words == 4 && counts.units == "کِتاب\u200c X 123 😀 \u200d".length && counts.selected == 0)
             }
         }
         test("automatic completed checkpoint retains expanded model separately from provisional composition") {
             owner {
-                s.engine.move(Selection(0, 0))
-                s.engine.setParagraphProperties(before = 24)
-                s.engine.setTextStyle(TextStylePatch(size = 48))
-                s.engine.replace("نیا ", "edit")
-                s.engine.inputMethod("provisional", 0, 11)
+                s.viewModel.verificationEngine.move(Selection(0, 0))
+                s.viewModel.verificationEngine.setParagraphProperties(before = 24)
+                s.viewModel.verificationEngine.setTextStyle(TextStylePatch(size = 48))
+                s.viewModel.verificationEngine.replace("نیا ", "edit")
+                s.viewModel.verificationEngine.inputMethod("provisional", 0, 11)
             }
-            val expected = owner { s.engine.snapshot().committed }
+            val expected = owner { s.viewModel.verificationEngine.snapshot().committed }
             val controller = owner { checkNotNull(window).rootPane.getClientProperty("editor.localRecovery") as LocalRecoveryController }
             await("completed committed copy") { controller.state().let { it["completed"] == it["observed"] && (it["completed"] as Long) > 0 } }
             owner { controller.finish(discard = false) }

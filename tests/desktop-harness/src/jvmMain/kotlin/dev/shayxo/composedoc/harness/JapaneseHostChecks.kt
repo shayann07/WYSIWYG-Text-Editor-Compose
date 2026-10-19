@@ -10,6 +10,7 @@ import dev.shayxo.composedoc.model.TextStyleFlags
 import dev.shayxo.composedoc.model.TextUnit
 import dev.shayxo.composedoc.model.UnitKind
 import dev.shayxo.composedoc.ui.EditorSurface
+import dev.shayxo.composedoc.ui.EditorViewModel
 import dev.shayxo.composedoc.ui.RecoveryStatus
 import dev.shayxo.composedoc.ui.RetainedCompositionPreimage
 import dev.shayxo.composedoc.ui.ViewState
@@ -41,7 +42,7 @@ import javax.swing.JPanel
  * They do NOT certify physical romaji conversion or native candidate popups by the Microsoft Windows OS IME.
  */
 fun runJapaneseHostChecks(surface: EditorSurface): EditorSurface {
-    val e = surface.engine
+    val e = surface.viewModel.verificationEngine
     var activeSurface = surface
 
     fun imeEvent(text: String, committedCount: Int, caret: Int?, target: EditorSurface = activeSurface): InputMethodEvent {
@@ -115,7 +116,7 @@ fun runJapaneseHostChecks(surface: EditorSurface): EditorSurface {
 
     // (b) Component that is not showing
     val notShowingEngine = EditorEngine()
-    val notShowingSurface = EditorSurface(notShowingEngine, ViewState(notShowingEngine.snapshot()))
+    val notShowingSurface = EditorSurface(EditorViewModel(notShowingEngine), ViewState(notShowingEngine.snapshot()))
     try {
         check(!notShowingSurface.isShowing) { "Detached surface must report isShowing = false" }
         var threwIllegalState = false
@@ -133,7 +134,7 @@ fun runJapaneseHostChecks(surface: EditorSurface): EditorSurface {
 
     // (c) Component whose screen location is unavailable (isShowing == true, but screen transform throws)
     val unavailEngine = EditorEngine()
-    val unavailSurface = object : EditorSurface(unavailEngine, ViewState(unavailEngine.snapshot())) {
+    val unavailSurface = object : EditorSurface(EditorViewModel(unavailEngine), ViewState(unavailEngine.snapshot())) {
         override fun isShowing(): Boolean = true
         override fun getLocationOnScreen(): Point = throw java.awt.IllegalComponentStateException("Screen location unavailable")
     }
@@ -159,7 +160,7 @@ fun runJapaneseHostChecks(surface: EditorSurface): EditorSurface {
     }
     val originEngine = EditorEngine()
     originEngine.replace("Origin", "Test")
-    val originSurface = EditorSurface(originEngine, ViewState(originEngine.snapshot()))
+    val originSurface = EditorSurface(EditorViewModel(originEngine), ViewState(originEngine.snapshot()))
     originSurface.view.measure = surface.view.measure
     val originPanel = JPanel(java.awt.BorderLayout())
     originPanel.add(originSurface, java.awt.BorderLayout.CENTER)
@@ -568,7 +569,7 @@ private fun findButtons(component: java.awt.Component): List<javax.swing.JButton
 
 private fun runMountedHostReplacementLifecycleChecks(initialSurface: EditorSurface): EditorSurface {
     var activeSurface = initialSurface
-    val e = activeSurface.engine
+    val e = activeSurface.viewModel.verificationEngine
     val mainWindow = checkNotNull(javax.swing.SwingUtilities.getWindowAncestor(activeSurface) as? javax.swing.JFrame) {
         "Active EditorSurface must be mounted inside showEditor JFrame"
     }
@@ -954,7 +955,7 @@ private fun runMountedHostReplacementLifecycleChecks(initialSurface: EditorSurfa
         // (b) Discard-close while composing
         val winDiscard = showEditor(offscreenTest = true)
         val surfDiscard = checkNotNull(windowCurrentSurface(winDiscard))
-        val engDiscard = surfDiscard.engine
+        val engDiscard = surfDiscard.viewModel.verificationEngine
         engDiscard.replace("Committed ", "Seed")
         surfDiscard.dispatchEvent(InputMethodEvent(surfDiscard, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("未確定").iterator, 0, TextHitInfo.leading(3), null))
         check(engDiscard.snapshot().marked != null)
@@ -971,7 +972,7 @@ private fun runMountedHostReplacementLifecycleChecks(initialSurface: EditorSurfa
         try {
             val surfRemoval = checkNotNull(windowCurrentSurface(winRemoval))
             val layersRemoval = checkNotNull(windowLayeredPane(winRemoval))
-            val engRemoval = surfRemoval.engine
+            val engRemoval = surfRemoval.viewModel.verificationEngine
             engRemoval.replace("KeepMe", "Seed")
             surfRemoval.dispatchEvent(InputMethodEvent(surfRemoval, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("消える").iterator, 0, TextHitInfo.leading(3), null))
             check(engRemoval.snapshot().marked != null)
@@ -1021,7 +1022,7 @@ private fun runHostReplacementFailurePathChecks() {
             engine.replace("Baseline", "Init")
             val view = ViewState(engine.snapshot())
             val layers = javax.swing.JLayeredPane()
-            val surface = EditorSurface(engine, view, diagnostics = diagFile, recoveryHooks = hooks)
+            val surface = EditorSurface(EditorViewModel(engine), view, diagnostics = diagFile, recoveryHooks = hooks)
             layers.add(surface)
             layers.setLayer(surface, 100)
             try {
@@ -1066,7 +1067,7 @@ private fun runHostReplacementFailurePathChecks() {
             check(next != null && !next.contextQualified && !next.admissionAllowed && next.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED) {
                 "Replacement surface must NEVER be marked contextQualified or admissionAllowed when old context teardown failed"
             }
-            check(surface.engine.snapshot().visible.text == "Baseline" && surface.engine.snapshot().marked == null)
+            check(surface.viewModel.verificationEngine.snapshot().visible.text == "Baseline" && surface.viewModel.verificationEngine.snapshot().marked == null)
 
             // Retained preimage preserved!
             check(next.retainedPreimage != null && next.retainedPreimage?.draftText == "未完")
@@ -1074,7 +1075,7 @@ private fun runHostReplacementFailurePathChecks() {
             // DegradedAudit probe scenario: ordinary callback to degraded replacement must be quarantined and NOT admitted!
             val lateCommit = InputMethodEvent(next, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("LATE").iterator, 4, null, null)
             next.dispatchEvent(lateCommit)
-            check(surface.engine.snapshot().committed.text == "Baseline" && surface.engine.snapshot().visible.text == "Baseline") {
+            check(surface.viewModel.verificationEngine.snapshot().committed.text == "Baseline" && surface.viewModel.verificationEngine.snapshot().visible.text == "Baseline") {
                 "Degraded replacement must NOT admit ambiguous native text into the committed document!"
             }
             check(next.quarantinedCallbacks.size == 1 && next.quarantinedCallbacks[0].text == "LATE") {
@@ -1086,7 +1087,7 @@ private fun runHostReplacementFailurePathChecks() {
             next.dispatchEvent(KeyEvent(next, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, KeyEvent.VK_BACK_SPACE, KeyEvent.CHAR_UNDEFINED))
             next.dispatchEvent(KeyEvent(next, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, KeyEvent.VK_DELETE, KeyEvent.CHAR_UNDEFINED))
             next.dispatchEvent(KeyEvent(next, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, KeyEvent.VK_TAB, '\t'))
-            check(surface.engine.snapshot().committed.text == "Baseline" && surface.engine.snapshot().visible.text == "Baseline") {
+            check(surface.viewModel.verificationEngine.snapshot().committed.text == "Baseline" && surface.viewModel.verificationEngine.snapshot().visible.text == "Baseline") {
                 "Degraded replacement must NOT admit mutating keystrokes (Enter, Backspace, Delete, Tab) into the document!"
             }
 
@@ -1094,7 +1095,7 @@ private fun runHostReplacementFailurePathChecks() {
             check("\"recoveryStatus\":\"DEGRADED_RECOVERY_FAILED\"" in diagText && "\"contextQualified\":false" in diagText && "\"admissionAllowed\":false" in diagText)
             check("Injected endComposition failure" in diagText)
             val saveFile = tempDir.resolve("recovered-1.astra")
-            DocumentFiles.write(saveFile, surface.engine.snapshot().committed, null)
+            DocumentFiles.write(saveFile, surface.viewModel.verificationEngine.snapshot().committed, null)
             check(DocumentFiles.read(saveFile).text == "Baseline")
 
             // Explicit recovery action
@@ -1105,7 +1106,7 @@ private fun runHostReplacementFailurePathChecks() {
             check(next.quarantinedCallbacks.isEmpty())
             // Now subsequent typing is admitted cleanly
             next.dispatchEvent(InputMethodEvent(next, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("OK").iterator, 2, null, null))
-            check(surface.engine.snapshot().committed.text == "BaselineOK")
+            check(surface.viewModel.verificationEngine.snapshot().committed.text == "BaselineOK")
         }
 
         // 2a. Genuine failure in removeNotifyContext BEFORE removal (context detachment)
@@ -1224,7 +1225,7 @@ private fun runHostReplacementFailurePathChecks() {
             check(!report.succeeded && report.status == RecoveryStatus.DEGRADED_RECOVERY_FAILED && !report.contextQualified)
             check(!report.replacementCreated && !report.containerAttached)
             check(report.failures.any { "replacementCreation: IllegalStateException: Injected replacement creation failure" in it })
-            check(surface.engine.snapshot().visible.text == "Baseline" && surface.engine.snapshot().marked == null)
+            check(surface.viewModel.verificationEngine.snapshot().visible.text == "Baseline" && surface.viewModel.verificationEngine.snapshot().marked == null)
         }
 
         // 5a. Failure in replacement InputContext binding (returns null)
@@ -1243,7 +1244,7 @@ private fun runHostReplacementFailurePathChecks() {
             check(!report.succeeded && report.status == RecoveryStatus.DEGRADED_RECOVERY_FAILED && !report.contextQualified)
             check(report.failures.any { "contextBinding:" in it && "returned null" in it })
             check(next != null && next.inputContext == null && !next.contextQualified && next.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED)
-            check(surface.engine.snapshot().visible.text == "Baseline" && surface.engine.snapshot().marked == null)
+            check(surface.viewModel.verificationEngine.snapshot().visible.text == "Baseline" && surface.viewModel.verificationEngine.snapshot().marked == null)
         }
 
         // 5b. Failure in replacement InputContext binding (throws exception)
@@ -1266,7 +1267,7 @@ private fun runHostReplacementFailurePathChecks() {
             check(!report.succeeded && report.status == RecoveryStatus.DEGRADED_RECOVERY_FAILED && !report.contextQualified)
             check(report.failures.any { "contextBinding:" in it && "Injected InputContext binding exception" in it })
             check(next != null && next.inputContext == null && !next.contextQualified && next.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED)
-            check(surface.engine.snapshot().visible.text == "Baseline" && surface.engine.snapshot().marked == null)
+            check(surface.viewModel.verificationEngine.snapshot().visible.text == "Baseline" && surface.viewModel.verificationEngine.snapshot().marked == null)
         }
 
         // 6. Failure in container attachment (throws without attaching newHost)
@@ -1289,9 +1290,9 @@ private fun runHostReplacementFailurePathChecks() {
             check(orphaned.disposed && !orphaned.isTimerRunning && orphaned.inputContext == null && !orphaned.contextQualified) {
                 "Unattached replacement host must be cleaned up immediately so its Timer and InputContext do not leak"
             }
-            check(surface.engine.snapshot().visible.text == "Baseline" && surface.engine.snapshot().marked == null)
+            check(surface.viewModel.verificationEngine.snapshot().visible.text == "Baseline" && surface.viewModel.verificationEngine.snapshot().marked == null)
             // Verify engine Undo still updates view.frame and diagnostics via fallback observer
-            surface.engine.perform(EditAction.Undo)
+            surface.viewModel.verificationEngine.perform(EditAction.Undo)
             check(surface.view.frame.visible.text.isEmpty())
             check("\"text\":\"\"" in diagFile.readText())
         }
@@ -1299,7 +1300,7 @@ private fun runHostReplacementFailurePathChecks() {
         // 7. Explicit conservative recovery (abortCompositionConservatively / replaceHost = false)
         withTestHost(EditorSurface.RecoveryHooks()) { _, surface, diagFile ->
             surface.dispatchEvent(InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("保守").iterator, 0, TextHitInfo.leading(2), null))
-            check(surface.engine.snapshot().marked != null)
+            check(surface.viewModel.verificationEngine.snapshot().marked != null)
             val report = surface.abortCompositionConservatively()
             check(report.succeeded)
             check(!report.replaceRequested && report.status == RecoveryStatus.CONSERVATIVE_ABORT_ONLY)
@@ -1309,19 +1310,19 @@ private fun runHostReplacementFailurePathChecks() {
             // Late IME event on conservatively retired surface must be rejected
             val lateEv = InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("保守").iterator, 2, null, null)
             surface.dispatchEvent(lateEv)
-            check(lateEv.isConsumed && surface.engine.snapshot().visible.text == "Baseline")
+            check(lateEv.isConsumed && surface.viewModel.verificationEngine.snapshot().visible.text == "Baseline")
             // Document state remains clean, undoable, and saveable
             val savePath = tempDir.resolve("conservative.astra")
-            DocumentFiles.write(savePath, surface.engine.snapshot().committed, null)
+            DocumentFiles.write(savePath, surface.viewModel.verificationEngine.snapshot().committed, null)
             check(DocumentFiles.read(savePath).text == "Baseline")
-            surface.engine.perform(EditAction.Undo)
+            surface.viewModel.verificationEngine.perform(EditAction.Undo)
             check(surface.view.frame.visible.text.isEmpty())
             check("\"recoveryStatus\":\"CONSERVATIVE_ABORT_ONLY\"" in diagFile.readText())
         }
 
         // Basis-bound attributed recovery: exercise the actual host API, including failure retention.
         withTestHost(EditorSurface.RecoveryHooks()) { _, surface, _ ->
-            val engine = surface.engine
+            val engine = surface.viewModel.verificationEngine
             engine.selectAll()
             engine.replace("ک\nتاب", "Fixture", paragraphBreaks = true)
             engine.move(Selection(0, 1))
@@ -1345,21 +1346,21 @@ private fun runHostReplacementFailurePathChecks() {
             check(engine.snapshot().committed == desired.visible)
         }
         withTestHost(EditorSurface.RecoveryHooks()) { _, surface, _ ->
-            surface.engine.inputMethod("قلم", 0, 3)
+            surface.viewModel.verificationEngine.inputMethod("قلم", 0, 3)
             val next = checkNotNull(surface.abortAndRetireComposition(replaceHost = true))
             val retained = checkNotNull(next.retainedPreimage)
-            next.engine.replace("X", "ChangedBasis")
-            val changed = next.engine.snapshot()
+            next.viewModel.verificationEngine.replace("X", "ChangedBasis")
+            val changed = next.viewModel.verificationEngine.snapshot()
             check(!next.applyRecoveredDraft())
             check(next.retainedPreimage === retained)
-            check(next.engine.snapshot().committed == changed.committed)
-            check(next.engine.snapshot().notice.startsWith("RecoveryBaseChanged"))
+            check(next.viewModel.verificationEngine.snapshot().committed == changed.committed)
+            check(next.viewModel.verificationEngine.snapshot().notice.startsWith("RecoveryBaseChanged"))
             next.discardRecoveredDraft()
             check(next.retainedPreimage == null)
         }
         withTestHost(EditorSurface.RecoveryHooks()) { _, surface, _ ->
-            val before = surface.engine.snapshot()
-            val deletion = surface.engine.captureRecoveryReplacement(Document(emptyList()), Selection(0, 0))
+            val before = surface.viewModel.verificationEngine.snapshot()
+            val deletion = surface.viewModel.verificationEngine.captureRecoveryReplacement(Document(emptyList()), Selection(0, 0))
             surface.retainedPreimage = RetainedCompositionPreimage(
                 "",
                 before.selection,
@@ -1368,37 +1369,37 @@ private fun runHostReplacementFailurePathChecks() {
                 surface.activeImeEpoch,
                 deletion,
             )
-            surface.engine.inputMethod("候補", 0, 2)
+            surface.viewModel.verificationEngine.inputMethod("候補", 0, 2)
             val retained = surface.retainedPreimage
             check(!surface.applyRecoveredDraft() && surface.retainedPreimage === retained)
-            surface.engine.abortComposition()
+            surface.viewModel.verificationEngine.abortComposition()
             // Aborting unaccepted preedit leaves the captured committed basis intact.
             check(surface.retainedPreimage === retained)
             check(surface.applyRecoveredDraft() && surface.retainedPreimage == null)
-            check(surface.engine.snapshot().committed.text.isEmpty())
-            surface.engine.perform(EditAction.Undo)
-            check(surface.engine.snapshot().committed == before.committed)
-            surface.engine.perform(EditAction.Redo)
-            check(surface.engine.snapshot().committed.text.isEmpty())
+            check(surface.viewModel.verificationEngine.snapshot().committed.text.isEmpty())
+            surface.viewModel.verificationEngine.perform(EditAction.Undo)
+            check(surface.viewModel.verificationEngine.snapshot().committed == before.committed)
+            surface.viewModel.verificationEngine.perform(EditAction.Redo)
+            check(surface.viewModel.verificationEngine.snapshot().committed.text.isEmpty())
         }
         withTestHost(EditorSurface.RecoveryHooks()) { _, origin, _ ->
-            origin.engine.selectAll()
-            origin.engine.inputMethod("کتاب", 0, 4)
+            origin.viewModel.verificationEngine.selectAll()
+            origin.viewModel.verificationEngine.inputMethod("کتاب", 0, 4)
             val replacement = checkNotNull(origin.abortAndRetireComposition(replaceHost = true))
             val retained = checkNotNull(replacement.retainedPreimage)
             val capsule = checkNotNull(retained.recoveryDraft)
             withTestHost(EditorSurface.RecoveryHooks()) { _, foreign, _ ->
-                foreign.engine.selectAll()
-                foreign.engine.inputMethod("قلم", 0, 3)
-                foreign.engine.abortComposition()
-                val before = foreign.engine.snapshot()
+                foreign.viewModel.verificationEngine.selectAll()
+                foreign.viewModel.verificationEngine.inputMethod("قلم", 0, 3)
+                foreign.viewModel.verificationEngine.abortComposition()
+                val before = foreign.viewModel.verificationEngine.snapshot()
                 check(before.committed == capsule.basis && before.recoveryBasisRevision == capsule.basisRevision && before.identityGeneration == capsule.basisIdentityGeneration)
                 foreign.retainedPreimage = retained
                 check(!foreign.applyRecoveredDraft())
-                check(foreign.retainedPreimage === retained && foreign.engine.snapshot().committed == before.committed && foreign.engine.snapshot().undoCount == before.undoCount)
-                check(foreign.engine.snapshot().notice.startsWith("RecoveryBaseChanged"))
+                check(foreign.retainedPreimage === retained && foreign.viewModel.verificationEngine.snapshot().committed == before.committed && foreign.viewModel.verificationEngine.snapshot().undoCount == before.undoCount)
+                check(foreign.viewModel.verificationEngine.snapshot().notice.startsWith("RecoveryBaseChanged"))
                 check(replacement.applyRecoveredDraft() && replacement.retainedPreimage == null)
-                check(replacement.engine.snapshot().committed == capsule.document && foreign.retainedPreimage === retained)
+                check(replacement.viewModel.verificationEngine.snapshot().committed == capsule.document && foreign.retainedPreimage === retained)
             }
         }
 
@@ -1415,14 +1416,14 @@ private fun runHostReplacementFailurePathChecks() {
 
             // Ordinary callback to degraded host is quarantined, document unaffected
             next1.dispatchEvent(InputMethodEvent(next1, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("保留").iterator, 2, null, null))
-            check(next1.engine.snapshot().committed.text == "Baseline")
+            check(next1.viewModel.verificationEngine.snapshot().committed.text == "Baseline")
             check(next1.quarantinedCallbacks.size == 1 && next1.quarantinedCallbacks[0].text == "保留")
 
             // Second retry with failure still fails gracefully
             next1.recoveryHooks = EditorSurface.RecoveryHooks(endComposition = { throw RuntimeException("Failure 2") })
             val next2 = checkNotNull(next1.abortAndRetireComposition(replaceHost = true))
             check(next2.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED && !next2.admissionAllowed)
-            check(next2.engine.snapshot().committed.text == "Baseline")
+            check(next2.viewModel.verificationEngine.snapshot().committed.text == "Baseline")
             check(next2.quarantinedCallbacks.size == 1 && next2.quarantinedCallbacks[0].text == "保留")
             check(next2.retainedPreimage?.draftText == "ドラフト")
 
@@ -1437,22 +1438,22 @@ private fun runHostReplacementFailurePathChecks() {
             val exportFile = tempDir.resolve("exported-draft.txt").toFile()
             check(next3.exportRetainedDraft(exportFile))
             check(exportFile.readText() == "ドラフト")
-            check(next3.engine.snapshot().committed.text == "Baseline")
+            check(next3.viewModel.verificationEngine.snapshot().committed.text == "Baseline")
 
             // Explicitly apply recovered draft with attributed Undo/Redo
             check(next3.applyRecoveredDraft())
-            check(next3.engine.snapshot().committed.text == "Baselineドラフト")
-            next3.engine.perform(EditAction.Undo)
-            check(next3.engine.snapshot().committed.text == "Baseline")
-            next3.engine.perform(EditAction.Redo)
-            check(next3.engine.snapshot().committed.text == "Baselineドラフト")
-            next3.engine.perform(EditAction.Undo)
+            check(next3.viewModel.verificationEngine.snapshot().committed.text == "Baselineドラフト")
+            next3.viewModel.verificationEngine.perform(EditAction.Undo)
+            check(next3.viewModel.verificationEngine.snapshot().committed.text == "Baseline")
+            next3.viewModel.verificationEngine.perform(EditAction.Redo)
+            check(next3.viewModel.verificationEngine.snapshot().committed.text == "Baselineドラフト")
+            next3.viewModel.verificationEngine.perform(EditAction.Undo)
             next3.discardQuarantinedCallbacks()
             check(next3.quarantinedCallbacks.isEmpty())
 
             // Subsequent input works cleanly
             next3.dispatchEvent(InputMethodEvent(next3, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("成功").iterator, 2, null, null))
-            check(next3.engine.snapshot().committed.text == "Baseline成功")
+            check(next3.viewModel.verificationEngine.snapshot().committed.text == "Baseline成功")
         }
 
         // 9. Partial commit with degraded recovery preserves accepted prefix and exact Undo/Redo
@@ -1461,27 +1462,27 @@ private fun runHostReplacementFailurePathChecks() {
                 endComposition = { throw RuntimeException("Partial commit teardown failure") },
             ),
         ) { _, surface, _ ->
-            surface.engine.selectAll()
-            surface.engine.replace("abcd", "Init")
-            surface.engine.selectAll()
+            surface.viewModel.verificationEngine.selectAll()
+            surface.viewModel.verificationEngine.replace("abcd", "Init")
+            surface.viewModel.verificationEngine.selectAll()
             // Partial commit: 'X' accepted, "Y" provisional, "cd" retained
             surface.dispatchEvent(InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("XYcd").iterator, 1, TextHitInfo.leading(2), null))
-            check(surface.engine.snapshot().committed.text == "Xcd" && surface.engine.snapshot().visible.text == "XYcd")
+            check(surface.viewModel.verificationEngine.snapshot().committed.text == "Xcd" && surface.viewModel.verificationEngine.snapshot().visible.text == "XYcd")
 
             val next = checkNotNull(surface.abortAndRetireComposition(replaceHost = true))
             check(next.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED && !next.admissionAllowed)
-            check(surface.engine.snapshot().committed.text == "Xcd" && surface.engine.snapshot().visible.text == "Xcd" && surface.engine.snapshot().marked == null)
+            check(surface.viewModel.verificationEngine.snapshot().committed.text == "Xcd" && surface.viewModel.verificationEngine.snapshot().visible.text == "Xcd" && surface.viewModel.verificationEngine.snapshot().marked == null)
 
             // Ambiguous callback on next is quarantined, not admitted
             next.dispatchEvent(InputMethodEvent(next, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("CORRUPT").iterator, 7, null, null))
-            check(surface.engine.snapshot().committed.text == "Xcd")
+            check(surface.viewModel.verificationEngine.snapshot().committed.text == "Xcd")
 
             // Undo reverts partial commit back to original "abcd"
-            surface.engine.perform(EditAction.Undo)
-            check(surface.engine.snapshot().visible.text == "abcd" && surface.engine.snapshot().selection == Selection(0, 4))
+            surface.viewModel.verificationEngine.perform(EditAction.Undo)
+            check(surface.viewModel.verificationEngine.snapshot().visible.text == "abcd" && surface.viewModel.verificationEngine.snapshot().selection == Selection(0, 4))
             // Redo restores accepted partial commit "Xcd"
-            surface.engine.perform(EditAction.Redo)
-            check(surface.engine.snapshot().visible.text == "Xcd")
+            surface.viewModel.verificationEngine.perform(EditAction.Redo)
+            check(surface.viewModel.verificationEngine.snapshot().visible.text == "Xcd")
         }
 
         // 10. Discard-close and disposal on degraded host
@@ -1512,7 +1513,7 @@ private fun runHostReplacementFailurePathChecks() {
                 },
             ),
         ) { _, oldSurface, _ ->
-            oldSurface.engine.inputMethod("draft", 0, 5)
+            oldSurface.viewModel.verificationEngine.inputMethod("draft", 0, 5)
             val next = checkNotNull(oldSurface.abortAndRetireComposition(replaceHost = true))
 
             // Ordinary callback route: callback is quarantined, not admitted
@@ -1537,7 +1538,7 @@ private fun runHostReplacementFailurePathChecks() {
 
             // Ambiguous late native callback dispatched during degraded state must NOT mutate committed document
             next.dispatchEvent(InputMethodEvent(next, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("LATE").iterator, 4, null, null))
-            check(oldSurface.engine.snapshot().committed.text == "Baseline") {
+            check(oldSurface.viewModel.verificationEngine.snapshot().committed.text == "Baseline") {
                 "Committed text must not be corrupted by ambiguous native callback while unresolved cleanup exists"
             }
             check(next.quarantinedCallbacks.size == 2) { "Both ambiguous callbacks must remain quarantined" }
@@ -1563,16 +1564,16 @@ private fun runHostReplacementFailurePathChecks() {
 
             // Explicitly apply recovered draft with attributed Undo/Redo
             check(next.applyRecoveredDraft()) { "applyRecoveredDraft must succeed when draft is retained" }
-            check(next.engine.snapshot().committed.text == "Baselinedraft")
-            next.engine.perform(EditAction.Undo)
-            check(next.engine.snapshot().committed.text == "Baseline") { "Undo must revert applied draft" }
-            next.engine.perform(EditAction.Redo)
-            check(next.engine.snapshot().committed.text == "Baselinedraft") { "Redo must reapply draft" }
-            next.engine.perform(EditAction.Undo)
+            check(next.viewModel.verificationEngine.snapshot().committed.text == "Baselinedraft")
+            next.viewModel.verificationEngine.perform(EditAction.Undo)
+            check(next.viewModel.verificationEngine.snapshot().committed.text == "Baseline") { "Undo must revert applied draft" }
+            next.viewModel.verificationEngine.perform(EditAction.Redo)
+            check(next.viewModel.verificationEngine.snapshot().committed.text == "Baselinedraft") { "Redo must reapply draft" }
+            next.viewModel.verificationEngine.perform(EditAction.Undo)
 
             // Subsequent normal input admitted cleanly
             next.dispatchEvent(InputMethodEvent(next, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("OK").iterator, 2, null, null))
-            check(next.engine.snapshot().committed.text == "BaselineOK")
+            check(next.viewModel.verificationEngine.snapshot().committed.text == "BaselineOK")
         }
 
         // 11b. Safe isolation fence enables admission when cleanup cannot succeed
@@ -1583,7 +1584,7 @@ private fun runHostReplacementFailurePathChecks() {
                 },
             ),
         ) { _, oldSurface, _ ->
-            oldSurface.engine.inputMethod("fencedDraft", 0, 11)
+            oldSurface.viewModel.verificationEngine.inputMethod("fencedDraft", 0, 11)
             val next = checkNotNull(oldSurface.abortAndRetireComposition(replaceHost = true))
             check(!next.admissionAllowed && next.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED)
 
@@ -1607,7 +1608,7 @@ private fun runHostReplacementFailurePathChecks() {
 
             // Normal typing admitted
             next.dispatchEvent(InputMethodEvent(next, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("FENCE_OK").iterator, 8, null, null))
-            check(next.engine.snapshot().committed.text == "BaselineFENCE_OK")
+            check(next.viewModel.verificationEngine.snapshot().committed.text == "BaselineFENCE_OK")
         }
 
         // 12. Actual mounted Recover button and draft controls regression in live UI hierarchy
@@ -1622,8 +1623,8 @@ private fun runHostReplacementFailurePathChecks() {
             try {
                 val surf = checkNotNull(findSurface(win))
                 surf.recoveryHooks = failingHooks
-                surf.engine.replace("Mounted", "Init")
-                surf.engine.inputMethod("uncommitted", 0, 11)
+                surf.viewModel.verificationEngine.replace("Mounted", "Init")
+                surf.viewModel.verificationEngine.inputMethod("uncommitted", 0, 11)
 
                 val nextHost = checkNotNull(surf.abortAndRetireComposition(replaceHost = true))
                 check(nextHost.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED && !nextHost.admissionAllowed)
@@ -1661,7 +1662,7 @@ private fun runHostReplacementFailurePathChecks() {
 
                 // Send ordinary callback while degraded: must be quarantined
                 nextHost.dispatchEvent(InputMethodEvent(nextHost, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("BLOCK").iterator, 5, null, null))
-                check(nextHost.engine.snapshot().committed.text == "Mounted") { "Blocked callback must not enter committed text" }
+                check(nextHost.viewModel.verificationEngine.snapshot().committed.text == "Mounted") { "Blocked callback must not enter committed text" }
                 check(nextHost.quarantinedCallbacks.any { it.text == "BLOCK" })
 
                 // Now restore clean hooks
@@ -1677,16 +1678,16 @@ private fun runHostReplacementFailurePathChecks() {
                 // Retained draft button remains visible until explicitly applied or discarded
                 check(applyDraftBtn.isVisible)
                 applyDraftBtn.doClick()
-                check(nextHost.engine.snapshot().committed.text == "Mounteduncommitted") { "Apply Draft button must apply draft text" }
+                check(nextHost.viewModel.verificationEngine.snapshot().committed.text == "Mounteduncommitted") { "Apply Draft button must apply draft text" }
                 check(!applyDraftBtn.isVisible) { "Apply Draft button must be hidden after application" }
 
                 // Undo reverts applied draft
-                nextHost.engine.perform(EditAction.Undo)
-                check(nextHost.engine.snapshot().committed.text == "Mounted")
+                nextHost.viewModel.verificationEngine.perform(EditAction.Undo)
+                check(nextHost.viewModel.verificationEngine.snapshot().committed.text == "Mounted")
 
                 // Subsequent typing works
                 nextHost.dispatchEvent(InputMethodEvent(nextHost, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("DONE").iterator, 4, null, null))
-                check(nextHost.engine.snapshot().committed.text == "MountedDONE")
+                check(nextHost.viewModel.verificationEngine.snapshot().committed.text == "MountedDONE")
             } finally {
                 win.dispose()
             }

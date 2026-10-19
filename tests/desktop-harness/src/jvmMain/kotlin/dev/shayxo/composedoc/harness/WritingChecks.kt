@@ -51,10 +51,10 @@ fun runWritingChecks(result: File) {
         val event = KeyEvent(surface, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), modifiers, code, KeyEvent.CHAR_UNDEFINED)
         surface.keyListeners.forEach { it.keyPressed(event) }
     }
-    fun ready(): Boolean = surface.view.geometry?.revision == surface.engine.snapshot().documentRevision && !surface.view.ensureCaret
+    fun ready(): Boolean = surface.view.geometry?.revision == surface.viewModel.verificationEngine.snapshot().documentRevision && !surface.view.ensureCaret
     fun caretVisible() {
         val g = checkNotNull(surface.view.geometry)
-        val frame = surface.engine.snapshot()
+        val frame = surface.viewModel.verificationEngine.snapshot()
         val caret = g.caret(frame.selection.focus, frame.selection.primary, frame.selection.wrapAffinity)
         check(caret.top >= 0 && caret.bottom <= surface.height * g.scale) { "Active caret outside viewport: $caret / ${surface.height * g.scale}" }
     }
@@ -98,45 +98,45 @@ fun runWritingChecks(result: File) {
         }
         await("End caret scrolling", ::ready)
         owner {
-            check(surface.engine.snapshot().selection.focus == sample.units.size && surface.view.scroll > 0)
+            check(surface.viewModel.verificationEngine.snapshot().selection.focus == sample.units.size && surface.view.scroll > 0)
             caretVisible()
             key(KeyEvent.VK_ENTER)
             key(KeyEvent.VK_ENTER, InputEvent.SHIFT_DOWN_MASK)
-            surface.engine.replace("کتاب English 123", "WritingReplacement")
+            surface.viewModel.verificationEngine.replace("کتاب English 123", "WritingReplacement")
         }
         await("Typing at document end", ::ready)
         owner {
             caretVisible()
-            val before = surface.engine.snapshot()
+            val before = surface.viewModel.verificationEngine.snapshot()
             val start = before.visible.text.lastIndexOf("English")
-            surface.engine.move(Selection(start, start + 7))
+            surface.viewModel.verificationEngine.move(Selection(start, start + 7))
             components(window).filterIsInstance<JButton>().single { it.text == "Bold" }.doClick()
             key(KeyEvent.VK_I, InputEvent.CTRL_DOWN_MASK)
-            val formatted = surface.engine.snapshot()
+            val formatted = surface.viewModel.verificationEngine.snapshot()
             check(formatted.committed.units.subList(start, start + 7).all { it.style.bold && it.style.italic })
             key(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK)
             key(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK)
-            check(surface.engine.snapshot().committed == before.committed)
+            check(surface.viewModel.verificationEngine.snapshot().committed == before.committed)
             key(KeyEvent.VK_Y, InputEvent.CTRL_DOWN_MASK)
             key(KeyEvent.VK_Y, InputEvent.CTRL_DOWN_MASK)
-            check(surface.engine.snapshot().committed == formatted.committed)
-            surface.engine.replace("notes", "ReplaceSelected")
-            val replaced = surface.engine.snapshot()
+            check(surface.viewModel.verificationEngine.snapshot().committed == formatted.committed)
+            surface.viewModel.verificationEngine.replace("notes", "ReplaceSelected")
+            val replaced = surface.viewModel.verificationEngine.snapshot()
             check(replaced.committed.text == formatted.committed.text.take(start) + "notes" + formatted.committed.text.drop(start + 7))
             key(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK)
-            check(surface.engine.snapshot().committed == formatted.committed)
+            check(surface.viewModel.verificationEngine.snapshot().committed == formatted.committed)
             key(KeyEvent.VK_Y, InputEvent.CTRL_DOWN_MASK)
-            check(surface.engine.snapshot().committed == replaced.committed)
+            check(surface.viewModel.verificationEngine.snapshot().committed == replaced.committed)
             checks += "End navigation/typing scroll the caret into view; selection replacement and bold/italic have exact Undo/Redo"
             val toggle = components(window).filterIsInstance<JCheckBox>().single { it.name == "page-mode" }
-            val beforeToggle = surface.engine.snapshot()
+            val beforeToggle = surface.viewModel.verificationEngine.snapshot()
             toggle.doClick()
-            check(!surface.view.paged && surface.engine.snapshot() == beforeToggle)
+            check(!surface.view.paged && surface.viewModel.verificationEngine.snapshot() == beforeToggle)
         }
         await("Continuous layout", ::ready)
         owner {
             caretVisible()
-            val frame = surface.engine.snapshot()
+            val frame = surface.viewModel.verificationEngine.snapshot()
             // Wheel browsing is independent of the caret; the next edit must reveal it again.
             surface.mouseWheelListeners.forEach {
                 it.mouseWheelMoved(
@@ -146,15 +146,15 @@ fun runWritingChecks(result: File) {
                     ),
                 )
             }
-            check(surface.engine.snapshot() == frame)
+            check(surface.viewModel.verificationEngine.snapshot() == frame)
         }
         await("Wheel scroll", { surface.view.geometry?.scroll == surface.view.scroll })
-        owner { surface.engine.replace("۔", "TypingAfterScroll") }
+        owner { surface.viewModel.verificationEngine.replace("۔", "TypingAfterScroll") }
         await("Caret after browsing", ::ready)
         lateinit var saved: Document
         owner {
             caretVisible()
-            saved = surface.engine.snapshot().committed
+            saved = surface.viewModel.verificationEngine.snapshot().committed
             files.save()
         }
         await("Actual shell save", { !files.busy })
@@ -165,7 +165,7 @@ fun runWritingChecks(result: File) {
             val reopened = JFrame.getFrames().filterIsInstance<JFrame>().single { it !in prior }
             owned += reopened
             val reopenedSurface = checkNotNull(windowCurrentSurface(reopened))
-            check(reopenedSurface.engine.snapshot().committed.same(saved) && reopenedSurface.view.typography.id == "noto-nastaliq" && !reopenedSurface.view.paged)
+            check(reopenedSurface.viewModel.verificationEngine.snapshot().committed.same(saved) && reopenedSurface.view.typography.id == "noto-nastaliq" && !reopenedSurface.view.paged)
             check(checkNotNull(windowFiles(reopened)).dirty.not())
             files.close()
             check(!window.isDisplayable)
@@ -174,7 +174,7 @@ fun runWritingChecks(result: File) {
             window = reopened
             surface = reopenedSurface
             files = checkNotNull(windowFiles(window))
-            surface.engine.replace("بدلا", "UnsavedPrompt")
+            surface.viewModel.verificationEngine.replace("بدلا", "UnsavedPrompt")
             var prompts = 0
             files.promptCloseChoice = {
                 prompts++

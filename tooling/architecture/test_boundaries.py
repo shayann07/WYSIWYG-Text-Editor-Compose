@@ -16,6 +16,13 @@ class BoundaryChecks(unittest.TestCase):
         self.assertTrue(check_source(":core:ui", "import dev.shayxo.composedoc.workspace.WorkspaceUi"))
         self.assertTrue(check_source(":core:layout", "import dev.shayxo.composedoc.ui.EditorViewModel"))
 
+    def test_ui_and_app_code_cannot_bypass_view_model(self):
+        for module in (":core:ui", ":apps:desktop-workspace"):
+            self.assertTrue(check_source(module, "val e = EditorEngine(document)", "WorkspaceUi.kt"))
+            self.assertTrue(check_source(module, "surface.viewModel.verificationEngine.move(s)", "EditorSurface.kt"))
+            self.assertFalse(check_source(module, "viewModel.dispatch(EditorIntent.SelectAll)", "EditorSurface.kt"))
+        self.assertFalse(check_source(":core:ui", "class EditorViewModel(private val engine: EditorEngine)", "EditorViewModel.kt"))
+
     def test_diagnostic_text_not_a_dependency(self):
         self.assertFalse(check_source(":core:model", 'val diagnostic = "java.awt is forbidden" // javax.swing.JFrame'))
 

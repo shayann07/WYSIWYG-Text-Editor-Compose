@@ -5,8 +5,9 @@ import dev.shayxo.composedoc.data.FileConflict
 import dev.shayxo.composedoc.data.FileFingerprint
 import dev.shayxo.composedoc.data.SafeDocumentIO
 import dev.shayxo.composedoc.data.SavePoint
-import dev.shayxo.composedoc.domain.EditorEngine
 import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.ui.EditorIntent
+import dev.shayxo.composedoc.ui.EditorViewModel
 import dev.shayxo.composedoc.ui.QuarantinedCallback
 import dev.shayxo.composedoc.ui.quarantineDiagnostic
 import java.awt.event.WindowAdapter
@@ -22,10 +23,10 @@ import javax.swing.filechooser.FileNameExtensionFilter
 /** Swing shell only. Disk work is off the editing thread; results publish on the EDT. */
 class WindowFiles(
     val window: JFrame,
-    private val engine: EditorEngine,
+    private val viewModel: EditorViewModel,
     initialPath: Path?,
     var promptCloseChoice: ((String) -> Int)? = null,
-    var onDiscardComposition: () -> Unit = { engine.abortComposition() },
+    var onDiscardComposition: () -> Unit = { viewModel.dispatch(EditorIntent.AbortComposition) },
     private val refresh: () -> Unit,
 ) {
     var path: Path? = initialPath
@@ -64,14 +65,14 @@ class WindowFiles(
     var beforeSaveWriteForChecks: () -> Unit = {}
     var confirmInputDiscardForChecks: ((Int) -> Boolean)? = null
     private var operationNote: String? = null
-    var fingerprint: FileFingerprint? = initialPath?.let { SafeDocumentIO.basis(engine.snapshot().committed, it) }
+    var fingerprint: FileFingerprint? = initialPath?.let { SafeDocumentIO.basis(viewModel.snapshot().committed, it) }
         private set
     var conflict: FileConflict? = null
         private set
     var preserveBeforeReload: (Document, () -> Unit) -> Unit = { _, _ -> error(IllegalStateException("Recovery protection unavailable; reload blocked")) }
-    private val savePoint = SavePoint(engine.snapshot().committed)
-    private var diskDocument = engine.snapshot().committed
-    val dirty get() = unsavedRestore || savePoint.dirty(engine.snapshot())
+    private val savePoint = SavePoint(viewModel.snapshot().committed)
+    private var diskDocument = viewModel.snapshot().committed
+    val dirty get() = unsavedRestore || savePoint.dirty(viewModel.snapshot())
     val name get() = (path?.fileName?.toString() ?: restoredName?.let { "$it ($copyLabel)" } ?: "Untitled") + if (dirty) " *" else ""
     val status get() = (
         if (conflict != null) {
@@ -124,11 +125,11 @@ class WindowFiles(
         }
     }
     fun reloadExternal() {
-        if (busy || engine.snapshot().marked != null || engine.snapshot().waiting)return
+        if (busy || viewModel.snapshot().marked != null || viewModel.snapshot().waiting)return
         val source = path ?: return
-        val captured = engine.snapshot()
+        val captured = viewModel.snapshot()
         val proceed = {
-            if (engine.snapshot().documentRevision != captured.documentRevision || engine.snapshot().sessionRevision != captured.sessionRevision) {
+            if (viewModel.snapshot().documentRevision != captured.documentRevision || viewModel.snapshot().sessionRevision != captured.sessionRevision) {
                 error(IllegalStateException("Local work changed while protecting it; reload canceled"))
             } else {
                 work({ DocumentFiles.read(source) }) { loaded ->
@@ -182,7 +183,7 @@ class WindowFiles(
     fun save(asNew: Boolean = false, closeAfter: Boolean = false) {
         if (busy) return
         // Never persist preedit as accepted text or guess a native completion fence.
-        if (engine.snapshot().marked != null || engine.snapshot().waiting) {
+        if (viewModel.snapshot().marked != null || viewModel.snapshot().waiting) {
             error(IllegalStateException("Finish composing before saving or closing."))
             return
         }
@@ -198,14 +199,14 @@ class WindowFiles(
             }
         }
         val written = try {
-            savePoint.capture(engine.snapshot())
+            savePoint.capture(viewModel.snapshot())
         } catch (failure: Exception) {
             error(failure)
             return
         }
         val target = destination!!
-        val capturedDocRev = engine.snapshot().documentRevision
-        val capturedSessionRev = engine.snapshot().sessionRevision
+        val capturedDocRev = viewModel.snapshot().documentRevision
+        val capturedSessionRev = viewModel.snapshot().sessionRevision
         val known = if (!asNew && target == path)fingerprint else null
         // Capture destination bytes before the publication worker, including Save As to an existing file.
         work({
@@ -227,7 +228,7 @@ class WindowFiles(
                 operationNote = "Saved ${target.fileName}"
                 // Typing while the write runs stays dirty. Never close over newer edits or active preedit.
                 if (closeAfter) {
-                    val currentSnap = engine.snapshot()
+                    val currentSnap = viewModel.snapshot()
                     if (!dirty &&
                         !hasRetainedRecovery() &&
                         currentSnap.marked == null &&
@@ -248,7 +249,7 @@ class WindowFiles(
             ToolkitFeedback.beep()
             return
         }
-        val snap = engine.snapshot()
+        val snap = viewModel.snapshot()
         val hasPreedit = snap.marked != null || snap.waiting
         val retained = hasRetainedRecovery()
         val discardConfirmed = captureRecoveryDiscard()
@@ -273,7 +274,7 @@ class WindowFiles(
             0 -> if (!retained) save(closeAfter = true)
             1 -> {
                 val finishDiscard: () -> Unit = finish@{
-                    val current = engine.snapshot()
+                    val current = viewModel.snapshot()
                     if (current.documentRevision != snap.documentRevision || current.sessionRevision != snap.sessionRevision) {
                         operationNote = "Input changed while closing. Review your work and close again."
                         refresh()

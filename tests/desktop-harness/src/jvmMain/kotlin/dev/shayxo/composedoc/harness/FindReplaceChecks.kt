@@ -180,7 +180,7 @@ fun runFindReplaceChecks(result: File) {
             val match = checkNotNull(ui.session.current)
             val caret = g.caret(match.start)
             check(caret.top >= 0 && caret.bottom <= surface.height * g.scale)
-            check(surface.engine.snapshot().committed.same(sample) && surface.engine.snapshot().undoCount == 0 && !checkNotNull(windowFiles(window)).dirty)
+            check(surface.viewModel.verificationEngine.snapshot().committed.same(sample) && surface.viewModel.verificationEngine.snapshot().undoCount == 0 && !checkNotNull(windowFiles(window)).dirty)
             check(controller.state()["observed"] == 1L)
             ui.query.actionMap.get("find.previous").actionPerformed(null)
             check(ui.count.text == "7 / 8")
@@ -211,24 +211,24 @@ fun runFindReplaceChecks(result: File) {
             }
             ui.replacement.text = "English notes changed"
             all(ui.panel).filterIsInstance<JButton>().single { it.text == "Replace All" }.doClick()
-            val target = surface.engine.snapshot().committed
+            val target = surface.viewModel.verificationEngine.snapshot().committed
             check(target.text == sample.text.replace("English notes", "English notes changed"))
-            check(surface.engine.snapshot().undoCount == 1 && checkNotNull(windowFiles(window)).dirty)
-            surface.engine.perform(EditAction.Undo)
-            check(surface.engine.snapshot().committed.same(sample))
-            surface.engine.perform(EditAction.Redo)
-            check(surface.engine.snapshot().committed == target)
-            surface.engine.replace("کِ", "UnsafeFindFixture")
+            check(surface.viewModel.verificationEngine.snapshot().undoCount == 1 && checkNotNull(windowFiles(window)).dirty)
+            surface.viewModel.verificationEngine.perform(EditAction.Undo)
+            check(surface.viewModel.verificationEngine.snapshot().committed.same(sample))
+            surface.viewModel.verificationEngine.perform(EditAction.Redo)
+            check(surface.viewModel.verificationEngine.snapshot().committed == target)
+            surface.viewModel.verificationEngine.replace("کِ", "UnsafeFindFixture")
             ui.query.text = "ِ"
             check(ui.session.matches.isNotEmpty() && ui.session.matches.any { !it.editable })
             check(!all(ui.panel).filterIsInstance<JButton>().single { it.text == "Replace All" }.isEnabled)
-            surface.engine.perform(EditAction.Undo)
-            check(surface.engine.snapshot().committed == target)
+            surface.viewModel.verificationEngine.perform(EditAction.Undo)
+            check(surface.viewModel.verificationEngine.snapshot().committed == target)
             ui.query.text = "English notes"
-            surface.engine.inputMethod("候補", 0, 2)
+            surface.viewModel.verificationEngine.inputMethod("候補", 0, 2)
             check(ui.session.blocked && surface.view.findMatches.isEmpty())
             check(!all(ui.panel).filterIsInstance<JButton>().single { it.text == "Replace" }.isEnabled)
-            surface.engine.abortComposition()
+            surface.viewModel.verificationEngine.abortComposition()
             check(!ui.session.blocked)
             ui.query.actionMap.get("find.close").actionPerformed(null)
             check(!ui.panel.isVisible && surface.view.findMatches.isEmpty())
@@ -236,7 +236,7 @@ fun runFindReplaceChecks(result: File) {
         await("Replacement recovery checkpoint") { controller.state()["completed"] == controller.state()["observed"] && controller.state()["running"] == false }
         lateinit var expected: Document
         owner {
-            expected = surface.engine.snapshot().committed
+            expected = surface.viewModel.verificationEngine.snapshot().committed
             controller.finish(false)
             window.dispose()
         }

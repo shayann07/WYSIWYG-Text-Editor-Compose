@@ -2,6 +2,7 @@ package dev.shayxo.composedoc.workspace
 
 import dev.shayxo.composedoc.model.ParagraphAlignment
 import dev.shayxo.composedoc.model.ParagraphDirection
+import dev.shayxo.composedoc.ui.EditorIntent
 import dev.shayxo.composedoc.ui.EditorSurface
 import java.awt.FlowLayout
 import javax.swing.JComboBox
@@ -25,7 +26,7 @@ class ParagraphControls(private val surface: () -> EditorSurface, private val fi
         alignment.toolTipText = "Start/End follow resolved paragraph direction; no justification"
         direction.addActionListener {
             if (!refreshing && direction.selectedIndex > 0 && surface().admissionAllowed && !fileBusy()) {
-                surface().engine.setParagraphProperties(direction = ParagraphDirection.entries[direction.selectedIndex - 1])
+                surface().viewModel.dispatch(EditorIntent.SetParagraphProperties(direction = ParagraphDirection.entries[direction.selectedIndex - 1]))
                 surface().requestFocusInWindow()
             } else if (!refreshing && direction.selectedIndex == 0) {
                 refresh()
@@ -33,7 +34,7 @@ class ParagraphControls(private val surface: () -> EditorSurface, private val fi
         }
         alignment.addActionListener {
             if (!refreshing && alignment.selectedIndex > 0 && surface().admissionAllowed && !fileBusy()) {
-                surface().engine.setParagraphProperties(alignment = ParagraphAlignment.entries[alignment.selectedIndex - 1])
+                surface().viewModel.dispatch(EditorIntent.SetParagraphProperties(alignment = ParagraphAlignment.entries[alignment.selectedIndex - 1]))
                 surface().requestFocusInWindow()
             } else if (!refreshing && alignment.selectedIndex == 0) {
                 refresh()
@@ -43,8 +44,8 @@ class ParagraphControls(private val surface: () -> EditorSurface, private val fi
     fun refresh() {
         refreshing = true
         try {
-            direction.selectedIndex = surface().engine.paragraphDirectionState()?.ordinal?.plus(1) ?: 0
-            alignment.selectedIndex = surface().engine.paragraphAlignmentState()?.ordinal?.plus(1) ?: 0
+            direction.selectedIndex = surface().viewModel.paragraphDirectionState()?.ordinal?.plus(1) ?: 0
+            alignment.selectedIndex = surface().viewModel.paragraphAlignmentState()?.ordinal?.plus(1) ?: 0
             direction.isEnabled = !fileBusy() && surface().admissionAllowed
             alignment.isEnabled = direction.isEnabled
         } finally {

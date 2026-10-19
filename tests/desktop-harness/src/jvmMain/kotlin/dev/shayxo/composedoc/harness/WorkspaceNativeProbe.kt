@@ -67,7 +67,7 @@ fun workspaceNativeProbe(args: Array<String>) {
                     "selected" to selected,
                     "windows" to windows.mapIndexed { index, w ->
                         val s = findSurface(w)!!
-                        val f = s.engine.snapshot()
+                        val f = s.viewModel.verificationEngine.snapshot()
                         val files = windowFiles(w)!!
                         val g = s.geometry()
                         mapOf(
@@ -110,7 +110,7 @@ fun workspaceNativeProbe(args: Array<String>) {
                     SwingUtilities.invokeAndWait {
                         val w = editors()[selected]
                         val s = findSurface(w)!!
-                        val e = s.engine
+                        val e = s.viewModel.verificationEngine
                         val n = e.snapshot().committed.units.size
                         e.move(Selection(n, n))
                         e.inputMethod("نامکمل کِ 👩🏽‍💻\ud800", 0, 3)
@@ -126,7 +126,7 @@ fun workspaceNativeProbe(args: Array<String>) {
                         val w = editors()[selected]
                         val s = findSurface(w)!!
                         s.quarantinedCallbacks += QuarantinedCallback("new arrival محفوظ", 0, null, s.activeImeEpoch)
-                        s.statusChanged(s.engine.snapshot())
+                        s.statusChanged(s.viewModel.verificationEngine.snapshot())
                         (w.rootPane.getClientProperty("editor.unfinishedRecovery") as UnfinishedController).flush()
                     }
                     println("SYNTHETIC_NEW_ARRIVAL " + snapshot())

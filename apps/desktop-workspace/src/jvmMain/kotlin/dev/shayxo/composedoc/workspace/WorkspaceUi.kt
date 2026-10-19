@@ -17,6 +17,7 @@ import dev.shayxo.composedoc.model.Document
 import dev.shayxo.composedoc.model.PageSettings
 import dev.shayxo.composedoc.model.PaperSize
 import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.ui.EditorIntent
 import dev.shayxo.composedoc.ui.EditorSurface
 import dev.shayxo.composedoc.ui.findSurface
 import java.awt.BorderLayout
@@ -121,7 +122,7 @@ class WorkspaceUi(val window: JFrame, val root: Path, val surface: () -> EditorS
     fun observe() {
         if (closed || committed == null || unfinished == null)return
         val s = surface()
-        val f = s.engine.snapshot()
+        val f = s.viewModel.snapshot()
         val e = WorkspaceEntry(
             id, files.path?.toAbsolutePath()?.normalize()?.toString(), files.name.take(512), files.fingerprint, openedAt, committed.session, unfinished.owner,
             if (f.marked == null && f.visible.same(f.committed))f.selection else Selection(0, 0), s.view.scroll.coerceAtLeast(0f), s.view.paged, s.view.zoom, s.view.typography.id, true, viewportWidth = s.width.coerceIn(0, 16384), viewportHeight = s.height.coerceIn(0, 16384),
@@ -228,7 +229,7 @@ class WorkspaceUi(val window: JFrame, val root: Path, val surface: () -> EditorS
     }
     private fun saveTemplate() {
         val s = surface()
-        val c = s.engine.clipboardCapture() ?: return
+        val c = s.viewModel.clipboardCapture() ?: return
         val label = JTextField("My Urdu template", 28).apply { name = "template-name" }
         val dialog = JDialog(window, "Save as reusable template", true).apply { name = "save-template-dialog" }
         val error = JLabel(" ").apply { foreground = Color(0xb3261e) }
@@ -236,7 +237,7 @@ class WorkspaceUi(val window: JFrame, val root: Path, val surface: () -> EditorS
         save.addActionListener {
             val message = when {
                 label.text.isBlank() || label.text.length > 128 -> "Enter a name of 1–128 units."
-                s.engine.clipboardCapture() != c -> "Document changed; cancel and reopen Save as Template."
+                s.viewModel.clipboardCapture() != c -> "Document changed; cancel and reopen Save as Template."
                 else -> null
             }
             if (message != null) {
@@ -284,7 +285,7 @@ class WorkspaceUi(val window: JFrame, val root: Path, val surface: () -> EditorS
             JOptionPane.showMessageDialog(window, "Finish file work or recover paused input before changing page settings.")
             return
         }
-        val c = s.engine.clipboardCapture() ?: run {
+        val c = s.viewModel.clipboardCapture() ?: run {
             JOptionPane.showMessageDialog(window, "Finish composing before opening page settings.")
             return
         }
@@ -308,10 +309,10 @@ class WorkspaceUi(val window: JFrame, val root: Path, val surface: () -> EditorS
                     val n = margin.text.toIntOrNull()
                     when {
                         n == null || n !in 5..40 -> "Enter whole margins from 5 to 40 mm."
-                        s.engine.clipboardCapture() != c -> "Document changed; reopen Page settings."
+                        s.viewModel.clipboardCapture() != c -> "Document changed; reopen Page settings."
                         else -> {
                             val p = PageSettings(size.selectedItem as PaperSize, direction.selectedIndex == 1, n)
-                            if (p == old || s.engine.applyStructure(c, StructureCommand.Pages(p)))null else "Page change refused; finish composition and retry."
+                            if (p == old || s.viewModel.dispatch(EditorIntent.ApplyStructure(c, StructureCommand.Pages(p))))null else "Page change refused; finish composition and retry."
                         }
                     }
                 },
@@ -398,7 +399,7 @@ class WorkspaceUi(val window: JFrame, val root: Path, val surface: () -> EditorS
                     val s = findSurface(w)!!
                     (w.rootPane.getClientProperty("editor.zoomPicker") as JComboBox<*>).selectedIndex = listOf(.5f, .75f, 1f).indexOf(e.zoom)
                     if (matches && positionsValid) {
-                        s.engine.move(e.selection)
+                        s.viewModel.dispatch(EditorIntent.Select(e.selection))
                         if (e.viewportWidth == s.width && e.viewportHeight == s.height) {
                             s.view.scroll = e.scroll
                             s.view.ensureCaret = false

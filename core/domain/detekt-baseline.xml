@@ -167,9 +167,5 @@
     <ID>ReturnCount:EditorEngine.kt$EditorEngine$private fun resolve(t: CapturedRange): Selection?</ID>
     <ID>TooGenericExceptionCaught:EditorEngine.kt$EditorEngine$e: Exception</ID>
     <ID>TooManyFunctions:EditorEngine.kt$EditorEngine</ID>
-    <ID>WildcardImport:EditorEngine.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:FindReplace.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:RichFragment.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:StructureCommands.kt$import dev.shayxo.composedoc.model.*</ID>
   </CurrentIssues>
 </SmellBaseline>

@@ -4,6 +4,7 @@ import dev.shayxo.composedoc.domain.EditorFrame
 import dev.shayxo.composedoc.model.FormatKey
 import dev.shayxo.composedoc.model.StoredFont
 import dev.shayxo.composedoc.model.TextStylePatch
+import dev.shayxo.composedoc.ui.EditorIntent
 import dev.shayxo.composedoc.ui.EditorSurface
 import java.awt.Color
 import java.awt.Dimension
@@ -89,17 +90,17 @@ class WritingControls(private val surface: () -> EditorSurface, private val busy
                 surface().requestFocusInWindow()
             }
         }
-        family.addActionListener { edit { if (family.selectedIndex > 0) surface().engine.setTextStyle(TextStylePatch(font = StoredFont.entries[family.selectedIndex - 1])) } }
+        family.addActionListener { edit { if (family.selectedIndex > 0) surface().viewModel.dispatch(EditorIntent.SetTextStyle(TextStylePatch(font = StoredFont.entries[family.selectedIndex - 1]))) } }
         size.addActionListener {
             edit {
                 val v = if (size.selectedItem == "Preview size") 0 else size.selectedItem.toString().toIntOrNull()
-                if (v != null && (v == 0 || v in 8..96)) surface().engine.setTextStyle(TextStylePatch(size = v)) else refresh()
+                if (v != null && (v == 0 || v in 8..96)) surface().viewModel.dispatch(EditorIntent.SetTextStyle(TextStylePatch(size = v))) else refresh()
             }
         }
         underline.isFocusable = false
         strike.isFocusable = false
-        underline.addActionListener { edit { surface().engine.toggleFormat(FormatKey.UNDERLINE) } }
-        strike.addActionListener { edit { surface().engine.toggleFormat(FormatKey.STRIKE) } }
+        underline.addActionListener { edit { surface().viewModel.dispatch(EditorIntent.ToggleFormat(FormatKey.UNDERLINE)) } }
+        strike.addActionListener { edit { surface().viewModel.dispatch(EditorIntent.ToggleFormat(FormatKey.STRIKE)) } }
         color.addActionListener {
             edit {
                 val index = color.selectedIndex
@@ -110,27 +111,27 @@ class WritingControls(private val surface: () -> EditorSurface, private val busy
                 } else {
                     null
                 }
-                if (rgb != null) surface().engine.setTextStyle(TextStylePatch(color = rgb)) else refresh()
+                if (rgb != null) surface().viewModel.dispatch(EditorIntent.SetTextStyle(TextStylePatch(color = rgb))) else refresh()
             }
         }
         before.addActionListener {
             edit {
                 val v = before.selectedItem.toString().toIntOrNull()
-                if (v != null && v in 0..200) surface().engine.setParagraphProperties(before = v) else refresh()
+                if (v != null && v in 0..200) surface().viewModel.dispatch(EditorIntent.SetParagraphProperties(before = v)) else refresh()
             }
         }
         after.addActionListener {
             edit {
                 val v = after.selectedItem.toString().toIntOrNull()
-                if (v != null && v in 0..200) surface().engine.setParagraphProperties(after = v) else refresh()
+                if (v != null && v in 0..200) surface().viewModel.dispatch(EditorIntent.SetParagraphProperties(after = v)) else refresh()
             }
         }
-        line.addActionListener { edit { if (line.selectedIndex > 0) surface().engine.setParagraphProperties(line = listOf(0, 1250, 1500, 2000, 3000)[line.selectedIndex - 1]) } }
+        line.addActionListener { edit { if (line.selectedIndex > 0) surface().viewModel.dispatch(EditorIntent.SetParagraphProperties(line = listOf(0, 1250, 1500, 2000, 3000)[line.selectedIndex - 1])) } }
     }
     fun refresh() {
         refresh = true
         try {
-            val e = surface().engine
+            val e = surface().viewModel
             family.selectedIndex = e.textStyleState { it.font }?.ordinal?.plus(1) ?: 0
             size.selectedItem = e.textStyleState { it.size }?.let { if (it == 0) "Preview size" else it.toString() } ?: "Mixed"
             val rgb = e.textStyleState { it.color }

@@ -50,7 +50,7 @@ fun runNativeAccessibilityProbe() {
         return checkNotNull(result)
     }
     fun frame(): Map<String, Any?> {
-        val f = surface.engine.snapshot()
+        val f = surface.viewModel.verificationEngine.snapshot()
         val geometry = surface.geometry()
         val boundary = geometry?.fragments?.firstOrNull { it.page == 1 }?.let {
             val p = geometry.paragraphs[it.paragraphIndex]
@@ -128,8 +128,8 @@ fun runNativeAccessibilityProbe() {
                 onOwner {
                     when (command) {
                         "snapshot" -> {}
-                        "undo" -> surface.engine.perform(EditAction.Undo)
-                        "redo" -> surface.engine.perform(EditAction.Redo)
+                        "undo" -> surface.viewModel.verificationEngine.perform(EditAction.Undo)
+                        "redo" -> surface.viewModel.verificationEngine.perform(EditAction.Redo)
                         "typography" -> surface.changeTypography(TypographyProfile.load(request["profile"] as String))
                         else -> error("Unsupported AT fixture control")
                     }

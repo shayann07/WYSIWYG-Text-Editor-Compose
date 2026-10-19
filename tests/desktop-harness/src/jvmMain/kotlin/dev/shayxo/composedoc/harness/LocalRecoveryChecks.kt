@@ -71,7 +71,7 @@ fun runLocalRecoveryChild(args: Array<String>) {
                 )
                 windows += window
                 controllers += window.rootPane.getClientProperty("editor.localRecovery") as LocalRecoveryController
-                if (tag == "window-A") checkNotNull(windowCurrentSurface(window)).engine.inputMethod("未確定", 0, 3)
+                if (tag == "window-A") checkNotNull(windowCurrentSurface(window)).viewModel.verificationEngine.inputMethod("未確定", 0, 3)
             }
         }
         val deadline = System.nanoTime() + 15_000_000_000L
@@ -236,22 +236,22 @@ fun runLocalRecoveryChecks(result: File) {
                 }
                 javax.imageio.ImageIO.write(bitmap, "png", File(result.parentFile, "local-recovery-ui-${width}x$height.png"))
             }
-            surface.engine.move(Selection(0, 4))
-            surface.engine.inputMethod("پیش منظر", 0, 8)
+            surface.viewModel.verificationEngine.move(Selection(0, 4))
+            surface.viewModel.verificationEngine.inputMethod("پیش منظر", 0, 8)
         }
         // Real repeating schedule, no explicit checkpoint request here.
         await("Automatic committed checkpoint during composition") { controller.state()["completed"] == 1L }
-        owner { check(surface.engine.snapshot().marked != null && surface.engine.snapshot().visible != surface.engine.snapshot().committed) }
+        owner { check(surface.viewModel.verificationEngine.snapshot().marked != null && surface.viewModel.verificationEngine.snapshot().visible != surface.viewModel.verificationEngine.snapshot().committed) }
         check(DocumentFiles.read(original).same(old))
         lateinit var acceptedPartial: Document
         owner {
-            surface.engine.inputMethod("ن候補", 1, 2)
-            acceptedPartial = surface.engine.snapshot().committed
-            check(surface.engine.snapshot().marked != null && !acceptedPartial.same(old))
+            surface.viewModel.verificationEngine.inputMethod("ن候補", 1, 2)
+            acceptedPartial = surface.viewModel.verificationEngine.snapshot().committed
+            check(surface.viewModel.verificationEngine.snapshot().marked != null && !acceptedPartial.same(old))
         }
         await("Accepted partial commit while candidate remains") { controller.state()["completed"] == 2L }
         owner {
-            surface.engine.abortComposition()
+            surface.viewModel.verificationEngine.abortComposition()
             controller.finish(false)
             window.dispose()
         }
@@ -281,14 +281,14 @@ fun runLocalRecoveryChecks(result: File) {
         }
         check(saveStarted.await(10, TimeUnit.SECONDS))
         owner {
-            s2.engine.replace("بعد", "AfterSaveCapture")
+            s2.viewModel.verificationEngine.replace("بعد", "AfterSaveCapture")
             c2.checkpointNow()
         }
         saveRelease.countDown()
         await("Save As complete") { owner { !f2.busy } }
         lateinit var afterSave: Document
         owner {
-            afterSave = s2.engine.snapshot().committed
+            afterSave = s2.viewModel.verificationEngine.snapshot().committed
             check(f2.dirty && f2.path == separate)
             c2.checkpointNow()
         }
@@ -345,7 +345,7 @@ fun runLocalRecoveryChecks(result: File) {
             windows += w
             val restoredFiles = checkNotNull(windowFiles(w))
             check(restoredFiles.path == null && restoredFiles.dirty)
-            check(checkNotNull(windowCurrentSurface(w)).engine.snapshot().committed.same(afterSave))
+            check(checkNotNull(windowCurrentSurface(w)).viewModel.verificationEngine.snapshot().committed.same(afterSave))
             restoredFiles.close(2)
             check(w.isDisplayable)
             restoredFiles.close(1)

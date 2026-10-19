@@ -12,6 +12,7 @@ import dev.shayxo.composedoc.model.RunningFlow
 import dev.shayxo.composedoc.model.StoredFont
 import dev.shayxo.composedoc.model.TextStyleFlags
 import dev.shayxo.composedoc.model.targetParagraphs
+import dev.shayxo.composedoc.ui.EditorIntent
 import dev.shayxo.composedoc.ui.EditorSurface
 import dev.shayxo.composedoc.ui.ImageResources
 import java.awt.BorderLayout
@@ -55,7 +56,7 @@ class PageOutputUi(private val window: JFrame, private val surface: () -> Editor
             )
         }
         button("Insert page break", "insert-page-break") {
-            surface().engine.structure(StructureCommand.PageBreak)
+            surface().viewModel.dispatch(EditorIntent.Structure(StructureCommand.PageBreak))
             surface().requestFocusInWindow()
         }
         button("Paragraph pagination…", "pagination-properties") { pagination() }
@@ -73,14 +74,14 @@ class PageOutputUi(private val window: JFrame, private val surface: () -> Editor
             "explicit-page-break",
             object : AbstractAction() {
                 override fun actionPerformed(e: ActionEvent?) {
-                    if (surface().admissionAllowed && !busy())surface().engine.structure(StructureCommand.PageBreak)
+                    if (surface().admissionAllowed && !busy())surface().viewModel.dispatch(EditorIntent.Structure(StructureCommand.PageBreak))
                 }
             },
         )
     }
     private fun pagination() {
         val s = surface()
-        val capture = s.engine.clipboardCapture() ?: return
+        val capture = s.viewModel.clipboardCapture() ?: return
         val values = capture.basis.document.targetParagraphs(capture.selection).map { it.properties.pagination }.distinct()
         val old = values.singleOrNull() ?: PaginationRules()
         val before = JCheckBox("Page break before", old.breakBefore)
@@ -99,10 +100,10 @@ class PageOutputUi(private val window: JFrame, private val surface: () -> Editor
                     val o = orphans.text.toIntOrNull()
                     when {
                         w == null || o == null || w !in 1..5 || o !in 1..5 -> "Enter whole widow/orphan counts1-5"
-                        s.engine.clipboardCapture() != capture -> "Document/selection changed; reopen controls"
+                        s.viewModel.clipboardCapture() != capture -> "Document/selection changed; reopen controls"
                         else -> {
                             val rules = PaginationRules(before.isSelected, next.isSelected, lines.isSelected, w, o)
-                            if (values.all { it == rules } || s.engine.applyStructure(capture, StructureCommand.Pagination(rules)))null else "Command refused; finish input and retry"
+                            if (values.all { it == rules } || s.viewModel.dispatch(EditorIntent.ApplyStructure(capture, StructureCommand.Pagination(rules))))null else "Command refused; finish input and retry"
                         }
                     }
                 },
@@ -112,7 +113,7 @@ class PageOutputUi(private val window: JFrame, private val surface: () -> Editor
     }
     private fun running() {
         val s = surface()
-        val capture = s.engine.clipboardCapture() ?: return
+        val capture = s.viewModel.clipboardCapture() ?: return
         val old = capture.basis.document.running
         data class Controls(val text: JTextArea, val font: JComboBox<String>, val size: JTextField, val bold: JCheckBox, val italic: JCheckBox, val direction: JComboBox<ParagraphDirection>, val alignment: JComboBox<ParagraphAlignment>, val field: JComboBox<RunningField>)
         val rows = ArrayList<Pair<String, JComponent>>()
@@ -154,7 +155,7 @@ class PageOutputUi(private val window: JFrame, private val surface: () -> Editor
             rows,
             listOf(
                 "Apply" to apply@{
-                    if (s.engine.clipboardCapture() != capture)return@apply "Document changed; reopen running content"
+                    if (s.viewModel.clipboardCapture() != capture)return@apply "Document changed; reopen running content"
                     fun value(c: Controls, previous: RunningFlow?): RunningFlow? {
                         val field = c.field.selectedItem as RunningField
                         if (c.text.text.isEmpty() && field == RunningField.NONE)return null
@@ -164,8 +165,8 @@ class PageOutputUi(private val window: JFrame, private val surface: () -> Editor
                     try {
                         val content = RunningContent(value(header, old.header), value(footer, old.footer), first.isSelected, digits.selectedItem as PageDigits)
                         val candidate = capture.basis.document.copy(running = content)
-                        s.view.measure?.invoke(s.engine.snapshot().copy(visible = candidate, committed = candidate))
-                        if (content.same(old) || s.engine.applyStructure(capture, StructureCommand.Running(content)))null else "Change refused; finish input and retry"
+                        s.view.measure?.invoke(s.viewModel.snapshot().copy(visible = candidate, committed = candidate))
+                        if (content.same(old) || s.viewModel.dispatch(EditorIntent.ApplyStructure(capture, StructureCommand.Running(content))))null else "Change refused; finish input and retry"
                     } catch (e: IllegalArgumentException) {
                         e.message ?: "Invalid running content"
                     } catch (e: IllegalStateException) {
@@ -178,7 +179,7 @@ class PageOutputUi(private val window: JFrame, private val surface: () -> Editor
     }
     private fun preview() {
         val s = surface()
-        val frame = s.engine.snapshot()
+        val frame = s.viewModel.snapshot()
         if (frame.marked != null || frame.waiting) {
             JOptionPane.showMessageDialog(window, "Finish or cancel composition before output. No provisional text is exported.")
             return

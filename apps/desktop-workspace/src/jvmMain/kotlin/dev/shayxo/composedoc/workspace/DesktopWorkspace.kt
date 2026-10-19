@@ -12,15 +12,16 @@ import dev.shayxo.composedoc.data.FragmentCodec
 import dev.shayxo.composedoc.data.LocalRecoveryStore
 import dev.shayxo.composedoc.data.UnfinishedStore
 import dev.shayxo.composedoc.domain.EditAction
-import dev.shayxo.composedoc.domain.EditorEngine
 import dev.shayxo.composedoc.domain.RecoveryApplyResult
 import dev.shayxo.composedoc.layout.StoredFonts
 import dev.shayxo.composedoc.layout.TypographyProfile
 import dev.shayxo.composedoc.model.Document
 import dev.shayxo.composedoc.model.FormatKey
 import dev.shayxo.composedoc.ui.DocumentCanvas
+import dev.shayxo.composedoc.ui.EditorIntent
 import dev.shayxo.composedoc.ui.EditorPlatformServices
 import dev.shayxo.composedoc.ui.EditorSurface
+import dev.shayxo.composedoc.ui.EditorViewModel
 import dev.shayxo.composedoc.ui.ImeTrace
 import dev.shayxo.composedoc.ui.RecoveryStatus
 import dev.shayxo.composedoc.ui.RetainedCompositionPreimage
@@ -59,9 +60,9 @@ fun windowCurrentSurface(window: JFrame): EditorSurface? = (window.rootPane?.get
 @JvmOverloads
 fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList()), initialPath: java.nio.file.Path? = null, trace: ImeTrace? = null, traceLanguage: String? = null, offscreenTest: Boolean = false, windowLocation: Point? = null, fontProfile: String = "system", paged: Boolean = false, recoveryDirectory: java.nio.file.Path? = null): JFrame {
     check(SwingUtilities.isEventDispatchThread())
-    val engine = EditorEngine(initial)
-    val state = ViewState(engine.snapshot())
-    var surface = EditorSurface(engine, state, diagnostics, trace, services = EditorPlatformServices(DocumentFiles, FragmentCodec))
+    val viewModel = EditorViewModel(initial)
+    val state = ViewState(viewModel.snapshot())
+    var surface = EditorSurface(viewModel, state, diagnostics, trace, services = EditorPlatformServices(DocumentFiles, FragmentCodec))
     var refreshRecoveryUi: () -> Unit = {}
     var refreshFindUi: () -> Unit = {}
     var refreshParagraphUi: () -> Unit = {}
@@ -137,14 +138,14 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
         runCatching { TypographyProfile.load(id) }.onSuccess { profile ->
             surface.changeTypography(profile)
             fontStatus.text = if (id == "system") "Unpinned system fonts" else "Pinned candidate; review pending"
-            trace?.record("typography-profile", "key=${profile.key}; sizeSp=${profile.sizeSp}", engine.snapshot())
+            trace?.record("typography-profile", "key=${profile.key}; sizeSp=${profile.sizeSp}", viewModel.snapshot())
             surface.repaint()
         }.onFailure { failure ->
             revertingFontSelection = true
             fontPicker.selectedItem = state.typography.label
             revertingFontSelection = false
             fontStatus.text = "Font unavailable; previous profile retained"
-            trace?.record("typography-profile-rejected", failure.message ?: "Font unavailable", engine.snapshot())
+            trace?.record("typography-profile-rejected", failure.message ?: "Font unavailable", viewModel.snapshot())
         }
         surface.requestFocusInWindow()
     }
@@ -192,7 +193,7 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
             val ctx = surface.inputContext
             val compositionEnabled = if (accepted && tag == "ja-JP") runCatching { ctx?.isCompositionEnabled }.getOrNull() else null
             result.text = "Input: $tag — ${if (accepted)"selected" else "unavailable"}"
-            trace.record("select-input", "requested=$tag; accepted=$accepted; actual=${ctx?.locale}; compositionEnabled=$compositionEnabled", engine.snapshot())
+            trace.record("select-input", "requested=$tag; accepted=$accepted; actual=${ctx?.locale}; compositionEnabled=$compositionEnabled", viewModel.snapshot())
             surface.requestFocusInWindow()
         }
         if (traceLanguage != null) SwingUtilities.invokeLater { picker.selectedItem = languages.entries.first { it.value == traceLanguage }.key }
@@ -203,7 +204,7 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
                 add(result)
             },
         )
-        trace.record("session-start", "Live input test mode; no synthetic injection. OS=${System.getProperty("os.name")}; Java=${System.getProperty("java.version")}", engine.snapshot())
+        trace.record("session-start", "Live input test mode; no synthetic injection. OS=${System.getProperty("os.name")}; Java=${System.getProperty("java.version")}", viewModel.snapshot())
     }
     val buttons = JPanel(FlowLayout(FlowLayout.RIGHT, 8, 0)).apply { isOpaque = false }
     fun button(label: String, tooltip: String, action: () -> Unit) = JButton(label).apply {
@@ -219,10 +220,10 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
     val open = button("Open", "Open a document in a new window (Ctrl+O)") { files.open() }
     val save = button("Save", "Save document (Ctrl+S); Save As: Ctrl+Shift+S") { files.save() }
     val saveAs = button("Save As…", "Save to another .astra file (Ctrl+Shift+S)") { files.save(asNew = true) }
-    val undo = button("Undo", "Ctrl+Z") { engine.perform(EditAction.Undo) }
-    val redo = button("Redo", "Ctrl+Shift+Z or Ctrl+Y") { engine.perform(EditAction.Redo) }
-    val bold = button("Bold", "Toggle bold (Ctrl+B)") { if (surface.admissionAllowed) engine.toggleFormat(FormatKey.BOLD) }
-    val italic = button("Italic", "Toggle italic (Ctrl+I)") { if (surface.admissionAllowed) engine.toggleFormat(FormatKey.ITALIC) }
+    val undo = button("Undo", "Ctrl+Z") { viewModel.dispatch(EditorIntent.Command(EditAction.Undo)) }
+    val redo = button("Redo", "Ctrl+Shift+Z or Ctrl+Y") { viewModel.dispatch(EditorIntent.Command(EditAction.Redo)) }
+    val bold = button("Bold", "Toggle bold (Ctrl+B)") { if (surface.admissionAllowed) viewModel.dispatch(EditorIntent.ToggleFormat(FormatKey.BOLD)) }
+    val italic = button("Italic", "Toggle italic (Ctrl+I)") { if (surface.admissionAllowed) viewModel.dispatch(EditorIntent.ToggleFormat(FormatKey.ITALIC)) }
     button("Copy", "Copy rich + plain selected committed text (Ctrl+C)") { surface.copySelection(false) }
     button("Cut", "Publish clipboard then remove captured selection (Ctrl+X)") { surface.copySelection(true) }
     val pasteBtn = button("Paste", "Paste rich when available (Ctrl+V); plain: Ctrl+Shift+V") { surface.paste() }
@@ -267,10 +268,10 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
         } else {
             durable.resolveLive(selected.recordKey, apply = {
                 val draft = selected.recoveryDraft
-                if (draft != null && surface.engine.applyRecoveredDraft(draft) == RecoveryApplyResult.Applied)surface.engine.snapshot().committed else null
+                if (draft != null && surface.viewModel.dispatch(EditorIntent.ApplyRecoveredDraft(draft)) == RecoveryApplyResult.Applied)surface.viewModel.snapshot().committed else null
             }, remove = {
                 surface.recoverySession.resolveRetainedDraft(selected)
-                surface.statusChanged(engine.snapshot())
+                surface.statusChanged(viewModel.snapshot())
             })
         }
     }
@@ -281,7 +282,7 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
         } else {
             unfinishedRecovery!!.resolveLive(selected.recordKey, remove = {
                 surface.recoverySession.resolveRetainedDraft(selected)
-                surface.statusChanged(engine.snapshot())
+                surface.statusChanged(viewModel.snapshot())
             })
         }
     }
@@ -387,13 +388,13 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
         foreground = Color(0x64748b)
     }
     footer.add(localRecoveryStatus, BorderLayout.EAST)
-    files = WindowFiles(window, engine, initialPath, onDiscardComposition = {
+    files = WindowFiles(window, viewModel, initialPath, onDiscardComposition = {
         val host = surface
         host.abortAndRetireComposition(replaceHost = false)
         // The close choice explicitly discarded this active preedit. Remove only the
         // capsule created for that abort; other/reentrant recovery work stays pending.
         host.lastRecoveryReport?.retainedPreimage?.let { host.recoverySession.resolveRetainedDraft(it) }
-    }) { surface.statusChanged(engine.snapshot()) }
+    }) { surface.statusChanged(viewModel.snapshot()) }
     files.hasRetainedRecovery = { surface.recoverySession.snapshotRetainedDrafts().isNotEmpty() || surface.quarantinedCallbacks.isNotEmpty() }
     files.pendingRecoveryDescription = { "${surface.recoverySession.snapshotRetainedDrafts().size} retained draft(s) and ${surface.quarantinedCallbacks.size} unverified input callback(s)" }
     files.openInNewWindow = { document, source ->
@@ -409,7 +410,7 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
             drafts.forEach { session.resolveRetainedDraft(it) }
             session.quarantinedCallbacks.removeIf { current -> callbacks.any { it === current } }
             surface.writeDiagnostics()
-            surface.statusChanged(engine.snapshot())
+            surface.statusChanged(viewModel.snapshot())
         }
         discard
     }
@@ -421,7 +422,7 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
         position.toolTipText = "Committed counts; whitespace separates runs containing letters/digits/symbols. Joiners/marks stay in runs; not linguistic tokenization. Selected count is visible UTF-16 range."
         localRecovery?.let { recovery ->
             recovery.observe(f.committed, files.path)
-            unfinishedRecovery?.observe(engine, surface.recoverySession, files.path, surface.latestRecoveryProposal)
+            unfinishedRecovery?.observe(viewModel, surface.recoverySession, files.path, surface.latestRecoveryProposal)
             localRecoveryStatus.text = recovery.status()
             localRecoveryStatus.toolTipText = recovery.detail() + " · " + (unfinishedRecovery?.status() ?: "")
         }
@@ -447,7 +448,7 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
         saveAs.isEnabled = !files.busy
         bold.isEnabled = !files.busy && surface.admissionAllowed
         italic.isEnabled = !files.busy && surface.admissionAllowed
-        fun label(name: String, key: FormatKey) = when (engine.formatState(key)) {
+        fun label(name: String, key: FormatKey) = when (viewModel.formatState(key)) {
             true -> "$name on"
             false -> name
             null -> "$name mixed"
@@ -522,15 +523,15 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
     refreshParagraphUi = { paragraphUi.refresh() }
     window.rootPane.putClientProperty("editor.paragraphControls", paragraphUi)
     if (recoveryDirectory != null) {
-        localRecovery = LocalRecoveryController(LocalRecoveryStore(recoveryDirectory), refresh = { surface.statusChanged(engine.snapshot()) })
+        localRecovery = LocalRecoveryController(LocalRecoveryStore(recoveryDirectory), refresh = { surface.statusChanged(viewModel.snapshot()) })
         unfinishedRecovery = UnfinishedController(
             UnfinishedStore(LocalRecoveryStore(recoveryDirectory.resolve("unfinished-records"))),
             localRecovery!!.session,
-            refresh = { surface.statusChanged(engine.snapshot()) },
+            refresh = { surface.statusChanged(viewModel.snapshot()) },
             failed = { surface.pauseForRecoveryCapture(it) },
         )
         files.captureDurableDiscardBeforeClose = {
-            unfinishedRecovery!!.observe(engine, surface.recoverySession, files.path)
+            unfinishedRecovery!!.observe(viewModel, surface.recoverySession, files.path)
             unfinishedRecovery!!.captureDiscardBeforeClose()
         }
         workspaceUi = WorkspaceUi(window, recoveryDirectory, { surface }, files, localRecovery, unfinishedRecovery)
@@ -538,14 +539,14 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
         files.onApprovedClose = {
             approvedClose = true
             workspaceUi?.close(true)
-            unfinishedRecovery?.observe(engine, surface.recoverySession, files.path, surface.latestRecoveryProposal)
+            unfinishedRecovery?.observe(viewModel, surface.recoverySession, files.path, surface.latestRecoveryProposal)
             unfinishedRecovery?.close()
             localRecovery?.finish(discard = true)
         }
         window.rootPane.putClientProperty("editor.workspace", workspaceUi)
         window.rootPane.putClientProperty("editor.unfinishedRecovery", unfinishedRecovery)
     }
-    surface.statusChanged(engine.snapshot())
+    surface.statusChanged(viewModel.snapshot())
     val surfaceGetter: () -> EditorSurface = { surface }
     window.rootPane.putClientProperty("editor.files", files)
     window.rootPane.putClientProperty("editor.layers", layers)

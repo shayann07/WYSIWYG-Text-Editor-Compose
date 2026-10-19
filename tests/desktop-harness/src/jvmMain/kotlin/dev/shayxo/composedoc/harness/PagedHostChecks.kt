@@ -17,7 +17,7 @@ import kotlin.math.roundToInt
 
 /** Mounted AWT/Compose experiment with synthetic native callbacks, never OS IME qualification. */
 fun runPagedHostChecks(surface: EditorSurface, resultFile: File) {
-    val e = surface.engine
+    val e = surface.viewModel.verificationEngine
     check(surface.view.paged)
     val text = "یہ ایک اردو دستاویز ہے۔ مُحَمَّد اور تحقیق — English 123 (۲۰۲۶)۔ ".repeat(50) + "\nکتاب اور قلم"
     e.replace(text, "PagedFixture", paragraphBreaks = true)

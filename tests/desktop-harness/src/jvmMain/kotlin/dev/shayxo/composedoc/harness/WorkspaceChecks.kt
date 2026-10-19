@@ -41,6 +41,7 @@ import dev.shayxo.composedoc.model.WrapAffinity
 import dev.shayxo.composedoc.model.evidenceJson
 import dev.shayxo.composedoc.model.paragraphs
 import dev.shayxo.composedoc.model.patchParagraphs
+import dev.shayxo.composedoc.ui.EditorViewModel
 import dev.shayxo.composedoc.ui.ImageResizeGesture
 import dev.shayxo.composedoc.workspace.samplePng
 import java.io.File
@@ -296,6 +297,7 @@ fun runWorkspaceChecks(result: File) {
     test("image replace exact Undo metadata/resources and cancelled/stale resizing") {
         val imAt = doc.units.indexOfFirst { it.kind == UnitKind.IMAGE }
         val engine = EditorEngine(doc)
+        val viewModel = EditorViewModel(engine)
         engine.move(Selection(imAt, imAt + 1))
         val c = engine.clipboardCapture()!!
         val image = doc.units[imAt].image!!
@@ -305,10 +307,10 @@ fun runWorkspaceChecks(result: File) {
             check(engine.snapshot().committed == doc && engine.snapshot().undoCount == 0)
         }
         val drag = ImageResizeGesture(c, image, 100, 1f, true)
-        check(drag.finish(engine, 150))
+        check(drag.finish(viewModel, 150))
         val resized = engine.snapshot().committed
         check(resized.units[imAt].image!!.width == 290 && engine.snapshot().undoCount == 1)
-        check(!drag.finish(engine, 200))
+        check(!drag.finish(viewModel, 200))
         engine.perform(EditAction.Undo)
         check(engine.snapshot().committed == doc)
         engine.perform(EditAction.Redo)

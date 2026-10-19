@@ -29,7 +29,6 @@
     <ID>CyclomaticComplexMethod:StructureChecks.kt$fun runStructureChecks(result: File)</ID>
     <ID>CyclomaticComplexMethod:StructureChecks.kt$fun runStructureHostChecks(result: File, root: java.nio.file.Path, sample: Document, checks: MutableList&lt;String&gt;, costs: MutableMap&lt;String, Long&gt;)</ID>
     <ID>CyclomaticComplexMethod:TypographySheet.kt$fun typographySheet(output: File)</ID>
-    <ID>CyclomaticComplexMethod:UrduChecks.kt$fun runUrduChecks(args: Array&lt;String&gt;)</ID>
     <ID>CyclomaticComplexMethod:UrduChecks.kt$fun runUrduEngineHarness( fixtures: List&lt;UrduFixture&gt;, perFixtureStatus: MutableMap&lt;String, String&gt; = LinkedHashMap(), ): Map&lt;String, Any&gt;</ID>
     <ID>CyclomaticComplexMethod:V6QualificationChecks.kt$fun runV6Qualification(result: File)</ID>
     <ID>CyclomaticComplexMethod:V6QualificationChecks.kt$private fun runV6Geometry(root: File, rows: MutableList&lt;Map&lt;String, Any&gt;&gt;)</ID>
@@ -635,6 +634,7 @@
     <ID>MaxLineLength:ConnectedWritingChecks.kt$check(old.units.last().followingParagraph == ParagraphProperties(ParagraphDirection.LTR, ParagraphAlignment.END))</ID>
     <ID>MaxLineLength:ConnectedWritingChecks.kt$check(p.waitFor(30, java.util.concurrent.TimeUnit.SECONDS) &amp;&amp; p.exitValue() == 0) { p.inputStream.bufferedReader().readText() }</ID>
     <ID>MaxLineLength:ConnectedWritingChecks.kt$check(runCatching { DocumentFiles.decode(bad + java.security.MessageDigest.getInstance("SHA-256").digest(bad)) }.isFailure)</ID>
+    <ID>MaxLineLength:ConnectedWritingChecks.kt$check(s.viewModel.verificationEngine.snapshot().selection.focus &gt; 0 &amp;&amp; s.viewModel.verificationEngine.snapshot().selection.anchor == 0)</ID>
     <ID>MaxLineLength:ConnectedWritingChecks.kt$components(w).filter { it.isShowing &amp;&amp; (it is JButton || it is JComboBox&lt;*&gt;) }.forEach { c -&gt; check(c.x &gt;= 0 &amp;&amp; c.x + c.width &lt;= c.parent.width &amp;&amp; c.height &gt; 0) { "Clipped ${c.name} ${c.bounds}/${c.parent.size}" } }</ID>
     <ID>MaxLineLength:ConnectedWritingChecks.kt$fun components(c: Component): List&lt;Component&gt;</ID>
     <ID>MaxLineLength:ConnectedWritingChecks.kt$if (mode == "rich") check(d.same(base)) else check(d.units.filter { it.kind == UnitKind.TEXT }.all { it.style == TextStyleFlags() } &amp;&amp; d.paragraphs().all { it.properties == ParagraphProperties() })</ID>
@@ -668,7 +668,8 @@
     <ID>MaxLineLength:FindReplaceChecks.kt$check(many.replaceFound(many.captureFindBasis(), findLiteral(many.snapshot().committed, "a"), "bb", true) == FindReplaceResult.Applied)</ID>
     <ID>MaxLineLength:FindReplaceChecks.kt$check(many.replaceFound(many.captureFindBasis(), findLiteral(many.snapshot().committed, "b"), "too much", true) == FindReplaceResult.TooLarge)</ID>
     <ID>MaxLineLength:FindReplaceChecks.kt$check(safeOne.replaceFound(safeOne.captureFindBasis(), listOf(safeMatches.last()), "x", false) == FindReplaceResult.Applied)</ID>
-    <ID>MaxLineLength:FindReplaceChecks.kt$check(surface.engine.snapshot().committed.same(sample) &amp;&amp; surface.engine.snapshot().undoCount == 0 &amp;&amp; !checkNotNull(windowFiles(window)).dirty)</ID>
+    <ID>MaxLineLength:FindReplaceChecks.kt$check(surface.viewModel.verificationEngine.snapshot().committed.same(sample) &amp;&amp; surface.viewModel.verificationEngine.snapshot().undoCount == 0 &amp;&amp; !checkNotNull(windowFiles(window)).dirty)</ID>
+    <ID>MaxLineLength:FindReplaceChecks.kt$check(surface.viewModel.verificationEngine.snapshot().undoCount == 1 &amp;&amp; checkNotNull(windowFiles(window)).dirty)</ID>
     <ID>MaxLineLength:FindReplaceChecks.kt$checks += "Active and partially committed composition refuse replacement without queueing, settlement fiction or candidate mutation"</ID>
     <ID>MaxLineLength:FindReplaceChecks.kt$checks += "Actual Replace All button has exact Undo/Redo, grapheme/composition guards and transient highlight clearing at minimum/default layouts"</ID>
     <ID>MaxLineLength:FindReplaceChecks.kt$checks += "Actual panel/count/Enter/Shift+Enter, cross-page and continuous reveal do not dirty history or recovery; field edits stay out of document Undo"</ID>
@@ -769,7 +770,7 @@
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(e.snapshot().visible.units[1].char == 'C' &amp;&amp; e.snapshot().visible.units[1].style == TextStyleFlags(italic = true))</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(e.snapshot().visible.units[2].char == 'D' &amp;&amp; e.snapshot().visible.units[2].style == TextStyleFlags(italic = true))</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(focusLossEndCompositionRequested == 1) { "Focus loss during composition must request endComposition, got $focusLossEndCompositionRequested" }</ID>
-    <ID>MaxLineLength:JapaneseHostChecks.kt$check(foreign.retainedPreimage === retained &amp;&amp; foreign.engine.snapshot().committed == before.committed &amp;&amp; foreign.engine.snapshot().undoCount == before.undoCount)</ID>
+    <ID>MaxLineLength:JapaneseHostChecks.kt$check(foreign.retainedPreimage === retained &amp;&amp; foreign.viewModel.verificationEngine.snapshot().committed == before.committed &amp;&amp; foreign.viewModel.verificationEngine.snapshot().undoCount == before.undoCount)</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(h.retired &amp;&amp; h.disposed &amp;&amp; h.parent == null &amp;&amp; h.inputContext == null &amp;&amp; !h.isTimerRunning &amp;&amp; !h.hasRetainedCallbacks)</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(lateCommit.isConsumed &amp;&amp; latePreedit.isConsumed &amp;&amp; lateCaret.isConsumed) { "Ordinary AWT events on retired host must be consumed" }</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(layersRemoval.components.none { it is EditorSurface }) { "No EditorSurface should remain in container after removal during replacement" }</ID>
@@ -780,16 +781,18 @@
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(next.inspectRetainedDraft() == "draft") { "Draft preimage must be preserved across failed recovery attempts" }</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(next.quarantinedCallbacks.size == 1) { "Quarantined data must NOT be silently cleared on attempt $attempt" }</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(next.unresolvedContext != null) { "Replacement host must retain unresolved context obligation attached to recovery session" }</ID>
+    <ID>MaxLineLength:JapaneseHostChecks.kt$check(next.viewModel.verificationEngine.snapshot().committed.text == "Baseline") { "Undo must revert applied draft" }</ID>
+    <ID>MaxLineLength:JapaneseHostChecks.kt$check(next.viewModel.verificationEngine.snapshot().committed.text == "Baselinedraft") { "Redo must reapply draft" }</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(next3.recoveryStatus == RecoveryStatus.RECOVERED_QUALIFIED &amp;&amp; next3.admissionAllowed &amp;&amp; next3.contextQualified)</ID>
-    <ID>MaxLineLength:JapaneseHostChecks.kt$check(nextHost.engine.snapshot().committed.text == "Mounted") { "Blocked callback must not enter committed text" }</ID>
-    <ID>MaxLineLength:JapaneseHostChecks.kt$check(nextHost.engine.snapshot().committed.text == "Mounteduncommitted") { "Apply Draft button must apply draft text" }</ID>
+    <ID>MaxLineLength:JapaneseHostChecks.kt$check(nextHost.viewModel.verificationEngine.snapshot().committed.text == "Mounted") { "Blocked callback must not enter committed text" }</ID>
+    <ID>MaxLineLength:JapaneseHostChecks.kt$check(nextHost.viewModel.verificationEngine.snapshot().committed.text == "Mounteduncommitted") { "Apply Draft button must apply draft text" }</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(notShowingSurface.getLocationOffset(100, 100) == null) { "getLocationOffset on non-showing component must return null" }</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(notShowingSurface.getTextLocation(null) == null) { "getTextLocation on non-showing component must return null per AWT contract" }</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(offscreenPoint.x &lt; -10000 &amp;&amp; offscreenPoint.y &lt; -10000) { "Offscreen test window must report true negative screen coordinates: $offscreenPoint" }</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(originCaretLoc.x &gt;= originPoint.x &amp;&amp; originCaretLoc.y &gt;= originPoint.y) { "Caret location must reflect nonzero screen origin: caret=$originCaretLoc, origin=$originPoint" }</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(originPoint.x &gt;= 250 &amp;&amp; originPoint.y &gt;= 180) { "Origin window surface must have screen location &gt;= (250, 180), got $originPoint" }</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(removalReport.documentAbortedCleanly &amp;&amp; engRemoval.snapshot().marked == null &amp;&amp; engRemoval.snapshot().committed.text == "KeepMe")</ID>
-    <ID>MaxLineLength:JapaneseHostChecks.kt$check(replacement.engine.snapshot().committed == capsule.document &amp;&amp; foreign.retainedPreimage === retained)</ID>
+    <ID>MaxLineLength:JapaneseHostChecks.kt$check(replacement.viewModel.verificationEngine.snapshot().committed == capsule.document &amp;&amp; foreign.retainedPreimage === retained)</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(replacementOnRemoved == null) { "Host removed during teardown must NOT create or re-attach a replacement surface" }</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(report.failures.any { "containerAttachment: IllegalStateException: Injected container attachment failure" in it })</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(report.failures.any { "disableInputMethods: RuntimeException: Injected disableInputMethods failure" in it })</ID>
@@ -799,10 +802,12 @@
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(report.failures.any { "removeNotifyContext: RuntimeException: Injected genuine removeNotify failure before removal" in it })</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(report.failures.any { "removeNotifyContext: RuntimeException: Injected removeNotify failure after removal" in it })</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(report.failures.any { "replacementCreation: IllegalStateException: Injected replacement creation failure" in it })</ID>
-    <ID>MaxLineLength:JapaneseHostChecks.kt$check(surface.engine.snapshot().committed.text == "Xcd" &amp;&amp; surface.engine.snapshot().visible.text == "Xcd" &amp;&amp; surface.engine.snapshot().marked == null)</ID>
-    <ID>MaxLineLength:JapaneseHostChecks.kt$check(surface.engine.snapshot().visible.text == "abcd" &amp;&amp; surface.engine.snapshot().selection == Selection(0, 4))</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(surface.unresolvedContext != null) { "Context was detached but disposal was not reached; tracked as unresolved resource" }</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(surface.unresolvedContext != null) { "When disposeContext throws, context is tracked as unresolved until explicit retryCleanup" }</ID>
+    <ID>MaxLineLength:JapaneseHostChecks.kt$check(surface.viewModel.verificationEngine.snapshot().committed.text == "Xcd" &amp;&amp; surface.viewModel.verificationEngine.snapshot().visible.text == "XYcd")</ID>
+    <ID>MaxLineLength:JapaneseHostChecks.kt$check(surface.viewModel.verificationEngine.snapshot().committed.text == "Xcd" &amp;&amp; surface.viewModel.verificationEngine.snapshot().visible.text == "Xcd" &amp;&amp; surface.viewModel.verificationEngine.snapshot().marked == null)</ID>
+    <ID>MaxLineLength:JapaneseHostChecks.kt$check(surface.viewModel.verificationEngine.snapshot().visible.text == "Baseline" &amp;&amp; surface.viewModel.verificationEngine.snapshot().marked == null)</ID>
+    <ID>MaxLineLength:JapaneseHostChecks.kt$check(surface.viewModel.verificationEngine.snapshot().visible.text == "abcd" &amp;&amp; surface.viewModel.verificationEngine.snapshot().selection == Selection(0, 4))</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(threwIllegalState) { "Calling locationOnScreen on non-showing component must throw IllegalComponentStateException" }</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(threwUnavail) { "Calling locationOnScreen must throw IllegalComponentStateException when screen location is unavailable" }</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$check(unavailSurface.getLocationOffset(100, 100) == null) { "getLocationOffset must return null when screen transform is unavailable" }</ID>
@@ -840,6 +845,7 @@
     <ID>MaxLineLength:JapaneseHostChecks.kt$surface.dispatchEvent(InputMethodEvent(surface, InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, AttributedString("破棄").iterator, 0, TextHitInfo.leading(2), null))</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$target.dispatchEvent(KeyEvent(target, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), mod, code, KeyEvent.CHAR_UNDEFINED))</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$val deadlineStart = checkNotNull(e.settlementRequestedAt) { "Shortcut during composition must record settlementRequestedAt" }</ID>
+    <ID>MaxLineLength:JapaneseHostChecks.kt$val deletion = surface.viewModel.verificationEngine.captureRecoveryReplacement(Document(emptyList()), Selection(0, 0))</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$val directKeyPressed = KeyEvent(oldHost, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), KeyEvent.CTRL_DOWN_MASK, KeyEvent.VK_B, KeyEvent.CHAR_UNDEFINED)</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$val directKeyTyped = KeyEvent(oldHost, KeyEvent.KEY_TYPED, System.currentTimeMillis(), 0, KeyEvent.VK_UNDEFINED, 'Z')</ID>
     <ID>MaxLineLength:JapaneseHostChecks.kt$val discardReport = checkNotNull(surfDiscard.lastRecoveryReport) { "Discard-close with active preedit must run conservative abort" }</ID>
@@ -850,6 +856,7 @@
     <ID>MaxLineLength:JapaneseHostChecks.kt$val winOrdinary = showEditor(diagnostics = diagFile, initial = cleanDoc, initialPath = savedPath, offscreenTest = true)</ID>
     <ID>MaxLineLength:LocalRecoveryChecks.kt$LocalRecoveryController(LocalRecoveryStore(root) { if (it == "before-publish" &amp;&amp; fail) throw java.io.IOException("Injected write failure") }, {}, 60000)</ID>
     <ID>MaxLineLength:LocalRecoveryChecks.kt$await("Newer copy after save completion") { c2.state()["completed"] == c2.state()["observed"] &amp;&amp; c2.state()["running"] == false }</ID>
+    <ID>MaxLineLength:LocalRecoveryChecks.kt$check(checkNotNull(windowCurrentSurface(w)).viewModel.verificationEngine.snapshot().committed.same(afterSave))</ID>
     <ID>MaxLineLength:LocalRecoveryChecks.kt$check(row.components.filter { it.isVisible }.all { it.x &gt;= 0 &amp;&amp; it.y &gt;= 0 &amp;&amp; it.x + it.width &lt;= row.width &amp;&amp; it.y + it.height &lt;= row.height }) { "Writing/recovery row clipped at $width x $height" }</ID>
     <ID>MaxLineLength:LocalRecoveryChecks.kt$check(savedCopy.document.same(afterSave) &amp;&amp; savedCopy.originalPath == separate.toAbsolutePath().toString() &amp;&amp; DocumentFiles.read(separate).same(newer))</ID>
     <ID>MaxLineLength:LocalRecoveryChecks.kt$checks += "Actual shell timer protects initial and accepted partial committed roots while IME preedit remains visible; named original stays unchanged"</ID>
@@ -860,8 +867,9 @@
     <ID>MaxLineLength:LocalRecoveryChecks.kt$if (i == hard) ParagraphProperties(ParagraphDirection.LTR, ParagraphAlignment.END, 24, 12, 1500) else ParagraphProperties()</ID>
     <ID>MaxLineLength:LocalRecoveryChecks.kt$if (i == hard) TextStyleFlags() else TextStyleFlags(i % 2 == 0, i % 2 == 1, true, true, StoredFont.GULZAR, 32, 0x174ea6)</ID>
     <ID>MaxLineLength:LocalRecoveryChecks.kt$if (i == hard) TextStyleFlags(true, true, strike = true, font = StoredFont.SYSTEM, size = 18, color = 0xb3261e) else TextStyleFlags()</ID>
+    <ID>MaxLineLength:LocalRecoveryChecks.kt$if (tag == "window-A") checkNotNull(windowCurrentSurface(window)).viewModel.verificationEngine.inputMethod("未確定", 0, 3)</ID>
     <ID>MaxLineLength:LocalRecoveryChecks.kt$javax.imageio.ImageIO.write(bitmap, "png", File(result.parentFile, "local-recovery-ui-${width}x$height.png"))</ID>
-    <ID>MaxLineLength:LocalRecoveryChecks.kt$owner { check(surface.engine.snapshot().marked != null &amp;&amp; surface.engine.snapshot().visible != surface.engine.snapshot().committed) }</ID>
+    <ID>MaxLineLength:LocalRecoveryChecks.kt$owner { check(surface.viewModel.verificationEngine.snapshot().marked != null &amp;&amp; surface.viewModel.verificationEngine.snapshot().visible != surface.viewModel.verificationEngine.snapshot().committed) }</ID>
     <ID>MaxLineLength:LocalRecoveryChecks.kt$println("MULTI_READY:" + evidenceJson(controllers.mapIndexed { i, c -&gt; mapOf("session" to c.session, "tag" to "window-${if (i == 0) "A" else "B"}") }))</ID>
     <ID>MaxLineLength:LocalRecoveryChecks.kt$println(evidenceJson(mapOf("sequence" to copy.sequence, "original" to copy.originalPath, "warning" to entry.warning, "session" to session)))</ID>
     <ID>MaxLineLength:LocalRecoveryChecks.kt$restored = JFrame.getFrames().filterIsInstance&lt;JFrame&gt;().firstOrNull { it !in previous &amp;&amp; windowFiles(it)?.dirty == true }</ID>
@@ -923,7 +931,7 @@
     <ID>MaxLineLength:NativeKeyboardProbe.kt$(window.contentPane.layout as java.awt.BorderLayout).getLayoutComponent(java.awt.BorderLayout.SOUTH)?.let { window.contentPane.remove(it) }</ID>
     <ID>MaxLineLength:NativeKeyboardProbe.kt$&lt;no name provided&gt;$val</ID>
     <ID>MaxLineLength:NativeKeyboardProbe.kt$add(javax.swing.JLabel("Reference JTextArea — disposable comparison, separate from the editor document"), java.awt.BorderLayout.NORTH)</ID>
-    <ID>MaxLineLength:NativeKeyboardProbe.kt$check(surface.engine.snapshot().marked == null) { "Native composition must settle before fixture cleanup" }</ID>
+    <ID>MaxLineLength:NativeKeyboardProbe.kt$check(surface.viewModel.verificationEngine.snapshot().marked == null) { "Native composition must settle before fixture cleanup" }</ID>
     <ID>MaxLineLength:NativeKeyboardProbe.kt$check(writing &amp;&amp; !window.isDisplayable) { "Close the disposable writing window before reopening" }</ID>
     <ID>MaxLineLength:NativeKeyboardProbe.kt$if ("--restore-copies" in args) showLocalRecovery(checkNotNull(recoveryDirectory), "noto-nastaliq", true, onlyIfNeeded = true)</ID>
     <ID>MaxLineLength:NativeKeyboardProbe.kt$mapOf("paragraph" to p.index, "label" to m.text, "nominalSize" to m.nominalSize, "baseline" to m.baseline, "left" to m.left, "top" to m.top, "width" to m.width, "contentLeft" to p.contentLeft, "contentWidth" to p.contentWidth, "fontKey" to m.fontKey)</ID>
@@ -932,6 +940,7 @@
     <ID>MaxLineLength:NativeKeyboardProbe.kt$surface.selectInputLocale(java.util.Locale.forLanguageTag(language), if (language == "ja-JP") true else null)</ID>
     <ID>MaxLineLength:NativeKeyboardProbe.kt$val opened = javax.swing.JFrame.getFrames().filterIsInstance&lt;javax.swing.JFrame&gt;().single { it.isDisplayable &amp;&amp; it !== window &amp;&amp; windowFiles(it)?.path == writingPath }</ID>
     <ID>MaxLineLength:NativeKeyboardProbe.kt$val recoveryDirectory = args.firstOrNull { it.startsWith("--recovery-dir=") }?.substringAfter('=')?.let { java.nio.file.Path.of(it).toAbsolutePath().normalize() }</ID>
+    <ID>MaxLineLength:NativeKeyboardProbe.kt$while (surface.viewModel.verificationEngine.snapshot().undoCount &gt; 0) surface.viewModel.verificationEngine.perform(EditAction.Undo)</ID>
     <ID>MaxLineLength:PagePolicyChecks.kt$fun placement(plan: FragmentPlan)</ID>
     <ID>MaxLineLength:PagePolicyChecks.kt$fun plan(counts: List&lt;Int&gt;, properties: List&lt;ParagraphProperties&gt;, explicit: Set&lt;Int&gt; = emptySet(), capacity: Int = 60)</ID>
     <ID>MaxLineLength:PagePolicyChecks.kt$val kept = plan(listOf(3, 1, 4), listOf(ordinary, heading, ordinary.copy(pagination = PaginationRules(keepLines = true))))</ID>
@@ -974,8 +983,10 @@
     <ID>MaxLineLength:PagesOutputChecks.kt$check(plain.snapshot().committed.units[1].structuralBreak == StructuralBreak.PAGE &amp;&amp; plain.snapshot().committed.units[3].structuralBreak == StructuralBreak.PARAGRAPH)</ID>
     <ID>MaxLineLength:PagesOutputChecks.kt$check(plan.running.filter { !it.header }.all { it.text.endsWith(" / " + plan.pageCount.toString().map { c -&gt; '\u06f0' + (c - '0') }.joinToString("")) })</ID>
     <ID>MaxLineLength:PagesOutputChecks.kt$check(runCatching { captured.pageable(cancelled = { true }).getPrintable(0).print(g, captured.paperFormat(), 0) }.exceptionOrNull() is java.awt.print.PrinterAbortException)</ID>
-    <ID>MaxLineLength:PagesOutputChecks.kt$check(surface.engine.snapshot().committed == before.committed &amp;&amp; surface.engine.snapshot().undoCount == before.undoCount)</ID>
-    <ID>MaxLineLength:PagesOutputChecks.kt$check(surface.engine.snapshot().committed == prior.committed &amp;&amp; surface.engine.snapshot().undoCount == prior.undoCount)</ID>
+    <ID>MaxLineLength:PagesOutputChecks.kt$check(s.viewModel.verificationEngine.snapshot().committed.same(d) &amp;&amp; s.viewModel.verificationEngine.snapshot().undoCount == 0)</ID>
+    <ID>MaxLineLength:PagesOutputChecks.kt$check(s.viewModel.verificationEngine.snapshot().committed.same(large) &amp;&amp; s.viewModel.verificationEngine.snapshot().undoCount == 0)</ID>
+    <ID>MaxLineLength:PagesOutputChecks.kt$check(surface.viewModel.verificationEngine.snapshot().committed == before.committed &amp;&amp; surface.viewModel.verificationEngine.snapshot().undoCount == before.undoCount)</ID>
+    <ID>MaxLineLength:PagesOutputChecks.kt$check(surface.viewModel.verificationEngine.snapshot().committed == prior.committed &amp;&amp; surface.viewModel.verificationEngine.snapshot().undoCount == prior.undoCount)</ID>
     <ID>MaxLineLength:PagesOutputChecks.kt$children(dialog).filterIsInstance&lt;JLabel&gt;().any { Regex("Captured[1-9][0-9]*/[0-9]+").matches(it.text ?: "") }</ID>
     <ID>MaxLineLength:PagesOutputChecks.kt$fun children(c: java.awt.Component): List&lt;java.awt.Component&gt;</ID>
     <ID>MaxLineLength:PagesOutputChecks.kt$fun props(p: ParagraphProperties)</ID>
@@ -1001,7 +1012,7 @@
     <ID>MaxLineLength:ParagraphChecks.kt$check(attrs.getAttribute("ParagraphDirection") == direction.name &amp;&amp; attrs.getAttribute("ParagraphAlignment") == alignment.name)</ID>
     <ID>MaxLineLength:ParagraphChecks.kt$check(blank.snapshot().committed.units.isEmpty() &amp;&amp; props(blank).single().bits == 9 &amp;&amp; blank.snapshot().undoCount == 1)</ID>
     <ID>MaxLineLength:ParagraphChecks.kt$check(changed.units.zip(original.committed.units).all { (a, b) -&gt; a.id == b.id &amp;&amp; a.char == b.char &amp;&amp; a.style == b.style &amp;&amp; a.paragraphStyle == b.paragraphStyle })</ID>
-    <ID>MaxLineLength:ParagraphChecks.kt$check(checkNotNull(surface.geometry()).hasRenderedSelection(surface.engine.snapshot().selection))</ID>
+    <ID>MaxLineLength:ParagraphChecks.kt$check(checkNotNull(surface.geometry()).hasRenderedSelection(surface.viewModel.verificationEngine.snapshot().selection))</ID>
     <ID>MaxLineLength:ParagraphChecks.kt$check(composed.snapshot().committed.text == "کتابabc" &amp;&amp; props(composed).single().bits == 9 &amp;&amp; !composed.snapshot().waiting)</ID>
     <ID>MaxLineLength:ParagraphChecks.kt$check(composed.snapshot().committed.text == settled.committed.text &amp;&amp; props(composed).single() == ParagraphProperties())</ID>
     <ID>MaxLineLength:ParagraphChecks.kt$check(composed.snapshot().visible == candidate.visible &amp;&amp; composed.snapshot().committed == candidate.committed &amp;&amp; composed.snapshot().waiting)</ID>
@@ -1018,10 +1029,10 @@
     <ID>MaxLineLength:ParagraphChecks.kt$check(split.snapshot().committed.text == "a\nb" &amp;&amp; props(split).distinct().single() == ParagraphProperties(ParagraphDirection.RTL, ParagraphAlignment.CENTER))</ID>
     <ID>MaxLineLength:ParagraphChecks.kt$check(split.snapshot().committed.text == "ab" &amp;&amp; props(split).single() == beforeJoin.committed.paragraphs().first().properties)</ID>
     <ID>MaxLineLength:ParagraphChecks.kt$check(store.restore(entries.single()).document.same(expected) &amp;&amp; DocumentFiles.read(work.resolve("retained.astra")).same(expected))</ID>
-    <ID>MaxLineLength:ParagraphChecks.kt$check(surface.engine.snapshot().committed.paragraphs().dropLast(1).all { it.properties.direction == ParagraphDirection.AUTO })</ID>
-    <ID>MaxLineLength:ParagraphChecks.kt$check(surface.engine.snapshot().committed.paragraphs().last().properties.direction == ParagraphDirection.RTL)</ID>
-    <ID>MaxLineLength:ParagraphChecks.kt$check(surface.engine.snapshot().committed.text == before.committed.text &amp;&amp; surface.engine.snapshot().selection == before.selection)</ID>
-    <ID>MaxLineLength:ParagraphChecks.kt$check(surface.engine.snapshot().undoCount == allBefore.undoCount + 1 &amp;&amp; surface.engine.snapshot().selection == allBefore.selection)</ID>
+    <ID>MaxLineLength:ParagraphChecks.kt$check(surface.viewModel.verificationEngine.snapshot().committed.paragraphs().dropLast(1).all { it.properties.direction == ParagraphDirection.AUTO })</ID>
+    <ID>MaxLineLength:ParagraphChecks.kt$check(surface.viewModel.verificationEngine.snapshot().committed.paragraphs().last().properties.direction == ParagraphDirection.RTL)</ID>
+    <ID>MaxLineLength:ParagraphChecks.kt$check(surface.viewModel.verificationEngine.snapshot().committed.text == before.committed.text &amp;&amp; surface.viewModel.verificationEngine.snapshot().selection == before.selection)</ID>
+    <ID>MaxLineLength:ParagraphChecks.kt$check(surface.viewModel.verificationEngine.snapshot().undoCount == allBefore.undoCount + 1 &amp;&amp; surface.viewModel.verificationEngine.snapshot().selection == allBefore.selection)</ID>
     <ID>MaxLineLength:ParagraphChecks.kt$checks += "96 expected edge/center geometry trials across Latin/Urdu/mixed/numbers, directions/views/sizes: alignment, selection, A hit, AT bounds and fresh native query coordinates"</ID>
     <ID>MaxLineLength:ParagraphChecks.kt$checks += "Auto preserves isolate-aware first-strong/neutral/empty fallback; explicit direction overrides base without modifying characters"</ID>
     <ID>MaxLineLength:ParagraphChecks.kt$checks += "Empty centered RTL caret, mixed controls, actual toolbar consumer and automatic/retained export roundtrip preserve properties"</ID>
@@ -1032,9 +1043,13 @@
     <ID>MaxLineLength:ParagraphChecks.kt$fun resolve(s: String, p: ParagraphProperties = ParagraphProperties(), fallback: ParagraphDirection = ParagraphDirection.LTR)</ID>
     <ID>MaxLineLength:ParagraphChecks.kt$observed += mapOf("paged" to paged, "width" to width, "direction" to direction.name, "alignment" to alignment.name, "left" to left, "right" to right, "textWidth" to g.textWidth, "hit" to hit)</ID>
     <ID>MaxLineLength:ParagraphChecks.kt$observed += mapOf("paragraph" to index, "paged" to paged, "width" to width, "direction" to direction.name, "alignment" to alignment.name, "left" to left, "right" to right, "textWidth" to g.textWidth)</ID>
-    <ID>MaxLineLength:ParagraphChecks.kt$surface.retainedPreimage = RetainedCompositionPreimage("", surface.engine.snapshot().selection, null, expected.text, surface.activeImeEpoch, payload)</ID>
+    <ID>MaxLineLength:ParagraphChecks.kt$surface.retainedPreimage = RetainedCompositionPreimage("", surface.viewModel.verificationEngine.snapshot().selection, null, expected.text, surface.activeImeEpoch, payload)</ID>
+    <ID>MaxLineLength:ParagraphChecks.kt$surface.viewModel.verificationEngine.move(Selection(0, surface.viewModel.verificationEngine.snapshot().committed.units.size))</ID>
+    <ID>MaxLineLength:ParagraphChecks.kt$surface.viewModel.verificationEngine.setParagraphProperties(ParagraphDirection.RTL, ParagraphAlignment.CENTER)</ID>
+    <ID>MaxLineLength:ParagraphChecks.kt$surface.viewModel.verificationEngine.setParagraphProperties(ParagraphDirection.RTL, ParagraphAlignment.START)</ID>
     <ID>MaxLineLength:ParagraphChecks.kt$val hit = surface.accessibleContext.accessibleText.getIndexAtPoint(java.awt.Point(box.x + maxOf(1, box.width / 4), box.y + box.height / 2))</ID>
     <ID>MaxLineLength:ParagraphChecks.kt$val image = java.awt.image.BufferedImage(window.width, window.height, java.awt.image.BufferedImage.TYPE_INT_RGB)</ID>
+    <ID>MaxLineLength:ParagraphChecks.kt$val payload = surface.viewModel.verificationEngine.captureRecoveryReplacement(expected, surface.viewModel.verificationEngine.snapshot().selection)</ID>
     <ID>MaxLineLength:ParagraphChecks.kt$val physicalLeft = (alignment == ParagraphAlignment.START &amp;&amp; direction == ParagraphDirection.LTR) || (alignment == ParagraphAlignment.END &amp;&amp; direction == ParagraphDirection.RTL)</ID>
     <ID>MaxLineLength:ParagraphChecks.kt$window = showEditor(initial = fixture("ABC\nاردو\nEnglish اردو 123\n123\n"), fontProfile = "noto-nastaliq", offscreenTest = true, recoveryDirectory = work.resolve("recovery"))</ID>
     <ID>MaxLineLength:RecoveryChecks.kt$check(before.committed == draft.basis &amp;&amp; before.recoveryBasisRevision == draft.basisRevision &amp;&amp; before.identityGeneration == draft.basisIdentityGeneration)</ID>
@@ -1057,17 +1072,18 @@
     <ID>MaxLineLength:RecoveryUiChecks.kt$check(e.snapshot().committed.text.isEmpty())</ID>
     <ID>MaxLineLength:RecoveryUiChecks.kt$check(entry["text"] == callback.text &amp;&amp; (entry["utf16"] as List&lt;*&gt;).map { (it as Number).toInt() } == callback.text.map { it.code })</ID>
     <ID>MaxLineLength:RecoveryUiChecks.kt$check(exportFailures.size == 1 &amp;&amp; java.nio.file.Files.readAllBytes(originalPath).contentEquals(originalBytes))</ID>
-    <ID>MaxLineLength:RecoveryUiChecks.kt$check(exportFailures.size == 2 &amp;&amp; surface.quarantinedCallbacks.single() === callback &amp;&amp; surface.engine.snapshot() == beforeInputExport)</ID>
+    <ID>MaxLineLength:RecoveryUiChecks.kt$check(exportFailures.size == 2 &amp;&amp; surface.quarantinedCallbacks.single() === callback &amp;&amp; surface.viewModel.verificationEngine.snapshot() == beforeInputExport)</ID>
+    <ID>MaxLineLength:RecoveryUiChecks.kt$check(paused.quarantinedCallbacks.size == 1 &amp;&amp; paused.viewModel.verificationEngine.snapshot().committed.text.isEmpty())</ID>
     <ID>MaxLineLength:RecoveryUiChecks.kt$check(paused.recoverySession.snapshotRetainedDrafts().isEmpty() &amp;&amp; paused.quarantinedCallbacks.size == 1 &amp;&amp; !files.dirty)</ID>
     <ID>MaxLineLength:RecoveryUiChecks.kt$check(pending.size == 2 &amp;&amp; pending.any { it === old }) { "A second admitted recovery replaced pending work: retained=${pending.size}" }</ID>
-    <ID>MaxLineLength:RecoveryUiChecks.kt$check(pending.size == 3 &amp;&amp; pending.none { it === richRecord } &amp;&amp; surface.retainedPreimage === newer &amp;&amp; surface.engine.snapshot().committed == desired)</ID>
+    <ID>MaxLineLength:RecoveryUiChecks.kt$check(pending.size == 3 &amp;&amp; pending.none { it === richRecord } &amp;&amp; surface.retainedPreimage === newer &amp;&amp; surface.viewModel.verificationEngine.snapshot().committed == desired)</ID>
     <ID>MaxLineLength:RecoveryUiChecks.kt$check(prompts == 1 &amp;&amp; window.isDisplayable &amp;&amp; third.recoverySession.snapshotRetainedDrafts().size == 2) { "Clean-document close discarded pending recovery without consulting Cancel" }</ID>
     <ID>MaxLineLength:RecoveryUiChecks.kt$check(prompts == 1 &amp;&amp; window.isDisplayable) { "Quarantine-only close bypassed Cancel after actual degraded callback and cleanup" }</ID>
     <ID>MaxLineLength:RecoveryUiChecks.kt$check(session.snapshotRetainedDrafts().size == 2 &amp;&amp; session.retainedPreimage === metadataCopy &amp;&amp; incoming.retainedPreimage === sameTextDifferentRecord)</ID>
-    <ID>MaxLineLength:RecoveryUiChecks.kt$check(surface.engine.snapshot() == beforeInputExport &amp;&amp; surface.quarantinedCallbacks.single() === callback &amp;&amp; files.path == originalPath &amp;&amp; !files.dirty)</ID>
     <ID>MaxLineLength:RecoveryUiChecks.kt$check(surface.quarantinedCallbacks.size == 1 &amp;&amp; surface.quarantinedCallbacks.single() === sameValueNewArrival)</ID>
-    <ID>MaxLineLength:RecoveryUiChecks.kt$check(surface.retainedPreimage === old &amp;&amp; surface.engine.snapshot().notice.startsWith("RecoveryBaseChanged"))</ID>
-    <ID>MaxLineLength:RecoveryUiChecks.kt$check(surface.retainedPreimage === richRecord &amp;&amp; surface.recoverySession.snapshotRetainedDrafts().size == 3 &amp;&amp; surface.engine.snapshot() == snapshotBeforeExport)</ID>
+    <ID>MaxLineLength:RecoveryUiChecks.kt$check(surface.retainedPreimage === old &amp;&amp; surface.viewModel.verificationEngine.snapshot().notice.startsWith("RecoveryBaseChanged"))</ID>
+    <ID>MaxLineLength:RecoveryUiChecks.kt$check(surface.retainedPreimage === richRecord &amp;&amp; surface.recoverySession.snapshotRetainedDrafts().size == 3 &amp;&amp; surface.viewModel.verificationEngine.snapshot() == snapshotBeforeExport)</ID>
+    <ID>MaxLineLength:RecoveryUiChecks.kt$check(surface.viewModel.verificationEngine.snapshot() == beforeInputExport &amp;&amp; surface.quarantinedCallbacks.single() === callback &amp;&amp; files.path == originalPath &amp;&amp; !files.dirty)</ID>
     <ID>MaxLineLength:RecoveryUiChecks.kt$checks += "Actual Export Draft action preserves full raw UTF-16, attributes, start style and hard/soft breaks without applying or clearing a capsule"</ID>
     <ID>MaxLineLength:RecoveryUiChecks.kt$checks += "Actual degraded surface callback survives cleanup and capsule discard; quarantine-only close consults Cancel"</ID>
     <ID>MaxLineLength:RecoveryUiChecks.kt$checks += "Actual diagnostic export preserves lone surrogate, NUL, U+FFFF, raw UTF-16 and callback metadata without changing main document or save point"</ID>
@@ -1080,6 +1096,7 @@
     <ID>MaxLineLength:RecoveryUiChecks.kt$javax.imageio.ImageIO.write(bitmap, "png", File(result.parentFile, "quarantine-ui-${width}x$height.png"))</ID>
     <ID>MaxLineLength:RecoveryUiChecks.kt$old.recoveryHooks = EditorSurface.RecoveryHooks(disposeContext = { throw IllegalStateException("Quarantine regression: disposal refused") })</ID>
     <ID>MaxLineLength:RecoveryUiChecks.kt$richRecord = RetainedCompositionPreimage(text, e.snapshot().selection, null, e.snapshot().committed.text, surface.activeImeEpoch, draft)</ID>
+    <ID>MaxLineLength:RecoveryUiChecks.kt$surface.viewModel.verificationEngine.captureRecoveryReplacement(Document(listOf(TextUnit(999, 'A'))), Selection(0, 0))</ID>
     <ID>MaxLineLength:RecoveryUiChecks.kt$val bar = controls(window).filterIsInstance&lt;javax.swing.JPanel&gt;().single { it.name == "recovery-controls" }</ID>
     <ID>MaxLineLength:RecoveryUiChecks.kt$val bitmap = java.awt.image.BufferedImage(window.width, window.height, java.awt.image.BufferedImage.TYPE_INT_RGB)</ID>
     <ID>MaxLineLength:RecoveryUiChecks.kt$val metadataCopy = first.copy(selectionBefore = first.selectionBefore.copy(primary = !first.selectionBefore.primary))</ID>
@@ -1190,12 +1207,12 @@
     <ID>MaxLineLength:StructureChecks.kt$ParagraphAlignment.END -&gt; if (direction == ParagraphDirection.RTL)0f else trial.textWidth - image.imageWidth</ID>
     <ID>MaxLineLength:StructureChecks.kt$ParagraphAlignment.START -&gt; if (direction == ParagraphDirection.RTL)trial.textWidth - image.imageWidth else 0f</ID>
     <ID>MaxLineLength:StructureChecks.kt$await("Expanded structured committed checkpoint") { controller.state().let { it["observed"] == it["completed"] &amp;&amp; (it["completed"] as Long) &gt; 1L } }</ID>
-    <ID>MaxLineLength:StructureChecks.kt$await("Final mounted render") { surface.view.geometry?.revision == surface.engine.snapshot().documentRevision &amp;&amp; !surface.view.ensureCaret &amp;&amp; surface.view.geometry?.hostWidth == surface.width }</ID>
+    <ID>MaxLineLength:StructureChecks.kt$await("Final mounted render") { surface.view.geometry?.revision == surface.viewModel.verificationEngine.snapshot().documentRevision &amp;&amp; !surface.view.ensureCaret &amp;&amp; surface.view.geometry?.hostWidth == surface.width }</ID>
     <ID>MaxLineLength:StructureChecks.kt$await("Mounted structure geometry") { surface.view.measure != null &amp;&amp; sample.resources.keys.all { ImageResources.cached(it) != null } }</ID>
     <ID>MaxLineLength:StructureChecks.kt$await("Restored candidate profile") { surface.view.measure != null &amp;&amp; surface.view.geometry?.typographyKey?.startsWith(surface.view.typography.key) == true }</ID>
     <ID>MaxLineLength:StructureChecks.kt$await("System heading natural metrics") { surface.view.measure != null &amp;&amp; surface.view.geometry?.typographyKey?.startsWith(TypographyProfile.system.key) == true }</ID>
     <ID>MaxLineLength:StructureChecks.kt$await("Updated structure geometry") { surface.view.measure != null &amp;&amp; surface.view.geometry?.typographyKey?.contains(":zoom=$zoom") == true &amp;&amp; surface.view.geometry?.typographyKey?.endsWith(if (paged)":paged" else ":continuous") == true }</ID>
-    <ID>MaxLineLength:StructureChecks.kt$check(!surface.admissionAllowed &amp;&amp; surface.quarantinedCallbacks.size == 1 &amp;&amp; surface.engine.snapshot().committed == before.committed)</ID>
+    <ID>MaxLineLength:StructureChecks.kt$check(!surface.admissionAllowed &amp;&amp; surface.quarantinedCallbacks.size == 1 &amp;&amp; surface.viewModel.verificationEngine.snapshot().committed == before.committed)</ID>
     <ID>MaxLineLength:StructureChecks.kt$check(DocumentFiles.decode(DocumentFiles.encode(owner.snapshot().committed)).same(owner.snapshot().committed))</ID>
     <ID>MaxLineLength:StructureChecks.kt$check(after.committed.listMarkers().size == 1 &amp;&amp; DocumentFiles.decode(DocumentFiles.encode(after.committed)).same(after.committed))</ID>
     <ID>MaxLineLength:StructureChecks.kt$check(after.committed.paragraphs()[0].properties.item == left &amp;&amp; after.committed.paragraphs()[1].properties.parent == left) { "Sibling join lost nested item ownership" }</ID>
@@ -1217,13 +1234,16 @@
     <ID>MaxLineLength:StructureChecks.kt$check(owner.snapshot().committed.paragraphAt(owner.snapshot().selection.focus).properties.alignment == ParagraphAlignment.END)</ID>
     <ID>MaxLineLength:StructureChecks.kt$check(plain.contains("1. پہلی") &amp;&amp; plain.contains(" • Nested") &amp;&amp; plain.contains("[Image:") &amp;&amp; plain.contains("&lt;https://example.org/urdu&gt;"))</ID>
     <ID>MaxLineLength:StructureChecks.kt$check(process.waitFor(40, java.util.concurrent.TimeUnit.SECONDS) &amp;&amp; process.exitValue() == 0) { process.inputStream.bufferedReader().readText() }</ID>
-    <ID>MaxLineLength:StructureChecks.kt$check(reads.get() == 1 &amp;&amp; surface.engine.snapshot().committed == intervening &amp;&amp; surface.clipboardMessage.contains("refused"))</ID>
+    <ID>MaxLineLength:StructureChecks.kt$check(reads.get() == 1 &amp;&amp; surface.viewModel.verificationEngine.snapshot().committed == intervening &amp;&amp; surface.clipboardMessage.contains("refused"))</ID>
     <ID>MaxLineLength:StructureChecks.kt$check(restored.same(repeated) &amp;&amp; restored.units.count { it.kind == UnitKind.IMAGE } == 1025 &amp;&amp; restored.resources.size == 1)</ID>
     <ID>MaxLineLength:StructureChecks.kt$check(retired.retired &amp;&amp; surface !== retired &amp;&amp; surface.admissionAllowed &amp;&amp; surface.quarantinedCallbacks.size == 2)</ID>
     <ID>MaxLineLength:StructureChecks.kt$check(reverse.insertionIndex == offset) { "Atomic image native offset $offset became ${reverse.insertionIndex}" }</ID>
     <ID>MaxLineLength:StructureChecks.kt$check(runCatching { DocumentFiles.decode(invalid + java.security.MessageDigest.getInstance("SHA-256").digest(invalid)) }.isFailure)</ID>
     <ID>MaxLineLength:StructureChecks.kt$check(sample.resources.size == 1 &amp;&amp; sample.units.count { it.image != null } == 1 &amp;&amp; sample.units.count { it.style.link != null } == 25)</ID>
     <ID>MaxLineLength:StructureChecks.kt$check(split.outline().map { it.level } == listOf(1, 1) &amp;&amp; split.outline().map { it.label } == listOf("Old", " heading".trim()))</ID>
+    <ID>MaxLineLength:StructureChecks.kt$check(structureDescription(surface.viewModel.verificationEngine.snapshot().committed) == structureDescription(sample))</ID>
+    <ID>MaxLineLength:StructureChecks.kt$check(surface.quarantinedCallbacks.size == 2 &amp;&amp; surface.viewModel.verificationEngine.snapshot().committed == before.committed)</ID>
+    <ID>MaxLineLength:StructureChecks.kt$check(surface.viewModel.verificationEngine.snapshot().committed.text.startsWith("safe") &amp;&amp; surface.quarantinedCallbacks.size == 2)</ID>
     <ID>MaxLineLength:StructureChecks.kt$check(target.clipboardApply(checkNotNull(target.clipboardCapture()), FragmentCodec.decode(FragmentCodec.encode(fragment))))</ID>
     <ID>MaxLineLength:StructureChecks.kt$check(target.snapshot().committed.paragraphs().first { it.properties.item.isNotEmpty() }.properties.item != listed[0].properties.item)</ID>
     <ID>MaxLineLength:StructureChecks.kt$check(target.snapshot().committed.units.first { it.style.link != null }.style.link!!.id != sample.units.first { it.style.link != null }.style.link!!.id)</ID>
@@ -1239,9 +1259,11 @@
     <ID>MaxLineLength:StructureChecks.kt$owner.structure(StructureCommand.InsertImage(ImageBlock(decoded.first, 160, "JPEG alternative"), decoded.second))</ID>
     <ID>MaxLineLength:StructureChecks.kt$result.writeText(evidenceJson(mapOf("status" to "PASS", "checks" to checks, "costsMs" to costs, "scope" to "Core/independent semantic description, actual mounted shell/clipboard. IME callbacks synthetic; real native session separate.")), Charsets.UTF_8)</ID>
     <ID>MaxLineLength:StructureChecks.kt$store.acquire(id).use { store.publish(it, LocalCopy(id, 1, System.currentTimeMillis(), null, e.snapshot().committed)) }</ID>
-    <ID>MaxLineLength:StructureChecks.kt$surface.engine.move(Selection(surface.engine.snapshot().committed.units.size, surface.engine.snapshot().committed.units.size))</ID>
+    <ID>MaxLineLength:StructureChecks.kt$surface.viewModel.verificationEngine.move(Selection(0, surface.viewModel.verificationEngine.snapshot().committed.units.size))</ID>
+    <ID>MaxLineLength:StructureChecks.kt$surface.viewModel.verificationEngine.move(Selection(surface.viewModel.verificationEngine.snapshot().committed.units.size, surface.viewModel.verificationEngine.snapshot().committed.units.size))</ID>
     <ID>MaxLineLength:StructureChecks.kt$val actual = checkNotNull(surface.accessibleContext.accessibleText.getCharacterBounds(image.startOffset))</ID>
     <ID>MaxLineLength:StructureChecks.kt$val event = java.awt.event.InputMethodEvent(surface, java.awt.event.InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, java.text.AttributedString(text).iterator, text.length, null, null)</ID>
+    <ID>MaxLineLength:StructureChecks.kt$val image = surface.viewModel.verificationEngine.snapshot().committed.units.indexOfFirst { it.kind == UnitKind.IMAGE }</ID>
     <ID>MaxLineLength:StructureChecks.kt$val process = ProcessBuilder(base + listOf("--clipboard-child=$mode", "--clipboard-file=$file")).redirectErrorStream(true).start()</ID>
     <ID>MaxLineLength:StructureChecks.kt$val publisher = ProcessBuilder(base + listOf("--clipboard-child=publish", "--clipboard-file=$input")).redirectErrorStream(true).start()</ID>
     <ID>MaxLineLength:StructureChecks.kt$val repeated = Document((0 until 1025).flatMap { n -&gt; listOf(TextUnit(n * 2L + 1, '\ufffc', UnitKind.IMAGE, image = ImageBlock(imported.first, 240, "Repeated image")), TextUnit(n * 2L + 2, '\n', UnitKind.PARAGRAPH_BREAK)) }, resources = mapOf(imported))</ID>
@@ -1251,6 +1273,7 @@
     <ID>MaxLineLength:TypographySheet.kt$File(output, "results.json").writeText(evidenceJson(mapOf("status" to "ENGINEERING_SPECIMEN_GENERATED_HUMAN_REVIEW_OPEN", "cases" to cases.map { mapOf("id" to it.key, "text" to it.value, "utf16" to it.value.map { c -&gt; c.code }) }, "profiles" to profiles, "native" to "NOT RUN; mounted actual editor page plans")), Charsets.UTF_8)</ID>
     <ID>MaxLineLength:TypographySheet.kt$append("&lt;!doctype html&gt;&lt;meta charset=utf-8&gt;&lt;title&gt;Urdu typography review specimen&lt;/title&gt;&lt;style&gt;body{font:18px system-ui;max-width:1000px;margin:32px auto;line-height:1.6}img{width:100%;border:1px solid #aaa}pre{white-space:pre-wrap}td,th{padding:10px;border:1px solid #bbb}table{border-collapse:collapse;width:100%}&lt;/style&gt;&lt;h1&gt;Numbered Urdu typography specimen&lt;/h1&gt;&lt;p&gt;Engineering renders only. Proficient Urdu/calligraphic review: NOT RUN. Check joining, marks, ink clipping, line rhythm, fallbacks and mixed direction. Record case/profile/page and a correction; automated success is not approval.&lt;/p&gt;&lt;table&gt;&lt;tr&gt;&lt;th&gt;Case / logical source&lt;/th&gt;&lt;th&gt;Review notes&lt;/th&gt;&lt;/tr&gt;")</ID>
     <ID>MaxLineLength:TypographySheet.kt$append("&lt;h2&gt;${html(p["id"].toString())}&lt;/h2&gt;&lt;p&gt;${html(p["fontKey"].toString())}&lt;/p&gt;&lt;p&gt;Codepoint fallback diagnostics (actual Compose run mapping unqualified):${html(p["fontMgrFallbackDiagnostic"].toString())}&lt;/p&gt;")</ID>
+    <ID>MaxLineLength:TypographySheet.kt$check(s.viewModel.verificationEngine.snapshot().committed.same(document) &amp;&amp; s.viewModel.verificationEngine.snapshot().undoCount == 0)</ID>
     <ID>MaxLineLength:TypographySheet.kt$for ((id, raw) in cases)append("&lt;tr&gt;&lt;td&gt;${html(id)}&lt;pre dir=auto&gt;${html(raw)}&lt;/pre&gt;&lt;small&gt;${raw.codePoints().toArray().joinToString(" ") { "U+${it.toString(16).uppercase()}" }}&lt;/small&gt;&lt;/td&gt;&lt;td&gt;NOT REVIEWED&lt;/td&gt;&lt;/tr&gt;")</ID>
     <ID>MaxLineLength:TypographySheet.kt$for (file in p["pages"] as List&lt;*&gt;)append("&lt;img src='${html(file.toString())}' alt='${html(p["id"].toString())} editor page'&gt;")</ID>
     <ID>MaxLineLength:TypographySheet.kt$if</ID>
@@ -1286,12 +1309,12 @@
     <ID>MaxLineLength:V6QualificationChecks.kt$check(paste.snapshot().committed.paragraphs().map { it.properties.markerTypography } == exact.paragraphs().map { it.properties.markerTypography })</ID>
     <ID>MaxLineLength:V6QualificationChecks.kt$check(runCatching { DocumentFiles.decode(corrupted + java.security.MessageDigest.getInstance("SHA-256").digest(corrupted)) }.isFailure) { "DEFAULT/untrusted marker font was accepted" }</ID>
     <ID>MaxLineLength:V6QualificationChecks.kt$check(runCatching { ParagraphProperties(markerTypography = MarkerTypography(StoredFont.SYSTEM, 8)) }.isFailure) { "Orphan marker metadata must reject rather than disappear on Save" }</ID>
-    <ID>MaxLineLength:V6QualificationChecks.kt$check(surface.engine.snapshot().committed == before.committed &amp;&amp; surface.engine.snapshot().undoCount == 0)</ID>
-    <ID>MaxLineLength:V6QualificationChecks.kt$check(surface.engine.snapshot().selection == Selection(5, 6)) { "RTL ShiftLeft must advance logical Hebrew offset" }</ID>
-    <ID>MaxLineLength:V6QualificationChecks.kt$check(surface.engine.snapshot().selection.focus == 1) { "Actual click did not map to known Latin boundary" }</ID>
-    <ID>MaxLineLength:V6QualificationChecks.kt$check(surface.engine.snapshot().selection.focus == before.committed.text.lastIndexOf("abcdefghij") + 8) { "Vertical preferred x was lost on short intermediate row" }</ID>
-    <ID>MaxLineLength:V6QualificationChecks.kt$check(surface.engine.snapshot().selection.focus == before.committed.units.size &amp;&amp; surface.view.ensureCaret)</ID>
-    <ID>MaxLineLength:V6QualificationChecks.kt$check(surface.engine.snapshot().selection.start == forward.selection.start &amp;&amp; surface.engine.snapshot().selection.end == forward.selection.end)</ID>
+    <ID>MaxLineLength:V6QualificationChecks.kt$check(surface.viewModel.verificationEngine.snapshot().committed == before.committed &amp;&amp; surface.viewModel.verificationEngine.snapshot().undoCount == 0)</ID>
+    <ID>MaxLineLength:V6QualificationChecks.kt$check(surface.viewModel.verificationEngine.snapshot().selection == Selection(5, 6)) { "RTL ShiftLeft must advance logical Hebrew offset" }</ID>
+    <ID>MaxLineLength:V6QualificationChecks.kt$check(surface.viewModel.verificationEngine.snapshot().selection.focus == 1) { "Actual click did not map to known Latin boundary" }</ID>
+    <ID>MaxLineLength:V6QualificationChecks.kt$check(surface.viewModel.verificationEngine.snapshot().selection.focus == before.committed.text.lastIndexOf("abcdefghij") + 8) { "Vertical preferred x was lost on short intermediate row" }</ID>
+    <ID>MaxLineLength:V6QualificationChecks.kt$check(surface.viewModel.verificationEngine.snapshot().selection.focus == before.committed.units.size &amp;&amp; surface.view.ensureCaret)</ID>
+    <ID>MaxLineLength:V6QualificationChecks.kt$check(surface.viewModel.verificationEngine.snapshot().selection.start == forward.selection.start &amp;&amp; surface.viewModel.verificationEngine.snapshot().selection.end == forward.selection.end)</ID>
     <ID>MaxLineLength:V6QualificationChecks.kt$check(z.committed == original &amp;&amp; z.visible == before.visible &amp;&amp; z.marked == before.marked &amp;&amp; z.undoCount == 0 &amp;&amp; z.sessionRevision &gt; before.sessionRevision)</ID>
     <ID>MaxLineLength:V6QualificationChecks.kt$e.replace("abc אבג xyz\nאבג abc דהו\n\nabcdefghij\nab\nabcdefghij\n" + "کتاب مُحَمَّد ".repeat(30), "fixture", true)</ID>
     <ID>MaxLineLength:V6QualificationChecks.kt$for</ID>
@@ -1406,8 +1429,10 @@
     <ID>MaxLineLength:WorkspaceHostChecks.kt$SwingUtilities.invokeLater { descendants(chooser).filterIsInstance&lt;JButton&gt;().single { it.name == "unfinished-discard" }.doClick() }</ID>
     <ID>MaxLineLength:WorkspaceHostChecks.kt$check(!surface.admissionAllowed &amp;&amp; surface.recoveryCaptureFailure!!.contains("RecoveryCaptureFailed") &amp;&amp; surface.recoveryCaptureFailure!!.contains("could not be retained"))</ID>
     <ID>MaxLineLength:WorkspaceHostChecks.kt$check(record.provenance.endsWith(context) &amp;&amp; record.text == pre.draftText &amp;&amp; record.selection == pre.selectionBefore)</ID>
-    <ID>MaxLineLength:WorkspaceHostChecks.kt$check(surface.engine.snapshot().committed == c.committed &amp;&amp; surface.engine.snapshot().undoCount == c.undoCount)</ID>
-    <ID>MaxLineLength:WorkspaceHostChecks.kt$check(surface.width == 1020 &amp;&amp; surface.engine.snapshot().committed.units[index].image!!.width == 282 &amp;&amp; surface.engine.snapshot().undoCount == c.undoCount + 1)</ID>
+    <ID>MaxLineLength:WorkspaceHostChecks.kt$check(surface.viewModel.verificationEngine.snapshot().committed == c.committed &amp;&amp; surface.imageResize == null)</ID>
+    <ID>MaxLineLength:WorkspaceHostChecks.kt$check(surface.viewModel.verificationEngine.snapshot().committed == c.committed &amp;&amp; surface.viewModel.verificationEngine.snapshot().undoCount == c.undoCount)</ID>
+    <ID>MaxLineLength:WorkspaceHostChecks.kt$check(surface.viewModel.verificationEngine.snapshot().committed.units[f.selection.start].image!!.width == 282)</ID>
+    <ID>MaxLineLength:WorkspaceHostChecks.kt$check(surface.width == 1020 &amp;&amp; surface.viewModel.verificationEngine.snapshot().committed.units[index].image!!.width == 282 &amp;&amp; surface.viewModel.verificationEngine.snapshot().undoCount == c.undoCount + 1)</ID>
     <ID>MaxLineLength:WorkspaceHostChecks.kt$edt { check(((list.model.getElementAt(0) as Pair&lt;*, *&gt;).first as WorkspaceEntry).id == other) { "Wrong recent UI row removed" } }</ID>
     <ID>MaxLineLength:WorkspaceHostChecks.kt$edt { check((list.model.getElementAt(0) as UnfinishedEntry).id == other.id) { "Removed the current selection instead of the captured row" } }</ID>
     <ID>MaxLineLength:WorkspaceHostChecks.kt$fun descendants(c: Component): List&lt;Component&gt;</ID>
@@ -1426,6 +1451,7 @@
     <ID>MaxLineLength:WorkspaceHostChecks.kt$surface.mouseMotionListeners.forEach { it.mouseDragged(MouseEvent(surface, MouseEvent.MOUSE_DRAGGED, 2, InputEvent.BUTTON1_DOWN_MASK, x + 40, y, 1, false)) }</ID>
     <ID>MaxLineLength:WorkspaceHostChecks.kt$val candidate = Window.getWindows().filterIsInstance&lt;JDialog&gt;().firstOrNull { it.isVisible &amp;&amp; it.title == "Recent documents / restore last workspace" }</ID>
     <ID>MaxLineLength:WorkspaceHostChecks.kt$val confirm = Window.getWindows().filterIsInstance&lt;JDialog&gt;().single { it.isVisible &amp;&amp; it.title == "Discard unfinished record" }</ID>
+    <ID>MaxLineLength:WorkspaceHostChecks.kt$val index = surface.viewModel.verificationEngine.snapshot().committed.units.indexOfFirst { it.kind == UnitKind.IMAGE }</ID>
     <ID>MaxLineLength:WorkspaceHostChecks.kt$w = showEditor(initial = doc, offscreenTest = true, fontProfile = "noto-nastaliq", paged = true, recoveryDirectory = dir.resolve("recovery"))</ID>
     <ID>MaxLineLength:WorkspaceHostChecks.kt$waitFor("Find query visible after open") { find.query.height &gt; 0 &amp;&amp; find.query.visibleRect.height == find.query.height &amp;&amp; w.contentPane.components.filterIsInstance&lt;WritingHeaderScroll&gt;().single().height &gt; before }</ID>
     <ID>MaxLineLength:WorkspaceHostChecks.kt$waitFor("actual discard confirmation") { Window.getWindows().filterIsInstance&lt;JDialog&gt;().any { it.isVisible &amp;&amp; it.title == "Discard unfinished record" } }</ID>
@@ -1447,9 +1473,10 @@
     <ID>MaxLineLength:WorkspaceNativeProbe.kt$s.quarantinedCallbacks += QuarantinedCallback("unverified \ud800 callback", 0, 1, s.activeImeEpoch)</ID>
     <ID>MaxLineLength:WritingChecks.kt$"scope" to "Actual offscreen shell/render/IO; synthetic key callbacks and model replacement, not real keyboard qualification"</ID>
     <ID>MaxLineLength:WritingChecks.kt$check(caret.top &gt;= 0 &amp;&amp; caret.bottom &lt;= surface.height * g.scale) { "Active caret outside viewport: $caret / ${surface.height * g.scale}" }</ID>
-    <ID>MaxLineLength:WritingChecks.kt$check(reopenedSurface.engine.snapshot().committed.same(saved) &amp;&amp; reopenedSurface.view.typography.id == "noto-nastaliq" &amp;&amp; !reopenedSurface.view.paged)</ID>
+    <ID>MaxLineLength:WritingChecks.kt$check(reopenedSurface.viewModel.verificationEngine.snapshot().committed.same(saved) &amp;&amp; reopenedSurface.view.typography.id == "noto-nastaliq" &amp;&amp; !reopenedSurface.view.paged)</ID>
     <ID>MaxLineLength:WritingChecks.kt$check(replaced.committed.text == formatted.committed.text.take(start) + "notes" + formatted.committed.text.drop(start + 7))</ID>
     <ID>MaxLineLength:WritingChecks.kt$check(sample.units.any { it.char == '\n' &amp;&amp; it.kind == UnitKind.TEXT } &amp;&amp; sample.units.any { it.kind == UnitKind.PARAGRAPH_BREAK })</ID>
+    <ID>MaxLineLength:WritingChecks.kt$check(surface.viewModel.verificationEngine.snapshot().selection.focus == sample.units.size &amp;&amp; surface.view.scroll &gt; 0)</ID>
     <ID>MaxLineLength:WritingChecks.kt$checks += "Actual asynchronous Save and shell reopen preserve exact supported raw text/styles/start style/hard-soft breaks and current presentation profile"</ID>
     <ID>MaxLineLength:WritingChecks.kt$checks += "Continuous/paged presentation leaves content/history unchanged; wheel browsing followed by typing reveals the caret"</ID>
     <ID>MaxLineLength:WritingChecks.kt$checks += "End navigation/typing scroll the caret into view; selection replacement and bold/italic have exact Undo/Redo"</ID>
@@ -1509,254 +1536,5 @@
     <ID>UseCheckOrError:ConnectedWritingChecks.kt$&lt;no name provided&gt;$throw IllegalStateException("owned publish failure")</ID>
     <ID>UseCheckOrError:JapaneseHostChecks.kt$throw IllegalStateException("Injected container attachment failure")</ID>
     <ID>UseCheckOrError:JapaneseHostChecks.kt$throw IllegalStateException("Injected endComposition failure")</ID>
-    <ID>WildcardImport:AccessibilityChecks.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:AccessibilityChecks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:AccessibilityChecks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:AccessibilityChecks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:AccessibilityChecks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:AccessibilityChecks.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:CanonicalProbeChecks.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:CanonicalProbeChecks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:CanonicalProbeChecks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:CanonicalProbeChecks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:CanonicalProbeChecks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:CanonicalProbeChecks.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:Checks.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:Checks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:Checks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:Checks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:Checks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:Checks.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:ConnectedWritingChecks.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:ConnectedWritingChecks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:ConnectedWritingChecks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:ConnectedWritingChecks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:ConnectedWritingChecks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:ConnectedWritingChecks.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:ConnectedWritingChecks.kt$import java.awt.*</ID>
-    <ID>WildcardImport:ConnectedWritingChecks.kt$import java.awt.datatransfer.*</ID>
-    <ID>WildcardImport:ConnectedWritingChecks.kt$import java.awt.event.*</ID>
-    <ID>WildcardImport:ConnectedWritingChecks.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:FileChecks.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:FileChecks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:FileChecks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:FileChecks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:FileChecks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:FileChecks.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:FindReplaceChecks.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:FindReplaceChecks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:FindReplaceChecks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:FindReplaceChecks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:FindReplaceChecks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:FindReplaceChecks.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:FindReplaceChecks.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:FontEvidence.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:FontEvidence.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:FontEvidence.kt$import org.jetbrains.skia.*</ID>
-    <ID>WildcardImport:FormatChecks.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:FormatChecks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:FormatChecks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:FormatChecks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:FormatChecks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:FormatChecks.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:GlyphClusterProbe.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:GlyphClusterProbe.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:GlyphClusterProbe.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:GlyphClusterProbe.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:GlyphClusterProbe.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:GlyphClusterProbe.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:HostChecks.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:HostChecks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:HostChecks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:HostChecks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:HostChecks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:HostChecks.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:JapaneseHostChecks.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:JapaneseHostChecks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:JapaneseHostChecks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:JapaneseHostChecks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:JapaneseHostChecks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:JapaneseHostChecks.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:LocalRecoveryChecks.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:LocalRecoveryChecks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:LocalRecoveryChecks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:LocalRecoveryChecks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:LocalRecoveryChecks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:LocalRecoveryChecks.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:LocalRecoveryChecks.kt$import java.nio.file.*</ID>
-    <ID>WildcardImport:LocalRecoveryChecks.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:Main.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:Main.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:Main.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:Main.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:Main.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:Main.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:MarkerMatrix.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:MarkerMatrix.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:MarkerMatrix.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:MarkerMatrix.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:MarkerMatrix.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:MarkerMatrix.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:MultilingualFixtures.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:MultilingualFixtures.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:MultilingualFixtures.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:MultilingualFixtures.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:MultilingualFixtures.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:MultilingualFixtures.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:NativeAccessibilityProbe.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:NativeAccessibilityProbe.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:NativeAccessibilityProbe.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:NativeAccessibilityProbe.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:NativeAccessibilityProbe.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:NativeAccessibilityProbe.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:NativeKeyboardProbe.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:NativeKeyboardProbe.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:NativeKeyboardProbe.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:NativeKeyboardProbe.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:NativeKeyboardProbe.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:NativeKeyboardProbe.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:PagePolicyChecks.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:PagePolicyChecks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:PagePolicyChecks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:PagePolicyChecks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:PagePolicyChecks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:PagePolicyChecks.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:PageProbe.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:PageProbe.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:PageProbe.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:PageProbe.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:PageProbe.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:PageProbe.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:PagedHostChecks.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:PagedHostChecks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:PagedHostChecks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:PagedHostChecks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:PagedHostChecks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:PagedHostChecks.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:PagesOutputChecks.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:PagesOutputChecks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:PagesOutputChecks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:PagesOutputChecks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:PagesOutputChecks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:PagesOutputChecks.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:PagesOutputChecks.kt$import java.nio.file.*</ID>
-    <ID>WildcardImport:PagesOutputChecks.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:ParagraphChecks.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:ParagraphChecks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:ParagraphChecks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:ParagraphChecks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:ParagraphChecks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:ParagraphChecks.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:ParagraphChecks.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:RecoveryChecks.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:RecoveryChecks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:RecoveryChecks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:RecoveryChecks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:RecoveryChecks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:RecoveryChecks.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:RecoveryUiChecks.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:RecoveryUiChecks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:RecoveryUiChecks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:RecoveryUiChecks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:RecoveryUiChecks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:RecoveryUiChecks.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:RtlHostChecks.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:RtlHostChecks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:RtlHostChecks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:RtlHostChecks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:RtlHostChecks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:RtlHostChecks.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:SchemaProbe.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:SchemaProbe.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:SchemaProbe.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:SchemaProbe.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:SchemaProbe.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:SchemaProbe.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:StressChecks.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:StressChecks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:StressChecks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:StressChecks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:StressChecks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:StressChecks.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:StructureChecks.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:StructureChecks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:StructureChecks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:StructureChecks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:StructureChecks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:StructureChecks.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:StructureChecks.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:TypographyChecks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:TypographyChecks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:TypographyChecks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:TypographyChecks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:TypographySheet.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:TypographySheet.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:TypographySheet.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:TypographySheet.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:TypographySheet.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:TypographySheet.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:TypographySheet.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:UrduChecks.kt$import androidx.compose.ui.text.*</ID>
-    <ID>WildcardImport:UrduChecks.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:UrduChecks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:UrduChecks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:UrduChecks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:UrduChecks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:UrduChecks.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:V6QualificationChecks.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:V6QualificationChecks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:V6QualificationChecks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:V6QualificationChecks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:V6QualificationChecks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:V6QualificationChecks.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:V6QualificationChecks.kt$import java.awt.event.*</ID>
-    <ID>WildcardImport:V6QualificationChecks.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:VisualRepairChecks.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:VisualRepairChecks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:VisualRepairChecks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:VisualRepairChecks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:VisualRepairChecks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:VisualRepairChecks.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:VisualRepairChecks.kt$import java.awt.*</ID>
-    <ID>WildcardImport:VisualRepairChecks.kt$import java.awt.event.*</ID>
-    <ID>WildcardImport:VisualRepairChecks.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:WebOwnerProbe.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:WebOwnerProbe.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:WebOwnerProbe.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:WebOwnerProbe.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:WebOwnerProbe.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:WebOwnerProbe.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:WorkspaceChecks.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:WorkspaceChecks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:WorkspaceChecks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:WorkspaceChecks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:WorkspaceChecks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:WorkspaceChecks.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:WorkspaceChecks.kt$import java.nio.file.*</ID>
-    <ID>WildcardImport:WorkspaceHostChecks.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:WorkspaceHostChecks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:WorkspaceHostChecks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:WorkspaceHostChecks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:WorkspaceHostChecks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:WorkspaceHostChecks.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:WorkspaceHostChecks.kt$import java.awt.*</ID>
-    <ID>WildcardImport:WorkspaceHostChecks.kt$import java.awt.event.*</ID>
-    <ID>WildcardImport:WorkspaceHostChecks.kt$import java.nio.file.*</ID>
-    <ID>WildcardImport:WorkspaceHostChecks.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:WorkspaceNativeProbe.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:WorkspaceNativeProbe.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:WorkspaceNativeProbe.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:WorkspaceNativeProbe.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:WorkspaceNativeProbe.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:WorkspaceNativeProbe.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:WorkspaceNativeProbe.kt$import java.nio.file.*</ID>
-    <ID>WildcardImport:WorkspaceNativeProbe.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:WritingChecks.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:WritingChecks.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:WritingChecks.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:WritingChecks.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:WritingChecks.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:WritingChecks.kt$import dev.shayxo.composedoc.workspace.*</ID>
-    <ID>WildcardImport:WritingChecks.kt$import javax.swing.*</ID>
   </CurrentIssues>
 </SmellBaseline>

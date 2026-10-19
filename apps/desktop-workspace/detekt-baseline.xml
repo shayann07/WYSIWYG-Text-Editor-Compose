@@ -21,19 +21,18 @@
     <ID>CyclomaticComplexMethod:StructureControls.kt$StructureControls$fun refresh()</ID>
     <ID>CyclomaticComplexMethod:StructureControls.kt$StructureControls$private fun linkDialog()</ID>
     <ID>CyclomaticComplexMethod:UnfinishedController.kt$UnfinishedController$@Synchronized fun flush()</ID>
-    <ID>CyclomaticComplexMethod:UnfinishedController.kt$UnfinishedController$fun observe(engine: EditorEngine, session: RecoverySession, path: Path?, native: QuarantinedCallback? = null)</ID>
+    <ID>CyclomaticComplexMethod:UnfinishedController.kt$UnfinishedController$fun observe(viewModel: EditorViewModel, session: RecoverySession, path: Path?, native: QuarantinedCallback? = null)</ID>
     <ID>CyclomaticComplexMethod:UnfinishedRecoveryUi.kt$fun showUnfinishedRecovery(directory: Path, fontProfile: String, paged: Boolean, onlyIfNeeded: Boolean = false, offscreen: Boolean = false): JFrame</ID>
     <ID>CyclomaticComplexMethod:WindowFiles.kt$WindowFiles$fun close(choice: Int? = null)</ID>
     <ID>CyclomaticComplexMethod:WindowFiles.kt$WindowFiles$fun exportQuarantinedInput(entries: List&lt;QuarantinedCallback&gt;, destination: Path? = null)</ID>
     <ID>CyclomaticComplexMethod:WindowFiles.kt$WindowFiles$fun save(asNew: Boolean = false, closeAfter: Boolean = false)</ID>
     <ID>CyclomaticComplexMethod:WorkspaceUi.kt$WorkspaceUi$fun showRecent(onlyRestore: Boolean = false)</ID>
-    <ID>CyclomaticComplexMethod:WorkspaceUi.kt$WorkspaceUi$private fun pageDialog()</ID>
     <ID>CyclomaticComplexMethod:WritingControls.kt$WritingControls$fun refresh()</ID>
     <ID>LongMethod:DesktopWorkspace.kt$@JvmOverloads fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList()), initialPath: java.nio.file.Path? = null, trace: ImeTrace? = null, traceLanguage: String? = null, offscreenTest: Boolean = false, windowLocation: Point? = null, fontProfile: String = "system", paged: Boolean = false, recoveryDirectory: java.nio.file.Path? = null): JFrame</ID>
     <ID>LongMethod:LocalRecoveryUi.kt$fun showLocalRecovery( directory: Path, fontProfile: String, paged: Boolean, onlyIfNeeded: Boolean = false, offscreenTest: Boolean = false, confirmDiscardForChecks: ((LocalRecoveryEntry) -&gt; Boolean)? = null, ): JFrame</ID>
     <ID>LongMethod:PageOutputUi.kt$PageOutputUi$private fun preview()</ID>
     <ID>LongMethod:PagesSample.kt$fun pagesWritingSample(): Document</ID>
-    <ID>LongMethod:UnfinishedController.kt$UnfinishedController$fun observe(engine: EditorEngine, session: RecoverySession, path: Path?, native: QuarantinedCallback? = null)</ID>
+    <ID>LongMethod:UnfinishedController.kt$UnfinishedController$fun observe(viewModel: EditorViewModel, session: RecoverySession, path: Path?, native: QuarantinedCallback? = null)</ID>
     <ID>LongMethod:UnfinishedRecoveryUi.kt$fun showUnfinishedRecovery(directory: Path, fontProfile: String, paged: Boolean, onlyIfNeeded: Boolean = false, offscreen: Boolean = false): JFrame</ID>
     <ID>LongMethod:WindowFiles.kt$WindowFiles$fun save(asNew: Boolean = false, closeAfter: Boolean = false)</ID>
     <ID>LongMethod:WorkspaceUi.kt$WorkspaceUi$fun showRecent(onlyRestore: Boolean = false)</ID>
@@ -231,25 +230,25 @@
     <ID>MaxLineLength:DesktopWorkspace.kt$files.pendingRecoveryDescription = { "${surface.recoverySession.snapshotRetainedDrafts().size} retained draft(s) and ${surface.quarantinedCallbacks.size} unverified input callback(s)" }</ID>
     <ID>MaxLineLength:DesktopWorkspace.kt$fun</ID>
     <ID>MaxLineLength:DesktopWorkspace.kt$fun windowLayeredPane(window: JFrame): JLayeredPane?</ID>
-    <ID>MaxLineLength:DesktopWorkspace.kt$if (draft != null &amp;&amp; surface.engine.applyRecoveredDraft(draft) == RecoveryApplyResult.Applied)surface.engine.snapshot().committed else null</ID>
+    <ID>MaxLineLength:DesktopWorkspace.kt$if (draft != null &amp;&amp; surface.viewModel.dispatch(EditorIntent.ApplyRecoveredDraft(draft)) == RecoveryApplyResult.Applied)surface.viewModel.snapshot().committed else null</ID>
     <ID>MaxLineLength:DesktopWorkspace.kt$if (traceLanguage != null) SwingUtilities.invokeLater { picker.selectedItem = languages.entries.first { it.value == traceLanguage }.key }</ID>
     <ID>MaxLineLength:DesktopWorkspace.kt$javax.swing.JOptionPane.showMessageDialog(window, javax.swing.JScrollPane(area), "Retained draft text — export preserves formatting", javax.swing.JOptionPane.INFORMATION_MESSAGE)</ID>
-    <ID>MaxLineLength:DesktopWorkspace.kt$localRecovery = LocalRecoveryController(LocalRecoveryStore(recoveryDirectory), refresh = { surface.statusChanged(engine.snapshot()) })</ID>
+    <ID>MaxLineLength:DesktopWorkspace.kt$localRecovery = LocalRecoveryController(LocalRecoveryStore(recoveryDirectory), refresh = { surface.statusChanged(viewModel.snapshot()) })</ID>
     <ID>MaxLineLength:DesktopWorkspace.kt$notice.text = files.status + (if (f.notice == "Ready")"" else " · ${f.notice}") + degradedNote + (if (surface.clipboardMessage.isEmpty()) "" else " · ${surface.clipboardMessage}") + (if (StoredFonts.unavailable.isEmpty()) "" else " · Missing stored font: System fallback")</ID>
     <ID>MaxLineLength:DesktopWorkspace.kt$position.text = "${counts.words} word-like runs · ${counts.units} UTF-16 units · ${counts.selected} selected units"</ID>
     <ID>MaxLineLength:DesktopWorkspace.kt$position.toolTipText = "Committed counts; whitespace separates runs containing letters/digits/symbols. Joiners/marks stay in runs; not linguistic tokenization. Selected count is visible UTF-16 range."</ID>
     <ID>MaxLineLength:DesktopWorkspace.kt$showEditor(initial = document, initialPath = source, fontProfile = state.typography.id, paged = state.paged, offscreenTest = offscreenTest, recoveryDirectory = recoveryDirectory)</ID>
-    <ID>MaxLineLength:DesktopWorkspace.kt$trace.record("select-input", "requested=$tag; accepted=$accepted; actual=${ctx?.locale}; compositionEnabled=$compositionEnabled", engine.snapshot())</ID>
-    <ID>MaxLineLength:DesktopWorkspace.kt$trace.record("session-start", "Live input test mode; no synthetic injection. OS=${System.getProperty("os.name")}; Java=${System.getProperty("java.version")}", engine.snapshot())</ID>
+    <ID>MaxLineLength:DesktopWorkspace.kt$trace.record("select-input", "requested=$tag; accepted=$accepted; actual=${ctx?.locale}; compositionEnabled=$compositionEnabled", viewModel.snapshot())</ID>
+    <ID>MaxLineLength:DesktopWorkspace.kt$trace.record("session-start", "Live input test mode; no synthetic injection. OS=${System.getProperty("os.name")}; Java=${System.getProperty("java.version")}", viewModel.snapshot())</ID>
     <ID>MaxLineLength:DesktopWorkspace.kt$unfinishedStatus.text = (surface.recoveryCaptureFailure ?: unfinishedRecovery?.status() ?: "") + (workspaceUi?.warning?.let { " · $it" } ?: "")</ID>
     <ID>MaxLineLength:DesktopWorkspace.kt$val</ID>
     <ID>MaxLineLength:DesktopWorkspace.kt$val accepted = surface.selectInputLocale(java.util.Locale.forLanguageTag(tag), compositionEnabled = if (tag == "ja-JP") true else null)</ID>
-    <ID>MaxLineLength:DesktopWorkspace.kt$val bold = button("Bold", "Toggle bold (Ctrl+B)") { if (surface.admissionAllowed) engine.toggleFormat(FormatKey.BOLD) }</ID>
+    <ID>MaxLineLength:DesktopWorkspace.kt$val bold = button("Bold", "Toggle bold (Ctrl+B)") { if (surface.admissionAllowed) viewModel.dispatch(EditorIntent.ToggleFormat(FormatKey.BOLD)) }</ID>
     <ID>MaxLineLength:DesktopWorkspace.kt$val compositionEnabled = if (accepted &amp;&amp; tag == "ja-JP") runCatching { ctx?.isCompositionEnabled }.getOrNull() else null</ID>
     <ID>MaxLineLength:DesktopWorkspace.kt$val degradedNote = if (!surface.admissionAllowed &amp;&amp; surface.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED) " · Input paused (degraded recovery) — Save available" else ""</ID>
     <ID>MaxLineLength:DesktopWorkspace.kt$val exportInput = quarantineButton("Export Input") { files.exportQuarantinedInput(surface.quarantinedCallbacks.toList()) }</ID>
-    <ID>MaxLineLength:DesktopWorkspace.kt$val italic = button("Italic", "Toggle italic (Ctrl+I)") { if (surface.admissionAllowed) engine.toggleFormat(FormatKey.ITALIC) }</ID>
-    <ID>MaxLineLength:DesktopWorkspace.kt$var surface = EditorSurface(engine, state, diagnostics, trace, services = EditorPlatformServices(DocumentFiles, FragmentCodec))</ID>
+    <ID>MaxLineLength:DesktopWorkspace.kt$val italic = button("Italic", "Toggle italic (Ctrl+I)") { if (surface.admissionAllowed) viewModel.dispatch(EditorIntent.ToggleFormat(FormatKey.ITALIC)) }</ID>
+    <ID>MaxLineLength:DesktopWorkspace.kt$var surface = EditorSurface(viewModel, state, diagnostics, trace, services = EditorPlatformServices(DocumentFiles, FragmentCodec))</ID>
     <ID>MaxLineLength:FindReplaceUi.kt$FindReplaceUi$action(window.rootPane, "ESCAPE", "editor.closeFind", JComponent.WHEN_IN_FOCUSED_WINDOW) { if (panel.isVisible) close() }</ID>
     <ID>MaxLineLength:FindReplaceUi.kt$FindReplaceUi$class</ID>
     <ID>MaxLineLength:FindReplaceUi.kt$FindReplaceUi$matches.any { !it.editable } -&gt; "${matches.count { !it.editable }} split a grapheme: no expanded replacement; Replace All disabled."</ID>
@@ -279,8 +278,9 @@
     <ID>MaxLineLength:PageOutputUi.kt$PageOutputUi$JOptionPane.showMessageDialog(window, s.view.layoutError ?: plan?.relaxations?.joinToString("\n")?.ifEmpty { "No pagination constraint was relaxed. Fixed paper size; fit-width and zoom are presentation only." } ?: "Layout is not ready")</ID>
     <ID>MaxLineLength:PageOutputUi.kt$PageOutputUi$button("PDF status…", "pdf-output-status") { JOptionPane.showMessageDialog(window, "Semantic PDF export is not qualified. The pinned paragraph binding does not expose the actual positioned glyph/cluster stream; independent shaping failed the mixed-script witness. Print preview uses actual captured page pictures, not searchable PDF. Your document is unchanged.", "PDF bridge blocked", JOptionPane.INFORMATION_MESSAGE) }</ID>
     <ID>MaxLineLength:PageOutputUi.kt$PageOutputUi$class</ID>
-    <ID>MaxLineLength:PageOutputUi.kt$PageOutputUi$if (content.same(old) || s.engine.applyStructure(capture, StructureCommand.Running(content)))null else "Change refused; finish input and retry"</ID>
-    <ID>MaxLineLength:PageOutputUi.kt$PageOutputUi$if (values.all { it == rules } || s.engine.applyStructure(capture, StructureCommand.Pagination(rules)))null else "Command refused; finish input and retry"</ID>
+    <ID>MaxLineLength:PageOutputUi.kt$PageOutputUi$if (content.same(old) || s.viewModel.dispatch(EditorIntent.ApplyStructure(capture, StructureCommand.Running(content))))null else "Change refused; finish input and retry"</ID>
+    <ID>MaxLineLength:PageOutputUi.kt$PageOutputUi$if (s.viewModel.clipboardCapture() != capture)return@apply "Document changed; reopen running content"</ID>
+    <ID>MaxLineLength:PageOutputUi.kt$PageOutputUi$if (values.all { it == rules } || s.viewModel.dispatch(EditorIntent.ApplyStructure(capture, StructureCommand.Pagination(rules))))null else "Command refused; finish input and retry"</ID>
     <ID>MaxLineLength:PageOutputUi.kt$PageOutputUi$if (warnings.isNotEmpty() &amp;&amp; JOptionPane.showConfirmDialog(dialog, warnings.joinToString("\n") + "\nContinue with ${if (fit.isSelected)"uniform fit" else "actual size"}?", "Printer geometry", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION)return@addActionListener</ID>
     <ID>MaxLineLength:PageOutputUi.kt$PageOutputUi$listOf("" to before, "" to next, "" to lines, "Widows (last-page lines1-5)" to widows, "Orphans (first-page lines1-5)" to orphans)</ID>
     <ID>MaxLineLength:PageOutputUi.kt$PageOutputUi$return RunningFlow(previous?.id ?: java.util.UUID.randomUUID().toString(), c.text.text, (previous?.style ?: TextStyleFlags()).copy(bold = c.bold.isSelected, italic = c.italic.isSelected, font = StoredFont.entries[c.font.selectedIndex], size = size), c.direction.selectedItem as ParagraphDirection, c.alignment.selectedItem as ParagraphAlignment, field)</ID>
@@ -292,9 +292,10 @@
     <ID>MaxLineLength:PageOutputUi.kt$PageOutputUi$val note = JLabel("Captured revision${plan.revision};${plan.pageCount} pages; ${plan.document.pageSettings.paper}")</ID>
     <ID>MaxLineLength:PageOutputUi.kt$PageOutputUi$val values = capture.basis.document.targetParagraphs(capture.selection).map { it.properties.pagination }.distinct()</ID>
     <ID>MaxLineLength:PageOutputUi.kt$PageOutputUi$window.rootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("control ENTER"), "explicit-page-break")</ID>
+    <ID>MaxLineLength:PageOutputUi.kt$PageOutputUi.&lt;no name provided&gt;$if (surface().admissionAllowed &amp;&amp; !busy())surface().viewModel.dispatch(EditorIntent.Structure(StructureCommand.PageBreak))</ID>
     <ID>MaxLineLength:PagesSample.kt$d = d.copy(units = d.units.mapIndexed { index, u -&gt; if (index + 1 in chapterStarts &amp;&amp; index &gt; 0)u.copy(char = '\u000c', structuralBreak = StructuralBreak.PAGE) else u })</ID>
     <ID>MaxLineLength:PagesSample.kt$d = d.patchParagraphs(d.paragraphs().associate { p -&gt; p.anchor to p.properties.copy(item = items[p.properties.item] ?: "", parent = items[p.properties.parent] ?: "") })</ID>
-    <ID>MaxLineLength:PagesSample.kt$e.structure(StructureCommand.InsertImage(ImageBlock(image.first, 240, "مقامی نیلا دائرہ اور دو لکیریں — generated illustration"), image.second))</ID>
+    <ID>MaxLineLength:PagesSample.kt$e.dispatch(EditorIntent.Structure(StructureCommand.InsertImage(ImageBlock(image.first, 240, "مقامی نیلا دائرہ اور دو لکیریں — generated illustration"), image.second)))</ID>
     <ID>MaxLineLength:PagesSample.kt$footer = RunningFlow(java.util.UUID.nameUUIDFromBytes("sample-footer".toByteArray()).toString(), "صفحہ", style = TextStyleFlags(font = StoredFont.NOTO_NASTALIQ, size = 16), alignment = ParagraphAlignment.CENTER, field = RunningField.PAGE_TOTAL)</ID>
     <ID>MaxLineLength:PagesSample.kt$fun style(s: TextStyleFlags)</ID>
     <ID>MaxLineLength:PagesSample.kt$header = RunningFlow(java.util.UUID.nameUUIDFromBytes("sample-header".toByteArray()).toString(), "اردو تحریر — Disposable engineering specimen", style = TextStyleFlags(font = StoredFont.NOTO_NASTALIQ, size = 16))</ID>
@@ -304,16 +305,16 @@
     <ID>MaxLineLength:PagesSample.kt$units = d.units.mapIndexed { index, u -&gt; if (u.kind == UnitKind.TEXT)u.copy(style = u.style.copy(font = if (index &lt; middle)StoredFont.NOTO_NASTALIQ else StoredFont.GULZAR)) else u }</ID>
     <ID>MaxLineLength:PagesSample.kt$val chapterStarts = d.paragraphs().filter { d.text.substring(it.start, it.end).startsWith("باب ") }.map { it.start }.toSet()</ID>
     <ID>MaxLineLength:PagesSample.kt$val items = d.paragraphs().map { it.properties.item }.filter { it.isNotEmpty() }.distinct().mapIndexed { i, s -&gt; s to "pages-item-$i" }.toMap()</ID>
-    <ID>MaxLineLength:ParagraphControls.kt$ParagraphControls$surface().engine.setParagraphProperties(alignment = ParagraphAlignment.entries[alignment.selectedIndex - 1])</ID>
-    <ID>MaxLineLength:ParagraphControls.kt$ParagraphControls$surface().engine.setParagraphProperties(direction = ParagraphDirection.entries[direction.selectedIndex - 1])</ID>
+    <ID>MaxLineLength:ParagraphControls.kt$ParagraphControls$surface().viewModel.dispatch(EditorIntent.SetParagraphProperties(alignment = ParagraphAlignment.entries[alignment.selectedIndex - 1]))</ID>
+    <ID>MaxLineLength:ParagraphControls.kt$ParagraphControls$surface().viewModel.dispatch(EditorIntent.SetParagraphProperties(direction = ParagraphDirection.entries[direction.selectedIndex - 1]))</ID>
     <ID>MaxLineLength:ResponsiveControls.kt$WrappingControls$Dimension(maxOf(width, rowWidth) + insets.left + insets.right + hgap * 2, height + rowHeight + insets.top + insets.bottom + vgap * 2)</ID>
     <ID>MaxLineLength:ResponsiveControls.kt$WritingHeaderScroll$class</ID>
     <ID>MaxLineLength:ResponsiveControls.kt$WritingTabs$return Dimension(original.width, active.preferredSize.height + getFontMetrics(font).height + insets.top + insets.bottom + 12)</ID>
-    <ID>MaxLineLength:StructureControls.kt$StructureControls$!s.admissionAllowed || s.engine.clipboardCapture() != capture -&gt; "Target changed; cancel and insert again."</ID>
-    <ID>MaxLineLength:StructureControls.kt$StructureControls$!s.engine.applyStructure(c, StructureCommand.ImageProperties(n, alt.text)) -&gt; "Image update rejected; cancel and select one image."</ID>
-    <ID>MaxLineLength:StructureControls.kt$StructureControls$!s.engine.applyStructure(capture, StructureCommand.InsertImage(ImageBlock(id, 240, alt.text), data)) -&gt; "Insertion rejected; document kept."</ID>
-    <ID>MaxLineLength:StructureControls.kt$StructureControls$!surface().engine.applyStructure(c, StructureCommand.MarkerStyle(MarkerTypography(family.selectedItem as StoredFont, n))) -&gt; "Select list items with a different marker style."</ID>
-    <ID>MaxLineLength:StructureControls.kt$StructureControls$!surface().engine.applyStructure(c, StructureCommand.Restart(n)) -&gt; "Command not applied. Select a numbered item or cancel."</ID>
+    <ID>MaxLineLength:StructureControls.kt$StructureControls$!s.admissionAllowed || s.viewModel.clipboardCapture() != capture -&gt; "Target changed; cancel and insert again."</ID>
+    <ID>MaxLineLength:StructureControls.kt$StructureControls$!s.viewModel.dispatch(EditorIntent.ApplyStructure(c, StructureCommand.ImageProperties(n, alt.text))) -&gt; "Image update rejected; cancel and select one image."</ID>
+    <ID>MaxLineLength:StructureControls.kt$StructureControls$!s.viewModel.dispatch(EditorIntent.ApplyStructure(capture, StructureCommand.InsertImage(ImageBlock(id, 240, alt.text), data))) -&gt; "Insertion rejected; document kept."</ID>
+    <ID>MaxLineLength:StructureControls.kt$StructureControls$!surface().viewModel.dispatch(EditorIntent.ApplyStructure(c, StructureCommand.MarkerStyle(MarkerTypography(family.selectedItem as StoredFont, n)))) -&gt; "Select list items with a different marker style."</ID>
+    <ID>MaxLineLength:StructureControls.kt$StructureControls$!surface().viewModel.dispatch(EditorIntent.ApplyStructure(c, StructureCommand.Restart(n))) -&gt; "Command not applied. Select a numbered item or cancel."</ID>
     <ID>MaxLineLength:StructureControls.kt$StructureControls$(panel.components.filterIsInstance&lt;Container&gt;().flatMap { it.components.toList() }).firstOrNull { it.name == "restart-list" }?.isEnabled = capturedActions</ID>
     <ID>MaxLineLength:StructureControls.kt$StructureControls$addActionListener { width.text = ((p?.contentWidth?.div(s.geometry()!!.scale * s.view.zoom)) ?: 600f).toInt().coerceIn(10, 600).toString() }</ID>
     <ID>MaxLineLength:StructureControls.kt$StructureControls$class</ID>
@@ -321,24 +322,24 @@
     <ID>MaxLineLength:StructureControls.kt$StructureControls$if</ID>
     <ID>MaxLineLength:StructureControls.kt$StructureControls$if (!remove &amp;&amp; (!runCatching { LinkValue("check", uri.text).activatable() }.getOrDefault(false)))return "Use an absolute http, https or mailto URI."</ID>
     <ID>MaxLineLength:StructureControls.kt$StructureControls$if (!remove &amp;&amp; inserting &amp;&amp; (label.text.isEmpty() || label.text.length &gt; 4096 || label.text.any { it == '\n' || it == '\ufffc' }))return "Supply a single-line label of 1–4096 units."</ID>
-    <ID>MaxLineLength:StructureControls.kt$StructureControls$if (!s.admissionAllowed || !s.engine.applyStructure(c, StructureCommand.ReplaceImage(id, data)))JOptionPane.showMessageDialog(window, "Image target changed; replacement refused. Old image kept.")</ID>
-    <ID>MaxLineLength:StructureControls.kt$StructureControls$if (!s.engine.applyStructure(c, StructureCommand.Link(if (remove)null else uri.text, label.text)))return "No change applied; select linked text or cancel."</ID>
-    <ID>MaxLineLength:StructureControls.kt$StructureControls$if (s.admissionAllowed &amp;&amp; c.basis.document.units.subList(c.selection.start, c.selection.end).singleOrNull()?.image != null)s.engine.clipboardApply(c, null, plain = "", cut = true)</ID>
+    <ID>MaxLineLength:StructureControls.kt$StructureControls$if (!s.admissionAllowed || !s.viewModel.dispatch(EditorIntent.ApplyStructure(c, StructureCommand.ReplaceImage(id, data))))JOptionPane.showMessageDialog(window, "Image target changed; replacement refused. Old image kept.")</ID>
+    <ID>MaxLineLength:StructureControls.kt$StructureControls$if (!s.viewModel.dispatch(EditorIntent.ApplyStructure(c, StructureCommand.Link(if (remove)null else uri.text, label.text))))return "No change applied; select linked text or cancel."</ID>
+    <ID>MaxLineLength:StructureControls.kt$StructureControls$if (s.admissionAllowed &amp;&amp; c.basis.document.units.subList(c.selection.start, c.selection.end).singleOrNull()?.image != null)s.viewModel.dispatch(EditorIntent.ApplyClipboard(c, null, plain = "", cut = true))</ID>
     <ID>MaxLineLength:StructureControls.kt$StructureControls$if (value.activatable())runCatching { Desktop.getDesktop().browse(java.net.URI(value.uri)) }.onFailure { JOptionPane.showMessageDialog(window, "Link could not be opened: ${it.message}") }</ID>
     <ID>MaxLineLength:StructureControls.kt$StructureControls$imageProperties.isEnabled = s.admissionAllowed &amp;&amp; !busy() &amp;&amp; f.marked == null &amp;&amp; f.visible.units.subList(f.selection.start, f.selection.end).singleOrNull()?.image != null</ID>
     <ID>MaxLineLength:StructureControls.kt$StructureControls$imageProperties.toolTipText = "Select an image; edit width10–600 document dp and alternative text. Aspect ratio remains fixed"</ID>
     <ID>MaxLineLength:StructureControls.kt$StructureControls$insertImage.toolTipText = "Embed local PNG/JPEG; bytes owned by document. Oversize display fits page proportionally"</ID>
     <ID>MaxLineLength:StructureControls.kt$StructureControls$list.addActionListener { if (!refreshing &amp;&amp; list.selectedIndex &gt; 0)command(StructureCommand.ListType(ListKind.entries[list.selectedIndex - 1])) }</ID>
     <ID>MaxLineLength:StructureControls.kt$StructureControls$role.addActionListener { if (!refreshing &amp;&amp; role.selectedIndex &gt; 0)command(StructureCommand.Role(role.selectedIndex - 1)) }</ID>
-    <ID>MaxLineLength:StructureControls.kt$StructureControls$surface().engine.clipboardCapture() != c -&gt; "Target changed; cancel and reopen Marker style."</ID>
-    <ID>MaxLineLength:StructureControls.kt$StructureControls$surface().engine.clipboardCapture() != c -&gt; "Target changed; cancel and reopen Restart."</ID>
-    <ID>MaxLineLength:StructureControls.kt$StructureControls$val current = s.engine.snapshot().let { f -&gt; f.committed.paragraphs().lastOrNull { it.start &lt;= f.selection.focus &amp;&amp; it.properties.heading &gt; 0 } }</ID>
+    <ID>MaxLineLength:StructureControls.kt$StructureControls$surface().viewModel.clipboardCapture() != c -&gt; "Target changed; cancel and reopen Marker style."</ID>
+    <ID>MaxLineLength:StructureControls.kt$StructureControls$surface().viewModel.clipboardCapture() != c -&gt; "Target changed; cancel and reopen Restart."</ID>
+    <ID>MaxLineLength:StructureControls.kt$StructureControls$val current = s.viewModel.snapshot().let { f -&gt; f.committed.paragraphs().lastOrNull { it.start &lt;= f.selection.focus &amp;&amp; it.properties.heading &gt; 0 } }</ID>
     <ID>MaxLineLength:StructureControls.kt$StructureControls$val image = c.basis.document.units.subList(c.selection.start, c.selection.end).singleOrNull()?.image ?: return@addActionListener</ID>
     <ID>MaxLineLength:StructureControls.kt$StructureControls$val picker = JFileChooser().apply { dialogTitle = "Replace selected image — preserve width and alternative text" }</ID>
     <ID>MaxLineLength:StructureControls.kt$StructureControls$val values = d.units.subList(f.selection.start, f.selection.end).filter { it.kind == UnitKind.TEXT }.map { it.style.link }.distinct()</ID>
     <ID>MaxLineLength:StructureControls.kt$StructureControls$validatedDialog(window, title, "link-dialog", listOf((if (inserting)"Label" else "Target text (displayed graphemes)") to label, "URI (http/https/mailto)" to uri), listOf("Apply" to { apply(false) }, "Remove" to { apply(true) }))</ID>
-    <ID>MaxLineLength:StructuredSample.kt$e.replace("\nساختی نمونہ — Structured sample\nپہلی فہرست کی شق\nاس شق کا دوسرا پیراگراف\nNested English item\nدوسری شق\n\n", "sample", true)</ID>
-    <ID>MaxLineLength:StructuredSample.kt$owner.structure(StructureCommand.InsertImage(ImageBlock(image.first, 240, "مقامی نمونہ: نیلا دائرہ اور دو لکیریں — blue circle and lines"), image.second))</ID>
+    <ID>MaxLineLength:StructuredSample.kt$e.dispatch(EditorIntent.Type("\nساختی نمونہ — Structured sample\nپہلی فہرست کی شق\nاس شق کا دوسرا پیراگراف\nNested English item\nدوسری شق\n\n", "sample", true))</ID>
+    <ID>MaxLineLength:StructuredSample.kt$owner.dispatch(EditorIntent.Structure(StructureCommand.InsertImage(ImageBlock(image.first, 240, "مقامی نمونہ: نیلا دائرہ اور دو لکیریں — blue circle and lines"), image.second)))</ID>
     <ID>MaxLineLength:StructuredSample.kt$return remapped.copy(units = remapped.units.map { u -&gt; u.copy(style = u.style.copy(link = u.style.link?.copy(id = "sample-link-1"))) })</ID>
     <ID>MaxLineLength:StructuredSample.kt$sample = sample.patchParagraphs(mapOf(n.anchor to n.properties.copy(item = freshStructureId(), parent = item.item, list = ListKind.BULLET, direction = ParagraphDirection.LTR), s.anchor to s.properties.copy(item = freshStructureId(), list = ListKind.NUMBER)))</ID>
     <ID>MaxLineLength:StructuredSample.kt$val ids = result.paragraphs().map { it.properties.item }.filter { it.isNotEmpty() }.distinct().withIndex().associate { it.value to "sample-item-${it.index + 1}" }</ID>
@@ -353,6 +354,7 @@
     <ID>MaxLineLength:UnfinishedController.kt$UnfinishedController$check(r.generation == capturedGeneration) { "Selected recovery version changed; inspect the new version before resolving it" }</ID>
     <ID>MaxLineLength:UnfinishedController.kt$UnfinishedController$class</ID>
     <ID>MaxLineLength:UnfinishedController.kt$UnfinishedController$failed("Apply result is in memory; durable resolution failed, record kept: ${e.message}")</ID>
+    <ID>MaxLineLength:UnfinishedController.kt$UnfinishedController$fun</ID>
     <ID>MaxLineLength:UnfinishedController.kt$UnfinishedController$key</ID>
     <ID>MaxLineLength:UnfinishedController.kt$UnfinishedController$old.mapNotNull { it.record }.filter { r -&gt; current.none { it.id == r.id } }.forEach { store.resolve(lease, it, task.accepted) }</ID>
     <ID>MaxLineLength:UnfinishedController.kt$UnfinishedController$private val executor = java.util.concurrent.Executors.newSingleThreadExecutor { r -&gt; Thread(r, "unfinished-recovery").apply { isDaemon = true } }</ID>
@@ -376,6 +378,9 @@
     <ID>MaxLineLength:UnfinishedRecoveryUi.kt$val</ID>
     <ID>MaxLineLength:UnfinishedRecoveryUi.kt$val editor = showEditor(initial = draft, fontProfile = fontProfile, paged = paged, recoveryDirectory = directory.parent, offscreenTest = offscreen)</ID>
     <ID>MaxLineLength:UnfinishedRecoveryUi.kt$work</ID>
+    <ID>MaxLineLength:UrduWriting.kt$e.dispatch(EditorIntent.SetParagraphProperties(ParagraphDirection.LTR, ParagraphAlignment.START, before = 8, after = 12))</ID>
+    <ID>MaxLineLength:UrduWriting.kt$e.dispatch(EditorIntent.SetParagraphProperties(ParagraphDirection.RTL, ParagraphAlignment.CENTER, after = 16, line = 1250))</ID>
+    <ID>MaxLineLength:UrduWriting.kt$e.dispatch(EditorIntent.SetTextStyle(TextStylePatch(font = StoredFont.NOTO_NASTALIQ, size = 32, color = 0x174ea6, underline = true)))</ID>
     <ID>MaxLineLength:UrduWriting.kt$val introduction = "اردو تحریر — مشق کی دستاویز\nیہ صرف آزمائشی نمونہ ہے۔ اسے بدل کر اپنی الگ فائل محفوظ کریں۔ ماہر لسانی جائزہ نہیں ہوا۔\nDisposable writing sample — no expert linguistic review.\n"</ID>
     <ID>MaxLineLength:UrduWriting.kt$val paragraph = "صبح کی روشنی میں ہم نے کتاب کھولی اور اپنے شہر کے بارے میں لکھنا شروع کیا۔ گلی میں بچے کھیل رہے تھے اور باغ میں پرندوں کی آواز سنائی دے رہی تھی۔ ہر پیراگراف میں ایک خیال مکمل کریں، پھر اگلی بات نئے پیراگراف سے شروع کریں۔ "</ID>
     <ID>MaxLineLength:ValidatedControls.kt$combo.preferredSize = Dimension(maxOf(d.width, width + combo.insets.left + combo.insets.right + 36), maxOf(d.height, 26))</ID>
@@ -414,7 +419,7 @@
     <ID>MaxLineLength:WorkspaceUi.kt$WorkspaceUi$id</ID>
     <ID>MaxLineLength:WorkspaceUi.kt$WorkspaceUi$if</ID>
     <ID>MaxLineLength:WorkspaceUi.kt$WorkspaceUi$if (f.marked == null &amp;&amp; f.visible.same(f.committed))f.selection else Selection(0, 0)</ID>
-    <ID>MaxLineLength:WorkspaceUi.kt$WorkspaceUi$if (p == old || s.engine.applyStructure(c, StructureCommand.Pages(p)))null else "Page change refused; finish composition and retry."</ID>
+    <ID>MaxLineLength:WorkspaceUi.kt$WorkspaceUi$if (p == old || s.viewModel.dispatch(EditorIntent.ApplyStructure(c, StructureCommand.Pages(p))))null else "Page change refused; finish composition and retry."</ID>
     <ID>MaxLineLength:WorkspaceUi.kt$WorkspaceUi$if (picker.showOpenDialog(dialog) == JFileChooser.APPROVE_OPTION)open(e, picker.selectedFile.toPath(), true)</ID>
     <ID>MaxLineLength:WorkspaceUi.kt$WorkspaceUi$note.text = "No unchanged named files to restore. Choose Locate/Open or recovery for changed, missing and unsaved entries."</ID>
     <ID>MaxLineLength:WorkspaceUi.kt$WorkspaceUi$note.text = "Restoring matching named files. Changed/missing/unsaved entries remain for explicit recovery choices."</ID>
@@ -435,12 +440,16 @@
     <ID>MaxLineLength:WorkspaceUi.kt$private fun workspaceProcessAlive(e: WorkspaceEntry)</ID>
     <ID>MaxLineLength:WritingControls.kt$WritingControls$(text.components + spacing.components).filter { it !is JLabel }.forEach { it.isEnabled = surface().admissionAllowed &amp;&amp; !busy() }</ID>
     <ID>MaxLineLength:WritingControls.kt$WritingControls$color.toolTipText = if (rgb != null &amp;&amp; rgb &gt;= 0) "Stored RGB #%06X; Default ink clears override".format(rgb) else "Default ink or mixed values"</ID>
-    <ID>MaxLineLength:WritingControls.kt$WritingControls$family.addActionListener { edit { if (family.selectedIndex &gt; 0) surface().engine.setTextStyle(TextStylePatch(font = StoredFont.entries[family.selectedIndex - 1])) } }</ID>
+    <ID>MaxLineLength:WritingControls.kt$WritingControls$family.addActionListener { edit { if (family.selectedIndex &gt; 0) surface().viewModel.dispatch(EditorIntent.SetTextStyle(TextStylePatch(font = StoredFont.entries[family.selectedIndex - 1]))) } }</ID>
     <ID>MaxLineLength:WritingControls.kt$WritingControls$family.toolTipText = "Stored font overrides Preview; missing candidates fall back to System without rewriting the file"</ID>
-    <ID>MaxLineLength:WritingControls.kt$WritingControls$if (v != null &amp;&amp; (v == 0 || v in 8..96)) surface().engine.setTextStyle(TextStylePatch(size = v)) else refresh()</ID>
-    <ID>MaxLineLength:WritingControls.kt$WritingControls$line.addActionListener { edit { if (line.selectedIndex &gt; 0) surface().engine.setParagraphProperties(line = listOf(0, 1250, 1500, 2000, 3000)[line.selectedIndex - 1]) } }</ID>
+    <ID>MaxLineLength:WritingControls.kt$WritingControls$if (rgb != null) surface().viewModel.dispatch(EditorIntent.SetTextStyle(TextStylePatch(color = rgb))) else refresh()</ID>
+    <ID>MaxLineLength:WritingControls.kt$WritingControls$if (v != null &amp;&amp; (v == 0 || v in 8..96)) surface().viewModel.dispatch(EditorIntent.SetTextStyle(TextStylePatch(size = v))) else refresh()</ID>
+    <ID>MaxLineLength:WritingControls.kt$WritingControls$if (v != null &amp;&amp; v in 0..200) surface().viewModel.dispatch(EditorIntent.SetParagraphProperties(after = v)) else refresh()</ID>
+    <ID>MaxLineLength:WritingControls.kt$WritingControls$if (v != null &amp;&amp; v in 0..200) surface().viewModel.dispatch(EditorIntent.SetParagraphProperties(before = v)) else refresh()</ID>
+    <ID>MaxLineLength:WritingControls.kt$WritingControls$line.addActionListener { edit { if (line.selectedIndex &gt; 0) surface().viewModel.dispatch(EditorIntent.SetParagraphProperties(line = listOf(0, 1250, 1500, 2000, 3000)[line.selectedIndex - 1])) } }</ID>
     <ID>MaxLineLength:WritingControls.kt$WritingControls$line.selectedIndex = e.paragraphState { it.linePermille }?.let { listOf(0, 1250, 1500, 2000, 3000).indexOf(it) + 1 } ?: 0</ID>
     <ID>MaxLineLength:WritingControls.kt$WritingControls$size.selectedItem = e.textStyleState { it.size }?.let { if (it == 0) "Preview size" else it.toString() } ?: "Mixed"</ID>
+    <ID>MaxLineLength:WritingControls.kt$WritingControls$underline.addActionListener { edit { surface().viewModel.dispatch(EditorIntent.ToggleFormat(FormatKey.UNDERLINE)) } }</ID>
     <ID>MaxLineLength:WritingControls.kt$WritingControls$val</ID>
     <ID>MaxLineLength:WritingControls.kt$WritingControls$val color = JComboBox(arrayOf("Mixed", "Default ink", "Black", "Blue", "Red", "Green", "Custom…")).apply { name = "stored-color" }</ID>
     <ID>MaxLineLength:WritingControls.kt$WritingControls$val family = JComboBox(arrayOf("Mixed", "Preview font", "System", "Noto Nastaliq", "Gulzar", "Naskh")).apply { name = "stored-font" }</ID>
@@ -449,7 +458,7 @@
     <ID>ReturnCount:LocalRecoveryController.kt$LocalRecoveryController$@Synchronized fun checkpointNow()</ID>
     <ID>ReturnCount:PageOutputUi.kt$PageOutputUi$private fun preview()</ID>
     <ID>ReturnCount:StructureControls.kt$StructureControls$fun apply(remove: Boolean): String?</ID>
-    <ID>ReturnCount:UnfinishedController.kt$UnfinishedController$fun observe(engine: EditorEngine, session: RecoverySession, path: Path?, native: QuarantinedCallback? = null)</ID>
+    <ID>ReturnCount:UnfinishedController.kt$UnfinishedController$fun observe(viewModel: EditorViewModel, session: RecoverySession, path: Path?, native: QuarantinedCallback? = null)</ID>
     <ID>ReturnCount:WindowFiles.kt$WindowFiles$fun exportDraftDocument(document: Document, destination: Path? = null)</ID>
     <ID>ReturnCount:WindowFiles.kt$WindowFiles$fun exportQuarantinedInput(entries: List&lt;QuarantinedCallback&gt;, destination: Path? = null)</ID>
     <ID>ReturnCount:WindowFiles.kt$WindowFiles$fun reloadExternal()</ID>
@@ -467,139 +476,5 @@
     <ID>TooGenericExceptionCaught:WorkspaceUi.kt$&lt;no name provided&gt;$e: Exception</ID>
     <ID>TooGenericExceptionCaught:WorkspaceUi.kt$WorkspaceUi$e: Exception</ID>
     <ID>TooGenericExceptionCaught:WorkspaceUi.kt$WorkspaceUi.&lt;no name provided&gt;$e: Exception</ID>
-    <ID>TooManyFunctions:WindowFiles.kt$WindowFiles</ID>
-    <ID>WildcardImport:DesktopWorkspace.kt$import androidx.compose.runtime.*</ID>
-    <ID>WildcardImport:DesktopWorkspace.kt$import androidx.compose.ui.text.*</ID>
-    <ID>WildcardImport:DesktopWorkspace.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:DesktopWorkspace.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:DesktopWorkspace.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:DesktopWorkspace.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:DesktopWorkspace.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:DesktopWorkspace.kt$import java.awt.*</ID>
-    <ID>WildcardImport:DesktopWorkspace.kt$import java.awt.datatransfer.*</ID>
-    <ID>WildcardImport:DesktopWorkspace.kt$import java.awt.event.*</ID>
-    <ID>WildcardImport:DesktopWorkspace.kt$import javax.accessibility.*</ID>
-    <ID>WildcardImport:DesktopWorkspace.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:DesktopWorkspace.kt$import kotlin.math.*</ID>
-    <ID>WildcardImport:FindReplaceUi.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:FindReplaceUi.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:FindReplaceUi.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:FindReplaceUi.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:FindReplaceUi.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:FindReplaceUi.kt$import java.awt.*</ID>
-    <ID>WildcardImport:FindReplaceUi.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:LocalRecoveryController.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:LocalRecoveryController.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:LocalRecoveryController.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:LocalRecoveryController.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:LocalRecoveryController.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:LocalRecoveryController.kt$import java.io.*</ID>
-    <ID>WildcardImport:LocalRecoveryController.kt$import java.nio.file.*</ID>
-    <ID>WildcardImport:LocalRecoveryController.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:LocalRecoveryUi.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:LocalRecoveryUi.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:LocalRecoveryUi.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:LocalRecoveryUi.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:LocalRecoveryUi.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:LocalRecoveryUi.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:OutlineLabels.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:OutlineLabels.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:OutlineLabels.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:OutlineLabels.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:OutlineLabels.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:OutlineLabels.kt$import java.awt.*</ID>
-    <ID>WildcardImport:OutlineLabels.kt$import java.awt.font.*</ID>
-    <ID>WildcardImport:OutlineLabels.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:PageOutputUi.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:PageOutputUi.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:PageOutputUi.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:PageOutputUi.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:PageOutputUi.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:PageOutputUi.kt$import java.awt.*</ID>
-    <ID>WildcardImport:PageOutputUi.kt$import java.awt.event.*</ID>
-    <ID>WildcardImport:PageOutputUi.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:PagesSample.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:PagesSample.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:PagesSample.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:PagesSample.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:PagesSample.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:ParagraphControls.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:ParagraphControls.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:ParagraphControls.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:ParagraphControls.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:ParagraphControls.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:ParagraphControls.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:ResponsiveControls.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:ResponsiveControls.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:ResponsiveControls.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:ResponsiveControls.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:ResponsiveControls.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:ResponsiveControls.kt$import java.awt.*</ID>
-    <ID>WildcardImport:ResponsiveControls.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:StructureControls.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:StructureControls.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:StructureControls.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:StructureControls.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:StructureControls.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:StructureControls.kt$import java.awt.*</ID>
-    <ID>WildcardImport:StructureControls.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:StructuredSample.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:StructuredSample.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:StructuredSample.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:StructuredSample.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:StructuredSample.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:UnfinishedController.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:UnfinishedController.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:UnfinishedController.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:UnfinishedController.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:UnfinishedController.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:UnfinishedController.kt$import java.io.*</ID>
-    <ID>WildcardImport:UnfinishedController.kt$import java.nio.file.*</ID>
-    <ID>WildcardImport:UnfinishedController.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:UnfinishedRecoveryUi.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:UnfinishedRecoveryUi.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:UnfinishedRecoveryUi.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:UnfinishedRecoveryUi.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:UnfinishedRecoveryUi.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:UnfinishedRecoveryUi.kt$import java.awt.*</ID>
-    <ID>WildcardImport:UnfinishedRecoveryUi.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:UrduWriting.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:UrduWriting.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:UrduWriting.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:UrduWriting.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:UrduWriting.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:ValidatedControls.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:ValidatedControls.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:ValidatedControls.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:ValidatedControls.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:ValidatedControls.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:ValidatedControls.kt$import java.awt.*</ID>
-    <ID>WildcardImport:ValidatedControls.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:WindowFiles.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:WindowFiles.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:WindowFiles.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:WindowFiles.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:WindowFiles.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:WindowFiles.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:WorkspaceSample.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:WorkspaceSample.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:WorkspaceSample.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:WorkspaceSample.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:WorkspaceSample.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:WorkspaceUi.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:WorkspaceUi.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:WorkspaceUi.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:WorkspaceUi.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:WorkspaceUi.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:WorkspaceUi.kt$import java.awt.*</ID>
-    <ID>WildcardImport:WorkspaceUi.kt$import java.nio.file.*</ID>
-    <ID>WildcardImport:WorkspaceUi.kt$import javax.swing.*</ID>
-    <ID>WildcardImport:WritingControls.kt$import dev.shayxo.composedoc.data.*</ID>
-    <ID>WildcardImport:WritingControls.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:WritingControls.kt$import dev.shayxo.composedoc.layout.*</ID>
-    <ID>WildcardImport:WritingControls.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:WritingControls.kt$import dev.shayxo.composedoc.ui.*</ID>
-    <ID>WildcardImport:WritingControls.kt$import java.awt.*</ID>
-    <ID>WildcardImport:WritingControls.kt$import javax.swing.*</ID>
   </CurrentIssues>
 </SmellBaseline>

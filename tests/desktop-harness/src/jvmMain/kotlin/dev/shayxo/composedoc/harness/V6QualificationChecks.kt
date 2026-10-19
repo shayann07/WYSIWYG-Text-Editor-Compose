@@ -326,7 +326,7 @@ private fun runV6Geometry(root: File, rows: MutableList<Map<String, Any>>) {
                     Thread.sleep(20)
                 }
                 owner {
-                    val before = surface.engine.snapshot()
+                    val before = surface.viewModel.verificationEngine.snapshot()
                     val g = surface.view.measure!!.invoke(before)
                     val p = g.paragraphs[0]
                     fun x(at: Int) = g.getHorizontalPosition(at)
@@ -340,35 +340,35 @@ private fun runV6Geometry(root: File, rows: MutableList<Map<String, Any>>) {
                         val rect = p.layout.getPathForRange(a, b).getBounds()
                         val expected = p.layout.getBoundingBox(a)
                         check(rect.left <= expected.left + .5f && rect.right >= expected.right - .5f && rect.height > 0)
-                        surface.engine.move(Selection(a, b))
-                        val forward = surface.engine.snapshot()
-                        surface.engine.move(Selection(b, a))
-                        check(surface.engine.snapshot().selection.start == forward.selection.start && surface.engine.snapshot().selection.end == forward.selection.end)
+                        surface.viewModel.verificationEngine.move(Selection(a, b))
+                        val forward = surface.viewModel.verificationEngine.snapshot()
+                        surface.viewModel.verificationEngine.move(Selection(b, a))
+                        check(surface.viewModel.verificationEngine.snapshot().selection.start == forward.selection.start && surface.viewModel.verificationEngine.snapshot().selection.end == forward.selection.end)
                     }
                     // Actual registered pointer handler; uniquely positioned interior Latin edge, bounded pixel rounding.
                     val caret = g.caret(1)
                     val point = java.awt.Point(((caret.left) / g.scale).toInt(), ((caret.top + caret.height * .5f) / g.scale).toInt())
                     val click = MouseEvent(surface, MouseEvent.MOUSE_PRESSED, System.currentTimeMillis(), 0, point.x, point.y, 1, false, MouseEvent.BUTTON1)
                     surface.mouseListeners.forEach { it.mousePressed(click) }
-                    check(surface.engine.snapshot().selection.focus == 1) { "Actual click did not map to known Latin boundary" }
+                    check(surface.viewModel.verificationEngine.snapshot().selection.focus == 1) { "Actual click did not map to known Latin boundary" }
                     val key = KeyEvent(surface, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), InputEvent.SHIFT_DOWN_MASK, KeyEvent.VK_RIGHT, KeyEvent.CHAR_UNDEFINED)
                     surface.keyListeners.forEach { it.keyPressed(key) }
-                    check(surface.engine.snapshot().selection == Selection(1, 2))
-                    surface.engine.move(Selection(5, 5))
+                    check(surface.viewModel.verificationEngine.snapshot().selection == Selection(1, 2))
+                    surface.viewModel.verificationEngine.move(Selection(5, 5))
                     val rtlKey = KeyEvent(surface, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), InputEvent.SHIFT_DOWN_MASK, KeyEvent.VK_LEFT, KeyEvent.CHAR_UNDEFINED)
                     surface.keyListeners.forEach { it.keyPressed(rtlKey) }
-                    check(surface.engine.snapshot().selection == Selection(5, 6)) { "RTL ShiftLeft must advance logical Hebrew offset" }
+                    check(surface.viewModel.verificationEngine.snapshot().selection == Selection(5, 6)) { "RTL ShiftLeft must advance logical Hebrew offset" }
                     val longStart = before.committed.text.indexOf("abcdefghij")
-                    surface.engine.move(Selection(longStart + 8, longStart + 8))
+                    surface.viewModel.verificationEngine.move(Selection(longStart + 8, longStart + 8))
                     repeat(2) {
                         val down = KeyEvent(surface, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, KeyEvent.VK_DOWN, KeyEvent.CHAR_UNDEFINED)
                         surface.keyListeners.forEach { it.keyPressed(down) }
                     }
-                    check(surface.engine.snapshot().selection.focus == before.committed.text.lastIndexOf("abcdefghij") + 8) { "Vertical preferred x was lost on short intermediate row" }
+                    check(surface.viewModel.verificationEngine.snapshot().selection.focus == before.committed.text.lastIndexOf("abcdefghij") + 8) { "Vertical preferred x was lost on short intermediate row" }
                     val up = KeyEvent(surface, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), InputEvent.CTRL_DOWN_MASK, KeyEvent.VK_END, KeyEvent.CHAR_UNDEFINED)
                     surface.keyListeners.forEach { it.keyPressed(up) }
-                    check(surface.engine.snapshot().selection.focus == before.committed.units.size && surface.view.ensureCaret)
-                    check(surface.engine.snapshot().committed == before.committed && surface.engine.snapshot().undoCount == 0)
+                    check(surface.viewModel.verificationEngine.snapshot().selection.focus == before.committed.units.size && surface.view.ensureCaret)
+                    check(surface.viewModel.verificationEngine.snapshot().committed == before.committed && surface.viewModel.verificationEngine.snapshot().undoCount == 0)
                     check(g.paragraphs[2].text.isEmpty() && g.caret(g.paragraphs[2].startOffset).height > 0)
                     check(g.paragraphs.last().lineCount > 1)
                     rows += mapOf("geometry" to "PASS independent LTR/RTL run order, selected ink coverage, real handler click, ShiftRight, CtrlEnd reveal, empty/wrap, canonical nonmutation", "paged" to paged, "zoom" to zoom)

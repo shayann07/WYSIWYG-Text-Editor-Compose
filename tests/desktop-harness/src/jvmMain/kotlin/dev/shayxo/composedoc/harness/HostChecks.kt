@@ -17,7 +17,7 @@ private fun string(iterator: AttributedCharacterIterator): String = buildString 
 /** Actual attached host + real Compose layout, but injected AWT IME events, not an OS IME. */
 fun runHostChecks(surface: EditorSurface, resultFile: File = File("apps/desktop-workspace/target/host-checks.json")) {
     runAccessibilityHostChecks(surface)
-    val e = surface.engine
+    val e = surface.viewModel.verificationEngine
     check((surface.parent as javax.swing.JLayeredPane).getLayer(surface) == 100)
     check(surface.parent.findComponentAt(200, 100) === surface) { "Pointer events must reach the input host, not the render layer" }
     var baselineImeCallbacks = 0

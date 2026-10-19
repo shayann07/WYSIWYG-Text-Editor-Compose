@@ -9,6 +9,7 @@ import dev.shayxo.composedoc.model.Selection
 import dev.shayxo.composedoc.model.TextUnit
 import dev.shayxo.composedoc.model.UnitKind
 import dev.shayxo.composedoc.ui.EditorSurface
+import dev.shayxo.composedoc.ui.EditorViewModel
 import dev.shayxo.composedoc.ui.ViewState
 import dev.shayxo.composedoc.workspace.WindowFiles
 import java.nio.ByteBuffer
@@ -95,13 +96,13 @@ fun runFileChecks() {
     test("closing with preedit active requires choice: Cancel leaves open, Discard aborts and retires surface against reentrant/late callbacks") {
         val window = javax.swing.JFrame()
         val e = EditorEngine(document("hello"))
-        val surface = EditorSurface(e, ViewState(e.snapshot()))
+        val surface = EditorSurface(EditorViewModel(e), ViewState(e.snapshot()))
         window.contentPane.add(surface)
         window.addNotify()
         var compositionDiscarded = false
         val wf = WindowFiles(
             window,
-            e,
+            surface.viewModel,
             null,
             promptCloseChoice = { 2 },
             onDiscardComposition = {
@@ -139,7 +140,7 @@ fun runFileChecks() {
         val path = Files.createTempFile("async-save-test-", ".astra")
         try {
             val e = EditorEngine(document("saved-content"))
-            val wf = WindowFiles(window, e, path, refresh = {})
+            val wf = WindowFiles(window, EditorViewModel(e), path, refresh = {})
             e.replace("edit", "Typing")
             val snap = e.snapshot()
             val capturedDocRev = snap.documentRevision

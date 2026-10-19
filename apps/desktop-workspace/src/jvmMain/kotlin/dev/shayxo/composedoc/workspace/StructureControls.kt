@@ -12,6 +12,7 @@ import dev.shayxo.composedoc.model.UnitKind
 import dev.shayxo.composedoc.model.contiguousLinkAt
 import dev.shayxo.composedoc.model.paragraphAt
 import dev.shayxo.composedoc.model.paragraphs
+import dev.shayxo.composedoc.ui.EditorIntent
 import dev.shayxo.composedoc.ui.EditorSurface
 import dev.shayxo.composedoc.ui.ImageResources
 import java.awt.Component
@@ -109,7 +110,7 @@ class StructureControls(private val window: JFrame, private val surface: () -> E
                 name = "restart-list"
                 isFocusable = false
                 addActionListener {
-                    val c = surface().engine.clipboardCapture() ?: return@addActionListener
+                    val c = surface().viewModel.clipboardCapture() ?: return@addActionListener
                     val value = JTextField("1", 8).apply { name = "list-restart-value" }
                     validatedDialog(
                         window,
@@ -121,8 +122,8 @@ class StructureControls(private val window: JFrame, private val surface: () -> E
                                 val n = value.text.toIntOrNull()
                                 when {
                                     n == null || n !in 1..9999 -> "Enter a whole number from 1 to 9999."
-                                    surface().engine.clipboardCapture() != c -> "Target changed; cancel and reopen Restart."
-                                    !surface().engine.applyStructure(c, StructureCommand.Restart(n)) -> "Command not applied. Select a numbered item or cancel."
+                                    surface().viewModel.clipboardCapture() != c -> "Target changed; cancel and reopen Restart."
+                                    !surface().viewModel.dispatch(EditorIntent.ApplyStructure(c, StructureCommand.Restart(n))) -> "Command not applied. Select a numbered item or cancel."
                                     else -> null
                                 }
                             },
@@ -138,7 +139,7 @@ class StructureControls(private val window: JFrame, private val surface: () -> E
                 isFocusable = false
                 toolTipText = "Stored list-marker font/size; independent of body formatting"
                 addActionListener {
-                    val c = surface().engine.clipboardCapture() ?: return@addActionListener
+                    val c = surface().viewModel.clipboardCapture() ?: return@addActionListener
                     val p = c.basis.document.paragraphAt(c.selection.focus).properties
                     val fonts = StoredFont.entries.filter { it != StoredFont.DEFAULT }
                     val family = JComboBox(fonts.toTypedArray()).apply {
@@ -156,8 +157,8 @@ class StructureControls(private val window: JFrame, private val surface: () -> E
                                 val n = size.text.toIntOrNull()
                                 when {
                                     n == null || n !in 8..96 -> "Enter a whole size from 8 to 96."
-                                    surface().engine.clipboardCapture() != c -> "Target changed; cancel and reopen Marker style."
-                                    !surface().engine.applyStructure(c, StructureCommand.MarkerStyle(MarkerTypography(family.selectedItem as StoredFont, n))) -> "Select list items with a different marker style."
+                                    surface().viewModel.clipboardCapture() != c -> "Target changed; cancel and reopen Marker style."
+                                    !surface().viewModel.dispatch(EditorIntent.ApplyStructure(c, StructureCommand.MarkerStyle(MarkerTypography(family.selectedItem as StoredFont, n)))) -> "Select list items with a different marker style."
                                     else -> null
                                 }
                             },
@@ -181,7 +182,7 @@ class StructureControls(private val window: JFrame, private val surface: () -> E
                 name = "replace-image"
                 addActionListener {
                     val s = surface()
-                    val c = s.engine.clipboardCapture() ?: return@addActionListener
+                    val c = s.viewModel.clipboardCapture() ?: return@addActionListener
                     if (c.basis.document.units.subList(c.selection.start, c.selection.end).singleOrNull()?.image == null) {
                         JOptionPane.showMessageDialog(window, "Select one image first.")
                         return@addActionListener
@@ -194,7 +195,7 @@ class StructureControls(private val window: JFrame, private val surface: () -> E
                     pendingImport = ImageDecoder.importAsync(picker.selectedFile.toPath(), { (id, data) ->
                         working = false
                         if (!window.isDisplayable || s.disposed)return@importAsync
-                        if (!s.admissionAllowed || !s.engine.applyStructure(c, StructureCommand.ReplaceImage(id, data)))JOptionPane.showMessageDialog(window, "Image target changed; replacement refused. Old image kept.")
+                        if (!s.admissionAllowed || !s.viewModel.dispatch(EditorIntent.ApplyStructure(c, StructureCommand.ReplaceImage(id, data))))JOptionPane.showMessageDialog(window, "Image target changed; replacement refused. Old image kept.")
                         refresh()
                         s.requestFocusInWindow()
                     }, { e ->
@@ -210,8 +211,8 @@ class StructureControls(private val window: JFrame, private val surface: () -> E
                 name = "delete-image"
                 addActionListener {
                     val s = surface()
-                    val c = s.engine.clipboardCapture() ?: return@addActionListener
-                    if (s.admissionAllowed && c.basis.document.units.subList(c.selection.start, c.selection.end).singleOrNull()?.image != null)s.engine.clipboardApply(c, null, plain = "", cut = true)
+                    val c = s.viewModel.clipboardCapture() ?: return@addActionListener
+                    if (s.admissionAllowed && c.basis.document.units.subList(c.selection.start, c.selection.end).singleOrNull()?.image != null)s.viewModel.dispatch(EditorIntent.ApplyClipboard(c, null, plain = "", cut = true))
                     s.requestFocusInWindow()
                 }
             },
@@ -233,7 +234,7 @@ class StructureControls(private val window: JFrame, private val surface: () -> E
                 if (index >= 0 && outline.getCellBounds(index, index)?.contains(e.point) == true) {
                     outline.selectedIndex = index
                     outlineModel[index].let {
-                        surface().engine.navigateOutline(it.anchor)
+                        surface().viewModel.dispatch(EditorIntent.NavigateOutline(it.anchor))
                         surface().requestFocusInWindow()
                     }
                 }
@@ -245,7 +246,7 @@ class StructureControls(private val window: JFrame, private val surface: () -> E
             object : AbstractAction() {
                 override fun actionPerformed(e: java.awt.event.ActionEvent?) {
                     outline.selectedValue?.let {
-                        surface().engine.navigateOutline(it.anchor)
+                        surface().viewModel.dispatch(EditorIntent.NavigateOutline(it.anchor))
                         surface().requestFocusInWindow()
                     }
                 }
@@ -264,7 +265,7 @@ class StructureControls(private val window: JFrame, private val surface: () -> E
         insertImage.toolTipText = "Embed local PNG/JPEG; bytes owned by document. Oversize display fits page proportionally"
         insertImage.addActionListener {
             val s = surface()
-            val capture = s.engine.clipboardCapture() ?: return@addActionListener
+            val capture = s.viewModel.clipboardCapture() ?: return@addActionListener
             val chooser = JFileChooser().apply {
                 dialogTitle = "Insert PNG or JPEG"
                 fileFilter = javax.swing.filechooser.FileNameExtensionFilter("PNG or JPEG (signature checked)", "png", "jpg", "jpeg")
@@ -286,8 +287,8 @@ class StructureControls(private val window: JFrame, private val surface: () -> E
                         "Insert" to {
                             when {
                                 alt.text.length > 2048 -> "Shorten alternative text to 2048 UTF-16 units."
-                                !s.admissionAllowed || s.engine.clipboardCapture() != capture -> "Target changed; cancel and insert again."
-                                !s.engine.applyStructure(capture, StructureCommand.InsertImage(ImageBlock(id, 240, alt.text), data)) -> "Insertion rejected; document kept."
+                                !s.admissionAllowed || s.viewModel.clipboardCapture() != capture -> "Target changed; cancel and insert again."
+                                !s.viewModel.dispatch(EditorIntent.ApplyStructure(capture, StructureCommand.InsertImage(ImageBlock(id, 240, alt.text), data))) -> "Insertion rejected; document kept."
                                 else -> null
                             }
                         },
@@ -305,7 +306,7 @@ class StructureControls(private val window: JFrame, private val surface: () -> E
         imageProperties.toolTipText = "Select an image; edit width10–600 document dp and alternative text. Aspect ratio remains fixed"
         imageProperties.addActionListener {
             val s = surface()
-            val c = s.engine.clipboardCapture() ?: return@addActionListener
+            val c = s.viewModel.clipboardCapture() ?: return@addActionListener
             val image = c.basis.document.units.subList(c.selection.start, c.selection.end).singleOrNull()?.image ?: return@addActionListener
             val width = JTextField(image.width.toString(), 8).apply { name = "image-width" }
             val alt = JTextField(image.alt, 34).apply { name = "image-alt" }
@@ -339,9 +340,9 @@ class StructureControls(private val window: JFrame, private val surface: () -> E
                             n == null -> "Width must be a whole number from 10 to 600."
                             n !in 10..600 -> "Width must be from 10 to 600 document dp."
                             alt.text.length > 2048 -> "Alternative text exceeds 2048 UTF-16 units; shorten it."
-                            s.engine.clipboardCapture() != c -> "Target changed; cancel and reopen Image properties."
+                            s.viewModel.clipboardCapture() != c -> "Target changed; cancel and reopen Image properties."
                             n == image.width && alt.text == image.alt -> null
-                            !s.engine.applyStructure(c, StructureCommand.ImageProperties(n, alt.text)) -> "Image update rejected; cancel and select one image."
+                            !s.viewModel.dispatch(EditorIntent.ApplyStructure(c, StructureCommand.ImageProperties(n, alt.text))) -> "Image update rejected; cancel and select one image."
                             else -> null
                         }
                     },
@@ -351,11 +352,11 @@ class StructureControls(private val window: JFrame, private val surface: () -> E
         }
     }
     private fun command(c: StructureCommand) {
-        if (surface().admissionAllowed && !busy() && !working)surface().engine.structure(c)
+        if (surface().admissionAllowed && !busy() && !working)surface().viewModel.dispatch(EditorIntent.Structure(c))
         surface().requestFocusInWindow()
     }
     private fun linkAtSelection(): LinkValue? {
-        val f = surface().engine.snapshot()
+        val f = surface().viewModel.snapshot()
         val d = f.visible
         if (f.selection.collapsed)return d.contiguousLinkAt(f.selection)?.first
         val values = d.units.subList(f.selection.start, f.selection.end).filter { it.kind == UnitKind.TEXT }.map { it.style.link }.distinct()
@@ -363,7 +364,7 @@ class StructureControls(private val window: JFrame, private val surface: () -> E
     }
     private fun linkDialog() {
         val s = surface()
-        val c = s.engine.clipboardCapture() ?: return
+        val c = s.viewModel.clipboardCapture() ?: return
         val d = c.basis.document
         val inside = d.contiguousLinkAt(c.selection)
         val current = linkAtSelection()
@@ -382,11 +383,11 @@ class StructureControls(private val window: JFrame, private val surface: () -> E
             "Edit hyperlink"
         }
         fun apply(remove: Boolean): String? {
-            if (s.engine.clipboardCapture() != c)return "Target changed; cancel and reopen Link."
+            if (s.viewModel.clipboardCapture() != c)return "Target changed; cancel and reopen Link."
             if (remove && inserting)return "No existing link here. Cancel or insert a labeled link."
             if (!remove && (!runCatching { LinkValue("check", uri.text).activatable() }.getOrDefault(false)))return "Use an absolute http, https or mailto URI."
             if (!remove && inserting && (label.text.isEmpty() || label.text.length > 4096 || label.text.any { it == '\n' || it == '\ufffc' }))return "Supply a single-line label of 1–4096 units."
-            if (!s.engine.applyStructure(c, StructureCommand.Link(if (remove)null else uri.text, label.text)))return "No change applied; select linked text or cancel."
+            if (!s.viewModel.dispatch(EditorIntent.ApplyStructure(c, StructureCommand.Link(if (remove)null else uri.text, label.text))))return "No change applied; select linked text or cancel."
             return null
         }
         validatedDialog(window, title, "link-dialog", listOf((if (inserting)"Label" else "Target text (displayed graphemes)") to label, "URI (http/https/mailto)" to uri), listOf("Apply" to { apply(false) }, "Remove" to { apply(true) }))
@@ -396,9 +397,9 @@ class StructureControls(private val window: JFrame, private val surface: () -> E
         refreshing = true
         try {
             val s = surface()
-            role.selectedIndex = s.engine.paragraphState { it.heading }?.plus(1) ?: 0
-            list.selectedIndex = s.engine.paragraphState { it.list }?.ordinal?.plus(1) ?: 0
-            val entries = s.engine.outline()
+            role.selectedIndex = s.viewModel.paragraphState { it.heading }?.plus(1) ?: 0
+            list.selectedIndex = s.viewModel.paragraphState { it.list }?.ordinal?.plus(1) ?: 0
+            val entries = s.viewModel.outline()
             val selected = outline.selectedValue?.anchor
             val hadSelection = outline.selectedIndex >= 0
             if ((0 until outlineModel.size()).map { outlineModel[it] } != entries) {
@@ -406,7 +407,7 @@ class StructureControls(private val window: JFrame, private val surface: () -> E
                 entries.forEach { outlineModel.addElement(it) }
                 if (hadSelection)outline.selectedIndex = entries.indexOfFirst { it.anchor == selected }
             }
-            val current = s.engine.snapshot().let { f -> f.committed.paragraphs().lastOrNull { it.start <= f.selection.focus && it.properties.heading > 0 } }
+            val current = s.viewModel.snapshot().let { f -> f.committed.paragraphs().lastOrNull { it.start <= f.selection.focus && it.properties.heading > 0 } }
             currentSection = current?.anchor
             hasCurrentSection = current != null
             outline.repaint()
@@ -416,7 +417,7 @@ class StructureControls(private val window: JFrame, private val surface: () -> E
             }
             panel.components.forEach(::enabled)
             openLink.isEnabled = linkAtSelection()?.activatable() == true
-            val f = s.engine.snapshot()
+            val f = s.viewModel.snapshot()
             val capturedActions = s.admissionAllowed && !busy() && !working && f.marked == null && !f.waiting
             link.isEnabled = capturedActions
             insertImage.isEnabled = capturedActions

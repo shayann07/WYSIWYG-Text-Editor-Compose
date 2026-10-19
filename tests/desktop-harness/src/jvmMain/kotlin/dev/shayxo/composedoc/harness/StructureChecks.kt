@@ -621,8 +621,8 @@ fun runStructureHostChecks(result: File, root: java.nio.file.Path, sample: Docum
                     check(p.height <= g.pageHeight.takeIf { it > 0 }?.minus(80 * zoom) ?: Float.MAX_VALUE)
                     for (direction in listOf(ParagraphDirection.RTL, ParagraphDirection.LTR)) {
                         for (alignment in ParagraphAlignment.entries) {
-                            surface.engine.move(Selection(p.startOffset, p.startOffset + 1))
-                            surface.engine.setParagraphProperties(direction, alignment)
+                            surface.viewModel.verificationEngine.move(Selection(p.startOffset, p.startOffset + 1))
+                            surface.viewModel.verificationEngine.setParagraphProperties(direction, alignment)
                             val trial = checkNotNull(surface.geometry())
                             val image = trial.paragraphs.single { it.image != null }
                             check(kotlin.math.abs(image.imageWidth / trial.scale - 240 * zoom) < 1) { "Zoomed image width uses stale density: $paged/$zoom key=${trial.typographyKey} width=${image.imageWidth} scale=${trial.scale} declared=${image.image?.width} textWidth=${trial.textWidth}" }
@@ -635,13 +635,13 @@ fun runStructureHostChecks(result: File, root: java.nio.file.Path, sample: Docum
                             check(kotlin.math.abs(trial.caret(image.startOffset).left - (trial.x + expected + if (direction == ParagraphDirection.RTL)image.imageWidth else 0f)) < .01)
                             val actual = checkNotNull(surface.accessibleContext.accessibleText.getCharacterBounds(image.startOffset))
                             check(kotlin.math.abs(actual.x - (trial.x + expected) / trial.scale) < 1)
-                            surface.engine.perform(EditAction.Undo)
+                            surface.viewModel.verificationEngine.perform(EditAction.Undo)
                         }
                     }
                     g = checkNotNull(surface.geometry())
                     p = g.paragraphs.single { it.image != null }
                     val at = p.startOffset
-                    surface.engine.move(Selection(at, at + 1))
+                    surface.viewModel.verificationEngine.move(Selection(at, at + 1))
                     val location = checkNotNull(surface.getTextLocation(null))
                     check(location.height > 0)
                     val attrs = surface.accessibleContext.accessibleText.getCharacterAttribute(at)
@@ -663,26 +663,26 @@ fun runStructureHostChecks(result: File, root: java.nio.file.Path, sample: Docum
                     check(surface.height >= 110)
                     check(controls.role.width > 0 && controls.insertImage.width > 0)
                     val entry = controls.outlineModel[1]
-                    val before = surface.engine.snapshot()
-                    check(surface.engine.navigateOutline(entry.anchor))
-                    check(surface.engine.snapshot().committed == before.committed)
-                    surface.engine.move(Selection(0, 0))
+                    val before = surface.viewModel.verificationEngine.snapshot()
+                    check(surface.viewModel.verificationEngine.navigateOutline(entry.anchor))
+                    check(surface.viewModel.verificationEngine.snapshot().committed == before.committed)
+                    surface.viewModel.verificationEngine.move(Selection(0, 0))
                     controls.role.selectedIndex = 3
-                    check(surface.engine.snapshot().committed.startParagraph.heading == 2)
-                    surface.engine.perform(EditAction.Undo)
-                    check(surface.engine.snapshot().committed.same(sample))
+                    check(surface.viewModel.verificationEngine.snapshot().committed.startParagraph.heading == 2)
+                    surface.viewModel.verificationEngine.perform(EditAction.Undo)
+                    check(surface.viewModel.verificationEngine.snapshot().committed.same(sample))
                 }
             }
         }
         owner {
             surface.view.changeZoom(1f)
             surface.view.setPagedMode(true)
-            surface.engine.move(Selection(0, 0))
+            surface.viewModel.verificationEngine.move(Selection(0, 0))
             controls.outlinePane.isVisible = true
             w!!.setSize(1020, 740)
             w!!.validate()
         }
-        await("Final mounted render") { surface.view.geometry?.revision == surface.engine.snapshot().documentRevision && !surface.view.ensureCaret && surface.view.geometry?.hostWidth == surface.width }
+        await("Final mounted render") { surface.view.geometry?.revision == surface.viewModel.verificationEngine.snapshot().documentRevision && !surface.view.ensureCaret && surface.view.geometry?.hostWidth == surface.width }
         owner {
             check(surface.view.hostWidth == surface.width && surface.width < 900)
             val g = checkNotNull(surface.view.geometry)
@@ -697,8 +697,8 @@ fun runStructureHostChecks(result: File, root: java.nio.file.Path, sample: Docum
         }
         checks += "Mounted continuous/paged/zoom image aspect/AT/native bounds, list indent geometry, heading role/identity outline, minimum shell"
         owner {
-            surface.engine.move(Selection(0, 0))
-            surface.engine.setParagraphProperties(line = 0)
+            surface.viewModel.verificationEngine.move(Selection(0, 0))
+            surface.viewModel.verificationEngine.setParagraphProperties(line = 0)
             surface.changeTypography(TypographyProfile.system)
             surface.view.changeZoom(1f)
         }
@@ -706,7 +706,7 @@ fun runStructureHostChecks(result: File, root: java.nio.file.Path, sample: Docum
         owner {
             val g = checkNotNull(surface.geometry())
             check(g.paragraphs.first().layout.layoutInput.style.lineHeight == androidx.compose.ui.unit.TextUnit.Unspecified)
-            surface.engine.perform(EditAction.Undo)
+            surface.viewModel.verificationEngine.perform(EditAction.Undo)
             surface.changeTypography(TypographyProfile.load("noto-nastaliq"))
         }
         await("Restored candidate profile") { surface.view.measure != null && surface.view.geometry?.typographyKey?.startsWith(surface.view.typography.key) == true }
@@ -738,13 +738,13 @@ fun runStructureHostChecks(result: File, root: java.nio.file.Path, sample: Docum
         lateinit var captured: ClipboardCapture
         owner {
             captured = checkNotNull(
-                surface.engine.clipboardCapture().let {
-                    surface.engine.selectAll()
-                    surface.engine.clipboardCapture()
+                surface.viewModel.verificationEngine.clipboardCapture().let {
+                    surface.viewModel.verificationEngine.selectAll()
+                    surface.viewModel.verificationEngine.clipboardCapture()
                 },
             )
             RichClipboard.publish(captured, localClipboard, codec = FragmentCodec)
-            surface.engine.move(Selection(surface.engine.snapshot().committed.units.size, surface.engine.snapshot().committed.units.size))
+            surface.viewModel.verificationEngine.move(Selection(surface.viewModel.verificationEngine.snapshot().committed.units.size, surface.viewModel.verificationEngine.snapshot().committed.units.size))
             surface.clipboardReaderForChecks = { plain ->
                 check(!SwingUtilities.isEventDispatchThread())
                 reads.incrementAndGet()
@@ -759,15 +759,15 @@ fun runStructureHostChecks(result: File, root: java.nio.file.Path, sample: Docum
         check(entered.await(10, java.util.concurrent.TimeUnit.SECONDS))
         lateinit var intervening: Document
         owner {
-            surface.engine.replace("intervening", "edit")
-            intervening = surface.engine.snapshot().committed
+            surface.viewModel.verificationEngine.replace("intervening", "edit")
+            intervening = surface.viewModel.verificationEngine.snapshot().committed
         }
         release.countDown()
         await("Stale image clipboard decode refused") { !surface.clipboardPasteBusy }
         owner {
-            check(reads.get() == 1 && surface.engine.snapshot().committed == intervening && surface.clipboardMessage.contains("refused"))
-            surface.engine.perform(EditAction.Undo)
-            surface.engine.move(Selection(0, surface.engine.snapshot().committed.units.size))
+            check(reads.get() == 1 && surface.viewModel.verificationEngine.snapshot().committed == intervening && surface.clipboardMessage.contains("refused"))
+            surface.viewModel.verificationEngine.perform(EditAction.Undo)
+            surface.viewModel.verificationEngine.move(Selection(0, surface.viewModel.verificationEngine.snapshot().committed.units.size))
             surface.clipboardReaderForChecks = { plain ->
                 check(!SwingUtilities.isEventDispatchThread())
                 RichClipboard.read(localClipboard, plain, codec = FragmentCodec)
@@ -776,9 +776,9 @@ fun runStructureHostChecks(result: File, root: java.nio.file.Path, sample: Docum
         }
         await("Actual mounted rich image paste") { !surface.clipboardPasteBusy }
         owner {
-            check(structureDescription(surface.engine.snapshot().committed) == structureDescription(sample))
+            check(structureDescription(surface.viewModel.verificationEngine.snapshot().committed) == structureDescription(sample))
             check(surface.clipboardMessage == "Pasted rich text")
-            surface.engine.perform(EditAction.Undo)
+            surface.viewModel.verificationEngine.perform(EditAction.Undo)
             surface.clipboardReaderForChecks = null
         }
         checks += "Mounted clipboard image decode off EDT; one bounded worker, duplicate paste suppressed, stale intervening edit refused and fresh full structure/resource paste one Undo"
@@ -797,13 +797,13 @@ fun runStructureHostChecks(result: File, root: java.nio.file.Path, sample: Docum
         }
         checks += "Async clipboard/dialog captures reject changed typing intent and selection-away/back without requiring a text change"
         owner {
-            val at = surface.engine.snapshot().committed.units.size
-            surface.engine.move(Selection(at, at))
-            surface.engine.replace("checkpoint", "edit")
-            surface.engine.inputMethod("candidate", 0, 9)
+            val at = surface.viewModel.verificationEngine.snapshot().committed.units.size
+            surface.viewModel.verificationEngine.move(Selection(at, at))
+            surface.viewModel.verificationEngine.replace("checkpoint", "edit")
+            surface.viewModel.verificationEngine.inputMethod("candidate", 0, 9)
             check(!controls.link.isEnabled && !controls.insertImage.isEnabled)
         }
-        val expected = owner { surface.engine.snapshot().committed }
+        val expected = owner { surface.viewModel.verificationEngine.snapshot().committed }
         val controller = owner { w!!.rootPane.getClientProperty("editor.localRecovery") as LocalRecoveryController }
         await("Expanded structured committed checkpoint") { controller.state().let { it["observed"] == it["completed"] && (it["completed"] as Long) > 1L } }
         owner { controller.finish(false) }
@@ -818,42 +818,42 @@ fun runStructureHostChecks(result: File, root: java.nio.file.Path, sample: Docum
         check(structureDescription(store.restore(entry).document) == structureDescription(expected))
         checks += "Actual controller checkpoint preserves all structure/resources and excludes provisional candidate"
         owner {
-            surface.engine.abortComposition()
-            val image = surface.engine.snapshot().committed.units.indexOfFirst { it.kind == UnitKind.IMAGE }
-            surface.engine.move(Selection(image, image))
-            val before = surface.engine.snapshot()
+            surface.viewModel.verificationEngine.abortComposition()
+            val image = surface.viewModel.verificationEngine.snapshot().committed.units.indexOfFirst { it.kind == UnitKind.IMAGE }
+            surface.viewModel.verificationEngine.move(Selection(image, image))
+            val before = surface.viewModel.verificationEngine.snapshot()
             fun native(text: String) {
                 val event = java.awt.event.InputMethodEvent(surface, java.awt.event.InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, java.text.AttributedString(text).iterator, text.length, null, null)
                 surface.dispatchEvent(event)
             }
             native("seam")
-            check(!surface.admissionAllowed && surface.quarantinedCallbacks.size == 1 && surface.engine.snapshot().committed == before.committed)
-            surface.engine.move(Selection(0, 0))
+            check(!surface.admissionAllowed && surface.quarantinedCallbacks.size == 1 && surface.viewModel.verificationEngine.snapshot().committed == before.committed)
+            surface.viewModel.verificationEngine.move(Selection(0, 0))
             native("late")
-            check(surface.quarantinedCallbacks.size == 2 && surface.engine.snapshot().committed == before.committed)
+            check(surface.quarantinedCallbacks.size == 2 && surface.viewModel.verificationEngine.snapshot().committed == before.committed)
             val retired = surface
             check(surface.recoverExplicitly())
             surface = checkNotNull(windowCurrentSurface(w!!))
             check(retired.retired && surface !== retired && surface.admissionAllowed && surface.quarantinedCallbacks.size == 2)
             native("safe")
-            check(surface.engine.snapshot().committed.text.startsWith("safe") && surface.quarantinedCallbacks.size == 2)
+            check(surface.viewModel.verificationEngine.snapshot().committed.text.startsWith("safe") && surface.quarantinedCallbacks.size == 2)
         }
         checks += "Synthetic noncancelable image-seam input pauses admission, retains subsequent callbacks, explicit existing host recovery never replays and admits only new input"
         owner {
-            val image = surface.engine.snapshot().committed.units.indexOfFirst { it.kind == UnitKind.IMAGE }
+            val image = surface.viewModel.verificationEngine.snapshot().committed.units.indexOfFirst { it.kind == UnitKind.IMAGE }
             for (direction in listOf(ParagraphDirection.RTL, ParagraphDirection.LTR)) {
-                surface.engine.move(Selection(image, image + 1))
-                surface.engine.setParagraphProperties(direction = direction)
-                surface.engine.move(Selection(image, image + 2))
-                surface.engine.inputMethod("\ufffc\ncandidate", 0, 0)
+                surface.viewModel.verificationEngine.move(Selection(image, image + 1))
+                surface.viewModel.verificationEngine.setParagraphProperties(direction = direction)
+                surface.viewModel.verificationEngine.move(Selection(image, image + 2))
+                surface.viewModel.verificationEngine.inputMethod("\ufffc\ncandidate", 0, 0)
                 for (offset in 0..1) {
                     val forward = checkNotNull(surface.getTextLocation(java.awt.font.TextHitInfo.leading(offset)))
                     val physicalRight = (offset == 0) == (direction == ParagraphDirection.RTL)
                     val reverse = checkNotNull(surface.getLocationOffset(forward.x + if (physicalRight)-1 else 1, forward.y + forward.height / 2))
                     check(reverse.insertionIndex == offset) { "Atomic image native offset $offset became ${reverse.insertionIndex}" }
                 }
-                surface.engine.abortComposition()
-                surface.engine.perform(EditAction.Undo)
+                surface.viewModel.verificationEngine.abortComposition()
+                surface.viewModel.verificationEngine.perform(EditAction.Undo)
             }
         }
         checks += "Synthetic retained-image composition forward/reverse native queries preserve raw before/after offsets in RTL and LTR"

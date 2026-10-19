@@ -1,7 +1,6 @@
 package dev.shayxo.composedoc.workspace
 
 import dev.shayxo.composedoc.data.ImageDecoder
-import dev.shayxo.composedoc.domain.EditorEngine
 import dev.shayxo.composedoc.domain.StructureCommand
 import dev.shayxo.composedoc.model.Document
 import dev.shayxo.composedoc.model.ImageBlock
@@ -12,6 +11,8 @@ import dev.shayxo.composedoc.model.freshStructureId
 import dev.shayxo.composedoc.model.paragraphAt
 import dev.shayxo.composedoc.model.paragraphs
 import dev.shayxo.composedoc.model.patchParagraphs
+import dev.shayxo.composedoc.ui.EditorIntent
+import dev.shayxo.composedoc.ui.EditorViewModel
 
 /** Local generated pixels, self-authored text; no remote asset or typography review. */
 fun samplePng(): ByteArray {
@@ -32,27 +33,27 @@ fun samplePng(): ByteArray {
     return out.toByteArray()
 }
 fun structuredWritingSample(): Document {
-    val e = EditorEngine(urduWritingSample())
+    val e = EditorViewModel(urduWritingSample())
     val text = e.snapshot().committed.text
-    e.move(Selection(0, 0))
-    e.structure(StructureCommand.Role(1))
+    e.dispatch(EditorIntent.Select(Selection(0, 0)))
+    e.dispatch(EditorIntent.Structure(StructureCommand.Role(1)))
     for (level in 1..3) {
         val at = text.indexOf("حصہ $level")
-        e.move(Selection(at, at))
-        e.structure(StructureCommand.Role(if (level == 1)2 else 3))
+        e.dispatch(EditorIntent.Select(Selection(at, at)))
+        e.dispatch(EditorIntent.Structure(StructureCommand.Role(if (level == 1)2 else 3)))
     }
     val at = text.indexOf("Disposable")
-    e.move(Selection(at, at + "Disposable writing sample".length))
-    e.structure(StructureCommand.Link("https://example.org/urdu"))
-    e.move(Selection(text.length, text.length))
-    e.replace("\nساختی نمونہ — Structured sample\nپہلی فہرست کی شق\nاس شق کا دوسرا پیراگراف\nNested English item\nدوسری شق\n\n", "sample", true)
+    e.dispatch(EditorIntent.Select(Selection(at, at + "Disposable writing sample".length)))
+    e.dispatch(EditorIntent.Structure(StructureCommand.Link("https://example.org/urdu")))
+    e.dispatch(EditorIntent.Select(Selection(text.length, text.length)))
+    e.dispatch(EditorIntent.Type("\nساختی نمونہ — Structured sample\nپہلی فہرست کی شق\nاس شق کا دوسرا پیراگراف\nNested English item\nدوسری شق\n\n", "sample", true))
     val d = e.snapshot().committed
     val title = d.text.indexOf("ساختی نمونہ")
-    e.move(Selection(title, title))
-    e.structure(StructureCommand.Role(2))
+    e.dispatch(EditorIntent.Select(Selection(title, title)))
+    e.dispatch(EditorIntent.Structure(StructureCommand.Role(2)))
     val first = d.text.indexOf("پہلی فہرست")
-    e.move(Selection(first, first))
-    e.structure(StructureCommand.ListType(ListKind.NUMBER))
+    e.dispatch(EditorIntent.Select(Selection(first, first)))
+    e.dispatch(EditorIntent.Structure(StructureCommand.ListType(ListKind.NUMBER)))
     val item = e.snapshot().committed.paragraphAt(first).properties
     val continuation = e.snapshot().committed.text.indexOf("اس شق کا")
     val block = e.snapshot().committed.paragraphAt(continuation)
@@ -64,10 +65,10 @@ fun structuredWritingSample(): Document {
     val s = sample.paragraphAt(second)
     sample = sample.patchParagraphs(mapOf(n.anchor to n.properties.copy(item = freshStructureId(), parent = item.item, list = ListKind.BULLET, direction = ParagraphDirection.LTR), s.anchor to s.properties.copy(item = freshStructureId(), list = ListKind.NUMBER)))
     val image = ImageDecoder.validate(samplePng())
-    val owner = EditorEngine(sample)
+    val owner = EditorViewModel(sample)
     val end = owner.snapshot().committed.units.size
-    owner.move(Selection(end, end))
-    owner.structure(StructureCommand.InsertImage(ImageBlock(image.first, 240, "مقامی نمونہ: نیلا دائرہ اور دو لکیریں — blue circle and lines"), image.second))
+    owner.dispatch(EditorIntent.Select(Selection(end, end)))
+    owner.dispatch(EditorIntent.Structure(StructureCommand.InsertImage(ImageBlock(image.first, 240, "مقامی نمونہ: نیلا دائرہ اور دو لکیریں — blue circle and lines"), image.second)))
     val result = owner.snapshot().committed
     val ids = result.paragraphs().map { it.properties.item }.filter { it.isNotEmpty() }.distinct().withIndex().associate { it.value to "sample-item-${it.index + 1}" }
     val remapped = result.patchParagraphs(result.paragraphs().associate { p -> p.anchor to p.properties.copy(item = ids[p.properties.item] ?: "", parent = ids[p.properties.parent] ?: "") })

@@ -13,6 +13,8 @@ ALLOWED = {
     ":apps:desktop-workspace": {":core:" + n for n in ("model", "domain", "data", "layout", "ui")},
 }
 
+UDF_MODULES = (":core:ui", ":apps:desktop-workspace")
+
 
 def check_graph(graph):
     errors = []
@@ -25,7 +27,7 @@ def check_graph(graph):
     return errors
 
 
-def check_source(module, source):
+def check_source(module, source, file_name=""):
     # Comments and literal diagnostics are not dependencies. Inspect both imports
     # and qualified references so fully qualified uses cannot bypass the rule.
     code = re.sub(r'"""[\s\S]*?"""|"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'|/\*[\s\S]*?\*/|//[^\n]*', ' ', source)
@@ -40,6 +42,10 @@ def check_source(module, source):
     for prefix in forbidden:
         if prefix in code:
             errors.append("Forbidden dependency " + prefix)
+    # Unidirectional data flow: UI and application code reach the single document
+    # owner only through EditorViewModel intents and read-only queries.
+    if module in UDF_MODULES and file_name not in (None, "EditorViewModel.kt") and re.search(r"\b(EditorEngine|verificationEngine)\b", code):
+        errors.append("Direct engine access bypasses EditorViewModel intents")
     return errors
 
 
@@ -53,7 +59,7 @@ def main():
         for file in directory.rglob("*.kt"):
             files += 1
             source = file.read_text(encoding="utf-8")
-            errors += [str(file.relative_to(ROOT)) + ": " + e for e in check_source(module, source)]
+            errors += [str(file.relative_to(ROOT)) + ": " + e for e in check_source(module, source, None if any(part.endswith("Test") for part in file.parts) else file.name)]
             if module in (":core:model", ":core:domain") and "commonMain" in file.parts:
                 if re.search(r"(?m)^import (?:java|javax|android|androidx)\.", source):
                     errors.append(str(file.relative_to(ROOT)) + ": platform/framework import in pure common code")

@@ -5,7 +5,6 @@
     <ID>ComplexCondition:Graphemes.kt$Graphemes$!join &amp;&amp; !control(l.g) &amp;&amp; !control(r.g) &amp;&amp; r.pictograph &amp;&amp; l.g == "ZWJ"</ID>
     <ID>ComplexCondition:SimpleJson.kt$SimpleJson$pos &lt; src.length &amp;&amp; (src[pos].isDigit() || src[pos] == '.' || src[pos] == 'e' || src[pos] == 'E' || src[pos] == '+' || src[pos] == '-')</ID>
     <ID>CyclomaticComplexMethod:Graphemes.kt$Graphemes$fun stops(text: String): List&lt;Int&gt;</ID>
-    <ID>CyclomaticComplexMethod:ParagraphProperties.kt$fun resolveParagraphDirection( units: List&lt;TextUnit&gt;, properties: ParagraphProperties, fallback: ParagraphDirection, ): ParagraphDirection</ID>
     <ID>CyclomaticComplexMethod:Structure.kt$fun Document.repairListParents(before: Document): Document</ID>
     <ID>CyclomaticComplexMethod:Structure.kt$fun Document.repairRemovedImageHeads(before: Document, end: Int): Document</ID>
     <ID>CyclomaticComplexMethod:Structure.kt$fun validateStructure(d: Document)</ID>

@@ -59,7 +59,7 @@ fun typographySheet(output: File) {
             val b = PrintSnapshot.Builder(plan!!, ImageResources::cached)
             repeat(plan!!.pageCount) { b.next() }
             captured = b.finish()
-            check(s.engine.snapshot().committed.same(document) && s.engine.snapshot().undoCount == 0)
+            check(s.viewModel.verificationEngine.snapshot().committed.same(document) && s.viewModel.verificationEngine.snapshot().undoCount == 0)
         }
         val files = ArrayList<String>()
         captured.use {

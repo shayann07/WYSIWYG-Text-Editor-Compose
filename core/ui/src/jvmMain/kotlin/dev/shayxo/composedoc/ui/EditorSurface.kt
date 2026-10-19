@@ -8,7 +8,6 @@ import androidx.compose.runtime.toString
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.style.ResolvedTextDirection
 import dev.shayxo.composedoc.domain.EditAction
-import dev.shayxo.composedoc.domain.EditorEngine
 import dev.shayxo.composedoc.domain.EditorFrame
 import dev.shayxo.composedoc.domain.RecoveredDraft
 import dev.shayxo.composedoc.domain.RecoveryApplyResult
@@ -214,14 +213,13 @@ private val NOOP_SURFACE: (EditorSurface) -> Unit = {}
 
 /** The transparent AWT root owns input; the Compose surface underneath only renders. */
 open class EditorSurface @JvmOverloads constructor(
-    val engine: EditorEngine,
+    val viewModel: EditorViewModel,
     val view: ViewState,
     val diagnostics: File? = null,
     val trace: ImeTrace? = null,
     var recoveryHooks: RecoveryHooks = RecoveryHooks(),
     var recoverySession: RecoverySession = RecoverySession(),
     val services: EditorPlatformServices = EditorPlatformServices.unavailable,
-    val viewModel: EditorViewModel = EditorViewModel(engine),
 ) : JComponent(),
     InputMethodRequests,
     javax.accessibility.Accessible {
@@ -233,7 +231,7 @@ open class EditorSurface @JvmOverloads constructor(
         val disableInputMethods: (EditorSurface) -> Unit = { it.enableInputMethods(false) },
         val createInputContext: () -> java.awt.im.InputContext? = { java.awt.im.InputContext.getInstance() },
         val createReplacement: (EditorSurface) -> EditorSurface = { prev ->
-            EditorSurface(prev.engine, prev.view, prev.diagnostics, prev.trace, prev.recoveryHooks, prev.recoverySession, prev.services, prev.viewModel)
+            EditorSurface(prev.viewModel, prev.view, prev.diagnostics, prev.trace, prev.recoveryHooks, prev.recoverySession, prev.services)
         },
         val attachReplacement: (Container, EditorSurface, EditorSurface) -> Unit = { parentContainer, oldHost, newHost ->
             if (parentContainer is JLayeredPane) {
@@ -319,7 +317,7 @@ open class EditorSurface @JvmOverloads constructor(
         }
     }
 
-    @Volatile private var published = engine.snapshot()
+    @Volatile private var published = viewModel.snapshot()
     var imageResize: ImageResizeGesture? = null
         private set
     private var imageResizeX = 0
@@ -415,7 +413,7 @@ open class EditorSurface @JvmOverloads constructor(
     private val blinkTimer = Timer(500) {
         if (!retired && !disposed) {
             if (view.focused) view.blink = !view.blink
-            engine.checkSettlementWatchdog()
+            viewModel.dispatch(EditorIntent.CheckSettlementWatchdog())
         }
     }
 
@@ -436,8 +434,8 @@ open class EditorSurface @JvmOverloads constructor(
     override fun getInputContext(): java.awt.im.InputContext? = if (retired || disposed) null else ownInputContext
 
     private fun recordDiagnosticEvent(message: String) {
-        runCatching { engine.onEvent(message) }
-        trace?.record("recovery", message, engine.snapshot())
+        runCatching { viewModel.onEngineEvent(message) }
+        trace?.record("recovery", message, viewModel.snapshot())
     }
 
     private fun recordStepFailure(stepName: String, failure: Throwable, failures: MutableList<String>) {
@@ -607,7 +605,7 @@ open class EditorSurface @JvmOverloads constructor(
         if (!boundarySatisfied) {
             recordDiagnosticEvent("recoverExplicitly rejected: unresolved context obligations remain attached to session; isolation boundary not established")
             writeDiagnostics()
-            statusChanged(engine.snapshot())
+            statusChanged(viewModel.snapshot())
             return false
         }
         val canRecover = ownInputContext != null && contextBindFailure == null && !disposed && !retired
@@ -618,7 +616,7 @@ open class EditorSurface @JvmOverloads constructor(
             contextQualified = true
             recoveryStatus = RecoveryStatus.RECOVERED_QUALIFIED
             writeDiagnostics()
-            statusChanged(engine.snapshot())
+            statusChanged(viewModel.snapshot())
             return true
         }
         return false
@@ -626,7 +624,7 @@ open class EditorSurface @JvmOverloads constructor(
 
     private fun quarantineInput(callback: QuarantinedCallback) {
         val retained = recoverySession.snapshotRetainedDrafts().size
-        val count = retained + quarantinedCallbacks.size + if (engine.snapshot().marked != null)1 else 0
+        val count = retained + quarantinedCallbacks.size + if (viewModel.snapshot().marked != null)1 else 0
         if (count >= 16 || callback.text.length > 100000 || quarantinedCallbacks.sumOf { it.text.length.toLong() * 2 } + callback.text.length * 2L > 1024 * 1024) {
             pauseForRecoveryCapture("RecoveryCaptureFailed: noncancelable callback exceeds reserved capture envelope (16 records, 100000 UTF-16 units/callback, 1 MiB live callback text). Existing evidence retained; incoming ${callback.text.length} units could not be retained; automatic admission suspended.")
             return
@@ -641,13 +639,13 @@ open class EditorSurface @JvmOverloads constructor(
         contextQualified = false
         recoveryStatus = RecoveryStatus.DEGRADED_RECOVERY_FAILED
         recordDiagnosticEvent(message)
-        statusChanged(engine.snapshot())
+        statusChanged(viewModel.snapshot())
     }
     fun inspectRetainedDraft(): String? = retainedPreimage?.draftText
     fun selectRetainedDraft(record: RetainedCompositionPreimage): Boolean {
         if (!recoverySession.selectRetainedDraft(record)) return false
         writeDiagnostics()
-        statusChanged(engine.snapshot())
+        statusChanged(viewModel.snapshot())
         return true
     }
     fun retainedDraftDocument(): Document? = retainedPreimage?.recoveryDraft?.document
@@ -667,36 +665,36 @@ open class EditorSurface @JvmOverloads constructor(
     fun applyRecoveredDraft(): Boolean {
         val preimage = retainedPreimage ?: return false
         val draft = preimage.recoveryDraft ?: return false
-        val result = engine.applyRecoveredDraft(draft)
+        val result = viewModel.dispatch(EditorIntent.ApplyRecoveredDraft(draft))
         if (result == RecoveryApplyResult.Applied) recoverySession.resolveRetainedDraft(preimage)
         writeDiagnostics()
-        statusChanged(engine.snapshot())
+        statusChanged(viewModel.snapshot())
         return result == RecoveryApplyResult.Applied
     }
 
     fun discardRecoveredDraft() {
         recoverySession.retainedPreimage = null
         writeDiagnostics()
-        statusChanged(engine.snapshot())
+        statusChanged(viewModel.snapshot())
     }
 
     fun discardQuarantinedCallbacks(confirmed: List<QuarantinedCallback> = quarantinedCallbacks.toList()) {
         quarantinedCallbacks.removeIf { current -> confirmed.any { it === current } }
         writeDiagnostics()
-        statusChanged(engine.snapshot())
+        statusChanged(viewModel.snapshot())
     }
 
     fun discardRecoverySession() {
         recoverySession.discardAllRetainedDrafts()
         quarantinedCallbacks.clear()
         writeDiagnostics()
-        statusChanged(engine.snapshot())
+        statusChanged(viewModel.snapshot())
     }
 
     fun establishSafeIsolationFence() {
         recoverySession.isolationFenceEstablished = true
         writeDiagnostics()
-        statusChanged(engine.snapshot())
+        statusChanged(viewModel.snapshot())
     }
 
     fun retryRecovery(): EditorSurface? {
@@ -741,7 +739,7 @@ open class EditorSurface @JvmOverloads constructor(
             null
         }
 
-        val snapBeforeAbort = engine.snapshot()
+        val snapBeforeAbort = viewModel.snapshot()
         val draftText = snapBeforeAbort.marked?.let { range ->
             if (range.first in 0 until snapBeforeAbort.visible.text.length && range.last in range.first until snapBeforeAbort.visible.text.length) {
                 snapBeforeAbort.visible.text.substring(range.first, range.last + 1)
@@ -756,7 +754,7 @@ open class EditorSurface @JvmOverloads constructor(
                 markedRangeBefore = snapBeforeAbort.marked,
                 committedTextBefore = snapBeforeAbort.committed.text,
                 epoch = activeImeEpoch,
-                recoveryDraft = engine.captureRecoveryDraft(),
+                recoveryDraft = viewModel.captureRecoveryDraft(),
             )
         } else {
             this.retainedPreimage
@@ -802,8 +800,8 @@ open class EditorSurface @JvmOverloads constructor(
         var documentAbortedCleanly = false
         runStep("engineAbortComposition", failures) {
             viewModel.dispatch(EditorIntent.AbortComposition)
-            val afterAbort = engine.snapshot()
-            check(afterAbort.marked == null && !afterAbort.waiting && !engine.settlementTimedOut) {
+            val afterAbort = viewModel.snapshot()
+            check(afterAbort.marked == null && !afterAbort.waiting && !viewModel.settlementTimedOut) {
                 "Engine remained in composing/waiting state after abortComposition"
             }
             // Recovery uses the captured committed-basis clock. Never retag a capsule after abort.
@@ -991,7 +989,7 @@ open class EditorSurface @JvmOverloads constructor(
             // The shared session owns record selection/disposition; do not resurrect a captured record.
         }
 
-        val snap = engine.snapshot()
+        val snap = viewModel.snapshot()
         published = snap
         view.frame = snap
 
@@ -1064,9 +1062,9 @@ open class EditorSurface @JvmOverloads constructor(
                 }
             }
         }
-        engine.onSettlementRequested = { if (!retired && !disposed) requestEndComposition() }
-        engine.onEvent = { event ->
-            trace?.record("engine", event, engine.snapshot())
+        viewModel.onSettlementRequested = { if (!retired && !disposed) requestEndComposition() }
+        viewModel.onEngineEvent = { event ->
+            trace?.record("engine", event, viewModel.snapshot())
             diagnostics?.parentFile?.let {
                 it.mkdirs()
                 File(it, "input-events.log").appendText("${System.currentTimeMillis()} $event\n")
@@ -1077,13 +1075,13 @@ open class EditorSurface @JvmOverloads constructor(
                 if (retired || disposed) return
                 view.focused = true
                 view.blink = true
-                trace?.record("focus-gained", "locale=${inputContext?.locale}", engine.snapshot())
+                trace?.record("focus-gained", "locale=${inputContext?.locale}", viewModel.snapshot())
                 writeDiagnostics()
             }
             override fun focusLost(e: FocusEvent) {
                 if (retired || disposed) return
                 view.focused = false
-                trace?.record("focus-lost", "temporary=${e.isTemporary}", engine.snapshot())
+                trace?.record("focus-lost", "temporary=${e.isTemporary}", viewModel.snapshot())
                 requestEndComposition()
                 writeDiagnostics()
             }
@@ -1091,7 +1089,7 @@ open class EditorSurface @JvmOverloads constructor(
         addInputMethodListener(object : InputMethodListener {
             override fun inputMethodTextChanged(e: InputMethodEvent) {
                 if (retired || disposed) {
-                    trace?.record("awt-text-ignored", "retired=$retired; disposed=$disposed", engine.snapshot())
+                    trace?.record("awt-text-ignored", "retired=$retired; disposed=$disposed", viewModel.snapshot())
                     e.consume()
                     return
                 }
@@ -1100,11 +1098,11 @@ open class EditorSurface @JvmOverloads constructor(
                     val committed = e.committedCharacterCount
                     val caret = e.caret?.insertionIndex
                     quarantineInput(QuarantinedCallback(text, committed, caret, activeImeEpoch))
-                    trace?.record("awt-text-quarantined", "text=$text; committed=$committed; caret=$caret; status=$recoveryStatus; admissionAllowed=false", engine.snapshot())
+                    trace?.record("awt-text-quarantined", "text=$text; committed=$committed; caret=$caret; status=$recoveryStatus; admissionAllowed=false", viewModel.snapshot())
                     recordDiagnosticEvent("Input method callback quarantined: recovery status is $recoveryStatus; ambiguous native text not admitted")
                     e.consume()
                     writeDiagnostics()
-                    statusChanged(engine.snapshot())
+                    statusChanged(viewModel.snapshot())
                     return
                 }
                 imeEvents++
@@ -1112,9 +1110,9 @@ open class EditorSurface @JvmOverloads constructor(
                 val committed = e.committedCharacterCount
                 val caret = e.caret?.insertionIndex
                 latestRecoveryProposal = QuarantinedCallback(text, committed, caret, activeImeEpoch)
-                trace?.record("awt-text", "text=$text; committed=$committed; caret=$caret; leading=${e.caret?.isLeadingEdge}; locale=${inputContext?.locale}", engine.snapshot())
+                trace?.record("awt-text", "text=$text; committed=$committed; caret=$caret; leading=${e.caret?.isLeadingEdge}; locale=${inputContext?.locale}", viewModel.snapshot())
                 if (committed in 0..text.length && (caret == null || caret in 0..text.length - committed)) {
-                    if (engine.nativeStructureAdmission(text)) {
+                    if (viewModel.nativeStructureAdmission(text)) {
                         viewModel.dispatch(EditorIntent.NativeText(text, committed, caret))
                     } else {
                         quarantineInput(QuarantinedCallback(text, committed, caret, activeImeEpoch))
@@ -1124,27 +1122,27 @@ open class EditorSurface @JvmOverloads constructor(
                         recoveryStatus = RecoveryStatus.DEGRADED_RECOVERY_FAILED
                         recordDiagnosticEvent("Native image seam refused; input paused until explicit host recovery. Inspect capture status; callback is never replayed.")
                         writeDiagnostics()
-                        statusChanged(engine.snapshot())
+                        statusChanged(viewModel.snapshot())
                     }
                 } else {
-                    runCatching { engine.onEvent("Rejected malformed native text/caret range") }
+                    runCatching { viewModel.onEngineEvent("Rejected malformed native text/caret range") }
                 }
                 e.consume()
                 preferredX = null
             }
             override fun caretPositionChanged(e: InputMethodEvent) {
                 if (retired || disposed) {
-                    trace?.record("awt-caret-ignored", "retired=$retired; disposed=$disposed", engine.snapshot())
+                    trace?.record("awt-caret-ignored", "retired=$retired; disposed=$disposed", viewModel.snapshot())
                     e.consume()
                     return
                 }
                 if (!admissionAllowed) {
-                    trace?.record("awt-caret-quarantined", "${e.caret}", engine.snapshot())
+                    trace?.record("awt-caret-quarantined", "${e.caret}", viewModel.snapshot())
                     e.consume()
                     return
                 }
-                trace?.record("awt-caret", "${e.caret}", engine.snapshot())
-                e.caret?.let { engine.inputMethodCaret(it.insertionIndex) }
+                trace?.record("awt-caret", "${e.caret}", viewModel.snapshot())
+                e.caret?.let { viewModel.dispatch(EditorIntent.NativeCaret(it.insertionIndex)) }
                 e.consume()
             }
         })
@@ -1158,7 +1156,7 @@ open class EditorSurface @JvmOverloads constructor(
                 if ((e.isControlDown || e.isMetaDown || e.isAltDown) && !e.isAltGraphDown) return
                 if (e.keyChar >= ' ' && e.keyChar != '\u007f' && e.keyChar != KeyEvent.CHAR_UNDEFINED) {
                     keyEvents++
-                    engine.replace(e.keyChar.toString())
+                    viewModel.dispatch(EditorIntent.Type(e.keyChar.toString()))
                     preferredX = null
                     e.consume()
                 }
@@ -1169,17 +1167,17 @@ open class EditorSurface @JvmOverloads constructor(
                     return
                 }
                 if (e.isConsumed) return
-                trace?.record("key-pressed", "code=${e.keyCode}; modifiers=${e.modifiersEx}; locale=${inputContext?.locale}", engine.snapshot())
+                trace?.record("key-pressed", "code=${e.keyCode}; modifiers=${e.modifiersEx}; locale=${inputContext?.locale}", viewModel.snapshot())
                 val command = (e.isControlDown || e.isMetaDown) && !e.isAltGraphDown
                 when {
                     command && e.keyCode == KeyEvent.VK_S -> requestSave(e.isShiftDown)
                     command && e.keyCode == KeyEvent.VK_O -> requestOpen()
-                    command && e.keyCode == KeyEvent.VK_B -> if (admissionAllowed) engine.toggleFormat(FormatKey.BOLD)
-                    command && e.keyCode == KeyEvent.VK_I -> if (admissionAllowed) engine.toggleFormat(FormatKey.ITALIC)
-                    command && e.keyCode == KeyEvent.VK_U -> if (admissionAllowed) engine.toggleFormat(FormatKey.UNDERLINE)
+                    command && e.keyCode == KeyEvent.VK_B -> if (admissionAllowed) viewModel.dispatch(EditorIntent.ToggleFormat(FormatKey.BOLD))
+                    command && e.keyCode == KeyEvent.VK_I -> if (admissionAllowed) viewModel.dispatch(EditorIntent.ToggleFormat(FormatKey.ITALIC))
+                    command && e.keyCode == KeyEvent.VK_U -> if (admissionAllowed) viewModel.dispatch(EditorIntent.ToggleFormat(FormatKey.UNDERLINE))
                     command && e.keyCode == KeyEvent.VK_Z -> viewModel.dispatch(EditorIntent.Command(if (e.isShiftDown) EditAction.Redo else EditAction.Undo))
                     command && e.keyCode == KeyEvent.VK_Y -> viewModel.dispatch(EditorIntent.Command(EditAction.Redo))
-                    command && e.keyCode == KeyEvent.VK_A -> engine.selectAll()
+                    command && e.keyCode == KeyEvent.VK_A -> viewModel.dispatch(EditorIntent.SelectAll)
                     command && e.keyCode == KeyEvent.VK_C -> copySelection(false)
                     command && e.keyCode == KeyEvent.VK_X -> copySelection(admissionAllowed)
                     command && e.keyCode == KeyEvent.VK_V -> if (admissionAllowed) paste(e.isShiftDown)
@@ -1188,19 +1186,19 @@ open class EditorSurface @JvmOverloads constructor(
                             if (command && published.selection.collapsed) {
                                 wordDelete(e.keyCode == KeyEvent.VK_BACK_SPACE)
                             } else {
-                                engine.delete(e.keyCode == KeyEvent.VK_BACK_SPACE)
+                                viewModel.dispatch(EditorIntent.Delete(e.keyCode == KeyEvent.VK_BACK_SPACE))
                             }
                         }
                     }
-                    e.keyCode == KeyEvent.VK_ENTER -> if (admissionAllowed) engine.replace("\n", "Enter", paragraphBreaks = !e.isShiftDown)
+                    e.keyCode == KeyEvent.VK_ENTER -> if (admissionAllowed) viewModel.dispatch(EditorIntent.Type("\n", "Enter", paragraphBreaks = !e.isShiftDown))
                     e.keyCode == KeyEvent.VK_TAB -> if (e.isShiftDown)transferFocusBackward() else transferFocus()
                     e.keyCode in arrayOf(KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, KeyEvent.VK_UP, KeyEvent.VK_DOWN, KeyEvent.VK_HOME, KeyEvent.VK_END, KeyEvent.VK_PAGE_UP, KeyEvent.VK_PAGE_DOWN) -> navigate(e.keyCode, e.isShiftDown, command)
                     e.keyCode == KeyEvent.VK_ESCAPE && imageResize != null -> {
                         imageResize = null
                         repaint()
                     }
-                    e.keyCode == KeyEvent.VK_ESCAPE && (published.marked != null || published.waiting || engine.settlementTimedOut) -> {
-                        if (published.waiting || engine.settlementTimedOut) {
+                    e.keyCode == KeyEvent.VK_ESCAPE && (published.marked != null || published.waiting || viewModel.settlementTimedOut) -> {
+                        if (published.waiting || viewModel.settlementTimedOut) {
                             abortAndRetireComposition()
                         } else {
                             requestEndComposition()
@@ -1220,7 +1218,7 @@ open class EditorSurface @JvmOverloads constructor(
                 if (admissionAllowed) {
                     imageHandles(this@EditorSurface)?.let { h ->
                         if (h.left.contains(e.point) || h.right.contains(e.point)) {
-                            val c = engine.clipboardCapture() ?: return
+                            val c = viewModel.clipboardCapture() ?: return
                             val im = c.basis.document.units[c.selection.start].image ?: return
                             imageResize = ImageResizeGesture(c, im, e.x, 1f / checkNotNull(geometry()).scale, h.right.contains(e.point))
                             imageResizeX = e.x
@@ -1233,7 +1231,7 @@ open class EditorSurface @JvmOverloads constructor(
                 val pos = hit(e.point) ?: return
                 if (published.visible.units.getOrNull(pos)?.kind == UnitKind.IMAGE) {
                     dragAnchor = pos
-                    engine.move(Selection(pos, pos + 1))
+                    viewModel.dispatch(EditorIntent.Select(Selection(pos, pos + 1)))
                     return
                 }
                 if (e.clickCount >= 3) {
@@ -1241,23 +1239,23 @@ open class EditorSurface @JvmOverloads constructor(
                     val start = text.lastIndexOf('\n', (pos - 1).coerceAtLeast(-1)) + 1
                     val end = text.indexOf('\n', pos).let { if (it < 0) text.length else it + 1 }
                     dragAnchor = start
-                    engine.move(Selection(start, end))
+                    viewModel.dispatch(EditorIntent.Select(Selection(start, end)))
                 } else if (e.clickCount == 2) {
                     val text = published.visible.text
                     val words = BreakIterator.getWordInstance().apply { setText(text) }
                     val a = words.preceding((pos + 1).coerceAtMost(text.length)).let { if (it < 0) 0 else it }
                     val b = words.following(pos).let { if (it < 0) text.length else it }
                     dragAnchor = a
-                    engine.move(Selection(a, b))
+                    viewModel.dispatch(EditorIntent.Select(Selection(a, b)))
                 } else {
                     dragAnchor = if (e.isShiftDown) published.selection.anchor else pos
-                    engine.move(Selection(dragAnchor, pos), side = pointerSide(e.point, pos), wrapAffinity = pointerWrapAffinity(e.point, pos))
+                    viewModel.dispatch(EditorIntent.Select(Selection(dragAnchor, pos), side = pointerSide(e.point, pos), wrapAffinity = pointerWrapAffinity(e.point, pos)))
                 }
             }
             override fun mouseReleased(e: MouseEvent) {
                 val drag = imageResize ?: return
                 imageResize = null
-                if (admissionAllowed && !retired && !disposed && resizeViewKey() == imageResizeView)drag.finish(engine, e.x)
+                if (admissionAllowed && !retired && !disposed && resizeViewKey() == imageResizeView)drag.finish(viewModel, e.x)
                 repaint()
             }
         })
@@ -1274,7 +1272,7 @@ open class EditorSurface @JvmOverloads constructor(
                 } else if (e.y > height - 12) {
                     view.scroll += 18
                 }
-                hit(e.point)?.let { engine.move(Selection(dragAnchor, it), wrapAffinity = pointerWrapAffinity(e.point, it)) }
+                hit(e.point)?.let { viewModel.dispatch(EditorIntent.Select(Selection(dragAnchor, it), wrapAffinity = pointerWrapAffinity(e.point, it))) }
             }
         })
         addMouseWheelListener { e ->
@@ -1329,7 +1327,7 @@ open class EditorSurface @JvmOverloads constructor(
         clearCallbacks()
         markDisposed()
         if (!wasRetired) {
-            engine.cancelPendingOnTeardown()
+            viewModel.dispatch(EditorIntent.CancelPendingOnTeardown)
         }
         super.removeNotify()
     }
@@ -1340,7 +1338,7 @@ open class EditorSurface @JvmOverloads constructor(
     }
     public override fun processInputMethodEvent(e: InputMethodEvent) {
         if (retired || disposed) {
-            trace?.record("awt-ime-ignored", "id=${e.id}; retired=$retired; disposed=$disposed", engine.snapshot())
+            trace?.record("awt-ime-ignored", "id=${e.id}; retired=$retired; disposed=$disposed", viewModel.snapshot())
             e.consume()
             return
         }
@@ -1497,33 +1495,33 @@ open class EditorSurface @JvmOverloads constructor(
             }
         }
         if (key !in arrayOf(KeyEvent.VK_UP, KeyEvent.VK_DOWN)) preferredX = null
-        engine.move(Selection(if (extend) Graphemes.snap(text, s.anchor, false) else target.offset, target.offset, target.primary, wrapAffinity = target.wrapAffinity), target.primary, if (target.offset < s.focus) TypingSide.RIGHT else TypingSide.LEFT)
+        viewModel.dispatch(EditorIntent.Select(Selection(if (extend) Graphemes.snap(text, s.anchor, false) else target.offset, target.offset, target.primary, wrapAffinity = target.wrapAffinity), target.primary, if (target.offset < s.focus) TypingSide.RIGHT else TypingSide.LEFT))
     }
     private fun wordDelete(back: Boolean) {
         val text = published.visible.text
         val at = published.selection.focus
         val word = BreakIterator.getWordInstance().apply { setText(text) }
         val other = (if (back) word.preceding(at) else word.following(at)).let { if (it < 0) if (back) 0 else text.length else it }
-        engine.replace("", "Delete", range = Selection(at, other), deleteSide = if (back) TypingSide.LEFT else TypingSide.RIGHT)
+        viewModel.dispatch(EditorIntent.Type("", "Delete", range = Selection(at, other), deleteSide = if (back) TypingSide.LEFT else TypingSide.RIGHT))
     }
     var clipboardMessage = ""
         private set
     fun copySelection(cut: Boolean) {
         if (retired || disposed || !admissionAllowed) return
-        val captured = engine.clipboardCapture() ?: run {
+        val captured = viewModel.clipboardCapture() ?: run {
             clipboardMessage = "Finish composition before clipboard commands"
-            statusChanged(engine.snapshot())
+            statusChanged(viewModel.snapshot())
             return
         }
         if (captured.selection.collapsed) return
         try {
             RichClipboard.publish(captured, Toolkit.getDefaultToolkit().systemClipboard, codec = services.fragments)
-            val success = !cut || engine.clipboardApply(captured, null, plain = "", cut = true)
+            val success = !cut || viewModel.dispatch(EditorIntent.ApplyClipboard(captured, null, plain = "", cut = true))
             clipboardMessage = if (success) (if (cut) "Cut" else "Copied rich + plain text") else "Cut target changed; content kept"
         } catch (e: Exception) {
             clipboardMessage = "Clipboard unavailable; content kept"
         }
-        statusChanged(engine.snapshot())
+        statusChanged(viewModel.snapshot())
     }
     var clipboardPasteBusy = false
         private set
@@ -1531,15 +1529,15 @@ open class EditorSurface @JvmOverloads constructor(
 
     @JvmOverloads fun paste(plainOnly: Boolean = false) {
         if (retired || disposed || !admissionAllowed || clipboardPasteBusy) return
-        val captured = engine.clipboardCapture() ?: run {
+        val captured = viewModel.clipboardCapture() ?: run {
             clipboardMessage = "Finish composition before pasting"
-            statusChanged(engine.snapshot())
+            statusChanged(viewModel.snapshot())
             return
         }
         val reader = clipboardReaderForChecks ?: { plain: Boolean -> RichClipboard.read(Toolkit.getDefaultToolkit().systemClipboard, plain, codec = services.fragments) }
         clipboardPasteBusy = true
         clipboardMessage = "Reading clipboard…"
-        statusChanged(engine.snapshot())
+        statusChanged(viewModel.snapshot())
         object : SwingWorker<RichClipboard.Read, Unit>() {
             override fun doInBackground(): RichClipboard.Read {
                 check(!SwingUtilities.isEventDispatchThread())
@@ -1550,7 +1548,7 @@ open class EditorSurface @JvmOverloads constructor(
                 if (retired || disposed)return
                 try {
                     val data = get()
-                    val success = admissionAllowed && engine.clipboardApply(captured, data.rich, data.plain)
+                    val success = admissionAllowed && viewModel.dispatch(EditorIntent.ApplyClipboard(captured, data.rich, data.plain))
                     clipboardMessage = if (!success) {
                         "Paste refused; target changed or unsupported data"
                     } else if (data.fallback) {
@@ -1563,7 +1561,7 @@ open class EditorSurface @JvmOverloads constructor(
                 } catch (e: Exception) {
                     clipboardMessage = "Clipboard unavailable or invalid; document unchanged"
                 }
-                statusChanged(engine.snapshot())
+                statusChanged(viewModel.snapshot())
             }
         }.execute()
     }
@@ -1829,15 +1827,15 @@ open class EditorSurface @JvmOverloads constructor(
             published.visible.text.substring(startIndex, endIndex)
         }
         override fun setTextContents(text: String) = edit {
-            engine.replaceExact(text, "AccessibilityReplaceAll", Selection(0, published.visible.units.size))
+            viewModel.dispatch(EditorIntent.ReplaceExact(text, "AccessibilityReplaceAll", Selection(0, published.visible.units.size)))
         }
         override fun insertTextAtIndex(index: Int, text: String) = replaceText(index, index, text)
         override fun replaceText(startIndex: Int, endIndex: Int, text: String) = edit {
-            engine.replaceExact(text, "AccessibilityReplace", range(startIndex, endIndex))
+            viewModel.dispatch(EditorIntent.ReplaceExact(text, "AccessibilityReplace", range(startIndex, endIndex)))
         }
         override fun delete(startIndex: Int, endIndex: Int) = replaceText(startIndex, endIndex, "")
         override fun selectText(startIndex: Int, endIndex: Int) = edit(requireAdmission = false) {
-            engine.move(range(startIndex, endIndex))
+            viewModel.dispatch(EditorIntent.Select(range(startIndex, endIndex)))
         }
         override fun setAttributes(startIndex: Int, endIndex: Int, attributes: javax.swing.text.AttributeSet) {
             val capturedAttributes = attributes.copyAttributes()
@@ -1856,17 +1854,17 @@ open class EditorSurface @JvmOverloads constructor(
                 }
                 val bold = flag(javax.swing.text.StyleConstants.Bold)
                 val italic = flag(javax.swing.text.StyleConstants.Italic)
-                if (bold != null || italic != null) viewModel.dispatch(EditorIntent.Command(EditAction.FormatAttributes(engine.capture(target), bold, italic)))
+                if (bold != null || italic != null) viewModel.dispatch(EditorIntent.Command(EditAction.FormatAttributes(viewModel.capture(target), bold, italic)))
             }
         }
         override fun cut(startIndex: Int, endIndex: Int) = edit {
             check(published.marked == null && !published.waiting) { "Finish native composition before clipboard commands" }
-            engine.move(range(startIndex, endIndex))
+            viewModel.dispatch(EditorIntent.Select(range(startIndex, endIndex)))
             copySelection(true)
         }
         override fun paste(startIndex: Int) = edit {
             check(published.marked == null && !published.waiting) { "Finish native composition before clipboard commands" }
-            engine.move(range(startIndex, startIndex))
+            viewModel.dispatch(EditorIntent.Select(range(startIndex, startIndex)))
             this@EditorSurface.paste()
         }
         override fun getIndexAtPoint(p: Point): Int = onOwner { hit(p) ?: -1 }
@@ -1931,7 +1929,7 @@ open class EditorSurface @JvmOverloads constructor(
                 else -> if (c.code < 32 || Character.isSurrogate(c)) "\\u%04x".format(c.code) else c.toString()
             }.toList()
         }.joinToString("") + "\""
-        val s = engine.snapshot()
+        val s = viewModel.snapshot()
         published = s
         val failuresJson = recoveryFailures.joinToString(",") { quoted(it) }
         val draftStr = retainedPreimage?.draftText ?: ""

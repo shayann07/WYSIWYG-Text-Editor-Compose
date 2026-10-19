@@ -10,6 +10,7 @@ import dev.shayxo.composedoc.model.TextStyleFlags
 import dev.shayxo.composedoc.model.TextUnit
 import dev.shayxo.composedoc.model.UnitKind
 import dev.shayxo.composedoc.ui.EditorSurface
+import dev.shayxo.composedoc.ui.EditorViewModel
 import dev.shayxo.composedoc.ui.ViewState
 import kotlin.random.Random
 
@@ -312,7 +313,7 @@ fun runChecks() {
 
         // 1 & 4 & 5: Ordinary delayed AWT commit after abort + identical text "X" in consecutive legitimate sessions
         val e1 = EditorEngine(Document(emptyList())) { 0L }
-        val s1 = EditorSurface(e1, ViewState(e1.snapshot()))
+        val s1 = EditorSurface(EditorViewModel(e1), ViewState(e1.snapshot()))
         try {
             e1.inputMethod("X", 0, 1)
             s1.abortAndRetireComposition()
@@ -350,7 +351,7 @@ fun runChecks() {
 
         // 2a: Reentrant ordinary AWT commit during abortAndRetireComposition
         val e2 = EditorEngine(Document(emptyList())) { 0L }
-        val s2 = EditorSurface(e2, ViewState(e2.snapshot()))
+        val s2 = EditorSurface(EditorViewModel(e2), ViewState(e2.snapshot()))
         try {
             e2.inputMethod("Y", 0, 1)
             s2.onEndCompositionRequested = {
@@ -368,7 +369,7 @@ fun runChecks() {
 
         // 2b: Reentrant ordinary AWT commit during normal settlement request (Ctrl+B / toggleFormat)
         val eNorm = EditorEngine(Document(emptyList())) { 0L }
-        val sNorm = EditorSurface(eNorm, ViewState(eNorm.snapshot()))
+        val sNorm = EditorSurface(EditorViewModel(eNorm), ViewState(eNorm.snapshot()))
         try {
             dispatchIme(sNorm, "Z", 0, 1)
             sNorm.onEndCompositionRequested = { dispatchCommit(sNorm, "Z") }
@@ -383,7 +384,7 @@ fun runChecks() {
 
         // 6: Partial-commit recovery under reentrant and delayed AWT callbacks
         val ePartial = seeded("abcd")
-        val sPartial = EditorSurface(ePartial, ViewState(ePartial.snapshot()))
+        val sPartial = EditorSurface(EditorViewModel(ePartial), ViewState(ePartial.snapshot()))
         try {
             ePartial.selectAll()
             dispatchIme(sPartial, "XYcd", 1, 3) // 'X' accepted, 'Y' provisional replacement, "cd" retained
@@ -407,7 +408,7 @@ fun runChecks() {
 
         // 8: Disposal prevents callbacks from mutating document
         val eDisp = seeded("keep")
-        val sDisp = EditorSurface(eDisp, ViewState(eDisp.snapshot()))
+        val sDisp = EditorSurface(EditorViewModel(eDisp), ViewState(eDisp.snapshot()))
         dispatchIme(sDisp, "temp", 0, 4)
         eDisp.toggleFormat(FormatKey.BOLD)
         check(eDisp.snapshot().waiting)

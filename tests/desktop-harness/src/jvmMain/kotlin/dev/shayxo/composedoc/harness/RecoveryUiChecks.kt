@@ -82,7 +82,7 @@ fun runRecoveryUiChecks(result: File) {
                 prompts++
                 2
             }
-            check(!files.dirty && third.engine.snapshot().marked == null)
+            check(!files.dirty && third.viewModel.verificationEngine.snapshot().marked == null)
             files.close()
             check(prompts == 1 && window.isDisplayable && third.recoverySession.snapshotRetainedDrafts().size == 2) { "Clean-document close discarded pending recovery without consulting Cancel" }
             checks += "Clean-document close consults Cancel and retains both capsules"
@@ -106,7 +106,7 @@ fun runRecoveryUiChecks(result: File) {
             session.mergeRetainedDrafts(incoming)
             check(session.snapshotRetainedDrafts().size == 2 && session.retainedPreimage === metadataCopy && incoming.retainedPreimage === sameTextDifferentRecord)
             checks += "Copies update one logical record; equal text in distinct records and session adoption do not deduplicate or consume work"
-            val e = surface.engine
+            val e = surface.viewModel.verificationEngine
             e.replace("X", "AcceptedBasisChange")
             e.perform(EditAction.Undo)
             check(e.snapshot().committed.text.isEmpty()) // Actual intervening accepted work makes the older records stale.
@@ -118,7 +118,7 @@ fun runRecoveryUiChecks(result: File) {
         val exported = work.resolve("retained-rich.astra")
         onOwner {
             val surface = checkNotNull(findSurface(window))
-            val e = surface.engine
+            val e = surface.viewModel.verificationEngine
             val text = "ک\u0650\nتاب\n\uD800\uFFFF"
             desired = Document(
                 text.mapIndexed { index, char ->
@@ -147,7 +147,7 @@ fun runRecoveryUiChecks(result: File) {
         onOwner {
             val surface = checkNotNull(findSurface(window))
             val reopened = DocumentFiles.read(exported)
-            check(reopened.same(desired) && surface.engine.snapshot() == snapshotBeforeExport)
+            check(reopened.same(desired) && surface.viewModel.verificationEngine.snapshot() == snapshotBeforeExport)
             check(surface.retainedPreimage === richRecord && surface.recoverySession.snapshotRetainedDrafts().size == 3)
             checks += "Actual Export Draft action preserves full raw UTF-16, attributes, start style and hard/soft breaks without applying or clearing a capsule"
             val originalBytes = java.nio.file.Files.readAllBytes(originalPath)
@@ -161,7 +161,7 @@ fun runRecoveryUiChecks(result: File) {
         awaitFiles()
         onOwner {
             val surface = checkNotNull(findSurface(window))
-            check(surface.retainedPreimage === richRecord && surface.recoverySession.snapshotRetainedDrafts().size == 3 && surface.engine.snapshot() == snapshotBeforeExport)
+            check(surface.retainedPreimage === richRecord && surface.recoverySession.snapshotRetainedDrafts().size == 3 && surface.viewModel.verificationEngine.snapshot() == snapshotBeforeExport)
             check(exportFailures.size == 2 && !files.status.contains("Recovery draft exported"))
             check(java.nio.file.Files.isDirectory(work) && DocumentFiles.read(exported).same(desired))
             checks += "Invalid export/original-path refusal preserves files, records and document state"
@@ -188,11 +188,11 @@ fun runRecoveryUiChecks(result: File) {
             check(surface.retainedPreimage === surface.recoverySession.snapshotRetainedDrafts()[0])
             val old = surface.retainedPreimage
             button("Apply Draft").doClick()
-            check(surface.retainedPreimage === old && surface.engine.snapshot().notice.startsWith("RecoveryBaseChanged"))
+            check(surface.retainedPreimage === old && surface.viewModel.verificationEngine.snapshot().notice.startsWith("RecoveryBaseChanged"))
             check(surface.selectRetainedDraft(richRecord))
-            val priorObserver = surface.engine.onChange
+            val priorObserver = surface.viewModel.verificationEngine.onChange
             var newer: RetainedCompositionPreimage? = null
-            surface.engine.onChange = { frame ->
+            surface.viewModel.verificationEngine.onChange = { frame ->
                 priorObserver(frame)
                 if (frame.notice == "Recovered draft applied" && newer == null) {
                     val nextDocument = desired.copy(units = desired.units + TextUnit(9999, 'X'))
@@ -202,7 +202,7 @@ fun runRecoveryUiChecks(result: File) {
                         null,
                         frame.committed.text,
                         surface.activeImeEpoch,
-                        surface.engine.captureRecoveryReplacement(nextDocument, Selection(0, 0)),
+                        surface.viewModel.verificationEngine.captureRecoveryReplacement(nextDocument, Selection(0, 0)),
                     )
                     surface.retainedPreimage = newer
                 }
@@ -210,10 +210,10 @@ fun runRecoveryUiChecks(result: File) {
             try {
                 button("Apply Draft").doClick()
             } finally {
-                surface.engine.onChange = priorObserver
+                surface.viewModel.verificationEngine.onChange = priorObserver
             }
             val pending = surface.recoverySession.snapshotRetainedDrafts()
-            check(pending.size == 3 && pending.none { it === richRecord } && surface.retainedPreimage === newer && surface.engine.snapshot().committed == desired)
+            check(pending.size == 3 && pending.none { it === richRecord } && surface.retainedPreimage === newer && surface.viewModel.verificationEngine.snapshot().committed == desired)
             button("Discard Draft").doClick()
             check(surface.recoverySession.snapshotRetainedDrafts().size == 2 && surface.retainedPreimage !== newer)
             checks += "Picker targets the chosen record; stale apply retains it and confirmed apply resolves only that version despite newer reentrant work"
@@ -231,7 +231,7 @@ fun runRecoveryUiChecks(result: File) {
             val paused = checkNotNull(old.abortAndRetireComposition(true))
             check(!paused.admissionAllowed)
             input(paused, "محفوظ\uD800\u0000\uFFFF")
-            check(paused.quarantinedCallbacks.size == 1 && paused.engine.snapshot().committed.text.isEmpty())
+            check(paused.quarantinedCallbacks.size == 1 && paused.viewModel.verificationEngine.snapshot().committed.text.isEmpty())
             old.recoveryHooks = EditorSurface.RecoveryHooks()
             paused.recoveryHooks = EditorSurface.RecoveryHooks()
             check(paused.recoverExplicitly(false))
@@ -263,7 +263,7 @@ fun runRecoveryUiChecks(result: File) {
             check(window.isDisplayable && !files.dirty && surface.quarantinedCallbacks.size == 1)
             callback = surface.quarantinedCallbacks.single()
             check(callback.text == "محفوظ\uD800\u0000\uFFFF" && callback.committed == 0 && callback.caret == callback.text.length)
-            beforeInputExport = surface.engine.snapshot()
+            beforeInputExport = surface.viewModel.verificationEngine.snapshot()
             files.inputDestinationPicker = { inputExport }
             button("Export Input").doClick()
             checks += "Quarantine-only Keep Editing, ordinary save and save-close retain callbacks without replay"
@@ -276,7 +276,7 @@ fun runRecoveryUiChecks(result: File) {
             check(entry["text"] == callback.text && (entry["utf16"] as List<*>).map { (it as Number).toInt() } == callback.text.map { it.code })
             check((entry["epoch"] as Number).toInt() == callback.epoch && (entry["timestampMillis"] as Number).toLong() == callback.timestamp)
             check((entry["committedCharacterCount"] as Number).toInt() == callback.committed && (entry["caret"] as Number).toInt() == callback.caret)
-            check(surface.engine.snapshot() == beforeInputExport && surface.quarantinedCallbacks.single() === callback && files.path == originalPath && !files.dirty)
+            check(surface.viewModel.verificationEngine.snapshot() == beforeInputExport && surface.quarantinedCallbacks.single() === callback && files.path == originalPath && !files.dirty)
             checks += "Actual diagnostic export preserves lone surrogate, NUL, U+FFFF, raw UTF-16 and callback metadata without changing main document or save point"
             exportFailures.clear()
             files.reportFailureForChecks = { exportFailures += it }
@@ -289,7 +289,7 @@ fun runRecoveryUiChecks(result: File) {
         awaitFiles()
         onOwner {
             val surface = checkNotNull(findSurface(window))
-            check(exportFailures.size == 2 && surface.quarantinedCallbacks.single() === callback && surface.engine.snapshot() == beforeInputExport)
+            check(exportFailures.size == 2 && surface.quarantinedCallbacks.single() === callback && surface.viewModel.verificationEngine.snapshot() == beforeInputExport)
             check(!files.status.contains("Unverified input exported"))
             checks += "Main-path refusal and failed diagnostic IO preserve the queue, files and accepted state"
             // Include both recovery rows when checking the minimum window, with a new owned capsule.
@@ -299,10 +299,10 @@ fun runRecoveryUiChecks(result: File) {
                 null,
                 "",
                 surface.activeImeEpoch,
-                surface.engine.captureRecoveryReplacement(Document(listOf(TextUnit(999, 'A'))), Selection(0, 0)),
+                surface.viewModel.verificationEngine.captureRecoveryReplacement(Document(listOf(TextUnit(999, 'A'))), Selection(0, 0)),
             )
             surface.retainedPreimage = record
-            surface.statusChanged(surface.engine.snapshot())
+            surface.statusChanged(surface.viewModel.verificationEngine.snapshot())
             for ((width, height) in listOf(940 to 400, 1020 to 700)) {
                 window.setSize(width, height)
                 window.validate()

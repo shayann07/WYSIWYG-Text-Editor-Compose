@@ -4,9 +4,9 @@ import dev.shayxo.composedoc.data.LocalRecoveryStore
 import dev.shayxo.composedoc.data.UnfinishedCapture
 import dev.shayxo.composedoc.data.UnfinishedKind
 import dev.shayxo.composedoc.data.UnfinishedStore
-import dev.shayxo.composedoc.domain.EditorEngine
 import dev.shayxo.composedoc.model.Document
 import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.ui.EditorViewModel
 import dev.shayxo.composedoc.ui.QuarantinedCallback
 import dev.shayxo.composedoc.ui.RecoverySession
 import dev.shayxo.composedoc.ui.RetainedCompositionPreimage
@@ -37,13 +37,13 @@ class UnfinishedController(val store: UnfinishedStore, val owner: String, val re
     @Volatile private var closeDecision = false
     fun decisionBusy() = decisions.isNotEmpty() || closeDecision
     private val timer = javax.swing.Timer(700) { flush() }.apply { start() }
-    fun observe(engine: EditorEngine, session: RecoverySession, path: Path?, native: QuarantinedCallback? = null) {
+    fun observe(viewModel: EditorViewModel, session: RecoverySession, path: Path?, native: QuarantinedCallback? = null) {
         check(SwingUtilities.isEventDispatchThread())
         if (stopped)return
-        val f = engine.snapshot()
+        val f = viewModel.snapshot()
         val retained = session.snapshotRetainedDrafts()
         val q = session.quarantinedCallbacks.toList()
-        val token = engine.compositionCaptureToken()
+        val token = viewModel.compositionCaptureToken()
         val signature = listOf(f.visible, f.committed, token, retained, q, f.marked, f.selection)
         if (signature == lastSignature)return
         if (desired.isEmpty() && token == null && retained.isEmpty() && q.isEmpty()) {
@@ -55,7 +55,7 @@ class UnfinishedController(val store: UnfinishedStore, val owner: String, val re
         fun id(key: Any) = keys.getOrPut(key) { UUID.randomUUID().toString() }
         val captures = ArrayList<UnfinishedCapture>()
         if (token != null) {
-            val evidence = engine.recoveryCompositionEvidence()
+            val evidence = viewModel.recoveryCompositionEvidence()
             if (evidence.length > 1900) {
                 problem = "RecoveryCaptureFailed: composition provenance exceeds 2048-unit capture envelope; evidence remains in memory"
                 failed(problem!!)

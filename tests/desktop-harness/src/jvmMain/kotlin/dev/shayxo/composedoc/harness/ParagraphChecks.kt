@@ -224,9 +224,9 @@ fun runParagraphChecks(result: File) {
                 for (direction in listOf(ParagraphDirection.LTR, ParagraphDirection.RTL)) {
                     for (alignment in ParagraphAlignment.entries) {
                         owner {
-                            surface.engine.move(Selection(0, 0))
-                            val before = surface.engine.snapshot()
-                            surface.engine.setParagraphProperties(direction, alignment)
+                            surface.viewModel.verificationEngine.move(Selection(0, 0))
+                            val before = surface.viewModel.verificationEngine.snapshot()
+                            surface.viewModel.verificationEngine.setParagraphProperties(direction, alignment)
                             surface.view.ensureCaret = false
                             surface.view.scroll = 0f
                             val g = checkNotNull(surface.geometry())
@@ -239,7 +239,7 @@ fun runParagraphChecks(result: File) {
                                 physicalLeft -> check(abs(left) < 1.5) { "Left edge $left is not zero" }
                                 else -> check(abs(right - g.textWidth) < 1.5) { "Right edge $right != ${g.textWidth}" }
                             }
-                            check(surface.engine.snapshot().committed.text == before.committed.text && surface.engine.snapshot().selection == before.selection)
+                            check(surface.viewModel.verificationEngine.snapshot().committed.text == before.committed.text && surface.viewModel.verificationEngine.snapshot().selection == before.selection)
                             val box = checkNotNull(surface.accessibleContext.accessibleText.getCharacterBounds(0))
                             val hit = surface.accessibleContext.accessibleText.getIndexAtPoint(java.awt.Point(box.x + maxOf(1, box.width / 4), box.y + box.height / 2))
                             check(hit == 0) { "Aligned A hit=$hit paged=$paged size=$width/$height $direction/$alignment box=$box geo=${g.x}/${g.y}/${g.scale} bounds=${p.layout.getBoundingBox(0)} line=$left/$right caret0=${g.caret(0)} caret1=${g.caret(1)}" }
@@ -249,8 +249,8 @@ fun runParagraphChecks(result: File) {
                             check(abs(native.x - (screen.x + caret.left / g.scale).roundToInt()) <= 1 && abs(native.y - (screen.y + caret.top / g.scale).roundToInt()) <= 1)
                             val attrs = checkNotNull(surface.accessibleContext.accessibleText.getCharacterAttribute(0))
                             check(attrs.getAttribute("ParagraphDirection") == direction.name && attrs.getAttribute("ParagraphAlignment") == alignment.name)
-                            surface.engine.move(Selection(0, 2))
-                            check(checkNotNull(surface.geometry()).hasRenderedSelection(surface.engine.snapshot().selection))
+                            surface.viewModel.verificationEngine.move(Selection(0, 2))
+                            check(checkNotNull(surface.geometry()).hasRenderedSelection(surface.viewModel.verificationEngine.snapshot().selection))
                             observed += mapOf("paged" to paged, "width" to width, "direction" to direction.name, "alignment" to alignment.name, "left" to left, "right" to right, "textWidth" to g.textWidth, "hit" to hit)
                         }
                     }
@@ -259,9 +259,9 @@ fun runParagraphChecks(result: File) {
                     for (direction in listOf(ParagraphDirection.LTR, ParagraphDirection.RTL)) {
                         for (alignment in ParagraphAlignment.entries) {
                             owner {
-                                val block = surface.engine.snapshot().committed.paragraphs()[index]
-                                surface.engine.move(Selection(block.start, block.start))
-                                surface.engine.setParagraphProperties(direction, alignment)
+                                val block = surface.viewModel.verificationEngine.snapshot().committed.paragraphs()[index]
+                                surface.viewModel.verificationEngine.move(Selection(block.start, block.start))
+                                surface.viewModel.verificationEngine.setParagraphProperties(direction, alignment)
                                 surface.view.ensureCaret = false
                                 surface.view.scroll = 0f
                                 val g = checkNotNull(surface.geometry())
@@ -282,32 +282,32 @@ fun runParagraphChecks(result: File) {
             }
         }
         owner {
-            surface.engine.move(Selection(0, 0))
-            surface.engine.setParagraphProperties(ParagraphDirection.RTL, ParagraphAlignment.START)
-            surface.engine.inputMethod("XYZ", 0, 1)
+            surface.viewModel.verificationEngine.move(Selection(0, 0))
+            surface.viewModel.verificationEngine.setParagraphProperties(ParagraphDirection.RTL, ParagraphAlignment.START)
+            surface.viewModel.verificationEngine.inputMethod("XYZ", 0, 1)
             val candidateGeometry = checkNotNull(surface.geometry())
             val native = checkNotNull(surface.getTextLocation(java.awt.font.TextHitInfo.leading(1)))
             val hit = surface.getLocationOffset(native.x, native.y + native.height / 2)
             check(hit?.insertionIndex == 1) { "Candidate-position query did not roundtrip exact offset 1: $hit" }
-            check(candidateGeometry.revision == surface.engine.snapshot().documentRevision)
-            surface.engine.abortComposition()
-            val empty = surface.engine.snapshot().committed.paragraphs().last()
-            surface.engine.move(Selection(empty.start, empty.start))
-            surface.engine.setParagraphProperties(ParagraphDirection.RTL, ParagraphAlignment.CENTER)
+            check(candidateGeometry.revision == surface.viewModel.verificationEngine.snapshot().documentRevision)
+            surface.viewModel.verificationEngine.abortComposition()
+            val empty = surface.viewModel.verificationEngine.snapshot().committed.paragraphs().last()
+            surface.viewModel.verificationEngine.move(Selection(empty.start, empty.start))
+            surface.viewModel.verificationEngine.setParagraphProperties(ParagraphDirection.RTL, ParagraphAlignment.CENTER)
             val g = checkNotNull(surface.geometry())
             val p = g.paragraphs.last()
             check(p.baseDirection == androidx.compose.ui.text.style.ResolvedTextDirection.Rtl)
             check(abs(g.caret(empty.start).left - g.x - g.textWidth / 2f) < 2) { "Empty Center caret not centered" }
-            val different = surface.engine.snapshot().committed.paragraphs()[1].start
-            surface.engine.move(Selection(different, different))
-            surface.engine.setParagraphProperties(direction = ParagraphDirection.LTR)
-            surface.engine.move(Selection(0, surface.engine.snapshot().committed.units.size))
+            val different = surface.viewModel.verificationEngine.snapshot().committed.paragraphs()[1].start
+            surface.viewModel.verificationEngine.move(Selection(different, different))
+            surface.viewModel.verificationEngine.setParagraphProperties(direction = ParagraphDirection.LTR)
+            surface.viewModel.verificationEngine.move(Selection(0, surface.viewModel.verificationEngine.snapshot().committed.units.size))
             check(controls.direction.selectedIndex == 0 && controls.alignment.selectedIndex == 0)
-            val allBefore = surface.engine.snapshot()
+            val allBefore = surface.viewModel.verificationEngine.snapshot()
             controls.direction.selectedItem = "Auto"
-            check(surface.engine.snapshot().undoCount == allBefore.undoCount + 1 && surface.engine.snapshot().selection == allBefore.selection)
-            check(surface.engine.snapshot().committed.paragraphs().dropLast(1).all { it.properties.direction == ParagraphDirection.AUTO })
-            check(surface.engine.snapshot().committed.paragraphs().last().properties.direction == ParagraphDirection.RTL) // Excluded trailing empty paragraph.
+            check(surface.viewModel.verificationEngine.snapshot().undoCount == allBefore.undoCount + 1 && surface.viewModel.verificationEngine.snapshot().selection == allBefore.selection)
+            check(surface.viewModel.verificationEngine.snapshot().committed.paragraphs().dropLast(1).all { it.properties.direction == ParagraphDirection.AUTO })
+            check(surface.viewModel.verificationEngine.snapshot().committed.paragraphs().last().properties.direction == ParagraphDirection.RTL) // Excluded trailing empty paragraph.
             controls.alignment.selectedItem = "End"
             window.setSize(1020, 700)
             window.validate()
@@ -326,9 +326,9 @@ fun runParagraphChecks(result: File) {
         await("Automatic property checkpoint") { controller.state()["completed"] == controller.state()["observed"] && controller.state()["running"] == false }
         lateinit var expected: Document
         owner {
-            expected = surface.engine.snapshot().committed
-            val payload = surface.engine.captureRecoveryReplacement(expected, surface.engine.snapshot().selection)
-            surface.retainedPreimage = RetainedCompositionPreimage("", surface.engine.snapshot().selection, null, expected.text, surface.activeImeEpoch, payload)
+            expected = surface.viewModel.verificationEngine.snapshot().committed
+            val payload = surface.viewModel.verificationEngine.captureRecoveryReplacement(expected, surface.viewModel.verificationEngine.snapshot().selection)
+            surface.retainedPreimage = RetainedCompositionPreimage("", surface.viewModel.verificationEngine.snapshot().selection, null, expected.text, surface.activeImeEpoch, payload)
             check(surface.exportRetainedDocument(work.resolve("retained.astra").toFile()))
             controller.finish(false)
             window.dispose()

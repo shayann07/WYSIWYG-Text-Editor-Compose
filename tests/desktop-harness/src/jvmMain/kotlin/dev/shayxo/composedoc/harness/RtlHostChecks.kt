@@ -23,7 +23,7 @@ import java.nio.file.Files
 
 /** Real Compose geometry and AWT dispatch, with generated fixtures rather than an OS keyboard. */
 fun runRtlHostChecks(surface: EditorSurface) {
-    val e = surface.engine
+    val e = surface.viewModel.verificationEngine
     fun key(code: Int, shift: Boolean = false) = surface.dispatchEvent(
         KeyEvent(surface, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), if (shift) KeyEvent.SHIFT_DOWN_MASK else 0, code, KeyEvent.CHAR_UNDEFINED),
     )

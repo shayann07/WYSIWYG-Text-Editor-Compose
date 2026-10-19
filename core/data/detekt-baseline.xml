@@ -200,32 +200,5 @@
     <ID>TooGenericExceptionCaught:LocalRecovery.kt$LocalRecoveryStore$e: Exception</ID>
     <ID>TooGenericExceptionCaught:LocalRecovery.kt$LocalRecoveryStore$failure: Throwable</ID>
     <ID>TooGenericExceptionCaught:UnfinishedRecovery.kt$UnfinishedStore$e: Exception</ID>
-    <ID>TooManyFunctions:DocumentFiles.kt$DocumentFiles : DocumentCodecDocumentRepository</ID>
-    <ID>TooManyFunctions:UnfinishedRecovery.kt$UnfinishedStore</ID>
-    <ID>WildcardImport:DocumentFiles.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:DocumentFiles.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:DocumentFiles.kt$import java.io.*</ID>
-    <ID>WildcardImport:DocumentFiles.kt$import java.nio.file.*</ID>
-    <ID>WildcardImport:DocumentWorkspace.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:DocumentWorkspace.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:DocumentWorkspace.kt$import java.io.*</ID>
-    <ID>WildcardImport:DocumentWorkspace.kt$import java.nio.file.*</ID>
-    <ID>WildcardImport:FragmentCodec.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:FragmentCodec.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:FragmentCodec.kt$import java.io.*</ID>
-    <ID>WildcardImport:ImageDecoder.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:ImageDecoder.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:LocalRecovery.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:LocalRecovery.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:LocalRecovery.kt$import java.io.*</ID>
-    <ID>WildcardImport:LocalRecovery.kt$import java.nio.file.*</ID>
-    <ID>WildcardImport:UnfinishedRecovery.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:UnfinishedRecovery.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:UnfinishedRecovery.kt$import java.io.*</ID>
-    <ID>WildcardImport:UnfinishedRecovery.kt$import java.nio.file.*</ID>
-    <ID>WildcardImport:WorkspaceStorage.kt$import dev.shayxo.composedoc.domain.*</ID>
-    <ID>WildcardImport:WorkspaceStorage.kt$import dev.shayxo.composedoc.model.*</ID>
-    <ID>WildcardImport:WorkspaceStorage.kt$import java.io.*</ID>
-    <ID>WildcardImport:WorkspaceStorage.kt$import java.nio.file.*</ID>
   </CurrentIssues>
 </SmellBaseline>

@@ -1,7 +1,6 @@
 package dev.shayxo.composedoc.ui
 
 import dev.shayxo.composedoc.domain.ClipboardCapture
-import dev.shayxo.composedoc.domain.EditorEngine
 import dev.shayxo.composedoc.domain.StructureCommand
 import dev.shayxo.composedoc.model.ImageBlock
 import dev.shayxo.composedoc.model.paragraphs
@@ -13,16 +12,16 @@ class ImageResizeGesture(val capture: ClipboardCapture, val image: ImageBlock, v
         require(zoom.isFinite() && zoom > 0f && zoom <= 1f)
     }
     fun width(x: Int) = (image.width + (x - startX) * (if (rightHandle)1 else -1) / zoom).toInt().coerceIn(10, 600)
-    fun finish(engine: EditorEngine, x: Int): Boolean {
-        if (engine.clipboardCapture() != capture)return false
+    fun finish(viewModel: EditorViewModel, x: Int): Boolean {
+        if (viewModel.clipboardCapture() != capture)return false
         val n = width(x)
-        return n == image.width || engine.applyStructure(capture, StructureCommand.ImageProperties(n, image.alt))
+        return n == image.width || viewModel.dispatch(EditorIntent.ApplyStructure(capture, StructureCommand.ImageProperties(n, image.alt)))
     }
 }
 
 data class ImageHandleGeometry(val bounds: Rectangle, val left: Rectangle, val right: Rectangle)
 fun imageHandles(surface: EditorSurface): ImageHandleGeometry? {
-    val f = surface.engine.snapshot()
+    val f = surface.viewModel.snapshot()
     if (!f.selection.let { it.end - it.start == 1 } || f.marked != null)return null
     val p = surface.geometry()?.paragraphs?.firstOrNull { it.startOffset == f.selection.start && it.image != null } ?: return null
     val g = surface.geometry() ?: return null

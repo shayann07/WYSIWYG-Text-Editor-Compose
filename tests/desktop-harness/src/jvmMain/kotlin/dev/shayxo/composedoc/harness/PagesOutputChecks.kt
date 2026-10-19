@@ -198,7 +198,7 @@ fun runPagesOutputChecks(result: File) {
     }
     test("canonical line plan stable across continuous/paged and all zooms/viewport widths") {
         val expected = plan.paragraphs.map { p -> (0 until p.lineCount).map { p.layout.getLineStart(it) to p.layout.getLineEnd(it) } }
-        val before = surface.engine.snapshot()
+        val before = surface.viewModel.verificationEngine.snapshot()
         for (paged in listOf(false, true)) {
             for (zoom in listOf(.5f, .75f, 1f)) {
                 edt {
@@ -212,7 +212,7 @@ fun runPagesOutputChecks(result: File) {
                     val p = surface.geometry()!!.documentPagePlan!!
                     check(p.paragraphs.map { q -> (0 until q.lineCount).map { q.layout.getLineStart(it) to q.layout.getLineEnd(it) } } == expected)
                     check(p.pageCount == plan.pageCount)
-                    check(surface.engine.snapshot().committed == before.committed && surface.engine.snapshot().undoCount == before.undoCount)
+                    check(surface.viewModel.verificationEngine.snapshot().committed == before.committed && surface.viewModel.verificationEngine.snapshot().undoCount == before.undoCount)
                 }
             }
         }
@@ -255,11 +255,11 @@ fun runPagesOutputChecks(result: File) {
             check(kotlin.math.abs(captured.paperFormat().width - 595.2756) < .001)
             check(runCatching { captured.pageable(0, 2) }.isFailure)
         }
-        check(surface.engine.snapshot().committed.same(specimen))
+        check(surface.viewModel.verificationEngine.snapshot().committed.same(specimen))
         metrics["printServices"] = java.awt.print.PrinterJob.lookupPrintServices().map { it.name }
     }
     test("preview capture yields owner thread and Cancel preserves canonical state/history") {
-        val prior = surface.engine.snapshot()
+        val prior = surface.viewModel.verificationEngine.snapshot()
         var ticks = 0
         var longest = 0L
         var last = System.nanoTime()
@@ -289,7 +289,7 @@ fun runPagesOutputChecks(result: File) {
             children(dialog).filterIsInstance<JButton>().single { it.text == "Cancel / Close" }.doClick()
             heartbeat.stop()
             check(!dialog.isDisplayable)
-            check(surface.engine.snapshot().committed == prior.committed && surface.engine.snapshot().undoCount == prior.undoCount)
+            check(surface.viewModel.verificationEngine.snapshot().committed == prior.committed && surface.viewModel.verificationEngine.snapshot().undoCount == prior.undoCount)
         }
         metrics["previewCaptureHeartbeat"] = mapOf("ticks" to ticks, "maxGapMs" to longest / 1e6, "declaredLimitMs" to 250)
         check(ticks > 0 && longest < 250_000_000L)
@@ -317,7 +317,7 @@ fun runPagesOutputChecks(result: File) {
                 val p = s.geometry()!!.documentPagePlan!!
                 check(p.running.last().text == "صفحہ $count / $count")
                 check(p.running[count - 2].text == "صفحہ ${count - 1} / $count")
-                check(s.engine.snapshot().committed.same(d) && s.engine.snapshot().undoCount == 0)
+                check(s.viewModel.verificationEngine.snapshot().committed.same(d) && s.viewModel.verificationEngine.snapshot().undoCount == 0)
                 owner.dispose()
             }
         }
@@ -362,7 +362,7 @@ fun runPagesOutputChecks(result: File) {
         check(raster < limits.getValue("endpointRasterMs"))
         metrics["fiftyPageWorkload"] = mapOf("units" to large.units.size, "layoutMs" to layout, "captureMs" to capture, "endpointRasterMs" to raster, "heapUsedBytes" to java.lang.management.ManagementFactory.getMemoryMXBean().heapMemoryUsage.used)
         edt {
-            check(s.engine.snapshot().committed.same(large) && s.engine.snapshot().undoCount == 0)
+            check(s.viewModel.verificationEngine.snapshot().committed.same(large) && s.viewModel.verificationEngine.snapshot().undoCount == 0)
             owner.dispose()
         }
     }

@@ -22,7 +22,7 @@ import javax.swing.text.StyleConstants
 
 fun runAccessibilityHostChecks(surface: EditorSurface) {
     val editable = checkNotNull(surface.accessibleContext.accessibleEditableText)
-    val e = surface.engine
+    val e = surface.viewModel.verificationEngine
     val textEvents = ArrayList<java.beans.PropertyChangeEvent>()
     val textListener = java.beans.PropertyChangeListener { event ->
         if (event.propertyName == javax.accessibility.AccessibleContext.ACCESSIBLE_TEXT_PROPERTY) textEvents += event
@@ -200,13 +200,13 @@ fun runAccessibilityThreadChecks(resultFile: File) {
         check(StyleConstants.getFontFamily(initialAttributes) == "SansSerif" && StyleConstants.getFontSize(initialAttributes) == 18)
         var typographyEvents = 0
         SwingUtilities.invokeAndWait {
-            surface.engine.selectAll()
-            surface.engine.replace("ک\nتاب", "TypographyFixture", paragraphBreaks = true)
+            surface.viewModel.verificationEngine.selectAll()
+            surface.viewModel.verificationEngine.replace("ک\nتاب", "TypographyFixture", paragraphBreaks = true)
             editable.setAttributes(0, 1, SimpleAttributeSet().apply { StyleConstants.setBold(this, true) })
             editable.setAttributes(2, 3, SimpleAttributeSet().apply { StyleConstants.setItalic(this, true) })
-            surface.engine.move(Selection(5, 5))
-            surface.engine.inputMethod("に", 0, 1)
-            val beforeTypography = surface.engine.snapshot()
+            surface.viewModel.verificationEngine.move(Selection(5, 5))
+            surface.viewModel.verificationEngine.inputMethod("に", 0, 1)
+            val beforeTypography = surface.viewModel.verificationEngine.snapshot()
             check(beforeTypography.marked != null)
             val covered = ArrayList<Int>()
             val listener = java.beans.PropertyChangeListener { event ->
@@ -224,7 +224,7 @@ fun runAccessibilityThreadChecks(resultFile: File) {
                         check(StyleConstants.isItalic(old.attributes) == StyleConstants.isItalic(observed))
                         covered += index
                     }
-                    check(surface.engine.snapshot() == beforeTypography)
+                    check(surface.viewModel.verificationEngine.snapshot() == beforeTypography)
                     typographyEvents++
                 }
             }
@@ -236,11 +236,11 @@ fun runAccessibilityThreadChecks(resultFile: File) {
                 check(typographyEvents >= 3) { "Distinct inline/paragraph runs were collapsed in a font notification" }
                 val count = typographyEvents
                 surface.changeTypography(profile)
-                check(typographyEvents == count && surface.engine.snapshot() == beforeTypography)
+                check(typographyEvents == count && surface.viewModel.verificationEngine.snapshot() == beforeTypography)
             } finally {
                 surface.accessibleContext.removePropertyChangeListener(listener)
             }
-            surface.engine.abortComposition()
+            surface.viewModel.verificationEngine.abortComposition()
         }
         val requested = checkNotNull(editable.getCharacterAttribute(0))
         check(StyleConstants.getFontFamily(requested) == "Noto Nastaliq Urdu" && StyleConstants.getFontSize(requested) == 26)
@@ -250,8 +250,8 @@ fun runAccessibilityThreadChecks(resultFile: File) {
         SwingUtilities.invokeLater {
             entered.countDown()
             check(release.await(5, TimeUnit.SECONDS))
-            surface.engine.selectAll()
-            surface.engine.replace("Changed basis", "ConcurrentFixture")
+            surface.viewModel.verificationEngine.selectAll()
+            surface.viewModel.verificationEngine.replace("Changed basis", "ConcurrentFixture")
         }
         check(entered.await(3, TimeUnit.SECONDS))
         val worker = Thread {
