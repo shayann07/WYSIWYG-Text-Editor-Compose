@@ -39,3 +39,6 @@ Thumbs.db
 *.pfx
 *.keystore
 *.jks
+# Machine-local pointers rewritten by each verification run
+/tests/suites/urdu/u0/latest-run.json
+/tests/suites/urdu/u0/latest-run.*.tmp
