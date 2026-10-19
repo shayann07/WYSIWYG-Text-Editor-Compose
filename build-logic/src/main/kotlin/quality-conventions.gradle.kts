@@ -13,7 +13,7 @@ extensions.configure<SpotlessExtension> {
     lineEndings = com.diffplug.spotless.LineEnding.UNIX
     kotlin {
         target("src/**/*.kt")
-        targetExclude("**/generated/**")
+        targetExclude("**/generated/**", "**/Unicode16ConformanceTest.kt")
         ktlint(versions.findVersion("ktlint").get().requiredVersion)
             .setEditorConfigPath(rootProject.file(".editorconfig"))
     }
@@ -29,7 +29,8 @@ extensions.configure<DetektExtension> {
     // Pre-migration prototype findings are recorded per module; new findings fail the build.
     baseline = file("detekt-baseline.xml")
     config.setFrom(rootProject.file("build-logic/config/detekt.yml"))
-    source.setFrom(fileTree("src") { include("**/*.kt"); exclude("**/generated/**") })
+    // Generated sources (Unicode tables and the pinned conformance test) keep generator output.
+    source.setFrom(fileTree("src") { include("**/*.kt"); exclude("**/generated/**", "**/Unicode16ConformanceTest.kt") })
 }
 tasks.register("ktlintCheck") { dependsOn("spotlessCheck") }
 tasks.matching { it.name == "check" }.configureEach { dependsOn("spotlessCheck", "detekt") }
