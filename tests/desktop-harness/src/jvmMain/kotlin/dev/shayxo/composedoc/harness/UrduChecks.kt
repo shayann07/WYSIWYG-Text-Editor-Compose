@@ -103,122 +103,10 @@ fun runUrduEngineHarness(
             continue
         }
         check(f.operations.isNotEmpty()) { "${f.id}: Missing operations" }
-        val composing = f.operations.any { it.startsWith("ime_") }
-        val seed = if (composing) TextStyleFlags(bold = true, italic = true) else TextStyleFlags()
-        val engine = EditorEngine(Document(emptyList(), seed))
-        val baseline = engine.snapshot()
-        var unformatted: EditorFrame? = null
-        var formatted: EditorFrame? = null
-        var styleSteps = 0
+        val run = UrduFixtureOperationRun(f)
         val done = ArrayList<String>()
-        fun verifyUnits() {
-            check(
-                engine.snapshot().visible.units.map {
-                    it.char.code
-                } == f.utf16CodeUnits,
-            ) { "${f.id}: UTF-16 code units mismatch" }
-            val scalarCount = engine.snapshot().visible.text.codePoints().filter {
-                it !in 0xD800..0xDFFF
-            }.count().toInt()
-            check(scalarCount == f.scalarCount) {
-                "${f.id}: Unicode scalar metadata mismatch; raw surrogate units must remain preserved"
-            }
-        }
-        fun verifySpans() {
-            for (span in f.formattingSpans) {
-                for (i in span.start until span.end) {
-                    val unit = engine.snapshot().visible.units[i]
-                    check(!span.bold || unit.style.bold) { "${f.id}: Unit $i expected bold" }
-                    check(!span.italic || unit.style.italic) { "${f.id}: Unit $i expected italic" }
-                }
-            }
-            check(engine.snapshot().visible.text == f.text) { "${f.id}: Formatting changed text" }
-        }
         for (op in f.operations) {
-            when (op) {
-                "insert_text", "insert_raw_units" -> {
-                    engine.replace(f.text, "UrduFixture", paragraphBreaks = true)
-                    unformatted = engine.snapshot()
-                }
-                "verify_text" -> check(engine.snapshot().visible.text == f.text) { "${f.id}: Visible text mismatch" }
-                "verify_code_units", "verify_utf16_code_units", "verify_code_units_preserved" -> verifyUnits()
-                "verify_no_crash" -> check(engine.snapshot().notice == "Ready") { "${f.id}: Engine rejected edit" }
-                "save_load_roundtrip" -> {
-                    val document = engine.snapshot().visible
-                    check(DocumentFiles.decode(DocumentFiles.encode(document)).same(document)) {
-                        "${f.id}: Attributed save/load mismatch"
-                    }
-                }
-                "apply_formatting" -> {
-                    for (span in f.formattingSpans) {
-                        engine.move(Selection(span.start, span.end))
-                        if (span.bold && engine.formatState(FormatKey.BOLD) != true) {
-                            engine.toggleFormat(FormatKey.BOLD)
-                            styleSteps++
-                        }
-                        if (span.italic && engine.formatState(FormatKey.ITALIC) != true) {
-                            engine.toggleFormat(FormatKey.ITALIC)
-                            styleSteps++
-                        }
-                    }
-                    formatted = engine.snapshot()
-                }
-                "verify_spans" -> verifySpans()
-                "undo" -> repeat(styleSteps) { engine.perform(EditAction.Undo) }
-                "verify_baseline" -> check(engine.snapshot().visible.same(checkNotNull(unformatted).visible)) {
-                    "${f.id}: Undo failed to restore unstyled baseline"
-                }
-                "redo" -> {
-                    repeat(styleSteps) { engine.perform(EditAction.Redo) }
-                    check(engine.snapshot().visible.same(checkNotNull(formatted).visible)) {
-                        "${f.id}: Redo formatting mismatch"
-                    }
-                }
-                "ime_preedit" -> {
-                    engine.inputMethod(f.text, 0, f.text.length)
-                    check(engine.snapshot().committed == baseline.committed) { "${f.id}: Provisional text leaked" }
-                    check(engine.snapshot().visible.text == f.text)
-                }
-                "ime_partial_commit" -> {
-                    require(f.text.length > 1)
-                    engine.inputMethod(f.text, 1, f.text.length - 1)
-                    check(engine.snapshot().committed.text == f.text.take(1)) { "${f.id}: Partial commit mismatch" }
-                    check(engine.snapshot().visible.text == f.text)
-                    check(engine.snapshot().selection == Selection(f.text.length, f.text.length))
-                    check(engine.snapshot().undoCount == baseline.undoCount) {
-                        "${f.id}: Session split before settlement"
-                    }
-                }
-                "ime_commit_remaining" -> {
-                    val remaining = f.text.substring(1)
-                    engine.inputMethod(remaining, remaining.length, null)
-                    val frame = engine.snapshot()
-                    check(frame.committed.text == f.text && frame.visible.text == f.text) {
-                        "${f.id}: Accepted prefix lost or duplicated"
-                    }
-                    check(frame.visible.units.all { it.style == seed }) { "${f.id}: Composition attributes lost" }
-                    check(frame.selection == Selection(f.text.length, f.text.length) && frame.marked == null)
-                    check(frame.undoCount == baseline.undoCount + 1) {
-                        "${f.id}: One session must produce one undo group"
-                    }
-                    formatted = frame
-                }
-                "ime_undo_session" -> {
-                    engine.perform(EditAction.Undo)
-                    check(
-                        engine.snapshot().committed.same(baseline.committed) &&
-                            engine.snapshot().selection == baseline.selection,
-                    ) { "${f.id}: Session Undo mismatch" }
-                }
-                "ime_redo_session" -> {
-                    engine.perform(EditAction.Redo)
-                    check(
-                        engine.snapshot().committed == checkNotNull(formatted).committed &&
-                            engine.snapshot().selection == formatted.selection,
-                    ) { "${f.id}: Session Redo mismatch" }
-                }
-                else -> error("${f.id}: Unsupported fixture operation: $op")
-            }
+            run.apply(op)
             done += op
             counts[op] = (counts[op] ?: 0) + 1
         }
@@ -234,6 +122,153 @@ fun runUrduEngineHarness(
         "fixtureExecutionStatus" to perFixtureStatus,
         "status" to "PASS",
     )
+}
+
+/** Executes one fixture's declared operations against a fresh engine. */
+private class UrduFixtureOperationRun(private val f: UrduFixture) {
+    private val composing = f.operations.any { it.startsWith("ime_") }
+    private val seed = if (composing) TextStyleFlags(bold = true, italic = true) else TextStyleFlags()
+    private val engine = EditorEngine(Document(emptyList(), seed))
+    private val baseline = engine.snapshot()
+    private var unformatted: EditorFrame? = null
+    private var formatted: EditorFrame? = null
+    private var styleSteps = 0
+
+    fun apply(op: String) {
+        val handled = applyTextOperation(op) || applyFormattingOperation(op) || applyImeOperation(op)
+        if (!handled) error("${f.id}: Unsupported fixture operation: $op")
+    }
+
+    private fun verifyUnits() {
+        check(
+            engine.snapshot().visible.units.map {
+                it.char.code
+            } == f.utf16CodeUnits,
+        ) { "${f.id}: UTF-16 code units mismatch" }
+        val scalarCount = engine.snapshot().visible.text.codePoints().filter {
+            it !in 0xD800..0xDFFF
+        }.count().toInt()
+        check(scalarCount == f.scalarCount) {
+            "${f.id}: Unicode scalar metadata mismatch; raw surrogate units must remain preserved"
+        }
+    }
+
+    private fun verifySpans() {
+        for (span in f.formattingSpans) {
+            for (i in span.start until span.end) {
+                val unit = engine.snapshot().visible.units[i]
+                check(!span.bold || unit.style.bold) { "${f.id}: Unit $i expected bold" }
+                check(!span.italic || unit.style.italic) { "${f.id}: Unit $i expected italic" }
+            }
+        }
+        check(engine.snapshot().visible.text == f.text) { "${f.id}: Formatting changed text" }
+    }
+
+    private fun applyTextOperation(op: String): Boolean {
+        when (op) {
+            "insert_text", "insert_raw_units" -> {
+                engine.replace(f.text, "UrduFixture", paragraphBreaks = true)
+                unformatted = engine.snapshot()
+            }
+            "verify_text" -> check(engine.snapshot().visible.text == f.text) { "${f.id}: Visible text mismatch" }
+            "verify_code_units", "verify_utf16_code_units", "verify_code_units_preserved" -> verifyUnits()
+            "verify_no_crash" -> check(engine.snapshot().notice == "Ready") { "${f.id}: Engine rejected edit" }
+            "save_load_roundtrip" -> {
+                val document = engine.snapshot().visible
+                check(DocumentFiles.decode(DocumentFiles.encode(document)).same(document)) {
+                    "${f.id}: Attributed save/load mismatch"
+                }
+            }
+            else -> return false
+        }
+        return true
+    }
+
+    private fun applyFormattingOperation(op: String): Boolean {
+        when (op) {
+            "apply_formatting" -> applyFormattingSpans()
+            "verify_spans" -> verifySpans()
+            "undo" -> repeat(styleSteps) { engine.perform(EditAction.Undo) }
+            "verify_baseline" -> check(engine.snapshot().visible.same(checkNotNull(unformatted).visible)) {
+                "${f.id}: Undo failed to restore unstyled baseline"
+            }
+            "redo" -> {
+                repeat(styleSteps) { engine.perform(EditAction.Redo) }
+                check(engine.snapshot().visible.same(checkNotNull(formatted).visible)) {
+                    "${f.id}: Redo formatting mismatch"
+                }
+            }
+            else -> return false
+        }
+        return true
+    }
+
+    private fun applyFormattingSpans() {
+        for (span in f.formattingSpans) {
+            engine.move(Selection(span.start, span.end))
+            if (span.bold && engine.formatState(FormatKey.BOLD) != true) {
+                engine.toggleFormat(FormatKey.BOLD)
+                styleSteps++
+            }
+            if (span.italic && engine.formatState(FormatKey.ITALIC) != true) {
+                engine.toggleFormat(FormatKey.ITALIC)
+                styleSteps++
+            }
+        }
+        formatted = engine.snapshot()
+    }
+
+    private fun applyImeOperation(op: String): Boolean {
+        when (op) {
+            "ime_preedit" -> {
+                engine.inputMethod(f.text, 0, f.text.length)
+                check(engine.snapshot().committed == baseline.committed) { "${f.id}: Provisional text leaked" }
+                check(engine.snapshot().visible.text == f.text)
+            }
+            "ime_partial_commit" -> {
+                require(f.text.length > 1)
+                engine.inputMethod(f.text, 1, f.text.length - 1)
+                check(engine.snapshot().committed.text == f.text.take(1)) { "${f.id}: Partial commit mismatch" }
+                check(engine.snapshot().visible.text == f.text)
+                check(engine.snapshot().selection == Selection(f.text.length, f.text.length))
+                check(engine.snapshot().undoCount == baseline.undoCount) {
+                    "${f.id}: Session split before settlement"
+                }
+            }
+            "ime_commit_remaining" -> commitRemainingComposition()
+            "ime_undo_session" -> {
+                engine.perform(EditAction.Undo)
+                check(
+                    engine.snapshot().committed.same(baseline.committed) &&
+                        engine.snapshot().selection == baseline.selection,
+                ) { "${f.id}: Session Undo mismatch" }
+            }
+            "ime_redo_session" -> {
+                engine.perform(EditAction.Redo)
+                check(
+                    engine.snapshot().committed == checkNotNull(formatted).committed &&
+                        engine.snapshot().selection == checkNotNull(formatted).selection,
+                ) { "${f.id}: Session Redo mismatch" }
+            }
+            else -> return false
+        }
+        return true
+    }
+
+    private fun commitRemainingComposition() {
+        val remaining = f.text.substring(1)
+        engine.inputMethod(remaining, remaining.length, null)
+        val frame = engine.snapshot()
+        check(frame.committed.text == f.text && frame.visible.text == f.text) {
+            "${f.id}: Accepted prefix lost or duplicated"
+        }
+        check(frame.visible.units.all { it.style == seed }) { "${f.id}: Composition attributes lost" }
+        check(frame.selection == Selection(f.text.length, f.text.length) && frame.marked == null)
+        check(frame.undoCount == baseline.undoCount + 1) {
+            "${f.id}: One session must produce one undo group"
+        }
+        formatted = frame
+    }
 }
 
 fun runUrduComposeLayoutProbe(fontsDir: File, outputDir: File): Map<String, Any> {
@@ -277,74 +312,13 @@ fun runUrduComposeLayoutProbe(fontsDir: File, outputDir: File): Map<String, Any>
                 density = density,
                 fontFamilyResolver = resolver,
             )
-
-            val width = paragraph.width
-            val height = paragraph.height
-            val lineCount = paragraph.lineCount
-            val minIntr = paragraph.minIntrinsicWidth
-            val maxIntr = paragraph.maxIntrinsicWidth
-
-            // Measure cursor rect at start and end
-            val startCursor = paragraph.getCursorRect(0)
-            val endCursor = paragraph.getCursorRect(specimenText.length)
-
-            val linesInfo = (0 until lineCount).map { l ->
-                mapOf(
-                    "lineIndex" to l,
-                    "top" to paragraph.getLineTop(l),
-                    "bottom" to paragraph.getLineBottom(l),
-                    "left" to paragraph.getLineLeft(l),
-                    "right" to paragraph.getLineRight(l),
-                )
-            }
-
-            measurements.add(
-                mapOf(
-                    "font" to fontName,
-                    "role" to role,
-                    "specimen" to specimenKey,
-                    "width" to width,
-                    "height" to height,
-                    "lineCount" to lineCount,
-                    "minIntrinsicWidth" to minIntr,
-                    "maxIntrinsicWidth" to maxIntr,
-                    "cursorAt0" to
-                        mapOf("left" to startCursor.left, "top" to startCursor.top, "bottom" to startCursor.bottom),
-                    "cursorAtEnd" to
-                        mapOf("left" to endCursor.left, "top" to endCursor.top, "bottom" to endCursor.bottom),
-                    "lines" to linesInfo,
-                ),
+            measurements.add(urduParagraphMeasurement(paragraph, fontName, role, specimenKey, specimenText))
+            renderUrduParagraphProbe(
+                paragraph,
+                UrduProbeSpecimen(fontName, specimenKey, outputDir),
+                measurements,
+                renderedImages,
             )
-
-            // Render to Skia Bitmap -> PNG
-            val bitmapWidth = width.roundToInt().coerceAtLeast(1) + 20
-            val bitmapHeight = height.roundToInt().coerceAtLeast(1) + 20
-            val bitmap = Bitmap().apply { allocN32Pixels(bitmapWidth, bitmapHeight) }
-            val skiaCanvas = org.jetbrains.skia.Canvas(bitmap)
-            skiaCanvas.clear(0xFFFFFFFF.toInt())
-            val composeCanvas = skiaCanvas.asComposeCanvas()
-            paragraph.paint(composeCanvas, color = androidx.compose.ui.graphics.Color.Black)
-            var inkSamples = 0
-            for (y in 0 until bitmapHeight step 2) {
-                for (x in 0 until bitmapWidth step 2) {
-                    if (bitmap.getColor(x, y) and 0x00FFFFFF != 0x00FFFFFF) inkSamples++
-                }
-            }
-            check(inkSamples > 20) { "Blank typography raster: $fontName/$specimenKey ($inkSamples ink samples)" }
-            measurements[measurements.lastIndex] = measurements.last() + ("nonWhiteInkSamples" to inkSamples)
-
-            val safeFontSlug = fontName.replace(" ", "_").lowercase()
-            val pngFile = File(outputDir, "layout-probe-$safeFontSlug-$specimenKey.png")
-            val image = Image.makeFromBitmap(bitmap)
-            val data = image.encodeToData(EncodedImageFormat.PNG)
-            if (data != null) {
-                Files.write(pngFile.toPath(), data.bytes)
-                renderedImages.add(pngFile.name)
-            }
-            data?.close()
-            image.close()
-            skiaCanvas.close()
-            bitmap.close()
         }
     }
 
@@ -356,6 +330,97 @@ fun runUrduComposeLayoutProbe(fontsDir: File, outputDir: File): Map<String, Any>
         "measurements" to measurements,
         "status" to "PASS",
     )
+}
+
+private fun urduParagraphMeasurement(
+    paragraph: Paragraph,
+    fontName: String,
+    role: String,
+    specimenKey: String,
+    specimenText: String,
+): Map<String, Any> {
+    val width = paragraph.width
+    val height = paragraph.height
+    val lineCount = paragraph.lineCount
+    val minIntr = paragraph.minIntrinsicWidth
+    val maxIntr = paragraph.maxIntrinsicWidth
+
+    // Measure cursor rect at start and end
+    val startCursor = paragraph.getCursorRect(0)
+    val endCursor = paragraph.getCursorRect(specimenText.length)
+
+    val linesInfo = (0 until lineCount).map { l ->
+        mapOf(
+            "lineIndex" to l,
+            "top" to paragraph.getLineTop(l),
+            "bottom" to paragraph.getLineBottom(l),
+            "left" to paragraph.getLineLeft(l),
+            "right" to paragraph.getLineRight(l),
+        )
+    }
+
+    return mapOf(
+        "font" to fontName,
+        "role" to role,
+        "specimen" to specimenKey,
+        "width" to width,
+        "height" to height,
+        "lineCount" to lineCount,
+        "minIntrinsicWidth" to minIntr,
+        "maxIntrinsicWidth" to maxIntr,
+        "cursorAt0" to
+            mapOf("left" to startCursor.left, "top" to startCursor.top, "bottom" to startCursor.bottom),
+        "cursorAtEnd" to
+            mapOf("left" to endCursor.left, "top" to endCursor.top, "bottom" to endCursor.bottom),
+        "lines" to linesInfo,
+    )
+}
+
+private class UrduProbeSpecimen(val fontName: String, val specimenKey: String, val outputDir: File)
+
+/** Renders to a Skia bitmap, records ink samples on the last measurement and writes the PNG. */
+private fun renderUrduParagraphProbe(
+    paragraph: Paragraph,
+    specimen: UrduProbeSpecimen,
+    measurements: MutableList<Map<String, Any>>,
+    renderedImages: MutableList<String>,
+) {
+    val fontName = specimen.fontName
+    val specimenKey = specimen.specimenKey
+    // Render to Skia Bitmap -> PNG
+    val bitmapWidth = paragraph.width.roundToInt().coerceAtLeast(1) + 20
+    val bitmapHeight = paragraph.height.roundToInt().coerceAtLeast(1) + 20
+    val bitmap = Bitmap().apply { allocN32Pixels(bitmapWidth, bitmapHeight) }
+    val skiaCanvas = org.jetbrains.skia.Canvas(bitmap)
+    skiaCanvas.clear(0xFFFFFFFF.toInt())
+    val composeCanvas = skiaCanvas.asComposeCanvas()
+    paragraph.paint(composeCanvas, color = androidx.compose.ui.graphics.Color.Black)
+    val inkSamples = countUrduInkSamples(bitmap, bitmapWidth, bitmapHeight)
+    check(inkSamples > 20) { "Blank typography raster: $fontName/$specimenKey ($inkSamples ink samples)" }
+    measurements[measurements.lastIndex] = measurements.last() + ("nonWhiteInkSamples" to inkSamples)
+
+    val safeFontSlug = fontName.replace(" ", "_").lowercase()
+    val pngFile = File(specimen.outputDir, "layout-probe-$safeFontSlug-$specimenKey.png")
+    val image = Image.makeFromBitmap(bitmap)
+    val data = image.encodeToData(EncodedImageFormat.PNG)
+    if (data != null) {
+        Files.write(pngFile.toPath(), data.bytes)
+        renderedImages.add(pngFile.name)
+    }
+    data?.close()
+    image.close()
+    skiaCanvas.close()
+    bitmap.close()
+}
+
+private fun countUrduInkSamples(bitmap: Bitmap, bitmapWidth: Int, bitmapHeight: Int): Int {
+    var inkSamples = 0
+    for (y in 0 until bitmapHeight step 2) {
+        for (x in 0 until bitmapWidth step 2) {
+            if (bitmap.getColor(x, y) and 0x00FFFFFF != 0x00FFFFFF) inkSamples++
+        }
+    }
+    return inkSamples
 }
 
 fun runUrduChecks(args: Array<String>) {

@@ -1,6 +1,7 @@
 package dev.shayxo.composedoc.harness
 
 import dev.shayxo.composedoc.domain.EditAction
+import dev.shayxo.composedoc.domain.EditorEngine
 import dev.shayxo.composedoc.layout.TypographyProfile
 import dev.shayxo.composedoc.model.Selection
 import dev.shayxo.composedoc.model.TextStyleFlags
@@ -16,6 +17,7 @@ import java.text.AttributedString
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
+import javax.accessibility.AccessibleEditableText
 import javax.swing.SwingUtilities
 import javax.swing.text.SimpleAttributeSet
 import javax.swing.text.StyleConstants
@@ -23,6 +25,19 @@ import javax.swing.text.StyleConstants
 fun runAccessibilityHostChecks(surface: EditorSurface) {
     val editable = checkNotNull(surface.accessibleContext.accessibleEditableText)
     val e = surface.viewModel.verificationEngine
+    checkAccessibleTextInsertion(surface, editable, e)
+    val attributes = checkAccessibleStyleAttributes(surface, editable, e)
+    checkAccessibleTargetedEdits(editable, e, attributes)
+    checkAccessibleProtocolRanges(editable, e)
+    checkAccessibleCompositionCapture(surface, editable, e)
+    checkAccessiblePendingAttributes(surface, editable, e, attributes)
+    println(
+        "PASS editable accessibility: exact UTF-16, target capture, attributes, structure and composition " +
+            "history; OS AT NOT RUN",
+    )
+}
+
+private fun checkAccessibleTextInsertion(surface: EditorSurface, editable: AccessibleEditableText, e: EditorEngine) {
     val textEvents = ArrayList<java.beans.PropertyChangeEvent>()
     val textListener = java.beans.PropertyChangeListener { event ->
         if (event.propertyName == javax.accessibility.AccessibleContext.ACCESSIBLE_TEXT_PROPERTY) textEvents += event
@@ -40,6 +55,13 @@ fun runAccessibilityHostChecks(surface: EditorSurface) {
     check(e.snapshot().committed == before.committed && e.snapshot().selection == before.selection)
     e.perform(EditAction.Redo)
     check(e.snapshot().visible.text == "کتاب English")
+}
+
+private fun checkAccessibleStyleAttributes(
+    surface: EditorSurface,
+    editable: AccessibleEditableText,
+    e: EditorEngine,
+): SimpleAttributeSet {
     editable.selectText(0, 4)
     val stylesBefore = e.snapshot()
     val attributes = SimpleAttributeSet().apply {
@@ -83,6 +105,14 @@ fun runAccessibilityHostChecks(surface: EditorSurface) {
     e.perform(EditAction.Undo)
     check(e.snapshot().committed == stylesBefore.committed && e.snapshot().selection == stylesBefore.selection)
     e.perform(EditAction.Redo)
+    return attributes
+}
+
+private fun checkAccessibleTargetedEdits(
+    editable: AccessibleEditableText,
+    e: EditorEngine,
+    attributes: SimpleAttributeSet,
+) {
     val styled = e.snapshot()
     check(runCatching { editable.replaceText(0, 9999, "bad") }.isFailure)
     check(e.snapshot() == styled)
@@ -103,7 +133,9 @@ fun runAccessibilityHostChecks(surface: EditorSurface) {
     val beforeUnrelatedCaret = e.snapshot()
     check(runCatching { editable.setAttributes(2, 2, attributes) }.isFailure)
     check(e.snapshot() == beforeUnrelatedCaret)
+}
 
+private fun checkAccessibleProtocolRanges(editable: AccessibleEditableText, e: EditorEngine) {
     editable.setTextContents("A😀Z")
     val surrogate = e.snapshot()
     editable.delete(1, 2)
@@ -115,8 +147,8 @@ fun runAccessibilityHostChecks(surface: EditorSurface) {
     e.perform(EditAction.Undo)
     check(e.snapshot().committed == surrogate.committed)
     editable.setTextContents("ک")
-    editable.insertTextAtIndex(1, "\u0650")
-    check(e.snapshot().visible.text == "ک\u0650")
+    editable.insertTextAtIndex(1, "ِ")
+    check(e.snapshot().visible.text == "کِ")
     editable.delete(1, 2)
     check(e.snapshot().visible.text == "ک")
 
@@ -128,24 +160,31 @@ fun runAccessibilityHostChecks(surface: EditorSurface) {
     check(e.snapshot().committed.units[1].kind == UnitKind.PARAGRAPH_BREAK)
     editable.setTextContents("الف\nب")
     check(e.snapshot().visible.units[3].kind == UnitKind.TEXT) { "Opaque AT LF must not infer Enter" }
+}
 
-    fun input(text: String, count: Int, caret: Int?) = surface.dispatchEvent(
-        InputMethodEvent(
-            surface,
-            InputMethodEvent.INPUT_METHOD_TEXT_CHANGED,
-            AttributedString(text).iterator,
-            count,
-            caret?.let(TextHitInfo::leading),
-            null,
-        ),
-    )
+private fun accessibilityInput(surface: EditorSurface, text: String, count: Int, caret: Int?) = surface.dispatchEvent(
+    InputMethodEvent(
+        surface,
+        InputMethodEvent.INPUT_METHOD_TEXT_CHANGED,
+        AttributedString(text).iterator,
+        count,
+        caret?.let(TextHitInfo::leading),
+        null,
+    ),
+)
+
+private fun checkAccessibleCompositionCapture(
+    surface: EditorSurface,
+    editable: AccessibleEditableText,
+    e: EditorEngine,
+) {
     editable.setTextContents("AB")
     editable.selectText(0, 0)
-    input("に", 0, 1)
+    accessibilityInput(surface, "に", 0, 1)
     editable.replaceText(1, 2, "X") // Capture retained A, not the caret after settlement.
     editable.selectText(2, 3)
     check(e.snapshot().waiting)
-    input("日", 1, null)
+    accessibilityInput(surface, "日", 1, null)
     check(e.snapshot().committed.text == "日XB")
     e.perform(EditAction.Undo)
     check(e.snapshot().committed.text == "日AB")
@@ -153,11 +192,18 @@ fun runAccessibilityHostChecks(surface: EditorSurface) {
     check(e.snapshot().committed.text == "AB")
 
     editable.selectText(0, 0)
-    input("に", 0, 1)
+    accessibilityInput(surface, "に", 0, 1)
     editable.delete(0, 1) // Provisional ID will not survive a changed final candidate.
-    input("日", 1, null)
+    accessibilityInput(surface, "日", 1, null)
     check(e.snapshot().committed.text == "日AB" && e.snapshot().notice.contains("target changed", ignoreCase = true))
+}
 
+private fun checkAccessiblePendingAttributes(
+    surface: EditorSurface,
+    editable: AccessibleEditableText,
+    e: EditorEngine,
+    attributes: SimpleAttributeSet,
+) {
     editable.setTextContents("A")
     editable.setAttributes(
         0,
@@ -169,10 +215,10 @@ fun runAccessibilityHostChecks(surface: EditorSurface) {
     )
     editable.selectText(1, 1)
     val beforePendingAttributes = e.snapshot()
-    input("に", 0, 1)
+    accessibilityInput(surface, "に", 0, 1)
     editable.setAttributes(0, 1, attributes)
     e.perform(EditAction.Undo)
-    input("日", 1, null)
+    accessibilityInput(surface, "日", 1, null)
     check(e.snapshot().committed.text == "A日" && e.snapshot().marked == null)
     check(e.snapshot().committed.units.first().style == TextStyleFlags())
     check(e.snapshot().undoCount == beforePendingAttributes.undoCount + 1) {
@@ -182,9 +228,6 @@ fun runAccessibilityHostChecks(surface: EditorSurface) {
     check(e.snapshot().committed.text == "A")
     while (e.snapshot().undoCount > 0) e.perform(EditAction.Undo)
     check(e.snapshot().visible.text.isEmpty())
-    println(
-        "PASS editable accessibility: exact UTF-16, target capture, attributes, structure and composition history; OS AT NOT RUN",
-    )
 }
 
 /** Run outside EDT so the actual accessibility owner-thread handoff can be tested. */
@@ -198,24 +241,7 @@ fun runAccessibilityThreadChecks(resultFile: File) {
     }
     try {
         var windowTreeContexts = 0
-        SwingUtilities.invokeAndWait {
-            val seen = java.util.Collections.newSetFromMap(
-                java.util.IdentityHashMap<javax.accessibility.AccessibleContext, Boolean>(),
-            )
-            val editors = ArrayList<javax.accessibility.AccessibleContext>()
-            fun visit(accessible: javax.accessibility.Accessible?) {
-                val context = accessible?.accessibleContext ?: return
-                if (!seen.add(context)) return
-                check(seen.size <= 500) { "Mounted accessibility tree exceeded bounded fixture" }
-                if (context.accessibleName == "Document editor") editors += context
-                for (index in 0 until context.accessibleChildrenCount) visit(context.getAccessibleChild(index))
-            }
-            visit(window)
-            windowTreeContexts = seen.size
-            check(editors.size == 1 && editors.single() === surface.accessibleContext) {
-                "Mounted editor is not reachable through the standard Accessible window tree"
-            }
-        }
+        SwingUtilities.invokeAndWait { windowTreeContexts = accessibleWindowTreeContexts(window, surface) }
         val editable = checkNotNull(surface.accessibleContext.accessibleEditableText)
         editable.setTextContents("اردو English")
         editable.replaceText(0, 4, "کتاب")
@@ -226,100 +252,13 @@ fun runAccessibilityThreadChecks(resultFile: File) {
                 StyleConstants.getFontSize(initialAttributes) == 18,
         )
         var typographyEvents = 0
-        SwingUtilities.invokeAndWait {
-            surface.viewModel.verificationEngine.selectAll()
-            surface.viewModel.verificationEngine.replace("ک\nتاب", "TypographyFixture", paragraphBreaks = true)
-            editable.setAttributes(0, 1, SimpleAttributeSet().apply { StyleConstants.setBold(this, true) })
-            editable.setAttributes(2, 3, SimpleAttributeSet().apply { StyleConstants.setItalic(this, true) })
-            surface.viewModel.verificationEngine.move(Selection(5, 5))
-            surface.viewModel.verificationEngine.inputMethod("に", 0, 1)
-            val beforeTypography = surface.viewModel.verificationEngine.snapshot()
-            check(beforeTypography.marked != null)
-            val covered = ArrayList<Int>()
-            val listener = java.beans.PropertyChangeListener { event ->
-                if (event.propertyName == javax.accessibility.AccessibleContext.ACCESSIBLE_TEXT_ATTRIBUTES_CHANGED) {
-                    check(SwingUtilities.isEventDispatchThread())
-                    val old = event.oldValue as javax.accessibility.AccessibleAttributeSequence
-                    val next = event.newValue as javax.accessibility.AccessibleAttributeSequence
-                    check(old.startIndex == next.startIndex && old.endIndex == next.endIndex)
-                    check(
-                        StyleConstants.getFontFamily(old.attributes) == "SansSerif" &&
-                            StyleConstants.getFontSize(old.attributes) == 18,
-                    )
-                    check(
-                        StyleConstants.getFontFamily(next.attributes) == "Noto Nastaliq Urdu" &&
-                            StyleConstants.getFontSize(next.attributes) == 26,
-                    )
-                    for (index in next.startIndex until next.endIndex) {
-                        val observed = checkNotNull(editable.getCharacterAttribute(index))
-                        check(observed.isEqual(next.attributes)) {
-                            "Font notification disagreed with the published attributes"
-                        }
-                        check(StyleConstants.isBold(old.attributes) == StyleConstants.isBold(observed))
-                        check(StyleConstants.isItalic(old.attributes) == StyleConstants.isItalic(observed))
-                        covered += index
-                    }
-                    check(surface.viewModel.verificationEngine.snapshot() == beforeTypography)
-                    typographyEvents++
-                }
-            }
-            surface.accessibleContext.addPropertyChangeListener(listener)
-            try {
-                val profile = TypographyProfile.load("noto-nastaliq")
-                surface.changeTypography(profile)
-                check(covered == beforeTypography.visible.units.indices.toList())
-                check(typographyEvents >= 3) { "Distinct inline/paragraph runs were collapsed in a font notification" }
-                val count = typographyEvents
-                surface.changeTypography(profile)
-                check(typographyEvents == count && surface.viewModel.verificationEngine.snapshot() == beforeTypography)
-            } finally {
-                surface.accessibleContext.removePropertyChangeListener(listener)
-            }
-            surface.viewModel.verificationEngine.abortComposition()
-        }
+        SwingUtilities.invokeAndWait { typographyEvents = checkAccessibleTypographyNotifications(surface, editable) }
         val requested = checkNotNull(editable.getCharacterAttribute(0))
         check(
             StyleConstants.getFontFamily(requested) == "Noto Nastaliq Urdu" &&
                 StyleConstants.getFontSize(requested) == 26,
         )
-        val entered = CountDownLatch(1)
-        val release = CountDownLatch(1)
-        val failure = AtomicReference<Throwable?>()
-        SwingUtilities.invokeLater {
-            entered.countDown()
-            check(release.await(5, TimeUnit.SECONDS))
-            surface.viewModel.verificationEngine.selectAll()
-            surface.viewModel.verificationEngine.replace("Changed basis", "ConcurrentFixture")
-        }
-        check(entered.await(3, TimeUnit.SECONDS))
-        val worker = Thread {
-            try {
-                editable.replaceText(0, 4, "must not apply")
-            } catch (error: Throwable) {
-                failure.set(error)
-            }
-        }
-        worker.start()
-        try {
-            val deadline = System.nanoTime() + 2_000_000_000L
-            var queued = false
-            while (worker.isAlive && System.nanoTime() < deadline) {
-                if (worker.state == Thread.State.WAITING &&
-                    worker.stackTrace.any { it.methodName == "invokeAndWait" }
-                ) {
-                    queued = true
-                    break
-                }
-                Thread.sleep(1) // Bounded scheduling wait for this specific live request, not a goal keepalive.
-            }
-            check(queued) { "Accessibility worker did not reach the owner-thread queue" }
-        } finally {
-            release.countDown()
-        }
-        worker.join(3000)
-        check(!worker.isAlive)
-        check(failure.get()?.message?.startsWith("AccessibilityBaseChanged") == true)
-        check(editable.getTextRange(0, editable.charCount) == "Changed basis")
+        checkAccessibleChangedBasisRejected(surface, editable)
         SwingUtilities.invokeAndWait { window.dispose() }
         check(runCatching { editable.replaceText(0, 1, "late") }.isFailure)
         resultFile.parentFile.mkdirs()
@@ -332,7 +271,8 @@ fun runAccessibilityThreadChecks(resultFile: File) {
                     "typographyPreservesCompositionAndHistory" to "PASS",
                     "changedBasisQueuedRequest" to "REJECTED_PRESERVED", "retiredSurfaceAdmission" to "REJECTED",
                     "scope" to
-                        "Java AccessibleEditableText API calls on a real mounted AWT surface; no OS screen reader or system clipboard qualification",
+                        "Java AccessibleEditableText API calls on a real mounted AWT surface; no OS screen reader " +
+                        "or system clipboard qualification",
                 ),
             ),
             Charsets.UTF_8,
@@ -341,4 +281,137 @@ fun runAccessibilityThreadChecks(resultFile: File) {
     } finally {
         SwingUtilities.invokeAndWait { window.dispose() }
     }
+}
+
+/** Must run on the EDT. Returns the number of accessible contexts visited in the window tree. */
+private fun accessibleWindowTreeContexts(window: javax.swing.JFrame, surface: EditorSurface): Int {
+    val seen = java.util.Collections.newSetFromMap(
+        java.util.IdentityHashMap<javax.accessibility.AccessibleContext, Boolean>(),
+    )
+    val editors = ArrayList<javax.accessibility.AccessibleContext>()
+    visitAccessibleTree(window, seen, editors)
+    val contexts = seen.size
+    check(editors.size == 1 && editors.single() === surface.accessibleContext) {
+        "Mounted editor is not reachable through the standard Accessible window tree"
+    }
+    return contexts
+}
+
+private fun visitAccessibleTree(
+    accessible: javax.accessibility.Accessible?,
+    seen: MutableSet<javax.accessibility.AccessibleContext>,
+    editors: MutableList<javax.accessibility.AccessibleContext>,
+) {
+    val context = accessible?.accessibleContext ?: return
+    if (!seen.add(context)) return
+    check(seen.size <= 500) { "Mounted accessibility tree exceeded bounded fixture" }
+    if (context.accessibleName == "Document editor") editors += context
+    for (index in 0 until context.accessibleChildrenCount) {
+        visitAccessibleTree(context.getAccessibleChild(index), seen, editors)
+    }
+}
+
+/** Must run on the EDT. Returns the number of typography attribute notifications observed. */
+private fun checkAccessibleTypographyNotifications(surface: EditorSurface, editable: AccessibleEditableText): Int {
+    var typographyEvents = 0
+    surface.viewModel.verificationEngine.selectAll()
+    surface.viewModel.verificationEngine.replace("ک\nتاب", "TypographyFixture", paragraphBreaks = true)
+    editable.setAttributes(0, 1, SimpleAttributeSet().apply { StyleConstants.setBold(this, true) })
+    editable.setAttributes(2, 3, SimpleAttributeSet().apply { StyleConstants.setItalic(this, true) })
+    surface.viewModel.verificationEngine.move(Selection(5, 5))
+    surface.viewModel.verificationEngine.inputMethod("に", 0, 1)
+    val beforeTypography = surface.viewModel.verificationEngine.snapshot()
+    check(beforeTypography.marked != null)
+    val covered = ArrayList<Int>()
+    val listener = java.beans.PropertyChangeListener { event ->
+        if (event.propertyName == javax.accessibility.AccessibleContext.ACCESSIBLE_TEXT_ATTRIBUTES_CHANGED) {
+            checkAccessibleTypographyEvent(event, editable, covered)
+            check(surface.viewModel.verificationEngine.snapshot() == beforeTypography)
+            typographyEvents++
+        }
+    }
+    surface.accessibleContext.addPropertyChangeListener(listener)
+    try {
+        val profile = TypographyProfile.load("noto-nastaliq")
+        surface.changeTypography(profile)
+        check(covered == beforeTypography.visible.units.indices.toList())
+        check(typographyEvents >= 3) { "Distinct inline/paragraph runs were collapsed in a font notification" }
+        val count = typographyEvents
+        surface.changeTypography(profile)
+        check(typographyEvents == count && surface.viewModel.verificationEngine.snapshot() == beforeTypography)
+    } finally {
+        surface.accessibleContext.removePropertyChangeListener(listener)
+    }
+    surface.viewModel.verificationEngine.abortComposition()
+    return typographyEvents
+}
+
+private fun checkAccessibleTypographyEvent(
+    event: java.beans.PropertyChangeEvent,
+    editable: AccessibleEditableText,
+    covered: MutableList<Int>,
+) {
+    check(SwingUtilities.isEventDispatchThread())
+    val old = event.oldValue as javax.accessibility.AccessibleAttributeSequence
+    val next = event.newValue as javax.accessibility.AccessibleAttributeSequence
+    check(old.startIndex == next.startIndex && old.endIndex == next.endIndex)
+    check(
+        StyleConstants.getFontFamily(old.attributes) == "SansSerif" &&
+            StyleConstants.getFontSize(old.attributes) == 18,
+    )
+    check(
+        StyleConstants.getFontFamily(next.attributes) == "Noto Nastaliq Urdu" &&
+            StyleConstants.getFontSize(next.attributes) == 26,
+    )
+    for (index in next.startIndex until next.endIndex) {
+        val observed = checkNotNull(editable.getCharacterAttribute(index))
+        check(observed.isEqual(next.attributes)) {
+            "Font notification disagreed with the published attributes"
+        }
+        check(StyleConstants.isBold(old.attributes) == StyleConstants.isBold(observed))
+        check(StyleConstants.isItalic(old.attributes) == StyleConstants.isItalic(observed))
+        covered += index
+    }
+}
+
+/** Runs off the EDT: a queued accessibility request must be rejected once its basis changed. */
+private fun checkAccessibleChangedBasisRejected(surface: EditorSurface, editable: AccessibleEditableText) {
+    val entered = CountDownLatch(1)
+    val release = CountDownLatch(1)
+    val failure = AtomicReference<Throwable?>()
+    SwingUtilities.invokeLater {
+        entered.countDown()
+        check(release.await(5, TimeUnit.SECONDS))
+        surface.viewModel.verificationEngine.selectAll()
+        surface.viewModel.verificationEngine.replace("Changed basis", "ConcurrentFixture")
+    }
+    check(entered.await(3, TimeUnit.SECONDS))
+    val worker = Thread {
+        try {
+            editable.replaceText(0, 4, "must not apply")
+        } catch (error: Throwable) {
+            failure.set(error)
+        }
+    }
+    worker.start()
+    try {
+        val deadline = System.nanoTime() + 2_000_000_000L
+        var queued = false
+        while (worker.isAlive && System.nanoTime() < deadline) {
+            if (worker.state == Thread.State.WAITING &&
+                worker.stackTrace.any { it.methodName == "invokeAndWait" }
+            ) {
+                queued = true
+                break
+            }
+            Thread.sleep(1) // Bounded scheduling wait for this specific live request, not a goal keepalive.
+        }
+        check(queued) { "Accessibility worker did not reach the owner-thread queue" }
+    } finally {
+        release.countDown()
+    }
+    worker.join(3000)
+    check(!worker.isAlive)
+    check(failure.get()?.message?.startsWith("AccessibilityBaseChanged") == true)
+    check(editable.getTextRange(0, editable.charCount) == "Changed basis")
 }

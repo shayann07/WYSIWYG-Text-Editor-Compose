@@ -8,6 +8,7 @@ import dev.shayxo.composedoc.data.LocalRecoveryStore
 import dev.shayxo.composedoc.data.cloneDocument
 import dev.shayxo.composedoc.domain.EditAction
 import dev.shayxo.composedoc.domain.EditorEngine
+import dev.shayxo.composedoc.domain.EditorFrame
 import dev.shayxo.composedoc.domain.RichFragment
 import dev.shayxo.composedoc.domain.StructureCommand
 import dev.shayxo.composedoc.layout.DocumentPagePlan
@@ -46,22 +47,28 @@ import javax.swing.JLabel
 import javax.swing.SwingUtilities
 import javax.swing.Timer
 fun runPagesOutputChecks(result: File) {
-    val root = Files.createTempDirectory("astra-pages-output-")
-    val groups = ArrayList<String>()
-    val metrics = linkedMapOf<String, Any>()
-    val errors = java.util.concurrent.CopyOnWriteArrayList<Throwable>()
-    Thread.setDefaultUncaughtExceptionHandler { _, e ->
-        errors += e
-        e.printStackTrace()
-    }
-    fun test(name: String, run: () -> Unit) {
+    PagesOutputRun(result).run()
+}
+
+private class PagesOutputRun(private val result: File) {
+    private val root = Files.createTempDirectory("astra-pages-output-")
+    private val groups = ArrayList<String>()
+    private val metrics = linkedMapOf<String, Any>()
+    private val errors = java.util.concurrent.CopyOnWriteArrayList<Throwable>()
+    private lateinit var specimen: Document
+    private lateinit var encoded: ByteArray
+    private lateinit var window: JFrame
+    private lateinit var surface: EditorSurface
+    private lateinit var plan: DocumentPagePlan
+
+    private fun test(name: String, run: () -> Unit) {
         run()
         check(errors.isEmpty())
         groups += name
         println("PASS output $name")
     }
-    fun edt(run: () -> Unit) = SwingUtilities.invokeAndWait(run)
-    fun waitFor(name: String, run: () -> Boolean) {
+    private fun edt(run: () -> Unit) = SwingUtilities.invokeAndWait(run)
+    private fun waitFor(name: String, run: () -> Boolean) {
         val deadline = System.nanoTime() + 25_000_000_000L
         while (System.nanoTime() < deadline) {
             var ok = false
@@ -71,11 +78,90 @@ fun runPagesOutputChecks(result: File) {
         }
         error("Timed out: $name")
     }
-    test("document/point units are independent of125percent display and zoom") {
+
+    fun run() {
+        Thread.setDefaultUncaughtExceptionHandler { _, e ->
+            errors += e
+            e.printStackTrace()
+        }
+        runModelChecks()
+        runMountedChecks()
+        check(errors.isEmpty())
+        result.writeText(
+            evidenceJson(
+                mapOf(
+                    "status" to "PASS",
+                    "groups" to groups,
+                    "metrics" to metrics,
+                    "evidenceLevel" to
+                        "Synthetic commands/mounted rendering/print callbacks; not native interaction or semantic " +
+                        "PDF/physical printing",
+                ),
+            ),
+            Charsets.UTF_8,
+        )
+        println("PASS pages/output checks ${groups.size}")
+    }
+
+    private fun runModelChecks() {
+        test("document/point units are independent of125percent display and zoom") { checkDocumentUnits() }
+        test("page-break semantic separator, exact Undo/Redo and plain formfeed") { checkPageBreakSeparator() }
+        test("half-open/backward paragraph targeting and split inheritance") { checkParagraphTargeting() }
+        specimen = pagesWritingSample()
+        encoded = DocumentFiles.encode(specimen)
+        test("privatev9 raw attributes/breaks/flow IDs/resources Save and exact recovery") { checkSaveAndRecovery() }
+        test(
+            "rich clipboard retains page-breaks/rules but destination running content owns its flows",
+        ) { checkRichClipboardFlows() }
+        test("running changes history/empty removal and clone identities") { checkRunningHistoryAndClones() }
+        test(
+            "pagination commands settle synthetic composition without accepting candidates",
+        ) { checkPaginationComposition() }
+        test("malformed output refused with exact offsets; accepted source remains raw") { checkMalformedOutput() }
+    }
+
+    private fun runMountedChecks() {
+        edt {
+            window =
+                showEditor(
+                    initial = specimen,
+                    offscreenTest = true,
+                    fontProfile = "noto-nastaliq",
+                    paged = true,
+                    recoveryDirectory = root.resolve("live"),
+                )
+            surface = findSurface(window)!!
+        }
+        waitFor("page plan/resources") {
+            surface.geometry()?.documentPagePlan != null &&
+                specimen.units.mapNotNull { it.image?.resource }.all { ImageResources.cached(it) != null }
+        }
+        test("actual captured plan coverage and8-12page specimen") { checkCapturedPlanCoverage() }
+        test(
+            "independent line-placement expectations for keep/widow/oversize/explicit breaks",
+        ) { checkIndependentLinePlacement() }
+        test(
+            "canonical line plan stable across continuous/paged and all zooms/viewport widths",
+        ) { checkCanonicalLinePlan() }
+        test(
+            "immutable picture capture, raster preview, requested paper and callback reorder/repeat/cancel",
+        ) { checkPictureCapture() }
+        test(
+            "preview capture yields owner thread and Cancel preserves canonical state/history",
+        ) { checkPreviewCancel() }
+        test(
+            "page fields stabilize at9-10 and99-100 without a content/history entry",
+        ) { checkPageFieldStabilization() }
+        test("bounded50page workload thresholds declared before measurement") { checkFiftyPageWorkload() }
+        edt { window.dispose() }
+    }
+
+    private fun checkDocumentUnits() {
         check(mmToDocument(25.4f) == 96f && documentToPoints(96f) == 72f)
         check(kotlin.math.abs(documentToPoints(mmToDocument(210f)) - 595.2756f) < .001f)
     }
-    test("page-break semantic separator, exact Undo/Redo and plain formfeed") {
+
+    private fun checkPageBreakSeparator() {
         val e = EditorEngine()
         e.replace("کتاب English", "Fixture")
         e.move(Selection(4, 4))
@@ -99,7 +185,8 @@ fun runPagesOutputChecks(result: File) {
                 plain.snapshot().committed.units[3].structuralBreak == StructuralBreak.PARAGRAPH,
         )
     }
-    test("half-open/backward paragraph targeting and split inheritance") {
+
+    private fun checkParagraphTargeting() {
         val e = EditorEngine()
         e.replace("اول\nدوم\nسوم", "Fixture", true)
         val raw = e.snapshot().committed
@@ -118,9 +205,8 @@ fun runPagesOutputChecks(result: File) {
                 rules.copy(breakBefore = false, keepWithNext = false),
         )
     }
-    val specimen = pagesWritingSample()
-    val encoded = DocumentFiles.encode(specimen)
-    test("privatev9 raw attributes/breaks/flow IDs/resources Save and exact recovery") {
+
+    private fun checkSaveAndRecovery() {
         check(DocumentFiles.decode(encoded).same(specimen))
         val p = root.resolve("pages.astra")
         DocumentFiles.write(p, specimen)
@@ -135,7 +221,8 @@ fun runPagesOutputChecks(result: File) {
         )
         check(DocumentFiles.decode(DocumentFiles.encode(raw)).running.header!!.text == "کِ \ud800")
     }
-    test("rich clipboard retains page-breaks/rules but destination running content owns its flows") {
+
+    private fun checkRichClipboardFlows() {
         val e = EditorEngine(specimen)
         e.selectAll()
         val fragment = FragmentCodec.decode(FragmentCodec.encode(RichFragment.capture(e.clipboardCapture()!!)))
@@ -150,7 +237,8 @@ fun runPagesOutputChecks(result: File) {
         dest.perform(EditAction.Redo)
         check(dest.snapshot().committed.running == before)
     }
-    test("running changes history/empty removal and clone identities") {
+
+    private fun checkRunningHistoryAndClones() {
         val e = EditorEngine(specimen)
         val old = e.snapshot()
         e.structure(StructureCommand.Running(RunningContent()))
@@ -191,7 +279,8 @@ fun runPagesOutputChecks(result: File) {
                 },
         )
     }
-    test("pagination commands settle synthetic composition without accepting candidates") {
+
+    private fun checkPaginationComposition() {
         val e = EditorEngine()
         e.replace("اردو")
         e.move(Selection(2, 2))
@@ -202,7 +291,8 @@ fun runPagesOutputChecks(result: File) {
         e.inputMethod("", 0, null)
         check(e.snapshot().marked == null && e.snapshot().committed.paragraphs()[0].properties.pagination.keepLines)
     }
-    test("malformed output refused with exact offsets; accepted source remains raw") {
+
+    private fun checkMalformedOutput() {
         val e = EditorEngine()
         e.replace("کِ \ud800 x\udfff")
         val before = e.snapshot()
@@ -211,25 +301,8 @@ fun runPagesOutputChecks(result: File) {
         check(e.snapshot() == before)
         check(outputUnicodeIssues(specimen).isEmpty())
     }
-    lateinit var window: JFrame
-    lateinit var surface: EditorSurface
-    edt {
-        window =
-            showEditor(
-                initial = specimen,
-                offscreenTest = true,
-                fontProfile = "noto-nastaliq",
-                paged = true,
-                recoveryDirectory = root.resolve("live"),
-            )
-        surface = findSurface(window)!!
-    }
-    waitFor("page plan/resources") {
-        surface.geometry()?.documentPagePlan != null &&
-            specimen.units.mapNotNull { it.image?.resource }.all { ImageResources.cached(it) != null }
-    }
-    lateinit var plan: DocumentPagePlan
-    test("actual captured plan coverage and8-12page specimen") {
+
+    private fun checkCapturedPlanCoverage() {
         edt {
             plan = surface.geometry()!!.documentPagePlan!!
             plan.assertCoverage()
@@ -247,12 +320,14 @@ fun runPagesOutputChecks(result: File) {
         metrics["specimenPages"] = plan.pageCount
         metrics["specimenUnits"] = specimen.units.size
     }
-    test("independent line-placement expectations for keep/widow/oversize/explicit breaks") {
+
+    private fun checkIndependentLinePlacement() {
         val policyChecks = runPagePolicyChecks()
         check(policyChecks.size == 7)
         metrics["independentPagePolicyCases"] = policyChecks
     }
-    test("canonical line plan stable across continuous/paged and all zooms/viewport widths") {
+
+    private fun checkCanonicalLinePlan() {
         val expected = plan.paragraphs.map { p ->
             (0 until p.lineCount).map {
                 p.layout.getLineStart(it) to
@@ -270,26 +345,32 @@ fun runPagesOutputChecks(result: File) {
                 }
                 waitFor("view") { surface.geometry()?.documentPagePlan != null }
                 edt {
-                    val p = surface.geometry()!!.documentPagePlan!!
-                    check(
-                        p.paragraphs.map { q ->
-                            (0 until q.lineCount).map {
-                                q.layout.getLineStart(it) to
-                                    q.layout.getLineEnd(it)
-                            }
-                        } ==
-                            expected,
-                    )
-                    check(p.pageCount == plan.pageCount)
-                    check(
-                        surface.viewModel.verificationEngine.snapshot().committed == before.committed &&
-                            surface.viewModel.verificationEngine.snapshot().undoCount == before.undoCount,
-                    )
+                    checkStableLinePlan(expected, before)
                 }
             }
         }
     }
-    test("immutable picture capture, raster preview, requested paper and callback reorder/repeat/cancel") {
+
+    /** Runs on the EDT. */
+    private fun checkStableLinePlan(expected: List<List<Pair<Int, Int>>>, before: EditorFrame) {
+        val p = surface.geometry()!!.documentPagePlan!!
+        check(
+            p.paragraphs.map { q ->
+                (0 until q.lineCount).map {
+                    q.layout.getLineStart(it) to
+                        q.layout.getLineEnd(it)
+                }
+            } ==
+                expected,
+        )
+        check(p.pageCount == plan.pageCount)
+        check(
+            surface.viewModel.verificationEngine.snapshot().committed == before.committed &&
+                surface.viewModel.verificationEngine.snapshot().undoCount == before.undoCount,
+        )
+    }
+
+    private fun checkPictureCapture() {
         lateinit var snapshot: PrintSnapshot
         val start = System.nanoTime()
         edt {
@@ -334,7 +415,8 @@ fun runPagesOutputChecks(result: File) {
         check(surface.viewModel.verificationEngine.snapshot().committed.same(specimen))
         metrics["printServices"] = java.awt.print.PrinterJob.lookupPrintServices().map { it.name }
     }
-    test("preview capture yields owner thread and Cancel preserves canonical state/history") {
+
+    private fun checkPreviewCancel() {
         val prior = surface.viewModel.verificationEngine.snapshot()
         var ticks = 0
         var longest = 0L
@@ -382,7 +464,8 @@ fun runPagesOutputChecks(result: File) {
             mapOf("ticks" to ticks, "maxGapMs" to longest / 1e6, "declaredLimitMs" to 250)
         check(ticks > 0 && longest < 250_000_000L)
     }
-    fun fixedPages(count: Int): Document {
+
+    private fun fixedPages(count: Int): Document {
         val units = ArrayList<TextUnit>()
         var id = 0L
         repeat(count) { page ->
@@ -398,7 +481,8 @@ fun runPagesOutputChecks(result: File) {
             running = RunningContent(footer = RunningFlow(text = "صفحہ", field = RunningField.PAGE_TOTAL)),
         )
     }
-    test("page fields stabilize at9-10 and99-100 without a content/history entry") {
+
+    private fun checkPageFieldStabilization() {
         for (count in listOf(10, 100)) {
             lateinit var owner: JFrame
             lateinit var s: EditorSurface
@@ -420,41 +504,11 @@ fun runPagesOutputChecks(result: File) {
             }
         }
     }
-    test("bounded50page workload thresholds declared before measurement") {
+
+    private fun checkFiftyPageWorkload() {
         val limits = mapOf("layoutMs" to 30000, "captureMs" to 15000, "endpointRasterMs" to 10000)
         metrics["fiftyPageLimits"] = limits
-        val units = ArrayList<TextUnit>()
-        var serial = 0L
-        repeat(5) { group ->
-            fun props(p: ParagraphProperties) = p.copy(
-                item = if (p.item.isEmpty())"" else "$group-${p.item}",
-                parent = if (p.parent.isEmpty())"" else "$group-${p.parent}",
-            )
-            if (group >
-                0
-            ) {
-                units +=
-                    TextUnit(
-                        ++serial,
-                        '\u000c',
-                        UnitKind.PARAGRAPH_BREAK,
-                        followingParagraph = props(specimen.startParagraph),
-                        structuralBreak = StructuralBreak.PAGE,
-                    )
-            }
-            specimen.units.forEach {
-                units +=
-                    it.copy(
-                        id = ++serial,
-                        followingBlockId = Long.MIN_VALUE,
-                        followingParagraph = props(it.followingParagraph),
-                    )
-            }
-        }
-        val large = specimen.copy(
-            units = units,
-            startParagraph = specimen.startParagraph.copy(item = "", parent = "", list = ListKind.NONE),
-        )
+        val large = buildFiftyPageDocument()
         validateStructure(large)
         lateinit var owner: JFrame
         lateinit var s: EditorSurface
@@ -498,19 +552,40 @@ fun runPagesOutputChecks(result: File) {
             owner.dispose()
         }
     }
-    edt { window.dispose() }
-    check(errors.isEmpty())
-    result.writeText(
-        evidenceJson(
-            mapOf(
-                "status" to "PASS",
-                "groups" to groups,
-                "metrics" to metrics,
-                "evidenceLevel" to
-                    "Synthetic commands/mounted rendering/print callbacks; not native interaction or semantic PDF/physical printing",
-            ),
-        ),
-        Charsets.UTF_8,
-    )
-    println("PASS pages/output checks ${groups.size}")
+
+    private fun buildFiftyPageDocument(): Document {
+        val units = ArrayList<TextUnit>()
+        var serial = 0L
+        repeat(5) { group ->
+            fun props(p: ParagraphProperties) = p.copy(
+                item = if (p.item.isEmpty())"" else "$group-${p.item}",
+                parent = if (p.parent.isEmpty())"" else "$group-${p.parent}",
+            )
+            if (group >
+                0
+            ) {
+                units +=
+                    TextUnit(
+                        ++serial,
+                        '\u000c',
+                        UnitKind.PARAGRAPH_BREAK,
+                        followingParagraph = props(specimen.startParagraph),
+                        structuralBreak = StructuralBreak.PAGE,
+                    )
+            }
+            specimen.units.forEach {
+                units +=
+                    it.copy(
+                        id = ++serial,
+                        followingBlockId = Long.MIN_VALUE,
+                        followingParagraph = props(it.followingParagraph),
+                    )
+            }
+        }
+        val large = specimen.copy(
+            units = units,
+            startParagraph = specimen.startParagraph.copy(item = "", parent = "", list = ListKind.NONE),
+        )
+        return large
+    }
 }

@@ -4,6 +4,7 @@ import dev.shayxo.composedoc.data.DocumentFiles
 import dev.shayxo.composedoc.data.FragmentCodec
 import dev.shayxo.composedoc.data.LocalRecoveryEntry
 import dev.shayxo.composedoc.data.LocalRecoveryStore
+import dev.shayxo.composedoc.domain.ClipboardCapture
 import dev.shayxo.composedoc.domain.EditAction
 import dev.shayxo.composedoc.domain.EditorEngine
 import dev.shayxo.composedoc.domain.FindReplaceResult
@@ -87,39 +88,21 @@ fun clipboardChild(args: Array<String>) {
 }
 
 fun runConnectedWritingChecks(result: File) {
-    fun <T> owner(block: () -> T): T {
-        var r: Result<T>? = null
-        SwingUtilities.invokeAndWait { r = runCatching(block) }
-        return checkNotNull(r).getOrThrow()
-    }
-    fun await(label: String, p: () -> Boolean) {
-        val end = System.nanoTime() + 20_000_000_000
-        while (!owner(p)) {
-            check(System.nanoTime() < end) { label }
-            Thread.sleep(20)
-        }
-    }
-    val checks = ArrayList<String>()
-    val images = ArrayList<String>()
-    val root = Files.createTempDirectory(result.parentFile.toPath(), "connected-writing-")
-    fun test(name: String, block: () -> Unit) {
-        block()
-        checks += name
-        println("PASS $name")
-    }
-    fun doc(text: String): Document {
-        val e = EditorEngine()
-        e.replace(text, "fixture", true)
-        return e.snapshot().committed
-    }
-    val style = TextStyleFlags(true, true, true, true, StoredFont.GULZAR, 32, 0x174ea6)
-    val p0 = ParagraphProperties(ParagraphDirection.RTL, ParagraphAlignment.CENTER, 8, 12, 1500)
-    val p1 = ParagraphProperties(ParagraphDirection.LTR, ParagraphAlignment.END, 4, 16, 2000)
-    val raw = "کِتاب\u200c English 123 😀\n\nب\u200dت\nsoft\nline".replace(
+    ConnectedWritingRun(result).run()
+}
+
+private class ConnectedWritingRun(private val result: File) {
+    private val checks = ArrayList<String>()
+    private val images = ArrayList<String>()
+    private val root = Files.createTempDirectory(result.parentFile.toPath(), "connected-writing-")
+    private val style = TextStyleFlags(true, true, true, true, StoredFont.GULZAR, 32, 0x174ea6)
+    private val p0 = ParagraphProperties(ParagraphDirection.RTL, ParagraphAlignment.CENTER, 8, 12, 1500)
+    private val p1 = ParagraphProperties(ParagraphDirection.LTR, ParagraphAlignment.END, 4, 16, 2000)
+    private val raw = "کِتاب\u200c English 123 😀\n\nب\u200dت\nsoft\nline".replace(
         "\\u200c",
         "\u200c",
     ).replace("\\u200d", "\u200d")
-    val base = doc(raw).let { d ->
+    private val base = doc(raw).let { d ->
         d.copy(
             startStyle = style.copy(font = StoredFont.SYSTEM, size = 18, color = -1),
             startParagraph = p0,
@@ -141,7 +124,112 @@ fun runConnectedWritingChecks(result: File) {
             },
         )
     }
-    test("v5 exact raw UTF16 expanded inline/empty paragraph properties and independent byte fields") {
+    private lateinit var captured: ClipboardCapture
+    private lateinit var fragment: RichFragment
+    private var window: JFrame? = null
+    private lateinit var s: EditorSurface
+
+    private fun <T> owner(block: () -> T): T {
+        var r: Result<T>? = null
+        SwingUtilities.invokeAndWait { r = runCatching(block) }
+        return checkNotNull(r).getOrThrow()
+    }
+    private fun await(label: String, p: () -> Boolean) {
+        val end = System.nanoTime() + 20_000_000_000
+        while (!owner(p)) {
+            check(System.nanoTime() < end) { label }
+            Thread.sleep(20)
+        }
+    }
+
+    private fun test(name: String, block: () -> Unit) {
+        block()
+        checks += name
+        println("PASS $name")
+    }
+
+    private fun doc(text: String): Document {
+        val e = EditorEngine()
+        e.replace(text, "fixture", true)
+        return e.snapshot().committed
+    }
+
+    fun run() {
+        runModelAndClipboardChecks()
+        runShellChecks()
+        result.writeText(
+            evidenceJson(
+                mapOf(
+                    "status" to "PASS",
+                    "checks" to checks,
+                    "screenshots" to images,
+                    "scope" to
+                        "Engine/independent byte+unit oracles, actual OS clipboard owned JVMs, offscreen Compose " +
+                        "shell. Keyboard/IME callbacks here are synthetic; live desktop separate.",
+                ),
+            ),
+            Charsets.UTF_8,
+        )
+        println("PASS connected writing deliveries checks")
+    }
+
+    private fun runModelAndClipboardChecks() {
+        test(
+            "v5 exact raw UTF16 expanded inline/empty paragraph properties and independent byte fields",
+        ) { checkV5Encoding() }
+        test(
+            "format patches preserve other attributes, grapheme raw attribution and collapsed typing seed",
+        ) { checkFormatPatches() }
+        test("spacing half-open/backward targeting, split and left join inheritance") { checkParagraphSpacing() }
+        val source = EditorEngine(base)
+        source.selectAll()
+        captured = checkNotNull(source.clipboardCapture())
+        fragment = RichFragment.capture(captured)
+        test(
+            "rich paste independent expected units/properties, boundary-only and partial destination inheritance",
+        ) { checkRichPaste() }
+        test(
+            "clipboard invalid versions/truncation/fallback/bounds; stale edit-undo and composition refuse",
+        ) { checkClipboardRefusals() }
+        test(
+            "Replace All independent attribute oracle and exact undo-redo, save and retained exports",
+        ) { checkReplaceAllOracle() }
+        test(
+            "Cut publish failure/reentry keeps content; successful Cut one undoable transaction",
+        ) { checkCutTransactions() }
+        test(
+            "OS rich clipboard between independent owned JVMs; explicit plain consumes only disposable content",
+        ) { checkOsClipboard() }
+    }
+
+    private fun runShellChecks() {
+        try {
+            owner {
+                window =
+                    showEditor(
+                        initial = base,
+                        fontProfile = "noto-nastaliq",
+                        offscreenTest = true,
+                        recoveryDirectory = root.resolve("recovery"),
+                    )
+                s = checkNotNull(windowCurrentSurface(checkNotNull(window)))
+            }
+            await("mount") { s.view.measure != null }
+            test(
+                "natural spacing expected gaps and >= natural advance; zoom fixed metrics and native/pointer geometry",
+            ) { checkNaturalSpacingAndZoom() }
+            test(
+                "minimum shell tabs, synthetic navigation and view-only dirty/history protection",
+            ) { checkMinimumShellAndNavigation() }
+            test(
+                "automatic completed checkpoint retains expanded model separately from provisional composition",
+            ) { checkCompletedCheckpoint() }
+        } finally {
+            owner { window?.dispose() }
+        }
+    }
+
+    private fun checkV5Encoding() {
         val bytes = DocumentFiles.encode(base)
         check(DocumentFiles.decode(bytes).same(base))
         val b = java.nio.ByteBuffer.wrap(bytes)
@@ -197,7 +285,8 @@ fun runConnectedWritingChecks(result: File) {
         invalid(24, 0) // unknown font,size,bits,oversize spacing,invalid line mode
         check(runCatching { DocumentFiles.decode(ByteArray(DocumentFiles.MAX_ENCODED_BYTES + 1)) }.isFailure)
     }
-    test("format patches preserve other attributes, grapheme raw attribution and collapsed typing seed") {
+
+    private fun checkFormatPatches() {
         val e = EditorEngine(base)
         e.move(Selection(2, 0))
         val before = e.snapshot()
@@ -231,7 +320,8 @@ fun runConnectedWritingChecks(result: File) {
         e.perform(EditAction.Undo)
         check(e.snapshot().committed == f.committed)
     }
-    test("spacing half-open/backward targeting, split and left join inheritance") {
+
+    private fun checkParagraphSpacing() {
         val e = EditorEngine(doc("a\n\nb"))
         e.move(Selection(2, 0))
         e.setParagraphProperties(before = 12, after = 24, line = 1500)
@@ -247,11 +337,8 @@ fun runConnectedWritingChecks(result: File) {
         e.move(Selection(0, 4))
         check(e.paragraphState { it.spaceBefore } == null)
     }
-    val source = EditorEngine(base)
-    source.selectAll()
-    val captured = checkNotNull(source.clipboardCapture())
-    val fragment = RichFragment.capture(captured)
-    test("rich paste independent expected units/properties, boundary-only and partial destination inheritance") {
+
+    private fun checkRichPaste() {
         val clipboard = Clipboard("owned-test")
         RichClipboard.publish(captured, clipboard, codec = FragmentCodec)
         val decoded = checkNotNull(RichClipboard.read(clipboard, codec = FragmentCodec).rich)
@@ -294,7 +381,8 @@ fun runConnectedWritingChecks(result: File) {
         check(z.clipboardApply(checkNotNull(z.clipboardCapture()), seam))
         check(z.snapshot().committed.units.single().kind == UnitKind.PARAGRAPH_BREAK)
     }
-    test("clipboard invalid versions/truncation/fallback/bounds; stale edit-undo and composition refuse") {
+
+    private fun checkClipboardRefusals() {
         val bytes = FragmentCodec.encode(fragment)
         for (n in listOf(0, 8, bytes.size - 1)) check(runCatching { FragmentCodec.decode(bytes.copyOf(n)) }.isFailure)
         val invalid = bytes.copyOf()
@@ -335,7 +423,8 @@ fun runConnectedWritingChecks(result: File) {
         check(e.applyRecoveredDraft(draft) == RecoveryApplyResult.Applied)
         check(e.snapshot().committed.same(base))
     }
-    test("Replace All independent attribute oracle and exact undo-redo, save and retained exports") {
+
+    private fun checkReplaceAllOracle() {
         val e = EditorEngine(base)
         val before = e.snapshot().committed
         val basis = e.captureFindBasis()
@@ -365,14 +454,14 @@ fun runConnectedWritingChecks(result: File) {
         check(runCatching { DocumentFiles.writeImpl(path, base) { error("owned IO fault") } }.isFailure)
         check(Files.readAllBytes(path).contentEquals(bytes))
     }
-    test("Cut publish failure/reentry keeps content; successful Cut one undoable transaction") {
+
+    private fun checkCutTransactions() {
         val e = EditorEngine(base)
         e.move(Selection(2, 0))
         val c = checkNotNull(e.clipboardCapture())
         val before = e.snapshot()
         val failed = object : Clipboard("owned-failure") {
-            override fun setContents(t: Transferable?, o: ClipboardOwner?): Unit =
-                throw IllegalStateException("owned publish failure")
+            override fun setContents(t: Transferable?, o: ClipboardOwner?): Unit = error("owned publish failure")
         }
         check(runCatching { RichClipboard.publish(c, failed, codec = FragmentCodec) }.isFailure)
         check(e.snapshot() == before)
@@ -395,7 +484,8 @@ fun runConnectedWritingChecks(result: File) {
         e.perform(EditAction.Undo)
         check(e.snapshot().committed.same(base))
     }
-    test("OS rich clipboard between independent owned JVMs; explicit plain consumes only disposable content") {
+
+    private fun checkOsClipboard() {
         val input = root.resolve("clipboard-source.astra")
         DocumentFiles.write(input, base)
         val javaExe = java.nio.file.Path.of(System.getProperty("java.home"), "bin", "java.exe").toString()
@@ -432,170 +522,156 @@ fun runConnectedWritingChecks(result: File) {
             if (!publisher.waitFor(10, java.util.concurrent.TimeUnit.SECONDS))publisher.destroyForcibly()
         }
     }
-    var window: JFrame? = null
-    try {
-        lateinit var s: EditorSurface
-        owner {
-            window =
-                showEditor(
-                    initial = base,
-                    fontProfile = "noto-nastaliq",
-                    offscreenTest = true,
-                    recoveryDirectory = root.resolve("recovery"),
-                )
-            s = checkNotNull(windowCurrentSurface(checkNotNull(window)))
-        }
-        await("mount") { s.view.measure != null }
-        test("natural spacing expected gaps and >= natural advance; zoom fixed metrics and native/pointer geometry") {
-            for (paged in listOf(false, true)) {
-                for (zoom in listOf(1f, .75f, .5f)) {
-                    owner {
-                        s.view.setPagedMode(paged)
-                        s.view.changeZoom(zoom)
-                        checkNotNull(window).setSize(940, 400)
-                        checkNotNull(window).validate()
-                    }
-                    await("zoom measure") {
-                        s.view.measure != null &&
-                            s.view.geometry?.typographyKey?.contains(":zoom=$zoom") == true
-                    }
-                    owner {
-                        val before = s.viewModel.verificationEngine.snapshot()
-                        val g = checkNotNull(s.geometry())
-                        val p = g.paragraphs[0]
-                        check(g.scale > 0 && p.layout.size.height > 0)
-                        val page = base.pageSettings
-                        val expectedWidth = ((page.widthMm - 2 * page.marginMm) * 96f / 25.4f).roundToInt()
-                        check(g.textWidth == expectedWidth) {
-                            "Document width changed at zoom: ${g.textWidth}, expected $expectedWidth"
-                        }
-                        val caret = g.caret(0)
-                        val location = checkNotNull(s.getTextLocation(null))
-                        val screen = s.locationOnScreen
-                        check(kotlin.math.abs(location.x - screen.x - caret.left / g.scale) < 2)
-                        val attrs = s.accessibleContext.accessibleText.getCharacterAttribute(0)
-                        check(
-                            javax.swing.text.StyleConstants.isUnderline(attrs) &&
-                                javax.swing.text.StyleConstants.isStrikeThrough(attrs) &&
-                                javax.swing.text.StyleConstants.getFontSize(attrs) == 32,
-                        )
-                        val natural = p.layout.getLineBottom(0) - p.layout.getLineTop(0)
-                        check(natural >= 32)
-                        if (!paged) {
-                            check(kotlin.math.abs(p.top - 8) < .1)
-                            val q = g.paragraphs[1]
-                            val props = base.paragraphs()[1].properties
-                            check(kotlin.math.abs(q.top - (p.top + p.height + 12 + props.spaceBefore)) < .1)
-                        } else {
-                            check(kotlin.math.abs(g.fragments.first().top - 8) < .1)
-                        }
-                        check(s.viewModel.verificationEngine.snapshot() == before)
-                    }
-                }
-            }
-        }
-        test("minimum shell tabs, synthetic navigation and view-only dirty/history protection") {
-            owner {
-                val w = checkNotNull(window)
-                val tabs = w.rootPane.getClientProperty("editor.writingTabs") as JTabbedPane
-                fun components(c: Component): List<Component> =
-                    listOf(c) + if (c is Container)c.components.flatMap(::components) else emptyList()
-                for (i in 0..2) {
-                    tabs.selectedIndex = i
-                    w.validate()
-                    check(s.height >= 120) { "Minimum writing area ${s.height}" }
-                    components(w).filter { it.isShowing && (it is JButton || it is JComboBox<*>) }.forEach { c ->
-                        check(
-                            c.x >= 0 && c.x + c.width <= c.parent.width && c.height > 0,
-                        ) {
-                            "Clipped ${c.name} ${c.bounds}/${c.parent.size}"
-                        }
-                    }
-                    val image = java.awt.image.BufferedImage(
-                        w.width,
-                        w.height,
-                        java.awt.image.BufferedImage.TYPE_INT_RGB,
-                    )
-                    val g = image.createGraphics()
-                    w.paint(g)
-                    g.dispose()
-                    val name = "connected-min-tab-$i.png"
-                    javax.imageio.ImageIO.write(image, "png", File(result.parentFile, name))
-                    images += name
-                }
-                fun key(code: Int, shift: Boolean = false) {
-                    val k =
-                        KeyEvent(
-                            s,
-                            KeyEvent.KEY_PRESSED,
-                            System.currentTimeMillis(),
-                            (if (shift)InputEvent.SHIFT_DOWN_MASK else 0),
-                            code,
-                            KeyEvent.CHAR_UNDEFINED,
-                        )
-                    s.keyListeners.forEach { it.keyPressed(k) }
-                }
-                s.viewModel.verificationEngine.move(Selection(0, 0))
-                key(KeyEvent.VK_PAGE_DOWN, true)
-                check(
-                    s.viewModel.verificationEngine.snapshot().selection.focus > 0 &&
-                        s.viewModel.verificationEngine.snapshot().selection.anchor == 0,
-                )
-                key(KeyEvent.VK_PAGE_UP)
-                check(s.viewModel.verificationEngine.snapshot().selection.collapsed)
-                val before = s.viewModel.verificationEngine.snapshot()
-                s.view.changeZoom(1f)
-                s.view.setPagedMode(false)
-                check(s.viewModel.verificationEngine.snapshot() == before)
-                val counts = writingCounts(EditorEngine(doc("کِتاب\u200c X 123 😀 \u200d")).snapshot())
-                check(counts.words == 4 && counts.units == "کِتاب\u200c X 123 😀 \u200d".length && counts.selected == 0)
-            }
-        }
-        test("automatic completed checkpoint retains expanded model separately from provisional composition") {
-            owner {
-                s.viewModel.verificationEngine.move(Selection(0, 0))
-                s.viewModel.verificationEngine.setParagraphProperties(before = 24)
-                s.viewModel.verificationEngine.setTextStyle(TextStylePatch(size = 48))
-                s.viewModel.verificationEngine.replace("نیا ", "edit")
-                s.viewModel.verificationEngine.inputMethod("provisional", 0, 11)
-            }
-            val expected = owner { s.viewModel.verificationEngine.snapshot().committed }
-            val controller =
+
+    private fun checkNaturalSpacingAndZoom() {
+        for (paged in listOf(false, true)) {
+            for (zoom in listOf(1f, .75f, .5f)) {
                 owner {
-                    checkNotNull(window).rootPane.getClientProperty("editor.localRecovery") as LocalRecoveryController
+                    s.view.setPagedMode(paged)
+                    s.view.changeZoom(zoom)
+                    checkNotNull(window).setSize(940, 400)
+                    checkNotNull(window).validate()
                 }
-            await("completed committed copy") {
-                controller.state().let {
-                    it["completed"] == it["observed"] &&
-                        (it["completed"] as Long) > 0
+                await("zoom measure") {
+                    s.view.measure != null &&
+                        s.view.geometry?.typographyKey?.contains(":zoom=$zoom") == true
                 }
+                owner { checkZoomGeometry(paged) }
             }
-            owner { controller.finish(discard = false) }
-            val store = LocalRecoveryStore(root.resolve("recovery"))
-            var entry: LocalRecoveryEntry? = null
-            val end = System.nanoTime() + 10_000_000_000
-            while (entry == null) {
-                entry = store.scan().firstOrNull { it.copy?.document?.same(expected) == true }
-                check(System.nanoTime() < end)
-                if (entry == null)Thread.sleep(20)
-            }
-            check(store.restore(checkNotNull(entry)).document.same(expected))
-            check(!expected.text.contains("provisional"))
         }
-    } finally {
-        owner { window?.dispose() }
     }
-    result.writeText(
-        evidenceJson(
-            mapOf(
-                "status" to "PASS",
-                "checks" to checks,
-                "screenshots" to images,
-                "scope" to
-                    "Engine/independent byte+unit oracles, actual OS clipboard owned JVMs, offscreen Compose shell. Keyboard/IME callbacks here are synthetic; live desktop separate.",
-            ),
-        ),
-        Charsets.UTF_8,
-    )
-    println("PASS connected writing deliveries checks")
+
+    /** Runs on the EDT. */
+    private fun checkZoomGeometry(paged: Boolean) {
+        val before = s.viewModel.verificationEngine.snapshot()
+        val g = checkNotNull(s.geometry())
+        val p = g.paragraphs[0]
+        check(g.scale > 0 && p.layout.size.height > 0)
+        val page = base.pageSettings
+        val expectedWidth = ((page.widthMm - 2 * page.marginMm) * 96f / 25.4f).roundToInt()
+        check(g.textWidth == expectedWidth) {
+            "Document width changed at zoom: ${g.textWidth}, expected $expectedWidth"
+        }
+        val caret = g.caret(0)
+        val location = checkNotNull(s.getTextLocation(null))
+        val screen = s.locationOnScreen
+        check(kotlin.math.abs(location.x - screen.x - caret.left / g.scale) < 2)
+        val attrs = s.accessibleContext.accessibleText.getCharacterAttribute(0)
+        check(
+            javax.swing.text.StyleConstants.isUnderline(attrs) &&
+                javax.swing.text.StyleConstants.isStrikeThrough(attrs) &&
+                javax.swing.text.StyleConstants.getFontSize(attrs) == 32,
+        )
+        val natural = p.layout.getLineBottom(0) - p.layout.getLineTop(0)
+        check(natural >= 32)
+        if (!paged) {
+            check(kotlin.math.abs(p.top - 8) < .1)
+            val q = g.paragraphs[1]
+            val props = base.paragraphs()[1].properties
+            check(kotlin.math.abs(q.top - (p.top + p.height + 12 + props.spaceBefore)) < .1)
+        } else {
+            check(kotlin.math.abs(g.fragments.first().top - 8) < .1)
+        }
+        check(s.viewModel.verificationEngine.snapshot() == before)
+    }
+
+    private fun checkMinimumShellAndNavigation() {
+        owner {
+            val w = checkNotNull(window)
+            val tabs = w.rootPane.getClientProperty("editor.writingTabs") as JTabbedPane
+            checkMinimumShellTabs(w, tabs)
+            checkSyntheticNavigation()
+        }
+    }
+
+    /** Runs on the EDT. */
+    private fun checkMinimumShellTabs(w: JFrame, tabs: JTabbedPane) {
+        fun components(c: Component): List<Component> =
+            listOf(c) + if (c is Container)c.components.flatMap(::components) else emptyList()
+        for (i in 0..2) {
+            tabs.selectedIndex = i
+            w.validate()
+            check(s.height >= 120) { "Minimum writing area ${s.height}" }
+            components(w).filter { it.isShowing && (it is JButton || it is JComboBox<*>) }.forEach { c ->
+                check(
+                    c.x >= 0 && c.x + c.width <= c.parent.width && c.height > 0,
+                ) {
+                    "Clipped ${c.name} ${c.bounds}/${c.parent.size}"
+                }
+            }
+            val image = java.awt.image.BufferedImage(
+                w.width,
+                w.height,
+                java.awt.image.BufferedImage.TYPE_INT_RGB,
+            )
+            val g = image.createGraphics()
+            w.paint(g)
+            g.dispose()
+            val name = "connected-min-tab-$i.png"
+            javax.imageio.ImageIO.write(image, "png", File(result.parentFile, name))
+            images += name
+        }
+    }
+
+    /** Runs on the EDT. */
+    private fun checkSyntheticNavigation() {
+        fun key(code: Int, shift: Boolean = false) {
+            val k =
+                KeyEvent(
+                    s,
+                    KeyEvent.KEY_PRESSED,
+                    System.currentTimeMillis(),
+                    (if (shift)InputEvent.SHIFT_DOWN_MASK else 0),
+                    code,
+                    KeyEvent.CHAR_UNDEFINED,
+                )
+            s.keyListeners.forEach { it.keyPressed(k) }
+        }
+        s.viewModel.verificationEngine.move(Selection(0, 0))
+        key(KeyEvent.VK_PAGE_DOWN, true)
+        check(
+            s.viewModel.verificationEngine.snapshot().selection.focus > 0 &&
+                s.viewModel.verificationEngine.snapshot().selection.anchor == 0,
+        )
+        key(KeyEvent.VK_PAGE_UP)
+        check(s.viewModel.verificationEngine.snapshot().selection.collapsed)
+        val before = s.viewModel.verificationEngine.snapshot()
+        s.view.changeZoom(1f)
+        s.view.setPagedMode(false)
+        check(s.viewModel.verificationEngine.snapshot() == before)
+        val counts = writingCounts(EditorEngine(doc("کِتاب\u200c X 123 😀 \u200d")).snapshot())
+        check(counts.words == 4 && counts.units == "کِتاب\u200c X 123 😀 \u200d".length && counts.selected == 0)
+    }
+
+    private fun checkCompletedCheckpoint() {
+        owner {
+            s.viewModel.verificationEngine.move(Selection(0, 0))
+            s.viewModel.verificationEngine.setParagraphProperties(before = 24)
+            s.viewModel.verificationEngine.setTextStyle(TextStylePatch(size = 48))
+            s.viewModel.verificationEngine.replace("نیا ", "edit")
+            s.viewModel.verificationEngine.inputMethod("provisional", 0, 11)
+        }
+        val expected = owner { s.viewModel.verificationEngine.snapshot().committed }
+        val controller =
+            owner {
+                checkNotNull(window).rootPane.getClientProperty("editor.localRecovery") as LocalRecoveryController
+            }
+        await("completed committed copy") {
+            controller.state().let {
+                it["completed"] == it["observed"] &&
+                    (it["completed"] as Long) > 0
+            }
+        }
+        owner { controller.finish(discard = false) }
+        val store = LocalRecoveryStore(root.resolve("recovery"))
+        var entry: LocalRecoveryEntry? = null
+        val end = System.nanoTime() + 10_000_000_000
+        while (entry == null) {
+            entry = store.scan().firstOrNull { it.copy?.document?.same(expected) == true }
+            check(System.nanoTime() < end)
+            if (entry == null)Thread.sleep(20)
+        }
+        check(store.restore(checkNotNull(entry)).document.same(expected))
+        check(!expected.text.contains("provisional"))
+    }
 }
