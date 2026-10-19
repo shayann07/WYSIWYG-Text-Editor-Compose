@@ -10,15 +10,33 @@ import dev.shayxo.composedoc.domain.EditorFrame
 import dev.shayxo.composedoc.model.Selection
 import dev.shayxo.composedoc.model.TextStyleFlags
 
-private fun EditorFrame.canonicalBasis() = CanonicalProbeBasis(documentRevision, committed.units.map { it.id }, identityGeneration)
+private fun EditorFrame.canonicalBasis() =
+    CanonicalProbeBasis(documentRevision, committed.units.map { it.id }, identityGeneration)
 
 /** Internal experiment boundary; not a production replication API or collaborative algorithm. */
 fun runCanonicalProbeChecks() {
     val engine = EditorEngine()
+    val requested = ArrayList<Boolean>()
+    checkCanonicalProbeHistoryRouting(engine, requested)
+    checkCanonicalProbeRollbackAndComposition(engine, requested)
+    val raw = checkCanonicalProbeRawUnits()
+    checkCanonicalProbeObservedReentry()
+    checkCanonicalProbeIdentities()
+    checkCanonicalProbeIdentityMoves()
+    checkCanonicalProbeRawMoves(raw)
+    println(
+        "PASS canonical probe boundary: atomic raw edits, native deferral and external history routing; " +
+            "production C0 OPEN",
+    )
+}
+
+private fun checkCanonicalProbeHistoryRouting(engine: EditorEngine, requested: ArrayList<Boolean>) {
     engine.replace("AB", "Fixture")
     val localHistory = engine.snapshot().undoCount
-    val requested = ArrayList<Boolean>()
-    check(engine.applyCanonicalProbe(engine.snapshot().canonicalBasis(), emptyList(), Selection(0, 0)) == CanonicalProbeOutcome.RequiresExternalHistory)
+    check(
+        engine.applyCanonicalProbe(engine.snapshot().canonicalBasis(), emptyList(), Selection(0, 0)) ==
+            CanonicalProbeOutcome.RequiresExternalHistory,
+    )
     engine.installCanonicalProbeHistory { requested += it }
     var publications = 0
     engine.onChange = { publications++ }
@@ -34,7 +52,9 @@ fun runCanonicalProbeChecks() {
         ) == CanonicalProbeOutcome.Applied,
     )
     check(publications == 1 && engine.snapshot().committed.text == "AXB")
-    check(engine.snapshot().undoCount == localHistory) { "Remote acceptance must not clear or add local snapshot history" }
+    check(engine.snapshot().undoCount == localHistory) {
+        "Remote acceptance must not clear or add local snapshot history"
+    }
     val accepted = engine.snapshot()
     check(engine.applyCanonicalProbe(basis, emptyList(), Selection(0, 0)) == CanonicalProbeOutcome.RejectedBasis)
     check(engine.snapshot() == accepted)
@@ -42,6 +62,9 @@ fun runCanonicalProbeChecks() {
     check(requested == listOf(false) && engine.snapshot().committed == accepted.committed)
     engine.perform(EditAction.Redo)
     check(requested == listOf(false, true) && engine.snapshot().committed == accepted.committed)
+}
+
+private fun checkCanonicalProbeRollbackAndComposition(engine: EditorEngine, requested: ArrayList<Boolean>) {
     val beforeFailure = engine.snapshot()
     val frames = ArrayList<EditorFrame>()
     engine.onChange = { frames += it }
@@ -55,18 +78,27 @@ fun runCanonicalProbeChecks() {
             Selection(0, 0),
         ) == CanonicalProbeOutcome.Rejected,
     )
-    check(engine.snapshot().committed == beforeFailure.committed && engine.snapshot().selection == beforeFailure.selection)
+    check(
+        engine.snapshot().committed == beforeFailure.committed &&
+            engine.snapshot().selection == beforeFailure.selection,
+    )
     check(frames.all { it.committed == beforeFailure.committed }) { "A partial canonical transaction was published" }
     engine.move(Selection(1, 1))
     engine.inputMethod("候補", 0, 2)
     val composing = engine.snapshot()
-    check(engine.applyCanonicalProbe(composing.canonicalBasis(), emptyList(), Selection(0, 0)) == CanonicalProbeOutcome.DeferredComposition)
+    check(
+        engine.applyCanonicalProbe(composing.canonicalBasis(), emptyList(), Selection(0, 0)) ==
+            CanonicalProbeOutcome.DeferredComposition,
+    )
     check(engine.snapshot() == composing)
     val historyRequests = requested.size
     engine.perform(EditAction.Undo)
     check(requested.size == historyRequests)
     engine.inputMethod("日本", 2, null)
     check(requested.size == historyRequests + 1 && engine.snapshot().committed.text == "A日本XB")
+}
+
+private fun checkCanonicalProbeRawUnits(): EditorEngine {
     val raw = EditorEngine()
     raw.replace("ک\u0650\n", "Fixture", paragraphBreaks = true)
     raw.installCanonicalProbeHistory {}
@@ -82,8 +114,15 @@ fun runCanonicalProbeChecks() {
     )
     check(raw.snapshot().committed.units[0].style == TextStyleFlags())
     check(raw.snapshot().committed.units[1].style.bold)
-    check(raw.snapshot().committed.units[2].style == TextStyleFlags() && raw.snapshot().committed.units[2].paragraphStyle.italic)
+    check(
+        raw.snapshot().committed.units[2].style == TextStyleFlags() &&
+            raw.snapshot().committed.units[2].paragraphStyle.italic,
+    )
     check(DocumentFiles.decode(DocumentFiles.encode(raw.snapshot().committed)).same(raw.snapshot().committed))
+    return raw
+}
+
+private fun checkCanonicalProbeObservedReentry() {
     val observed = EditorEngine()
     observed.replace("A", "Fixture")
     observed.installCanonicalProbeHistory { throw IllegalStateException("Synthetic history transport failure") }
@@ -96,6 +135,9 @@ fun runCanonicalProbeChecks() {
         ) == CanonicalProbeOutcome.Applied,
     )
     check(observed.snapshot().committed.text == "AB" && observed.snapshot().notice.startsWith("Edit rejected"))
+}
+
+private fun checkCanonicalProbeIdentities() {
     val identities = EditorEngine()
     identities.replace("کک", "IdentityFixture")
     identities.installCanonicalProbeHistory {}
@@ -128,28 +170,80 @@ fun runCanonicalProbeChecks() {
             Selection(1, 1),
         ) == CanonicalProbeOutcome.Applied,
     )
-    check(identities.snapshot().committed.text == "Xک" && identities.snapshot().committed.units[1] == identityReplaced.committed.units[1])
+    check(
+        identities.snapshot().committed.text == "Xک" &&
+            identities.snapshot().committed.units[1] == identityReplaced.committed.units[1],
+    )
+}
+
+private fun checkCanonicalProbeIdentityMoves() {
     val moved = EditorEngine()
     moved.replace("کک", "MoveFixture")
     moved.installCanonicalProbeHistory {}
     val moveBasis = moved.snapshot()
-    check(moved.applyCanonicalProbe(moveBasis.canonicalBasis(), listOf(CanonicalProbeEdit.Move(0, 1, 1)), Selection(0, 0)) == CanonicalProbeOutcome.Applied)
-    check(moved.applyCanonicalProbe(moved.snapshot().canonicalBasis(), listOf(CanonicalProbeEdit.Move(1, 2, 0)), Selection(0, 0)) == CanonicalProbeOutcome.Applied)
-    check(moved.snapshot().committed == moveBasis.committed && moved.snapshot().documentRevision == moveBasis.documentRevision)
-    check(moved.applyCanonicalProbe(moveBasis.canonicalBasis(), listOf(CanonicalProbeEdit.Replace(0, 1, "X", TextStyleFlags())), Selection(0, 0)) == CanonicalProbeOutcome.RejectedBasis) {
+    check(
+        moved.applyCanonicalProbe(
+            moveBasis.canonicalBasis(),
+            listOf(CanonicalProbeEdit.Move(0, 1, 1)),
+            Selection(0, 0),
+        ) == CanonicalProbeOutcome.Applied,
+    )
+    check(
+        moved.applyCanonicalProbe(
+            moved.snapshot().canonicalBasis(),
+            listOf(CanonicalProbeEdit.Move(1, 2, 0)),
+            Selection(0, 0),
+        ) == CanonicalProbeOutcome.Applied,
+    )
+    check(
+        moved.snapshot().committed == moveBasis.committed &&
+            moved.snapshot().documentRevision == moveBasis.documentRevision,
+    )
+    check(
+        moved.applyCanonicalProbe(
+            moveBasis.canonicalBasis(),
+            listOf(CanonicalProbeEdit.Replace(0, 1, "X", TextStyleFlags())),
+            Selection(0, 0),
+        ) == CanonicalProbeOutcome.RejectedBasis,
+    ) {
         "Identity-only move and inverse admitted an ABA stale canonical basis"
     }
+}
+
+private fun checkCanonicalProbeRawMoves(raw: EditorEngine) {
     val rawBeforeMove = raw.snapshot()
     var movePublications = 0
     raw.onChange = { movePublications++ }
-    check(raw.applyCanonicalProbe(rawBeforeMove.canonicalBasis(), listOf(CanonicalProbeEdit.Move(0, 2, 1)), Selection(2, 2)) == CanonicalProbeOutcome.Applied)
-    check(raw.snapshot().committed.units == listOf(rawBeforeMove.committed.units[2], rawBeforeMove.committed.units[0], rawBeforeMove.committed.units[1]))
+    check(
+        raw.applyCanonicalProbe(
+            rawBeforeMove.canonicalBasis(),
+            listOf(CanonicalProbeEdit.Move(0, 2, 1)),
+            Selection(2, 2),
+        ) == CanonicalProbeOutcome.Applied,
+    )
+    check(
+        raw.snapshot().committed.units ==
+            listOf(
+                rawBeforeMove.committed.units[2],
+                rawBeforeMove.committed.units[0],
+                rawBeforeMove.committed.units[1],
+            ),
+    )
     check(movePublications == 1 && raw.snapshot().undoCount == rawBeforeMove.undoCount)
     val beforeMoveFailure = raw.snapshot()
     val rejectedMoves = ArrayList<EditorFrame>()
     raw.onChange = { rejectedMoves += it }
-    check(raw.applyCanonicalProbe(beforeMoveFailure.canonicalBasis(), listOf(CanonicalProbeEdit.Move(1, 3, 0), CanonicalProbeEdit.Move(0, 1, 999)), Selection(0, 0)) == CanonicalProbeOutcome.Rejected)
-    check(raw.snapshot().committed == beforeMoveFailure.committed && raw.snapshot().selection == beforeMoveFailure.selection && raw.snapshot().identityGeneration == beforeMoveFailure.identityGeneration)
+    check(
+        raw.applyCanonicalProbe(
+            beforeMoveFailure.canonicalBasis(),
+            listOf(CanonicalProbeEdit.Move(1, 3, 0), CanonicalProbeEdit.Move(0, 1, 999)),
+            Selection(0, 0),
+        ) == CanonicalProbeOutcome.Rejected,
+    )
+    check(
+        raw.snapshot().committed == beforeMoveFailure.committed &&
+            raw.snapshot().selection == beforeMoveFailure.selection &&
+            raw.snapshot().identityGeneration == beforeMoveFailure.identityGeneration,
+    )
     check(rejectedMoves.all { it.committed == beforeMoveFailure.committed })
-    println("PASS canonical probe boundary: atomic raw edits, native deferral and external history routing; production C0 OPEN")
 }
