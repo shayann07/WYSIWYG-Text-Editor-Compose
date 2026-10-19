@@ -5,6 +5,7 @@ import dev.shayxo.composedoc.data.FileConflict
 import dev.shayxo.composedoc.data.FileFingerprint
 import dev.shayxo.composedoc.data.SafeDocumentIO
 import dev.shayxo.composedoc.data.SavePoint
+import dev.shayxo.composedoc.domain.EditorFrame
 import dev.shayxo.composedoc.model.Document
 import dev.shayxo.composedoc.ui.EditorIntent
 import dev.shayxo.composedoc.ui.EditorViewModel
@@ -19,6 +20,21 @@ import javax.swing.JFrame
 import javax.swing.JOptionPane
 import javax.swing.SwingWorker
 import javax.swing.filechooser.FileNameExtensionFilter
+
+private const val CONFLICT_RELOAD_OPTION = 1
+private const val CONFLICT_SAVE_COPY_OPTION = 2
+private const val CLOSE_PRIMARY_OPTION = 0
+private const val CLOSE_DISCARD_OPTION = 1
+
+/** One accepted Save request: destination, captured document and the revisions it was captured at. */
+private data class SaveRequest(
+    val target: Path,
+    val written: Document,
+    val asNew: Boolean,
+    val closeAfter: Boolean,
+    val documentRevision: Long,
+    val sessionRevision: Long,
+)
 
 /** Swing shell only. Disk work is off the editing thread; results publish on the EDT. */
 class WindowFiles(
@@ -69,11 +85,15 @@ class WindowFiles(
         private set
     var conflict: FileConflict? = null
         private set
-    var preserveBeforeReload: (Document, () -> Unit) -> Unit = { _, _ -> error(IllegalStateException("Recovery protection unavailable; reload blocked")) }
+    var preserveBeforeReload: (Document, () -> Unit) -> Unit = { _, _ ->
+        error(IllegalStateException("Recovery protection unavailable; reload blocked"))
+    }
     private val savePoint = SavePoint(viewModel.snapshot().committed)
     private var diskDocument = viewModel.snapshot().committed
     val dirty get() = unsavedRestore || savePoint.dirty(viewModel.snapshot())
-    val name get() = (path?.fileName?.toString() ?: restoredName?.let { "$it ($copyLabel)" } ?: "Untitled") + if (dirty) " *" else ""
+    val name get() =
+        (path?.fileName?.toString() ?: restoredName?.let { "$it ($copyLabel)" } ?: "Untitled") +
+            if (dirty) " *" else ""
     val status get() = (
         if (conflict != null) {
             "External file conflict — Keep editing / Reload / Save a Copy"
@@ -103,33 +123,46 @@ class WindowFiles(
         if (cause is FileConflict) {
             conflict = cause
             refresh()
-            reportFailureForChecks?.let {
-                it(cause)
-                return
-            }
-            showConflict()
-            return
         }
-        reportFailureForChecks?.let {
-            it(cause)
-            return
+        val report = reportFailureForChecks
+        when {
+            report != null -> report(cause)
+            cause is FileConflict -> showConflict()
+            else -> JOptionPane.showMessageDialog(
+                window,
+                failure.cause?.message ?: failure.message ?: "File operation failed.",
+                "Document not saved or opened",
+                JOptionPane.ERROR_MESSAGE,
+            )
         }
-        JOptionPane.showMessageDialog(window, failure.cause?.message ?: failure.message ?: "File operation failed.", "Document not saved or opened", JOptionPane.ERROR_MESSAGE)
     }
 
     fun showConflict() {
         val c = conflict ?: return
-        when (JOptionPane.showOptionDialog(window, "$c\nLocal edits: $dirty\nReload protects a local recovery copy before replacement.", "External file change", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, arrayOf("Keep editing", "Reload external version", "Save a Copy"), "Keep editing")) {
-            1 -> reloadExternal()
-            2 -> save(asNew = true)
+        val choice = JOptionPane.showOptionDialog(
+            window,
+            "$c\nLocal edits: $dirty\nReload protects a local recovery copy before replacement.",
+            "External file change",
+            JOptionPane.DEFAULT_OPTION,
+            JOptionPane.WARNING_MESSAGE,
+            null,
+            arrayOf("Keep editing", "Reload external version", "Save a Copy"),
+            "Keep editing",
+        )
+        when (choice) {
+            CONFLICT_RELOAD_OPTION -> reloadExternal()
+            CONFLICT_SAVE_COPY_OPTION -> save(asNew = true)
         }
     }
     fun reloadExternal() {
-        if (busy || viewModel.snapshot().marked != null || viewModel.snapshot().waiting)return
-        val source = path ?: return
+        val source = path?.takeIf {
+            !busy && viewModel.snapshot().marked == null && !viewModel.snapshot().waiting
+        } ?: return
         val captured = viewModel.snapshot()
         val proceed = {
-            if (viewModel.snapshot().documentRevision != captured.documentRevision || viewModel.snapshot().sessionRevision != captured.sessionRevision) {
+            if (viewModel.snapshot().documentRevision != captured.documentRevision ||
+                viewModel.snapshot().sessionRevision != captured.sessionRevision
+            ) {
                 error(IllegalStateException("Local work changed while protecting it; reload canceled"))
             } else {
                 work({ DocumentFiles.read(source) }) { loaded ->
@@ -139,13 +172,19 @@ class WindowFiles(
                 }
             }
         }
-        if (dirty) {
-            if (JOptionPane.showConfirmDialog(window, "Protect local changes and open the external version in a fresh window? This local window stays available.", "Reload external version", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION)return
-            preserveBeforeReload(captured.committed, proceed)
-        } else {
+        if (!dirty) {
             proceed()
+        } else if (confirmReload()) {
+            preserveBeforeReload(captured.committed, proceed)
         }
     }
+
+    private fun confirmReload() = JOptionPane.showConfirmDialog(
+        window,
+        "Protect local changes and open the external version in a fresh window? This local window stays available.",
+        "Reload external version",
+        JOptionPane.YES_NO_OPTION,
+    ) == JOptionPane.YES_OPTION
 
     private fun <T> work(action: () -> T, success: (T) -> Unit) {
         if (busy) return
@@ -154,6 +193,9 @@ class WindowFiles(
         refresh()
         object : SwingWorker<T, Unit>() {
             override fun doInBackground(): T = action()
+
+            // Reason: file-operation boundary; any background or callback failure is reported, never lost.
+            @Suppress("TooGenericExceptionCaught")
             override fun done() {
                 busy = false
                 try {
@@ -172,6 +214,12 @@ class WindowFiles(
         isAcceptAllFileFilterUsed = false
     }
 
+    private fun withAstraExtension(target: Path): Path = if (!target.fileName.toString().endsWith(".astra", true)) {
+        target.resolveSibling(target.fileName.toString() + ".astra")
+    } else {
+        target
+    }
+
     fun open() {
         if (busy) return
         val picker = chooser()
@@ -185,63 +233,106 @@ class WindowFiles(
         // Never persist preedit as accepted text or guess a native completion fence.
         if (viewModel.snapshot().marked != null || viewModel.snapshot().waiting) {
             error(IllegalStateException("Finish composing before saving or closing."))
-            return
-        }
-        var destination = path
-        if (asNew || destination == null) {
-            if (saveDestinationPicker != null) {
-                destination = saveDestinationPicker!!.invoke() ?: return
-            } else {
-                val picker = chooser().apply { selectedFile = (path?.fileName?.toFile() ?: java.io.File("Untitled.astra")) }
-                if (picker.showSaveDialog(window) != JFileChooser.APPROVE_OPTION) return
-                destination = picker.selectedFile.toPath().toAbsolutePath().normalize()
-                if (!destination.fileName.toString().endsWith(".astra", true)) destination = destination.resolveSibling(destination.fileName.toString() + ".astra")
-            }
-        }
-        val written = try {
-            savePoint.capture(viewModel.snapshot())
-        } catch (failure: Exception) {
-            error(failure)
-            return
-        }
-        val target = destination!!
-        val capturedDocRev = viewModel.snapshot().documentRevision
-        val capturedSessionRev = viewModel.snapshot().sessionRevision
-        val known = if (!asNew && target == path)fingerprint else null
-        // Capture destination bytes before the publication worker, including Save As to an existing file.
-        work({
-            known ?: FileFingerprint.capture(target).also { actual ->
-                if (!asNew && target == path && actual.exists && !DocumentFiles.read(target).same(diskDocument))throw FileConflict(target, FileFingerprint(true), actual)
-            }
-        }) { expected ->
-            if ((asNew || path == null) && expected.exists && saveDestinationPicker == null && JOptionPane.showConfirmDialog(window, "Replace ${target.fileName}?\n$expected", "Replace document", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION)return@work
-            work({
-                beforeSaveWriteForChecks()
-                SafeDocumentIO.write(target, written, expected)
-            }) { published ->
-                fingerprint = published
-                conflict = null
-                path = target
-                diskDocument = written
-                savePoint.acknowledge(written)
-                unsavedRestore = false
-                operationNote = "Saved ${target.fileName}"
-                // Typing while the write runs stays dirty. Never close over newer edits or active preedit.
-                if (closeAfter) {
-                    val currentSnap = viewModel.snapshot()
-                    if (!dirty &&
-                        !hasRetainedRecovery() &&
-                        currentSnap.marked == null &&
-                        !currentSnap.waiting &&
-                        currentSnap.documentRevision == capturedDocRev &&
-                        currentSnap.sessionRevision == capturedSessionRev
-                    ) {
-                        onApprovedClose()
-                        window.dispose()
-                    }
+        } else {
+            saveDestination(asNew)?.let { target ->
+                captureForSave()?.let { written ->
+                    startSave(
+                        SaveRequest(
+                            target,
+                            written,
+                            asNew,
+                            closeAfter,
+                            viewModel.snapshot().documentRevision,
+                            viewModel.snapshot().sessionRevision,
+                        ),
+                    )
                 }
             }
         }
+    }
+
+    private fun saveDestination(asNew: Boolean): Path? {
+        val current = path
+        return when {
+            !asNew && current != null -> current
+            saveDestinationPicker != null -> saveDestinationPicker!!.invoke()
+            else -> chooseSaveFile()
+        }
+    }
+
+    private fun chooseSaveFile(): Path? {
+        val picker = chooser().apply { selectedFile = (path?.fileName?.toFile() ?: java.io.File("Untitled.astra")) }
+        return if (picker.showSaveDialog(window) != JFileChooser.APPROVE_OPTION) {
+            null
+        } else {
+            withAstraExtension(picker.selectedFile.toPath().toAbsolutePath().normalize())
+        }
+    }
+
+    /** SavePoint.capture only rejects (IllegalStateException) a frame that is still composing. */
+    private fun captureForSave(): Document? = try {
+        savePoint.capture(viewModel.snapshot())
+    } catch (failure: IllegalStateException) {
+        error(failure)
+        null
+    }
+
+    private fun startSave(request: SaveRequest) {
+        val target = request.target
+        val known = if (!request.asNew && target == path)fingerprint else null
+        // Capture destination bytes before the publication worker, including Save As to an existing file.
+        work({
+            known ?: FileFingerprint.capture(target).also { actual ->
+                val sameFile = !request.asNew && target == path
+                if (sameFile && actual.exists && !DocumentFiles.read(target).same(diskDocument)) {
+                    throw FileConflict(target, FileFingerprint(true), actual)
+                }
+            }
+        }) { expected ->
+            if (replaceApproved(request, expected)) {
+                work({
+                    beforeSaveWriteForChecks()
+                    SafeDocumentIO.write(target, request.written, expected)
+                }) { published -> acknowledgeSave(request, published) }
+            }
+        }
+    }
+
+    private fun replaceApproved(request: SaveRequest, expected: FileFingerprint): Boolean {
+        val replacesOther = (request.asNew || path == null) && expected.exists && saveDestinationPicker == null
+        return !replacesOther ||
+            JOptionPane.showConfirmDialog(
+                window,
+                "Replace ${request.target.fileName}?\n$expected",
+                "Replace document",
+                JOptionPane.YES_NO_OPTION,
+            ) == JOptionPane.YES_OPTION
+    }
+
+    private fun acknowledgeSave(request: SaveRequest, published: FileFingerprint) {
+        val target = request.target
+        fingerprint = published
+        conflict = null
+        path = target
+        diskDocument = request.written
+        savePoint.acknowledge(request.written)
+        unsavedRestore = false
+        operationNote = "Saved ${target.fileName}"
+        // Typing while the write runs stays dirty. Never close over newer edits or active preedit.
+        if (request.closeAfter && closesCleanly(request)) {
+            onApprovedClose()
+            window.dispose()
+        }
+    }
+
+    private fun closesCleanly(request: SaveRequest): Boolean {
+        val currentSnap = viewModel.snapshot()
+        return !dirty &&
+            !hasRetainedRecovery() &&
+            currentSnap.marked == null &&
+            !currentSnap.waiting &&
+            currentSnap.documentRevision == request.documentRevision &&
+            currentSnap.sessionRevision == request.sessionRevision
     }
 
     fun close(choice: Int? = null) {
@@ -260,46 +351,66 @@ class WindowFiles(
             return
         }
         val docName = path?.fileName?.toString() ?: "Untitled"
-        val option = choice ?: promptCloseChoice?.invoke(docName) ?: JOptionPane.showOptionDialog(
-            window,
-            if (retained) "Pending: ${pendingRecoveryDescription()}. Keep editing to inspect/export. Discard All and Close loses all these entries and any unsaved document changes. Unverified input is never applied automatically." else "Save changes to $docName?",
-            "Unsaved document",
-            JOptionPane.DEFAULT_OPTION,
-            JOptionPane.QUESTION_MESSAGE,
-            null,
-            if (retained) arrayOf("Keep Editing", "Discard All and Close", "Cancel") else arrayOf("Save", "Discard", "Cancel"),
-            if (retained) "Keep Editing" else "Save",
-        )
+        val option = choice ?: promptCloseChoice?.invoke(docName) ?: askCloseChoice(docName, retained)
         when (option) {
-            0 -> if (!retained) save(closeAfter = true)
-            1 -> {
-                val finishDiscard: () -> Unit = finish@{
-                    val current = viewModel.snapshot()
-                    if (current.documentRevision != snap.documentRevision || current.sessionRevision != snap.sessionRevision) {
-                        operationNote = "Input changed while closing. Review your work and close again."
-                        refresh()
-                        return@finish
-                    }
-                    if (hasPreedit) {
-                        onDiscardComposition()
-                    }
-                    discardConfirmed()
-                    if (hasRetainedRecovery()) {
-                        operationNote = "New recovery work remains. Inspect it before closing."
-                        refresh()
-                        return@finish
-                    }
-                    onApprovedClose()
-                    window.dispose()
+            CLOSE_PRIMARY_OPTION -> if (!retained) save(closeAfter = true)
+            CLOSE_DISCARD_OPTION -> {
+                val finishDiscard: () -> Unit = { finishDiscard(snap, hasPreedit, discardConfirmed) }
+                if (durableDiscard != null && (hasPreedit || retained)) {
+                    durableDiscard.invoke(finishDiscard)
+                } else {
+                    finishDiscard()
                 }
-                if (durableDiscard != null && (hasPreedit || retained))durableDiscard.invoke(finishDiscard) else finishDiscard()
             }
         }
+    }
+
+    private fun askCloseChoice(docName: String, retained: Boolean): Int = JOptionPane.showOptionDialog(
+        window,
+        if (retained) {
+            "Pending: ${pendingRecoveryDescription()}. Keep editing to inspect/export. " +
+                "Discard All and Close loses all these entries and any unsaved document changes. " +
+                "Unverified input is never applied automatically."
+        } else {
+            "Save changes to $docName?"
+        },
+        "Unsaved document",
+        JOptionPane.DEFAULT_OPTION,
+        JOptionPane.QUESTION_MESSAGE,
+        null,
+        if (retained) {
+            arrayOf("Keep Editing", "Discard All and Close", "Cancel")
+        } else {
+            arrayOf("Save", "Discard", "Cancel")
+        },
+        if (retained) "Keep Editing" else "Save",
+    )
+
+    private fun finishDiscard(snap: EditorFrame, hasPreedit: Boolean, discardConfirmed: () -> Unit) {
+        val current = viewModel.snapshot()
+        if (current.documentRevision != snap.documentRevision || current.sessionRevision != snap.sessionRevision) {
+            operationNote = "Input changed while closing. Review your work and close again."
+            refresh()
+            return
+        }
+        if (hasPreedit) {
+            onDiscardComposition()
+        }
+        discardConfirmed()
+        if (hasRetainedRecovery()) {
+            operationNote = "New recovery work remains. Inspect it before closing."
+            refresh()
+            return
+        }
+        onApprovedClose()
+        window.dispose()
     }
     fun confirmQuarantineDiscard(count: Int): Boolean = confirmInputDiscardForChecks?.invoke(count) ?: (
         JOptionPane.showConfirmDialog(
             window,
-            "Discard these $count unverified input callback(s)? Their text has not been accepted into the document. Export first if needed. New arrivals will be kept.",
+            "Discard these $count unverified input callback(s)? " +
+                "Their text has not been accepted into the document. Export first if needed. " +
+                "New arrivals will be kept.",
             "Discard unverified input",
             JOptionPane.YES_NO_OPTION,
             JOptionPane.WARNING_MESSAGE,
@@ -311,21 +422,32 @@ class WindowFiles(
         operationNote = null
         refresh()
         val payload = quarantineDiagnostic(entries.toList()).toByteArray(Charsets.UTF_8)
-        val selected = destination ?: if (inputDestinationPicker != null) {
-            inputDestinationPicker!!.invoke() ?: return
+        val target = (destination ?: pickInputDestination())?.toAbsolutePath()?.normalize() ?: return
+        if (isMainDocument(target)) {
+            error(
+                IllegalArgumentException(
+                    "Choose a separate diagnostic file. The main document cannot be overwritten.",
+                ),
+            )
         } else {
-            val picker = JFileChooser(path?.parent?.toFile()).apply {
-                selectedFile = java.io.File("unverified-input.json")
-                fileFilter = FileNameExtensionFilter("Unverified input diagnostic (*.json)", "json")
-            }
-            if (picker.showSaveDialog(window) != JFileChooser.APPROVE_OPTION) return
-            picker.selectedFile.toPath()
+            writeDiagnostic(target, payload)
         }
-        val target = selected.toAbsolutePath().normalize()
-        if (target == path?.toAbsolutePath()?.normalize() || (Files.exists(target) && path?.let { Files.exists(it) && Files.isSameFile(target, it) } == true)) {
-            error(IllegalArgumentException("Choose a separate diagnostic file. The main document cannot be overwritten."))
-            return
+    }
+
+    private fun pickInputDestination(): Path? {
+        val custom = inputDestinationPicker
+        if (custom != null) return custom.invoke()
+        val picker = JFileChooser(path?.parent?.toFile()).apply {
+            selectedFile = java.io.File("unverified-input.json")
+            fileFilter = FileNameExtensionFilter("Unverified input diagnostic (*.json)", "json")
         }
+        return if (picker.showSaveDialog(window) != JFileChooser.APPROVE_OPTION) null else picker.selectedFile.toPath()
+    }
+
+    private fun isMainDocument(target: Path): Boolean = target == path?.toAbsolutePath()?.normalize() ||
+        (Files.exists(target) && path?.let { Files.exists(it) && Files.isSameFile(target, it) } == true)
+
+    private fun writeDiagnostic(target: Path, payload: ByteArray) {
         // A diagnostic is a new rescue artifact, never a document replacement or persisted replay format.
         work({
             val temp = Files.createTempFile(target.parent, ".unverified-input-", ".tmp")
@@ -346,27 +468,34 @@ class WindowFiles(
         if (busy) return
         operationNote = null
         refresh()
-        val selected = if (destination != null) {
-            destination
-        } else if (draftDestinationPicker != null) {
-            draftDestinationPicker!!.invoke() ?: return
-        } else {
-            val picker = chooser().apply { selectedFile = java.io.File("recovered-draft.astra") }
-            if (picker.showSaveDialog(window) != JFileChooser.APPROVE_OPTION) return
-            var target = picker.selectedFile.toPath().toAbsolutePath().normalize()
-            if (!target.fileName.toString().endsWith(".astra", true)) target = target.resolveSibling(target.fileName.toString() + ".astra")
-            if (Files.exists(target) && JOptionPane.showConfirmDialog(window, "Replace ${target.fileName}?", "Export recovery draft", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return
-            target
-        }
-        val target = selected.toAbsolutePath().normalize()
+        val target = (destination ?: pickDraftDestination())?.toAbsolutePath()?.normalize() ?: return
         if (target == path?.toAbsolutePath()?.normalize()) {
             error(IllegalArgumentException("Choose a separate file for the recovery draft."))
-            return
+        } else {
+            work({
+                val expected = if (Files.exists(target)) DocumentFiles.read(target) else null
+                DocumentFiles.write(target, document, expected)
+            }) { operationNote = "Recovery draft exported: ${target.fileName}" }
         }
-        work({
-            val expected = if (Files.exists(target)) DocumentFiles.read(target) else null
-            DocumentFiles.write(target, document, expected)
-        }) { operationNote = "Recovery draft exported: ${target.fileName}" }
+    }
+
+    private fun pickDraftDestination(): Path? {
+        val custom = draftDestinationPicker
+        return if (custom != null) custom.invoke() else chooseDraftFile()
+    }
+
+    private fun chooseDraftFile(): Path? {
+        val picker = chooser().apply { selectedFile = java.io.File("recovered-draft.astra") }
+        if (picker.showSaveDialog(window) != JFileChooser.APPROVE_OPTION) return null
+        val target = withAstraExtension(picker.selectedFile.toPath().toAbsolutePath().normalize())
+        val replaceRefused = Files.exists(target) &&
+            JOptionPane.showConfirmDialog(
+                window,
+                "Replace ${target.fileName}?",
+                "Export recovery draft",
+                JOptionPane.YES_NO_OPTION,
+            ) != JOptionPane.YES_OPTION
+        return if (replaceRefused) null else target
     }
 }
 

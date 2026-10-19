@@ -6,6 +6,7 @@ import dev.shayxo.composedoc.model.StoredFont
 import dev.shayxo.composedoc.model.TextStylePatch
 import dev.shayxo.composedoc.ui.EditorIntent
 import dev.shayxo.composedoc.ui.EditorSurface
+import dev.shayxo.composedoc.ui.EditorViewModel
 import java.awt.Color
 import java.awt.Dimension
 import javax.swing.JButton
@@ -13,6 +14,27 @@ import javax.swing.JColorChooser
 import javax.swing.JComboBox
 import javax.swing.JLabel
 import javax.swing.JPanel
+
+private const val SIZE_COMBO_WIDTH_PX = 104
+private const val SPACE_COMBO_WIDTH_PX = 70
+private const val COMBO_HEIGHT_PX = 26
+private const val MIN_STORED_SIZE_SP = 8
+private const val MAX_STORED_SIZE_SP = 96
+private const val MAX_PARAGRAPH_SPACE_DP = 200
+private const val DEFAULT_INK = -1
+private const val BLACK_RGB = 0
+private const val BLUE_RGB = 0x174ea6
+private const val RED_RGB = 0xb3261e
+private const val GREEN_RGB = 0x146c43
+private const val RGB_MASK = 0xffffff
+private const val CUSTOM_COLOR_INDEX = 6
+private const val NATURAL_LINE_PERMILLE = 0
+private const val LINE_1_25_PERMILLE = 1250
+private const val LINE_1_5_PERMILLE = 1500
+private const val LINE_2_PERMILLE = 2000
+private const val LINE_3_PERMILLE = 3000
+private val LINE_PERMILLE_CHOICES =
+    listOf(NATURAL_LINE_PERMILLE, LINE_1_25_PERMILLE, LINE_1_5_PERMILLE, LINE_2_PERMILLE, LINE_3_PERMILLE)
 
 data class WritingCounts(val words: Int, val units: Int, val selected: Int)
 fun writingCounts(frame: EditorFrame): WritingCounts {
@@ -52,7 +74,7 @@ class WritingControls(private val surface: () -> EditorSurface, private val busy
     ).apply {
         name = "stored-size"
         isEditable = true
-        preferredSize = Dimension(104, 26)
+        preferredSize = Dimension(SIZE_COMBO_WIDTH_PX, COMBO_HEIGHT_PX)
     }
     val color = JComboBox(arrayOf("Mixed", "Default ink", "Black", "Blue", "Red", "Green", "Custom…")).apply {
         name =
@@ -63,16 +85,16 @@ class WritingControls(private val surface: () -> EditorSurface, private val busy
     val before = JComboBox(arrayOf("Mixed", "0", "4", "8", "12", "16", "24", "32", "48", "72", "100", "200")).apply {
         name = "space-before"
         isEditable = true
-        preferredSize = Dimension(70, 26)
+        preferredSize = Dimension(SPACE_COMBO_WIDTH_PX, COMBO_HEIGHT_PX)
     }
     val after = JComboBox(arrayOf("Mixed", "0", "4", "8", "12", "16", "24", "32", "48", "72", "100", "200")).apply {
         name = "space-after"
         isEditable = true
-        preferredSize = Dimension(70, 26)
+        preferredSize = Dimension(SPACE_COMBO_WIDTH_PX, COMBO_HEIGHT_PX)
     }
     val line = JComboBox(arrayOf("Mixed", "Natural", "1.25×", "1.5×", "2×", "3×")).apply { name = "line-spacing" }
     private var refresh = false
-    private val colors = listOf(-1, 0, 0x174ea6, 0xb3261e, 0x146c43)
+    private val colors = listOf(DEFAULT_INK, BLACK_RGB, BLUE_RGB, RED_RGB, GREEN_RGB)
     init {
         listOf(family, size, color, before, after, line).forEach(::fitCombo)
         text.add(JLabel("Text"))
@@ -123,7 +145,7 @@ class WritingControls(private val surface: () -> EditorSurface, private val busy
             edit {
                 val v = if (size.selectedItem == "Preview size") 0 else size.selectedItem.toString().toIntOrNull()
                 if (v != null &&
-                    (v == 0 || v in 8..96)
+                    (v == 0 || v in MIN_STORED_SIZE_SP..MAX_STORED_SIZE_SP)
                 ) {
                     surface().viewModel.dispatch(EditorIntent.SetTextStyle(TextStylePatch(size = v)))
                 } else {
@@ -140,10 +162,10 @@ class WritingControls(private val surface: () -> EditorSurface, private val busy
         color.addActionListener {
             edit {
                 val index = color.selectedIndex
-                val rgb = if (index in 1..5) {
+                val rgb = if (index in 1 until CUSTOM_COLOR_INDEX) {
                     colors[index - 1]
-                } else if (index == 6) {
-                    JColorChooser.showDialog(text, "Text color", Color.BLACK)?.rgb?.and(0xffffff)
+                } else if (index == CUSTOM_COLOR_INDEX) {
+                    JColorChooser.showDialog(text, "Text color", Color.BLACK)?.rgb?.and(RGB_MASK)
                 } else {
                     null
                 }
@@ -160,7 +182,7 @@ class WritingControls(private val surface: () -> EditorSurface, private val busy
             edit {
                 val v = before.selectedItem.toString().toIntOrNull()
                 if (v != null &&
-                    v in 0..200
+                    v in 0..MAX_PARAGRAPH_SPACE_DP
                 ) {
                     surface().viewModel.dispatch(EditorIntent.SetParagraphProperties(before = v))
                 } else {
@@ -172,7 +194,7 @@ class WritingControls(private val surface: () -> EditorSurface, private val busy
             edit {
                 val v = after.selectedItem.toString().toIntOrNull()
                 if (v != null &&
-                    v in 0..200
+                    v in 0..MAX_PARAGRAPH_SPACE_DP
                 ) {
                     surface().viewModel.dispatch(EditorIntent.SetParagraphProperties(after = v))
                 } else {
@@ -187,7 +209,7 @@ class WritingControls(private val surface: () -> EditorSurface, private val busy
                 ) {
                     surface().viewModel.dispatch(
                         EditorIntent.SetParagraphProperties(
-                            line = listOf(0, 1250, 1500, 2000, 3000)[
+                            line = LINE_PERMILLE_CHOICES[
                                 line.selectedIndex -
                                     1,
                             ],
@@ -201,40 +223,51 @@ class WritingControls(private val surface: () -> EditorSurface, private val busy
         refresh = true
         try {
             val e = surface().viewModel
-            family.selectedIndex = e.textStyleState { it.font }?.ordinal?.plus(1) ?: 0
-            size.selectedItem =
-                e.textStyleState { it.size }?.let { if (it == 0) "Preview size" else it.toString() } ?: "Mixed"
-            val rgb = e.textStyleState { it.color }
-            color.selectedIndex = if (rgb == null) 0 else colors.indexOf(rgb).let { if (it < 0) 6 else it + 1 }
-            color.toolTipText =
-                if (rgb != null &&
-                    rgb >= 0
-                ) {
-                    "Stored RGB #%06X; Default ink clears override".format(rgb)
-                } else {
-                    "Default ink or mixed values"
-                }
-            underline.text = when (e.formatState(FormatKey.UNDERLINE)) {
-                true -> "Underline on"
-                false -> "Underline"
-                null -> "Underline mixed"
-            }
-            strike.text = when (e.formatState(FormatKey.STRIKE)) {
-                true -> "Strike on"
-                false -> "Strike"
-                null -> "Strike mixed"
-            }
-            before.selectedItem = e.paragraphState { it.spaceBefore }?.toString() ?: "Mixed"
-            after.selectedItem = e.paragraphState { it.spaceAfter }?.toString() ?: "Mixed"
-            line.selectedIndex =
-                e.paragraphState { it.linePermille }?.let { listOf(0, 1250, 1500, 2000, 3000).indexOf(it) + 1 } ?: 0
-            (text.components + spacing.components).filter { it !is JLabel }.forEach {
-                it.isEnabled =
-                    surface().admissionAllowed &&
-                    !busy()
-            }
+            refreshTextStyle(e)
+            refreshParagraph(e)
+            refreshEnabled()
         } finally {
             refresh = false
+        }
+    }
+
+    private fun refreshTextStyle(e: EditorViewModel) {
+        family.selectedIndex = e.textStyleState { it.font }?.ordinal?.plus(1) ?: 0
+        size.selectedItem =
+            e.textStyleState { it.size }?.let { if (it == 0) "Preview size" else it.toString() } ?: "Mixed"
+        val rgb = e.textStyleState { it.color }
+        color.selectedIndex =
+            if (rgb == null) 0 else colors.indexOf(rgb).let { if (it < 0) CUSTOM_COLOR_INDEX else it + 1 }
+        color.toolTipText =
+            if (rgb != null &&
+                rgb >= 0
+            ) {
+                "Stored RGB #%06X; Default ink clears override".format(rgb)
+            } else {
+                "Default ink or mixed values"
+            }
+        underline.text = formatLabel("Underline", e.formatState(FormatKey.UNDERLINE))
+        strike.text = formatLabel("Strike", e.formatState(FormatKey.STRIKE))
+    }
+
+    private fun formatLabel(name: String, state: Boolean?) = when (state) {
+        true -> "$name on"
+        false -> name
+        null -> "$name mixed"
+    }
+
+    private fun refreshParagraph(e: EditorViewModel) {
+        before.selectedItem = e.paragraphState { it.spaceBefore }?.toString() ?: "Mixed"
+        after.selectedItem = e.paragraphState { it.spaceAfter }?.toString() ?: "Mixed"
+        line.selectedIndex =
+            e.paragraphState { it.linePermille }?.let { LINE_PERMILLE_CHOICES.indexOf(it) + 1 } ?: 0
+    }
+
+    private fun refreshEnabled() {
+        (text.components + spacing.components).filter { it !is JLabel }.forEach {
+            it.isEnabled =
+                surface().admissionAllowed &&
+                !busy()
         }
     }
 }

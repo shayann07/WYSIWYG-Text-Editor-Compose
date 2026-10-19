@@ -10,6 +10,7 @@ import javax.swing.SwingUtilities
 import javax.swing.UIManager
 
 /** Example consumer entry point. Qualification commands live in the test harness. */
+@Suppress("TooGenericExceptionCaught") // Reason: any unreadable start document must become a dialog, not a crash.
 fun main(args: Array<String>) {
     fun value(key: String) = args.firstOrNull { it.startsWith("$key=") }?.substringAfter('=')
     val source = value("--open")?.let(Path::of)

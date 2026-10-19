@@ -7,7 +7,14 @@ import java.nio.file.Path
 import java.util.UUID
 import java.util.concurrent.Executors
 import javax.swing.SwingUtilities
-class LocalRecoveryController(val store: LocalRecoveryStore, val refresh: () -> Unit, interval: Int = 2000) {
+
+private const val DEFAULT_CHECKPOINT_INTERVAL_MS = 2000
+
+class LocalRecoveryController(
+    val store: LocalRecoveryStore,
+    val refresh: () -> Unit,
+    interval: Int = DEFAULT_CHECKPOINT_INTERVAL_MS,
+) {
     val session = UUID.randomUUID().toString()
     private val executor = Executors.newSingleThreadExecutor { task -> Thread(task, "astra-recovery-$session") }
     private var observed: LocalCopy? = null
@@ -25,35 +32,33 @@ class LocalRecoveryController(val store: LocalRecoveryStore, val refresh: () -> 
         if (closing != null) return
         val path = original?.toAbsolutePath()?.normalize()?.toString()
         val old = observed
-        if (old != null &&
-            old.originalPath == path &&
-            (old.document === document || old.document.same(document))
-        ) {
+        if (old != null && old.originalPath == path && old.holds(document)) {
             return
         }
         observed = LocalCopy(session, (old?.sequence ?: 0) + 1, System.currentTimeMillis(), path, document)
     }
 
+    private fun LocalCopy.holds(candidate: Document) = document === candidate || document.same(candidate)
+
     @Synchronized fun checkpointNow() {
-        if (closing != null) return
-        val copy = observed ?: return
-        if (copy.sequence <= completed) return
+        val copy = observed?.takeIf { closing == null }?.takeIf { it.sequence > completed } ?: return
         pending = copy
         maximumPending = maxOf(maximumPending, 1)
         startWorker()
     }
 
-    @Synchronized private fun startWorker() {
+    // Reason: the recovery worker is a resilience boundary; any store failure must be recorded as a
+    // retryable status instead of terminating the single background writer.
+    @Suppress("TooGenericExceptionCaught")
+    @Synchronized
+    private fun startWorker() {
         if (running) return
         running = true
         executor.execute {
             var lease: LocalRecoveryStore.Lease? = synchronized(this) { heldLease }
             try {
                 while (true) {
-                    val copy = synchronized(this) {
-                        if (closing == true) pending = null
-                        pending.also { pending = null }
-                    }
+                    val copy = takePending()
                     if (copy != null) {
                         try {
                             if (lease == null) lease = store.acquire(session)
@@ -64,7 +69,7 @@ class LocalRecoveryController(val store: LocalRecoveryStore, val refresh: () -> 
                                 failure = null
                             }
                         } catch (e: Exception) {
-                            synchronized(this) { failure = e.message ?: e.javaClass.simpleName }
+                            synchronized(this) { failure = failureText(e) }
                         }
                         SwingUtilities.invokeLater(refresh)
                     }
@@ -92,6 +97,13 @@ class LocalRecoveryController(val store: LocalRecoveryStore, val refresh: () -> 
     }
     private var heldLease: LocalRecoveryStore.Lease? = null
 
+    private fun takePending(): LocalCopy? = synchronized(this) {
+        if (closing == true) pending = null
+        pending.also { pending = null }
+    }
+
+    private fun failureText(e: Exception) = e.message ?: e.javaClass.simpleName
+
     @Synchronized fun finish(discard: Boolean) {
         if (closing != null) return
         timer.stop()
@@ -108,7 +120,8 @@ class LocalRecoveryController(val store: LocalRecoveryStore, val refresh: () -> 
     }
 
     @Synchronized fun detail(): String = failure
-        ?: "Only committed content. 2-second scheduling plus disk time; only the last completed copy is protected."
+        ?: "Only committed content. 2-second scheduling plus disk time; " +
+        "only the last completed copy is protected."
     private fun time(): String = java.time.Instant.ofEpochMilli(
         completedTime,
     ).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))

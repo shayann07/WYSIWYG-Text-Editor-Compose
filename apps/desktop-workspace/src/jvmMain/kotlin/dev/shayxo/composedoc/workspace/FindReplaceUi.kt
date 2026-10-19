@@ -20,6 +20,18 @@ import javax.swing.KeyStroke
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 
+private const val FIELD_COLUMNS = 18
+private const val FIELD_FONT_SIZE = 15
+private const val STATUS_FONT_SIZE = 12
+private const val COUNT_WIDTH_PX = 82
+private const val COUNT_HEIGHT_PX = 26
+private const val ROW_HGAP_PX = 6
+private const val ROW_VGAP_PX = 2
+private const val FIELD_WIDTH_PX = 230
+private const val FIELD_HEIGHT_PX = 32
+private const val STATUS_SIDE_PX = 6
+private const val STATUS_BOTTOM_PX = 3
+
 class FindReplaceUi(
     private val window: JFrame,
     private val surface: () -> EditorSurface,
@@ -32,21 +44,21 @@ class FindReplaceUi(
         name = "find-panel"
         isVisible = false
     }
-    val query = JTextArea(1, 18).apply {
+    val query = JTextArea(1, FIELD_COLUMNS).apply {
         name = "find-query"
-        font = Font("Segoe UI", Font.PLAIN, 15)
+        font = Font("Segoe UI", Font.PLAIN, FIELD_FONT_SIZE)
     }
-    val replacement = JTextArea(1, 18).apply {
+    val replacement = JTextArea(1, FIELD_COLUMNS).apply {
         name = "find-replacement"
-        font = Font("Segoe UI", Font.PLAIN, 15)
+        font = Font("Segoe UI", Font.PLAIN, FIELD_FONT_SIZE)
     }
     val count = JLabel("0 / 0").apply {
         name = "find-count"
-        preferredSize = Dimension(82, 26)
+        preferredSize = Dimension(COUNT_WIDTH_PX, COUNT_HEIGHT_PX)
     }
     val status = JLabel().apply {
         name = "find-status"
-        font = Font("Segoe UI", Font.PLAIN, 12)
+        font = Font("Segoe UI", Font.PLAIN, STATUS_FONT_SIZE)
     }
     private var message = ""
     private var inRefresh = false
@@ -60,9 +72,10 @@ class FindReplaceUi(
     }
     private val previous = JButton("Previous").apply { isFocusable = false }
     private val next = JButton("Next").apply { isFocusable = false }
-    private val replacementRow = JPanel(FlowLayout(FlowLayout.LEFT, 6, 2)).apply { isOpaque = false }
+    private val replacementRow =
+        JPanel(FlowLayout(FlowLayout.LEFT, ROW_HGAP_PX, ROW_VGAP_PX)).apply { isOpaque = false }
     private fun field(area: JTextArea) = JScrollPane(area).apply {
-        preferredSize = Dimension(230, 32)
+        preferredSize = Dimension(FIELD_WIDTH_PX, FIELD_HEIGHT_PX)
         horizontalScrollBarPolicy = JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
         verticalScrollBarPolicy = JScrollPane.VERTICAL_SCROLLBAR_NEVER
     }
@@ -85,7 +98,7 @@ class FindReplaceUi(
     }
     init {
         panel.add(
-            JPanel(FlowLayout(FlowLayout.LEFT, 6, 2)).apply {
+            JPanel(FlowLayout(FlowLayout.LEFT, ROW_HGAP_PX, ROW_VGAP_PX)).apply {
                 isOpaque = false
                 add(JLabel("Find"))
                 add(field(query))
@@ -108,7 +121,7 @@ class FindReplaceUi(
         panel.add(
             JPanel(BorderLayout()).apply {
                 isOpaque = false
-                border = javax.swing.border.EmptyBorder(0, 6, 3, 6)
+                border = javax.swing.border.EmptyBorder(0, STATUS_SIDE_PX, STATUS_BOTTOM_PX, STATUS_SIDE_PX)
                 add(status)
             },
         )

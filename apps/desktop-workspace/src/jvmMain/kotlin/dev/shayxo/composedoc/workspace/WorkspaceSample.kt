@@ -10,6 +10,8 @@ import dev.shayxo.composedoc.model.Selection
 import dev.shayxo.composedoc.ui.EditorIntent
 import dev.shayxo.composedoc.ui.EditorViewModel
 
+private const val WORKSPACE_SAMPLE_MARGIN_MM = 18
+
 /** Reproducible disposable writing exercise; historical v3/v5/v6 samples remain untouched. */
 fun localWorkspaceSample(): Document {
     val e = EditorViewModel(structuredWritingSample())
@@ -18,6 +20,8 @@ fun localWorkspaceSample(): Document {
     e.dispatch(EditorIntent.Select(Selection(0, 0)))
     e.dispatch(EditorIntent.Structure(StructureCommand.Role(1)))
     e.dispatch(EditorIntent.SetParagraphProperties(ParagraphDirection.RTL, ParagraphAlignment.START))
-    e.dispatch(EditorIntent.Structure(StructureCommand.Pages(PageSettings(PaperSize.A4, false, 18))))
+    e.dispatch(
+        EditorIntent.Structure(StructureCommand.Pages(PageSettings(PaperSize.A4, false, WORKSPACE_SAMPLE_MARGIN_MM))),
+    )
     return e.snapshot().committed
 }

@@ -8,9 +8,12 @@ import java.awt.FlowLayout
 import javax.swing.JComboBox
 import javax.swing.JLabel
 import javax.swing.JPanel
+
+private const val CONTROL_GAP_PX = 4
+
 /** Shell consumer only; targeting, inheritance, settlement and history live in document/commands. */
 class ParagraphControls(private val surface: () -> EditorSurface, private val fileBusy: () -> Boolean) {
-    val panel = JPanel(FlowLayout(FlowLayout.LEFT, 4, 0)).apply {
+    val panel = JPanel(FlowLayout(FlowLayout.LEFT, CONTROL_GAP_PX, 0)).apply {
         isOpaque = false
         name = "paragraph-controls"
     }
@@ -25,7 +28,7 @@ class ParagraphControls(private val surface: () -> EditorSurface, private val fi
         direction.toolTipText = "Paragraph base direction; stored text order is unchanged"
         alignment.toolTipText = "Start/End follow resolved paragraph direction; no justification"
         direction.addActionListener {
-            if (!refreshing && direction.selectedIndex > 0 && surface().admissionAllowed && !fileBusy()) {
+            if (!refreshing && direction.selectedIndex > 0 && canEdit()) {
                 surface().viewModel.dispatch(
                     EditorIntent.SetParagraphProperties(
                         direction = ParagraphDirection.entries[
@@ -40,7 +43,7 @@ class ParagraphControls(private val surface: () -> EditorSurface, private val fi
             }
         }
         alignment.addActionListener {
-            if (!refreshing && alignment.selectedIndex > 0 && surface().admissionAllowed && !fileBusy()) {
+            if (!refreshing && alignment.selectedIndex > 0 && canEdit()) {
                 surface().viewModel.dispatch(
                     EditorIntent.SetParagraphProperties(
                         alignment = ParagraphAlignment.entries[
@@ -55,6 +58,8 @@ class ParagraphControls(private val surface: () -> EditorSurface, private val fi
             }
         }
     }
+    private fun canEdit() = surface().admissionAllowed && !fileBusy()
+
     fun refresh() {
         refreshing = true
         try {

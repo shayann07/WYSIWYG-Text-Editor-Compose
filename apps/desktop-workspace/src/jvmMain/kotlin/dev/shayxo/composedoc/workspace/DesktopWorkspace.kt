@@ -12,6 +12,7 @@ import dev.shayxo.composedoc.data.FragmentCodec
 import dev.shayxo.composedoc.data.LocalRecoveryStore
 import dev.shayxo.composedoc.data.UnfinishedStore
 import dev.shayxo.composedoc.domain.EditAction
+import dev.shayxo.composedoc.domain.EditorFrame
 import dev.shayxo.composedoc.domain.RecoveryApplyResult
 import dev.shayxo.composedoc.layout.StoredFonts
 import dev.shayxo.composedoc.layout.TypographyProfile
@@ -51,6 +52,45 @@ import javax.swing.JScrollPane
 import javax.swing.JTextArea
 import javax.swing.SwingUtilities
 import javax.swing.border.EmptyBorder
+
+private const val EDITOR_PREFERRED_WIDTH_PX = 1020
+private const val EDITOR_PREFERRED_HEIGHT_PX = 640
+private const val EDITOR_MIN_WIDTH_PX = 940
+private const val EDITOR_MIN_HEIGHT_PX = 400
+private const val SURFACE_LAYER = 100
+private const val CHROME_BACKGROUND_RGB = 0xfafcff
+private const val TITLE_RGB = 0x20304a
+private const val MUTED_TEXT_RGB = 0x64748b
+private const val FAILURE_TEXT_RGB = 0xb3261e
+private const val HEADER_VERTICAL_PAD_PX = 6
+private const val HEADER_SIDE_PAD_PX = 12
+private const val FOOTER_VERTICAL_PAD_PX = 3
+private const val FOOTER_SIDE_PAD_PX = 16
+private const val FOOTER_LINE_COUNT = 3
+private const val TITLE_FONT_SIZE = 16
+private const val SMALL_FONT_SIZE = 12
+private const val BUTTON_FONT_SIZE = 13
+private const val ROW_HGAP_PX = 4
+private const val ROW_VGAP_PX = 2
+private const val BAR_HGAP_PX = 8
+private const val BAR_VGAP_PX = 4
+private const val DRAFT_PICKER_WIDTH_PX = 180
+private const val DRAFT_PICKER_HEIGHT_PX = 28
+private const val DRAFT_PREVIEW_ROWS = 15
+private const val DRAFT_PREVIEW_COLUMNS = 48
+private const val QUARANTINE_PREVIEW_ROWS = 16
+private const val QUARANTINE_PREVIEW_COLUMNS = 56
+private const val DRAFT_LABEL_PREVIEW_CHARS = 20
+
+/** Retained drafts plus quarantined callbacks at which explicit recovery is refused. */
+private const val UNRESOLVED_RECOVERY_CAPACITY = 16
+private const val ZOOM_HALF = .5f
+private const val ZOOM_THREE_QUARTERS = .75f
+private const val ZOOM_FULL = 1f
+private const val DEFAULT_ZOOM_INDEX = 2
+private const val OFFSCREEN_COORDINATE_PX = -16000
+private const val UI_FONT_FAMILY = "Segoe UI"
+
 fun windowFiles(window: JFrame): WindowFiles? = window.rootPane?.getClientProperty("editor.files") as? WindowFiles
 fun windowLayeredPane(window: JFrame): JLayeredPane? =
     window.rootPane?.getClientProperty("editor.layers") as? JLayeredPane
@@ -60,6 +100,7 @@ fun windowCurrentSurface(window: JFrame): EditorSurface? =
     (window.rootPane?.getClientProperty("editor.surfaceGetter") as? (() -> EditorSurface))?.invoke()
 
 @JvmOverloads
+@Suppress("LongParameterList") // Reason: public entry point used by the desktop harness; parameters are API.
 fun showEditor(
     diagnostics: File? = null,
     initial: Document = Document(emptyList()),
@@ -73,42 +114,83 @@ fun showEditor(
     recoveryDirectory: java.nio.file.Path? = null,
 ): JFrame {
     check(SwingUtilities.isEventDispatchThread())
-    val viewModel = EditorViewModel(initial)
-    val state = ViewState(viewModel.snapshot())
-    var surface =
+    return EditorWindow(
+        EditorLaunch(
+            diagnostics,
+            initial,
+            initialPath,
+            trace,
+            traceLanguage,
+            offscreenTest,
+            windowLocation,
+            fontProfile,
+            paged,
+            recoveryDirectory,
+        ),
+    ).show()
+}
+
+/** The [showEditor] arguments, carried as one value into the window builder. */
+private data class EditorLaunch(
+    val diagnostics: File?,
+    val initial: Document,
+    val initialPath: java.nio.file.Path?,
+    val trace: ImeTrace?,
+    val traceLanguage: String?,
+    val offscreenTest: Boolean,
+    val windowLocation: Point?,
+    val fontProfile: String,
+    val paged: Boolean,
+    val recoveryDirectory: java.nio.file.Path?,
+)
+
+private fun uiFont(style: Int, size: Int) = Font(UI_FONT_FAMILY, style, size)
+
+/**
+ * Builds one editor window. Members are declared, and `init` steps run, in the exact order the
+ * window has always been assembled: listener registration and component order are observable.
+ */
+private class EditorWindow(private val launch: EditorLaunch) {
+    private val viewModel = EditorViewModel(launch.initial)
+    private val state = ViewState(viewModel.snapshot())
+    private var surface =
         EditorSurface(
             viewModel,
             state,
-            diagnostics,
-            trace,
+            launch.diagnostics,
+            launch.trace,
             services = EditorPlatformServices(DocumentFiles, FragmentCodec),
         )
-    var refreshRecoveryUi: () -> Unit = {}
-    var refreshFindUi: () -> Unit = {}
-    var refreshParagraphUi: () -> Unit = {}
-    var refreshWritingUi: () -> Unit = {}
-    var refreshStructureUi: () -> Unit = {}
-    surface.onHostReplaced = {
-        surface = it
-        refreshRecoveryUi()
-        refreshFindUi()
-        refreshParagraphUi()
-        refreshWritingUi()
-        refreshStructureUi()
+    private var refreshRecoveryUi: () -> Unit = {}
+    private var refreshFindUi: () -> Unit = {}
+    private var refreshParagraphUi: () -> Unit = {}
+    private var refreshWritingUi: () -> Unit = {}
+    private var refreshStructureUi: () -> Unit = {}
+
+    init {
+        surface.onHostReplaced = {
+            surface = it
+            refreshRecoveryUi()
+            refreshFindUi()
+            refreshParagraphUi()
+            refreshWritingUi()
+            refreshStructureUi()
+        }
+        state.changeTypography(TypographyProfile.load(launch.fontProfile))
+        state.setPagedMode(launch.paged)
     }
-    state.changeTypography(TypographyProfile.load(fontProfile))
-    state.setPagedMode(paged)
-    val window = JFrame("Astra Editor — Desktop Prototype")
-    lateinit var files: WindowFiles
-    var localRecovery: LocalRecoveryController? = null
-    var unfinishedRecovery: UnfinishedController? = null
-    var workspaceUi: WorkspaceUi? = null
-    var approvedClose = false
-    val compose = ComposePanel(renderSettings = RenderSettings.SwingGraphics()).apply {
+
+    private val window = JFrame("Astra Editor — Desktop Prototype")
+    private lateinit var files: WindowFiles
+    private var localRecovery: LocalRecoveryController? = null
+    private var unfinishedRecovery: UnfinishedController? = null
+    private var workspaceUi: WorkspaceUi? = null
+    private var approvedClose = false
+    private val compose = ComposePanel(renderSettings = RenderSettings.SwingGraphics()).apply {
         isFocusable = false
         setContent { DocumentCanvas(state) }
     }
-    val layers = object : JLayeredPane() {
+    private val layers = object : JLayeredPane() {
         override fun doLayout() {
             if (state.hostWidth != width || state.hostHeight != height) {
                 state.hostWidth = width
@@ -119,154 +201,327 @@ fun showEditor(
             compose.setBounds(0, 0, width, height)
             surface.setBounds(0, 0, width, height)
         }
-        override fun getPreferredSize() = Dimension(1020, 640)
+        override fun getPreferredSize() = Dimension(EDITOR_PREFERRED_WIDTH_PX, EDITOR_PREFERRED_HEIGHT_PX)
     }
-    // Kotlin otherwise selects add(Component, index), not add(Component, layer).
-    layers.add(compose)
-    layers.setLayer(compose, 0)
-    layers.add(surface)
-    layers.setLayer(surface, 100)
-    val bg = Color(0xfafcff)
-    val header = JPanel(BorderLayout()).apply {
-        background = bg
-        border = EmptyBorder(6, 12, 6, 12)
+
+    init {
+        // Kotlin otherwise selects add(Component, index), not add(Component, layer).
+        layers.add(compose)
+        layers.setLayer(compose, 0)
+        layers.add(surface)
+        layers.setLayer(surface, SURFACE_LAYER)
     }
-    val title = JLabel("Untitled").apply {
-        font = Font("Segoe UI", Font.BOLD, 16)
-        foreground = Color(0x20304a)
+
+    private val header = JPanel(BorderLayout()).apply {
+        background = Color(CHROME_BACKGROUND_RGB)
+        border = EmptyBorder(HEADER_VERTICAL_PAD_PX, HEADER_SIDE_PAD_PX, HEADER_VERTICAL_PAD_PX, HEADER_SIDE_PAD_PX)
     }
-    val subtitle = JLabel("Astra editor  /  Desktop prototype").apply {
-        font = Font("Segoe UI", Font.PLAIN, 12)
-        foreground = Color(0x64748b)
+    private val titleLabel = JLabel("Untitled").apply {
+        font = uiFont(Font.BOLD, TITLE_FONT_SIZE)
+        foreground = Color(TITLE_RGB)
     }
-    // Window title already identifies the file; avoid two permanent blank header rows.
-    title.isVisible = false
-    subtitle.isVisible = false
-    val qualificationControls = JPanel().apply {
+    private val subtitle = JLabel("Astra editor  /  Desktop prototype").apply {
+        font = uiFont(Font.PLAIN, SMALL_FONT_SIZE)
+        foreground = Color(MUTED_TEXT_RGB)
+    }
+
+    init {
+        // Window title already identifies the file; avoid two permanent blank header rows.
+        titleLabel.isVisible = false
+        subtitle.isVisible = false
+    }
+
+    private val qualificationControls = JPanel().apply {
         layout = BoxLayout(this, BoxLayout.Y_AXIS)
         isOpaque = false
     }
-    val fontPicker = JComboBox(TypographyProfile.labels.values.toTypedArray()).apply {
-        selectedItem = TypographyProfile.labels.getValue(fontProfile)
+    private val fontPicker = JComboBox(TypographyProfile.labels.values.toTypedArray()).apply {
+        selectedItem = TypographyProfile.labels.getValue(launch.fontProfile)
         toolTipText = "Experimental typography candidates; selection does not change document text or formatting"
     }
-    val fontStatus = JLabel("Candidate fonts; typography review pending")
-    var revertingFontSelection = false
-    fontPicker.addActionListener {
-        if (revertingFontSelection) return@addActionListener
+    private val fontStatus = JLabel("Candidate fonts; typography review pending")
+    private var revertingFontSelection = false
+
+    init {
+        fontPicker.addActionListener { onFontSelected() }
+        fitCombo(fontPicker)
+    }
+
+    private val typefaceRow = JPanel(FlowLayout(FlowLayout.LEFT, ROW_HGAP_PX, ROW_VGAP_PX)).apply {
+        isOpaque = false
+        add(JLabel("Preview"))
+        add(fontPicker)
+        add(fontStatus)
+    }
+
+    init {
+        qualificationControls.add(typefaceRow)
+    }
+
+    private val pageToggle = JCheckBox("Pages (experiment)", launch.paged).apply {
+        isOpaque = false
+        name = "page-mode"
+        toolTipText = "Switch continuous/paged presentation; content is unchanged"
+    }
+
+    init {
+        pageToggle.addActionListener {
+            state.setPagedMode(pageToggle.isSelected)
+            surface.requestFocusInWindow()
+        }
+        qualificationControls.add(buildPageRow())
+        header.add(qualificationControls, BorderLayout.SOUTH)
+        launch.trace?.let {
+            ImeTestControls(it, viewModel) { surface }.install(subtitle, qualificationControls, launch.traceLanguage)
+        }
+    }
+
+    private val buttons = JPanel(FlowLayout(FlowLayout.RIGHT, BAR_HGAP_PX, 0)).apply { isOpaque = false }
+    private val open = button("Open", "Open a document in a new window (Ctrl+O)") { files.open() }
+    private val save = button("Save", "Save document (Ctrl+S); Save As: Ctrl+Shift+S") { files.save() }
+    private val saveAs = button("Save As…", "Save to another .astra file (Ctrl+Shift+S)") { files.save(asNew = true) }
+    private val undo = button("Undo", "Ctrl+Z") { viewModel.dispatch(EditorIntent.Command(EditAction.Undo)) }
+    private val redo =
+        button("Redo", "Ctrl+Shift+Z or Ctrl+Y") { viewModel.dispatch(EditorIntent.Command(EditAction.Redo)) }
+    private val bold =
+        button("Bold", "Toggle bold (Ctrl+B)") {
+            if (surface.admissionAllowed) viewModel.dispatch(EditorIntent.ToggleFormat(FormatKey.BOLD))
+        }
+    private val italic =
+        button("Italic", "Toggle italic (Ctrl+I)") {
+            if (surface.admissionAllowed) viewModel.dispatch(EditorIntent.ToggleFormat(FormatKey.ITALIC))
+        }
+
+    init {
+        button("Copy", "Copy rich + plain selected committed text (Ctrl+C)") { surface.copySelection(false) }
+        button("Cut", "Publish clipboard then remove captured selection (Ctrl+X)") { surface.copySelection(true) }
+    }
+
+    private val pasteBtn =
+        button("Paste", "Paste rich when available (Ctrl+V); plain: Ctrl+Shift+V") { surface.paste() }
+
+    init {
+        button("Paste Plain", "Ignore rich fragment (Ctrl+Shift+V)") { surface.paste(true) }
+    }
+
+    private val recoveryRows =
+        RecoveryRows(window, viewModel, { surface }, { files }, { unfinishedRecovery }) { label, tooltip, action ->
+            detachedButton(label, tooltip, action)
+        }
+
+    init {
+        qualificationControls.add(recoveryRows.bar)
+    }
+
+    private val quarantineRow =
+        QuarantineRow(window, { surface }, { files }, { unfinishedRecovery }) { label, tooltip, action ->
+            detachedButton(label, tooltip, action)
+        }
+
+    init {
+        qualificationControls.add(quarantineRow.bar)
+        refreshRecoveryUi = { refreshRecoveryControls() }
+    }
+
+    private val fileRow = JPanel(FlowLayout(FlowLayout.LEFT, ROW_HGAP_PX, ROW_VGAP_PX)).apply {
+        isOpaque = false
+        add(JLabel("File / edit"))
+    }
+
+    init {
+        buttons.components.toList().forEach { fileRow.add(it) }
+        qualificationControls.add(fileRow, 0)
+    }
+
+    private val footer = JPanel(BorderLayout()).apply {
+        background = Color(CHROME_BACKGROUND_RGB)
+        border = EmptyBorder(FOOTER_VERTICAL_PAD_PX, FOOTER_SIDE_PAD_PX, FOOTER_VERTICAL_PAD_PX, FOOTER_SIDE_PAD_PX)
+    }
+    private val position = JLabel()
+    private val notice = JLabel()
+
+    init {
+        listOf(position, notice).forEach {
+            it.font = uiFont(Font.PLAIN, SMALL_FONT_SIZE)
+            it.foreground = Color(MUTED_TEXT_RGB)
+        }
+    }
+
+    private val unfinishedStatus = JLabel().apply {
+        name = "unfinished-status"
+        font = uiFont(Font.PLAIN, SMALL_FONT_SIZE)
+    }
+    private val footerLines = JPanel(GridLayout(FOOTER_LINE_COUNT, 1)).apply {
+        isOpaque = false
+        add(position)
+        add(notice)
+        add(unfinishedStatus)
+    }
+
+    init {
+        footer.add(footerLines, BorderLayout.CENTER)
+    }
+
+    private val localRecoveryStatus = JLabel().apply {
+        font = uiFont(Font.PLAIN, SMALL_FONT_SIZE)
+        foreground = Color(MUTED_TEXT_RGB)
+    }
+
+    init {
+        footer.add(localRecoveryStatus, BorderLayout.EAST)
+        createFiles()
+        surface.requestSave = { files.save(it) }
+        surface.requestOpen = { files.open() }
+        surface.statusChanged = { f -> onStatusChanged(f) }
+    }
+
+    private val findUi = FindReplaceUi(window, { surface }) {
+        header.revalidate()
+        header.repaint()
+    }
+
+    init {
+        qualificationControls.add(findUi.panel)
+        refreshFindUi = { findUi.refresh() }
+        window.rootPane.putClientProperty("editor.find", findUi)
+    }
+
+    private val paragraphUi = ParagraphControls({ surface }, { files.busy })
+    private val paragraphRow = JPanel(FlowLayout(FlowLayout.LEFT, ROW_HGAP_PX, ROW_VGAP_PX)).apply {
+        isOpaque = false
+        add(JLabel("Paragraph"))
+        add(paragraphUi.panel)
+    }
+
+    init {
+        qualificationControls.add(paragraphRow)
+    }
+
+    private val writingUi = WritingControls({ surface }, { files.busy })
+
+    // Tabs keep every group reachable at the existing 940×400 minimum.
+    private val tabs = WritingTabs().apply { name = "writing-tabs" }
+    private val textGroup = writingUi.text.apply {
+        add(italic, 0)
+        add(bold, 0)
+    }
+    private val paraGroup = JPanel().apply {
+        layout = BoxLayout(this, BoxLayout.Y_AXIS)
+        isOpaque = false
+        add(paragraphRow)
+        add(writingUi.spacing)
+    }
+    private val viewGroup = JPanel().apply {
+        layout = BoxLayout(this, BoxLayout.Y_AXIS)
+        isOpaque = false
+        add(typefaceRow)
+    }
+
+    init {
+        val pageRow = pageToggle.parent
+        viewGroup.add(pageRow)
+        tabs.addTab("Text", textGroup)
+        tabs.addTab("Paragraph", paraGroup)
+        tabs.addTab("View", viewGroup)
+    }
+
+    private val structureUi = StructureControls(window, { surface }, { files.busy })
+
+    init {
+        tabs.addTab("Structure", structureUi.panel)
+    }
+
+    private val outputUi = PageOutputUi(window, { surface }, { files.busy })
+
+    init {
+        tabs.addTab("Pages / Output", outputUi.panel)
+        window.rootPane.putClientProperty("editor.pageOutput", outputUi)
+        refreshStructureUi = { structureUi.refresh() }
+        window.rootPane.putClientProperty("editor.structure", structureUi)
+        qualificationControls.remove(paragraphRow)
+        qualificationControls.add(tabs, 1)
+        window.rootPane.putClientProperty("editor.writingTabs", tabs)
+        tabs.addChangeListener { refreshWritingLayout(window, tabs.selectedComponent as? JComponent) }
+
+        refreshWritingUi = { writingUi.refresh() }
+        window.rootPane.putClientProperty("editor.writingControls", writingUi)
+    }
+
+    private val zoomPicker = JComboBox(arrayOf("50%", "75%", "100%")).apply {
+        name = "document-zoom"
+        selectedIndex = DEFAULT_ZOOM_INDEX
+        toolTipText = "Presentation zoom; document metrics, stored formatting and Undo are unchanged"
+    }
+
+    init {
+        zoomPicker.addActionListener {
+            state.changeZoom(listOf(ZOOM_HALF, ZOOM_THREE_QUARTERS, ZOOM_FULL)[zoomPicker.selectedIndex])
+            surface.requestFocusInWindow()
+        }
+        fitCombo(zoomPicker)
+        window.rootPane.putClientProperty("editor.zoomPicker", zoomPicker)
+        typefaceRow.add(JLabel("Zoom"))
+        typefaceRow.add(zoomPicker)
+        refreshParagraphUi = { paragraphUi.refresh() }
+        window.rootPane.putClientProperty("editor.paragraphControls", paragraphUi)
+        launch.recoveryDirectory?.let { installRecovery(it) }
+        surface.statusChanged(viewModel.snapshot())
+        val surfaceGetter: () -> EditorSurface = { surface }
+        window.rootPane.putClientProperty("editor.files", files)
+        window.rootPane.putClientProperty("editor.layers", layers)
+        window.rootPane.putClientProperty("editor.surfaceGetter", surfaceGetter)
+        window.rootPane.putClientProperty("editor.localRecovery", localRecovery)
+    }
+
+    private fun onFontSelected() {
+        if (revertingFontSelection) return
         val id = TypographyProfile.labels.entries.single { it.value == fontPicker.selectedItem }.key
         runCatching { TypographyProfile.load(id) }.onSuccess { profile ->
             surface.changeTypography(profile)
             fontStatus.text = if (id == "system") "Unpinned system fonts" else "Pinned candidate; review pending"
-            trace?.record("typography-profile", "key=${profile.key}; sizeSp=${profile.sizeSp}", viewModel.snapshot())
+            launch.trace?.record(
+                "typography-profile",
+                "key=${profile.key}; sizeSp=${profile.sizeSp}",
+                viewModel.snapshot(),
+            )
             surface.repaint()
         }.onFailure { failure ->
             revertingFontSelection = true
             fontPicker.selectedItem = state.typography.label
             revertingFontSelection = false
             fontStatus.text = "Font unavailable; previous profile retained"
-            trace?.record("typography-profile-rejected", failure.message ?: "Font unavailable", viewModel.snapshot())
-        }
-        surface.requestFocusInWindow()
-    }
-    fitCombo(fontPicker)
-    val typefaceRow = JPanel(FlowLayout(FlowLayout.LEFT, 4, 2)).apply {
-        isOpaque = false
-        add(JLabel("Preview"))
-        add(fontPicker)
-        add(fontStatus)
-    }
-    qualificationControls.add(typefaceRow)
-    val pageToggle = JCheckBox("Pages (experiment)", paged).apply {
-        isOpaque = false
-        name = "page-mode"
-        toolTipText = "Switch continuous/paged presentation; content is unchanged"
-    }
-    pageToggle.addActionListener {
-        state.setPagedMode(pageToggle.isSelected)
-        surface.requestFocusInWindow()
-    }
-    qualificationControls.add(
-        JPanel(FlowLayout(FlowLayout.LEFT)).apply {
-            isOpaque = false
-            add(pageToggle)
-            add(
-                JLabel("Enter: paragraph · Shift+Enter: line break · Ctrl+S: save · Wheel: scroll").apply {
-                    font =
-                        Font("Segoe UI", Font.PLAIN, 12)
-                },
-            )
-            if (recoveryDirectory != null) {
-                add(
-                    JButton("Recovery Copies…").apply {
-                        isFocusable = false
-                        addActionListener { showLocalRecovery(recoveryDirectory, state.typography.id, state.paged) }
-                    },
-                )
-            }
-        },
-    )
-    header.add(qualificationControls, BorderLayout.SOUTH)
-    if (trace != null) {
-        subtitle.text = "IME test: test text is logged locally"
-        val languages = linkedMapOf("English" to "en-US", "Japanese" to "ja-JP", "Urdu" to "ur-PK", "Arabic" to "ar-SA")
-        val picker = JComboBox(languages.keys.toTypedArray())
-        val result = JLabel("Choose an installed input method; then type test text.")
-        picker.addActionListener {
-            val tag = languages.getValue(picker.selectedItem as String)
-            val accepted = surface.selectInputLocale(
-                java.util.Locale.forLanguageTag(tag),
-                compositionEnabled = if (tag ==
-                    "ja-JP"
-                ) {
-                    true
-                } else {
-                    null
-                },
-            )
-            val ctx = surface.inputContext
-            val compositionEnabled = if (accepted &&
-                tag == "ja-JP"
-            ) {
-                runCatching { ctx?.isCompositionEnabled }.getOrNull()
-            } else {
-                null
-            }
-            result.text = "Input: $tag — ${if (accepted)"selected" else "unavailable"}"
-            trace.record(
-                "select-input",
-                "requested=$tag; accepted=$accepted; actual=${ctx?.locale}; compositionEnabled=$compositionEnabled",
+            launch.trace?.record(
+                "typography-profile-rejected",
+                failure.message ?: "Font unavailable",
                 viewModel.snapshot(),
             )
-            surface.requestFocusInWindow()
         }
-        if (traceLanguage !=
-            null
-        ) {
-            SwingUtilities.invokeLater {
-                picker.selectedItem =
-                    languages.entries.first { it.value == traceLanguage }.key
-            }
-        }
-        qualificationControls.add(
-            JPanel(FlowLayout(FlowLayout.LEFT)).apply {
-                isOpaque = false
-                add(picker)
-                add(result)
+        surface.requestFocusInWindow()
+    }
+
+    private fun buildPageRow() = JPanel(FlowLayout(FlowLayout.LEFT)).apply {
+        isOpaque = false
+        add(pageToggle)
+        add(
+            JLabel("Enter: paragraph · Shift+Enter: line break · Ctrl+S: save · Wheel: scroll").apply {
+                font =
+                    uiFont(Font.PLAIN, SMALL_FONT_SIZE)
             },
         )
-        trace.record(
-            "session-start",
-            "Live input test mode; no synthetic injection. OS=${System.getProperty(
-                "os.name",
-            )}; Java=${System.getProperty("java.version")}",
-            viewModel.snapshot(),
-        )
+        val recoveryDirectory = launch.recoveryDirectory
+        if (recoveryDirectory != null) {
+            add(
+                JButton("Recovery Copies…").apply {
+                    isFocusable = false
+                    addActionListener { showLocalRecovery(recoveryDirectory, state.typography.id, state.paged) }
+                },
+            )
+        }
     }
-    val buttons = JPanel(FlowLayout(FlowLayout.RIGHT, 8, 0)).apply { isOpaque = false }
-    fun button(label: String, tooltip: String, action: () -> Unit) = JButton(label).apply {
+
+    private fun button(label: String, tooltip: String, action: () -> Unit) = JButton(label).apply {
         isFocusable = false
-        font = Font("Segoe UI", Font.PLAIN, 13)
+        font = uiFont(Font.PLAIN, BUTTON_FONT_SIZE)
         toolTipText = tooltip
         addActionListener {
             action()
@@ -274,257 +529,75 @@ fun showEditor(
         }
         buttons.add(this)
     }
-    val open = button("Open", "Open a document in a new window (Ctrl+O)") { files.open() }
-    val save = button("Save", "Save document (Ctrl+S); Save As: Ctrl+Shift+S") { files.save() }
-    val saveAs = button("Save As…", "Save to another .astra file (Ctrl+Shift+S)") { files.save(asNew = true) }
-    val undo = button("Undo", "Ctrl+Z") { viewModel.dispatch(EditorIntent.Command(EditAction.Undo)) }
-    val redo = button("Redo", "Ctrl+Shift+Z or Ctrl+Y") { viewModel.dispatch(EditorIntent.Command(EditAction.Redo)) }
-    val bold =
-        button("Bold", "Toggle bold (Ctrl+B)") {
-            if (surface.admissionAllowed) viewModel.dispatch(EditorIntent.ToggleFormat(FormatKey.BOLD))
-        }
-    val italic =
-        button("Italic", "Toggle italic (Ctrl+I)") {
-            if (surface.admissionAllowed) viewModel.dispatch(EditorIntent.ToggleFormat(FormatKey.ITALIC))
-        }
-    button("Copy", "Copy rich + plain selected committed text (Ctrl+C)") { surface.copySelection(false) }
-    button("Cut", "Publish clipboard then remove captured selection (Ctrl+X)") { surface.copySelection(true) }
-    val pasteBtn = button("Paste", "Paste rich when available (Ctrl+V); plain: Ctrl+Shift+V") { surface.paste() }
-    button("Paste Plain", "Ignore rich fragment (Ctrl+Shift+V)") { surface.paste(true) }
-    val recoveryBar = JPanel(FlowLayout(FlowLayout.LEFT, 8, 4)).apply {
-        isOpaque = false
-        name = "recovery-controls"
-        isVisible = false
-    }
-    recoveryBar.add(JLabel("Recovery:"))
-    val draftPicker = JComboBox<String>().apply {
-        name = "recovery-picker"
-        preferredSize = Dimension(180, 28)
-        toolTipText = "Choose a retained recovery draft"
-    }
-    recoveryBar.add(draftPicker)
-    var shownDrafts: List<RetainedCompositionPreimage> = emptyList()
-    var updatingDraftPicker = false
-    draftPicker.addActionListener {
-        if (!updatingDraftPicker) {
-            shownDrafts.getOrNull(draftPicker.selectedIndex)?.let {
-                surface.selectRetainedDraft(it)
-            }
-        }
-    }
-    fun recoveryButton(label: String, tooltip: String, action: () -> Unit) = button(label, tooltip, action).also {
-        buttons.remove(it)
-        recoveryBar.add(it)
-    }
-    val inspectDraft = recoveryButton("Inspect", "Preview the selected retained document text") {
-        val text = surface.retainedDraftDocument()?.text ?: surface.inspectRetainedDraft() ?: return@recoveryButton
-        val area = javax.swing.JTextArea(text, 15, 48).apply {
-            isEditable = false
-            lineWrap = true
-            wrapStyleWord = true
-            caretPosition = 0
-        }
-        javax.swing.JOptionPane.showMessageDialog(
-            window,
-            javax.swing.JScrollPane(area),
-            "Retained draft text — export preserves formatting",
-            javax.swing.JOptionPane.INFORMATION_MESSAGE,
-        )
-    }
-    val exportDraft =
-        recoveryButton("Export Draft", "Save the full retained document separately; keep this recovery record") {
-            surface.retainedDraftDocument()?.let { files.exportDraftDocument(it) }
-        }
-    val aBtn = recoveryButton("Apply Draft", "Apply the selected draft only to its matching original basis") {
-        val selected = surface.retainedPreimage
-        val durable = unfinishedRecovery
-        if (durable == null || selected == null) {
-            surface.applyRecoveredDraft()
-        } else {
-            durable.resolveLive(selected.recordKey, apply = {
-                val draft = selected.recoveryDraft
-                if (draft != null &&
-                    surface.viewModel.dispatch(EditorIntent.ApplyRecoveredDraft(draft)) == RecoveryApplyResult.Applied
-                ) {
-                    surface.viewModel.snapshot().committed
-                } else {
-                    null
-                }
-            }, remove = {
-                surface.recoverySession.resolveRetainedDraft(selected)
-                surface.statusChanged(viewModel.snapshot())
-            })
-        }
-    }
-    val dBtn = recoveryButton("Discard Draft", "Explicitly discard only the selected retained draft") {
-        val selected = surface.retainedPreimage
-        if (unfinishedRecovery == null || selected == null) {
-            surface.discardRecoveredDraft()
-        } else {
-            unfinishedRecovery!!.resolveLive(selected.recordKey, remove = {
-                surface.recoverySession.resolveRetainedDraft(selected)
-                surface.statusChanged(viewModel.snapshot())
-            })
-        }
-    }
-    val rBtn = recoveryButton("Recover", "Recover editor input after failure") { surface.recoverExplicitly(false) }
-    qualificationControls.add(recoveryBar)
-    val quarantineBar = JPanel(FlowLayout(FlowLayout.LEFT, 8, 4)).apply {
-        isOpaque = false
-        name = "quarantine-controls"
-    }
-    val quarantineLabel = JLabel()
-    quarantineBar.add(quarantineLabel)
-    fun quarantineButton(label: String, action: () -> Unit) = button(label, label, action).also {
-        buttons.remove(it)
-        quarantineBar.add(it)
-    }
-    quarantineButton("Inspect Input") {
-        val captured = surface.quarantinedCallbacks.toList()
-        val area = JTextArea(quarantineDiagnostic(captured), 16, 56).apply {
-            isEditable = false
-            lineWrap = true
-            caretPosition = 0
-        }
-        JOptionPane.showMessageDialog(
-            window,
-            JScrollPane(area),
-            "Unverified input — never applied to the document",
-            JOptionPane.INFORMATION_MESSAGE,
-        )
-    }
-    val exportInput =
-        quarantineButton("Export Input") { files.exportQuarantinedInput(surface.quarantinedCallbacks.toList()) }
-    val discardInput = quarantineButton("Discard Input…") {
-        val captured = surface.quarantinedCallbacks.toList()
-        if (files.confirmQuarantineDiscard(captured.size)) {
-            val durable = unfinishedRecovery
-            if (durable == null) {
-                surface.discardQuarantinedCallbacks(captured)
-            } else {
-                captured.forEach { entry ->
-                    durable.resolveLive(entry, remove = { surface.discardQuarantinedCallbacks(listOf(entry)) })
-                }
-            }
-        }
-    }
-    qualificationControls.add(quarantineBar)
-    refreshRecoveryUi = {
+
+    /** A styled action button built like the toolbar buttons, then taken out of the toolbar for another row. */
+    private fun detachedButton(label: String, tooltip: String, action: () -> Unit) =
+        button(label, tooltip, action).also { buttons.remove(it) }
+
+    private fun refreshRecoveryControls() {
         val records = surface.recoverySession.snapshotRetainedDrafts()
-        val changed = records.size != shownDrafts.size || records.zip(shownDrafts).any { (a, b) -> a !== b }
-        updatingDraftPicker = true
-        if (changed) {
-            shownDrafts = records
-            draftPicker.removeAllItems()
-            records.forEachIndexed { index, record ->
-                val preview = record.draftText.replace('\n', ' ').take(20).ifEmpty { "(empty draft)" }
-                draftPicker.addItem("${index + 1}/${records.size} · $preview")
-            }
-        }
-        draftPicker.selectedIndex = records.indexOfFirst { it === surface.retainedPreimage }
-        updatingDraftPicker = false
-        val wasVisible = recoveryBar.isVisible
-        recoveryBar.isVisible = records.isNotEmpty() || !surface.admissionAllowed
-        listOf(draftPicker, inspectDraft, exportDraft, aBtn, dBtn).forEach { it.isVisible = records.isNotEmpty() }
-        draftPicker.isEnabled = records.isNotEmpty() && !files.busy
-        inspectDraft.isEnabled = records.isNotEmpty()
-        exportDraft.isEnabled = surface.retainedDraftDocument() != null && !files.busy
-        aBtn.isEnabled =
-            surface.retainedPreimage?.recoveryDraft != null &&
-            !files.busy &&
-            unfinishedRecovery?.decisionBusy() != true
-        dBtn.isEnabled = records.isNotEmpty() && !files.busy && unfinishedRecovery?.decisionBusy() != true
-        rBtn.isVisible = !surface.admissionAllowed
-        rBtn.isEnabled = records.size + surface.quarantinedCallbacks.size < 16 && !files.busy
-        rBtn.toolTipText = "Recover paused input; at capacity export/discard unresolved work first"
-        val quarantineVisible = surface.quarantinedCallbacks.isNotEmpty()
-        val quarantineChanged = quarantineBar.isVisible != quarantineVisible
-        quarantineBar.isVisible = quarantineVisible
-        quarantineLabel.text = "Unverified input: ${surface.quarantinedCallbacks.size} callback(s)"
-        exportInput.isEnabled = !files.busy
-        discardInput.isEnabled = !files.busy && unfinishedRecovery?.decisionBusy() != true
-        if (changed || quarantineChanged || wasVisible != recoveryBar.isVisible) {
+        val changed = recoveryRows.refreshPicker(records)
+        val wasVisible = recoveryRows.bar.isVisible
+        recoveryRows.bar.isVisible = records.isNotEmpty() || !surface.admissionAllowed
+        recoveryRows.refreshButtons(records)
+        val quarantineChanged = quarantineRow.refresh()
+        if (changed || quarantineChanged || wasVisible != recoveryRows.bar.isVisible) {
             header.revalidate()
             header.repaint()
         }
     }
-    val fileRow = JPanel(FlowLayout(FlowLayout.LEFT, 4, 2)).apply {
-        isOpaque = false
-        add(JLabel("File / edit"))
-    }
-    buttons.components.toList().forEach { fileRow.add(it) }
-    qualificationControls.add(fileRow, 0)
-    val footer = JPanel(BorderLayout()).apply {
-        background = bg
-        border = EmptyBorder(3, 16, 3, 16)
-    }
-    val position = JLabel()
-    val notice = JLabel()
-    listOf(position, notice).forEach {
-        it.font = Font("Segoe UI", Font.PLAIN, 12)
-        it.foreground = Color(0x64748b)
-    }
-    val unfinishedStatus = JLabel().apply {
-        name = "unfinished-status"
-        font = Font("Segoe UI", Font.PLAIN, 12)
-    }
-    val footerLines = JPanel(GridLayout(3, 1)).apply {
-        isOpaque = false
-        add(position)
-        add(notice)
-        add(unfinishedStatus)
-    }
-    footer.add(footerLines, BorderLayout.CENTER)
-    val localRecoveryStatus = JLabel().apply {
-        font = Font("Segoe UI", Font.PLAIN, 12)
-        foreground = Color(0x64748b)
-    }
-    footer.add(localRecoveryStatus, BorderLayout.EAST)
-    files = WindowFiles(window, viewModel, initialPath, onDiscardComposition = {
-        val host = surface
-        host.abortAndRetireComposition(replaceHost = false)
-        // The close choice explicitly discarded this active preedit. Remove only the
-        // capsule created for that abort; other/reentrant recovery work stays pending.
-        host.lastRecoveryReport?.retainedPreimage?.let { host.recoverySession.resolveRetainedDraft(it) }
-    }) { surface.statusChanged(viewModel.snapshot()) }
-    files.hasRetainedRecovery =
-        { surface.recoverySession.snapshotRetainedDrafts().isNotEmpty() || surface.quarantinedCallbacks.isNotEmpty() }
-    files.pendingRecoveryDescription =
-        {
-            "${surface.recoverySession.snapshotRetainedDrafts().size} retained draft(s) and ${surface.quarantinedCallbacks.size} unverified input callback(s)"
+
+    private fun createFiles() {
+        files = WindowFiles(window, viewModel, launch.initialPath, onDiscardComposition = {
+            val host = surface
+            host.abortAndRetireComposition(replaceHost = false)
+            // The close choice explicitly discarded this active preedit. Remove only the
+            // capsule created for that abort; other/reentrant recovery work stays pending.
+            host.lastRecoveryReport?.retainedPreimage?.let { host.recoverySession.resolveRetainedDraft(it) }
+        }) { surface.statusChanged(viewModel.snapshot()) }
+        files.hasRetainedRecovery =
+            {
+                surface.recoverySession.snapshotRetainedDrafts().isNotEmpty() ||
+                    surface.quarantinedCallbacks.isNotEmpty()
+            }
+        files.pendingRecoveryDescription =
+            {
+                "${surface.recoverySession.snapshotRetainedDrafts().size} retained draft(s) and " +
+                    "${surface.quarantinedCallbacks.size} unverified input callback(s)"
+            }
+        files.openInNewWindow = { document, source ->
+            showEditor(
+                initial = document,
+                initialPath = source,
+                fontProfile = state.typography.id,
+                paged = state.paged,
+                offscreenTest = launch.offscreenTest,
+                recoveryDirectory = launch.recoveryDirectory,
+            )
+            Unit
         }
-    files.openInNewWindow = { document, source ->
-        showEditor(
-            initial = document,
-            initialPath = source,
-            fontProfile = state.typography.id,
-            paged = state.paged,
-            offscreenTest = offscreenTest,
-            recoveryDirectory = recoveryDirectory,
-        )
-        Unit
-    }
-    files.discardRetainedRecovery = { surface.discardRecoverySession() }
-    files.captureRecoveryDiscard = {
-        val session = surface.recoverySession
-        val drafts = session.snapshotRetainedDrafts()
-        val callbacks = session.quarantinedCallbacks.toList()
-        val discard: () -> Unit = {
-            drafts.forEach { session.resolveRetainedDraft(it) }
-            session.quarantinedCallbacks.removeIf { current -> callbacks.any { it === current } }
-            surface.writeDiagnostics()
-            surface.statusChanged(viewModel.snapshot())
+        files.discardRetainedRecovery = { surface.discardRecoverySession() }
+        files.captureRecoveryDiscard = {
+            val session = surface.recoverySession
+            val drafts = session.snapshotRetainedDrafts()
+            val callbacks = session.quarantinedCallbacks.toList()
+            val discard: () -> Unit = {
+                drafts.forEach { session.resolveRetainedDraft(it) }
+                session.quarantinedCallbacks.removeIf { current -> callbacks.any { it === current } }
+                surface.writeDiagnostics()
+                surface.statusChanged(viewModel.snapshot())
+            }
+            discard
         }
-        discard
     }
-    surface.requestSave = { files.save(it) }
-    surface.requestOpen = { files.open() }
-    surface.statusChanged = { f ->
+
+    private fun onStatusChanged(f: EditorFrame) {
         val counts = writingCounts(f)
         position.text =
             "${counts.words} word-like runs · ${counts.units} UTF-16 units · ${counts.selected} selected units"
         position.toolTipText =
-            "Committed counts; whitespace separates runs containing letters/digits/symbols. Joiners/marks stay in runs; not linguistic tokenization. Selected count is visible UTF-16 range."
+            "Committed counts; whitespace separates runs containing letters/digits/symbols. " +
+            "Joiners/marks stay in runs; not linguistic tokenization. Selected count is visible UTF-16 range."
         localRecovery?.let { recovery ->
             recovery.observe(f.committed, files.path)
             unfinishedRecovery?.observe(viewModel, surface.recoverySession, files.path, surface.latestRecoveryProposal)
@@ -535,12 +608,22 @@ fun showEditor(
             (surface.recoveryCaptureFailure ?: unfinishedRecovery?.status() ?: "") +
             (workspaceUi?.warning?.let { " · $it" } ?: "")
         unfinishedStatus.toolTipText = unfinishedStatus.text
-        unfinishedStatus.foreground = if (unfinishedStatus.text.contains("Failed"))Color(0xb3261e) else Color(0x64748b)
+        unfinishedStatus.foreground =
+            if (unfinishedStatus.text.contains("Failed"))Color(FAILURE_TEXT_RGB) else Color(MUTED_TEXT_RGB)
         refreshRecoveryUi()
         refreshFindUi()
         refreshParagraphUi()
         refreshWritingUi()
         refreshStructureUi()
+        notice.text = noticeText(f)
+        notice.toolTipText = notice.text
+        titleLabel.text = files.name
+        titleLabel.toolTipText = files.path?.toString()
+        window.title = "${files.name} — Astra Editor"
+        refreshEditButtons(f)
+    }
+
+    private fun noticeText(f: EditorFrame): String {
         val degradedNote = if (!surface.admissionAllowed &&
             surface.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED
         ) {
@@ -548,14 +631,12 @@ fun showEditor(
         } else {
             ""
         }
-        notice.text =
-            files.status + (if (f.notice == "Ready")"" else " · ${f.notice}") + degradedNote +
+        return files.status + (if (f.notice == "Ready")"" else " · ${f.notice}") + degradedNote +
             (if (surface.clipboardMessage.isEmpty()) "" else " · ${surface.clipboardMessage}") +
             (if (StoredFonts.unavailable.isEmpty()) "" else " · Missing stored font: System fallback")
-        notice.toolTipText = notice.text
-        title.text = files.name
-        title.toolTipText = files.path?.toString()
-        window.title = "${files.name} — Astra Editor"
+    }
+
+    private fun refreshEditButtons(f: EditorFrame) {
         open.isEnabled = !files.busy
         save.isEnabled = !files.busy
         undo.isEnabled = f.undoCount > 0 || f.marked != null
@@ -564,81 +645,17 @@ fun showEditor(
         saveAs.isEnabled = !files.busy
         bold.isEnabled = !files.busy && surface.admissionAllowed
         italic.isEnabled = !files.busy && surface.admissionAllowed
-        fun label(name: String, key: FormatKey) = when (viewModel.formatState(key)) {
-            true -> "$name on"
-            false -> name
-            null -> "$name mixed"
-        }
-        bold.text = label("Bold", FormatKey.BOLD)
-        italic.text = label("Italic", FormatKey.ITALIC)
+        bold.text = formatLabel("Bold", FormatKey.BOLD)
+        italic.text = formatLabel("Italic", FormatKey.ITALIC)
     }
-    val findUi = FindReplaceUi(window, { surface }) {
-        header.revalidate()
-        header.repaint()
-    }
-    qualificationControls.add(findUi.panel)
-    refreshFindUi = { findUi.refresh() }
-    window.rootPane.putClientProperty("editor.find", findUi)
-    val paragraphUi = ParagraphControls({ surface }, { files.busy })
-    val paragraphRow = JPanel(FlowLayout(FlowLayout.LEFT, 4, 2)).apply {
-        isOpaque = false
-        add(JLabel("Paragraph"))
-        add(paragraphUi.panel)
-    }
-    qualificationControls.add(paragraphRow)
-    val writingUi = WritingControls({ surface }, { files.busy })
-    // Tabs keep every group reachable at the existing 940×400 minimum.
-    val tabs = WritingTabs().apply { name = "writing-tabs" }
-    val textGroup = writingUi.text.apply {
-        add(italic, 0)
-        add(bold, 0)
-    }
-    val paraGroup = JPanel().apply {
-        layout = BoxLayout(this, BoxLayout.Y_AXIS)
-        isOpaque = false
-        add(paragraphRow)
-        add(writingUi.spacing)
-    }
-    val viewGroup = JPanel().apply {
-        layout = BoxLayout(this, BoxLayout.Y_AXIS)
-        isOpaque = false
-        add(typefaceRow)
-    }
-    val pageRow = pageToggle.parent
-    viewGroup.add(pageRow)
-    tabs.addTab("Text", textGroup)
-    tabs.addTab("Paragraph", paraGroup)
-    tabs.addTab("View", viewGroup)
-    val structureUi = StructureControls(window, { surface }, { files.busy })
-    tabs.addTab("Structure", structureUi.panel)
-    val outputUi = PageOutputUi(window, { surface }, { files.busy })
-    tabs.addTab("Pages / Output", outputUi.panel)
-    window.rootPane.putClientProperty("editor.pageOutput", outputUi)
-    refreshStructureUi = { structureUi.refresh() }
-    window.rootPane.putClientProperty("editor.structure", structureUi)
-    qualificationControls.remove(paragraphRow)
-    qualificationControls.add(tabs, 1)
-    window.rootPane.putClientProperty("editor.writingTabs", tabs)
-    tabs.addChangeListener { refreshWritingLayout(window, tabs.selectedComponent as? JComponent) }
 
-    refreshWritingUi = { writingUi.refresh() }
-    window.rootPane.putClientProperty("editor.writingControls", writingUi)
-    val zoomPicker = JComboBox(arrayOf("50%", "75%", "100%")).apply {
-        name = "document-zoom"
-        selectedIndex = 2
-        toolTipText = "Presentation zoom; document metrics, stored formatting and Undo are unchanged"
+    private fun formatLabel(name: String, key: FormatKey) = when (viewModel.formatState(key)) {
+        true -> "$name on"
+        false -> name
+        null -> "$name mixed"
     }
-    zoomPicker.addActionListener {
-        state.changeZoom(listOf(.5f, .75f, 1f)[zoomPicker.selectedIndex])
-        surface.requestFocusInWindow()
-    }
-    fitCombo(zoomPicker)
-    window.rootPane.putClientProperty("editor.zoomPicker", zoomPicker)
-    typefaceRow.add(JLabel("Zoom"))
-    typefaceRow.add(zoomPicker)
-    refreshParagraphUi = { paragraphUi.refresh() }
-    window.rootPane.putClientProperty("editor.paragraphControls", paragraphUi)
-    if (recoveryDirectory != null) {
+
+    private fun installRecovery(recoveryDirectory: java.nio.file.Path) {
         localRecovery =
             LocalRecoveryController(LocalRecoveryStore(recoveryDirectory), refresh = {
                 surface.statusChanged(viewModel.snapshot())
@@ -665,14 +682,9 @@ fun showEditor(
         window.rootPane.putClientProperty("editor.workspace", workspaceUi)
         window.rootPane.putClientProperty("editor.unfinishedRecovery", unfinishedRecovery)
     }
-    surface.statusChanged(viewModel.snapshot())
-    val surfaceGetter: () -> EditorSurface = { surface }
-    window.rootPane.putClientProperty("editor.files", files)
-    window.rootPane.putClientProperty("editor.layers", layers)
-    window.rootPane.putClientProperty("editor.surfaceGetter", surfaceGetter)
-    window.rootPane.putClientProperty("editor.localRecovery", localRecovery)
-    return window.apply {
-        minimumSize = Dimension(940, 400)
+
+    fun show(): JFrame = window.apply {
+        minimumSize = Dimension(EDITOR_MIN_WIDTH_PX, EDITOR_MIN_HEIGHT_PX)
         contentPane = JPanel(BorderLayout()).apply {
             add(WritingHeaderScroll(header, window).apply { name = "writing-header-scroll" }, BorderLayout.NORTH)
             add(
@@ -685,17 +697,7 @@ fun showEditor(
             add(footer, BorderLayout.SOUTH)
         }
         pack()
-        when {
-            windowLocation != null -> {
-                isAutoRequestFocus = false
-                location = windowLocation
-            }
-            offscreenTest -> {
-                isAutoRequestFocus = false
-                setLocation(-16000, -16000)
-            }
-            else -> setLocationRelativeTo(null)
-        }
+        placeWindow()
         isVisible = true
         workspaceUi?.observe()
         addWindowListener(object : WindowAdapter() {
@@ -711,8 +713,304 @@ fun showEditor(
             }
         })
         SwingUtilities.invokeLater {
-            if (!offscreenTest && windowLocation == null) surface.requestFocusInWindow()
+            if (!launch.offscreenTest && launch.windowLocation == null) surface.requestFocusInWindow()
             surface.writeDiagnostics()
         }
+    }
+
+    private fun placeWindow() {
+        val windowLocation = launch.windowLocation
+        when {
+            windowLocation != null -> {
+                window.isAutoRequestFocus = false
+                window.location = windowLocation
+            }
+            launch.offscreenTest -> {
+                window.isAutoRequestFocus = false
+                window.setLocation(OFFSCREEN_COORDINATE_PX, OFFSCREEN_COORDINATE_PX)
+            }
+            else -> window.setLocationRelativeTo(null)
+        }
+    }
+}
+
+/** Live input-method test row shown only when an IME trace is recorded. */
+private class ImeTestControls(
+    private val trace: ImeTrace,
+    private val viewModel: EditorViewModel,
+    private val surface: () -> EditorSurface,
+) {
+    fun install(subtitle: JLabel, qualificationControls: JPanel, traceLanguage: String?) {
+        subtitle.text = "IME test: test text is logged locally"
+        val languages = linkedMapOf("English" to "en-US", "Japanese" to "ja-JP", "Urdu" to "ur-PK", "Arabic" to "ar-SA")
+        val picker = JComboBox(languages.keys.toTypedArray())
+        val result = JLabel("Choose an installed input method; then type test text.")
+        picker.addActionListener {
+            val tag = languages.getValue(picker.selectedItem as String)
+            selectInputLanguage(tag, result)
+        }
+        if (traceLanguage !=
+            null
+        ) {
+            SwingUtilities.invokeLater {
+                picker.selectedItem =
+                    languages.entries.first { it.value == traceLanguage }.key
+            }
+        }
+        qualificationControls.add(
+            JPanel(FlowLayout(FlowLayout.LEFT)).apply {
+                isOpaque = false
+                add(picker)
+                add(result)
+            },
+        )
+        trace.record(
+            "session-start",
+            "Live input test mode; no synthetic injection. OS=${System.getProperty(
+                "os.name",
+            )}; Java=${System.getProperty("java.version")}",
+            viewModel.snapshot(),
+        )
+    }
+
+    private fun selectInputLanguage(tag: String, result: JLabel) {
+        val accepted = surface().selectInputLocale(
+            java.util.Locale.forLanguageTag(tag),
+            compositionEnabled = if (tag ==
+                "ja-JP"
+            ) {
+                true
+            } else {
+                null
+            },
+        )
+        val ctx = surface().inputContext
+        val compositionEnabled = if (accepted &&
+            tag == "ja-JP"
+        ) {
+            runCatching { ctx?.isCompositionEnabled }.getOrNull()
+        } else {
+            null
+        }
+        result.text = "Input: $tag — ${if (accepted)"selected" else "unavailable"}"
+        trace.record(
+            "select-input",
+            "requested=$tag; accepted=$accepted; actual=${ctx?.locale}; compositionEnabled=$compositionEnabled",
+            viewModel.snapshot(),
+        )
+        surface().requestFocusInWindow()
+    }
+}
+
+/** Retained-draft recovery row: draft picker plus explicit inspect/export/apply/discard/recover actions. */
+private class RecoveryRows(
+    private val window: JFrame,
+    private val viewModel: EditorViewModel,
+    private val surface: () -> EditorSurface,
+    private val files: () -> WindowFiles,
+    private val unfinished: () -> UnfinishedController?,
+    button: (String, String, () -> Unit) -> JButton,
+) {
+    val bar = JPanel(FlowLayout(FlowLayout.LEFT, BAR_HGAP_PX, BAR_VGAP_PX)).apply {
+        isOpaque = false
+        name = "recovery-controls"
+        isVisible = false
+    }
+
+    init {
+        bar.add(JLabel("Recovery:"))
+    }
+
+    private val draftPicker = JComboBox<String>().apply {
+        name = "recovery-picker"
+        preferredSize = Dimension(DRAFT_PICKER_WIDTH_PX, DRAFT_PICKER_HEIGHT_PX)
+        toolTipText = "Choose a retained recovery draft"
+    }
+
+    init {
+        bar.add(draftPicker)
+    }
+
+    private var shownDrafts: List<RetainedCompositionPreimage> = emptyList()
+    private var updatingDraftPicker = false
+
+    init {
+        draftPicker.addActionListener {
+            if (!updatingDraftPicker) {
+                shownDrafts.getOrNull(draftPicker.selectedIndex)?.let {
+                    surface().selectRetainedDraft(it)
+                }
+            }
+        }
+    }
+
+    private val inspectDraft =
+        button("Inspect", "Preview the selected retained document text") { inspectRetainedDraft() }
+            .also { bar.add(it) }
+    private val exportDraft =
+        button("Export Draft", "Save the full retained document separately; keep this recovery record") {
+            surface().retainedDraftDocument()?.let { files().exportDraftDocument(it) }
+        }.also { bar.add(it) }
+    private val aBtn =
+        button("Apply Draft", "Apply the selected draft only to its matching original basis") {
+            applyRetainedDraft()
+        }.also { bar.add(it) }
+    private val dBtn = button("Discard Draft", "Explicitly discard only the selected retained draft") {
+        discardRetainedDraft()
+    }.also { bar.add(it) }
+    private val rBtn =
+        button("Recover", "Recover editor input after failure") { surface().recoverExplicitly(false) }
+            .also { bar.add(it) }
+
+    private fun inspectRetainedDraft() {
+        val text = surface().retainedDraftDocument()?.text ?: surface().inspectRetainedDraft() ?: return
+        val area = JTextArea(text, DRAFT_PREVIEW_ROWS, DRAFT_PREVIEW_COLUMNS).apply {
+            isEditable = false
+            lineWrap = true
+            wrapStyleWord = true
+            caretPosition = 0
+        }
+        JOptionPane.showMessageDialog(
+            window,
+            JScrollPane(area),
+            "Retained draft text — export preserves formatting",
+            JOptionPane.INFORMATION_MESSAGE,
+        )
+    }
+
+    private fun applyRetainedDraft() {
+        val selected = surface().retainedPreimage
+        val durable = unfinished()
+        if (durable == null || selected == null) {
+            surface().applyRecoveredDraft()
+        } else {
+            durable.resolveLive(selected.recordKey, apply = {
+                val draft = selected.recoveryDraft
+                if (draft != null &&
+                    surface().viewModel.dispatch(EditorIntent.ApplyRecoveredDraft(draft)) == RecoveryApplyResult.Applied
+                ) {
+                    surface().viewModel.snapshot().committed
+                } else {
+                    null
+                }
+            }, remove = {
+                surface().recoverySession.resolveRetainedDraft(selected)
+                surface().statusChanged(viewModel.snapshot())
+            })
+        }
+    }
+
+    private fun discardRetainedDraft() {
+        val selected = surface().retainedPreimage
+        if (unfinished() == null || selected == null) {
+            surface().discardRecoveredDraft()
+        } else {
+            unfinished()!!.resolveLive(selected.recordKey, remove = {
+                surface().recoverySession.resolveRetainedDraft(selected)
+                surface().statusChanged(viewModel.snapshot())
+            })
+        }
+    }
+
+    /** Rebuilds the picker only when the retained records changed; returns whether they did. */
+    fun refreshPicker(records: List<RetainedCompositionPreimage>): Boolean {
+        val changed = records.size != shownDrafts.size || records.zip(shownDrafts).any { (a, b) -> a !== b }
+        updatingDraftPicker = true
+        if (changed) {
+            shownDrafts = records
+            draftPicker.removeAllItems()
+            records.forEachIndexed { index, record ->
+                val preview =
+                    record.draftText.replace('\n', ' ').take(DRAFT_LABEL_PREVIEW_CHARS).ifEmpty { "(empty draft)" }
+                draftPicker.addItem("${index + 1}/${records.size} · $preview")
+            }
+        }
+        draftPicker.selectedIndex = records.indexOfFirst { it === surface().retainedPreimage }
+        updatingDraftPicker = false
+        return changed
+    }
+
+    fun refreshButtons(records: List<RetainedCompositionPreimage>) {
+        listOf(draftPicker, inspectDraft, exportDraft, aBtn, dBtn).forEach { it.isVisible = records.isNotEmpty() }
+        draftPicker.isEnabled = records.isNotEmpty() && !files().busy
+        inspectDraft.isEnabled = records.isNotEmpty()
+        exportDraft.isEnabled = surface().retainedDraftDocument() != null && !files().busy
+        aBtn.isEnabled =
+            surface().retainedPreimage?.recoveryDraft != null &&
+            !files().busy &&
+            unfinished()?.decisionBusy() != true
+        dBtn.isEnabled = records.isNotEmpty() && !files().busy && unfinished()?.decisionBusy() != true
+        rBtn.isVisible = !surface().admissionAllowed
+        rBtn.isEnabled =
+            records.size + surface().quarantinedCallbacks.size < UNRESOLVED_RECOVERY_CAPACITY && !files().busy
+        rBtn.toolTipText = "Recover paused input; at capacity export/discard unresolved work first"
+    }
+}
+
+/** Unverified (quarantined) input row: inspect, export or explicitly discard captured callbacks. */
+private class QuarantineRow(
+    private val window: JFrame,
+    private val surface: () -> EditorSurface,
+    private val files: () -> WindowFiles,
+    private val unfinished: () -> UnfinishedController?,
+    button: (String, String, () -> Unit) -> JButton,
+) {
+    val bar = JPanel(FlowLayout(FlowLayout.LEFT, BAR_HGAP_PX, BAR_VGAP_PX)).apply {
+        isOpaque = false
+        name = "quarantine-controls"
+    }
+    private val label = JLabel()
+
+    init {
+        bar.add(label)
+        button("Inspect Input", "Inspect Input") { inspectQuarantinedInput() }.also { bar.add(it) }
+    }
+
+    private val exportInput =
+        button("Export Input", "Export Input") {
+            files().exportQuarantinedInput(surface().quarantinedCallbacks.toList())
+        }.also { bar.add(it) }
+    private val discardInput =
+        button("Discard Input…", "Discard Input…") { discardQuarantinedInput() }.also { bar.add(it) }
+
+    private fun inspectQuarantinedInput() {
+        val captured = surface().quarantinedCallbacks.toList()
+        val diagnostic = quarantineDiagnostic(captured)
+        val area = JTextArea(diagnostic, QUARANTINE_PREVIEW_ROWS, QUARANTINE_PREVIEW_COLUMNS).apply {
+            isEditable = false
+            lineWrap = true
+            caretPosition = 0
+        }
+        JOptionPane.showMessageDialog(
+            window,
+            JScrollPane(area),
+            "Unverified input — never applied to the document",
+            JOptionPane.INFORMATION_MESSAGE,
+        )
+    }
+
+    private fun discardQuarantinedInput() {
+        val captured = surface().quarantinedCallbacks.toList()
+        if (files().confirmQuarantineDiscard(captured.size)) {
+            val durable = unfinished()
+            if (durable == null) {
+                surface().discardQuarantinedCallbacks(captured)
+            } else {
+                captured.forEach { entry ->
+                    durable.resolveLive(entry, remove = { surface().discardQuarantinedCallbacks(listOf(entry)) })
+                }
+            }
+        }
+    }
+
+    /** Updates the row; returns whether its visibility changed. */
+    fun refresh(): Boolean {
+        val quarantineVisible = surface().quarantinedCallbacks.isNotEmpty()
+        val quarantineChanged = bar.isVisible != quarantineVisible
+        bar.isVisible = quarantineVisible
+        label.text = "Unverified input: ${surface().quarantinedCallbacks.size} callback(s)"
+        exportInput.isEnabled = !files().busy
+        discardInput.isEnabled = !files().busy && unfinished()?.decisionBusy() != true
+        return quarantineChanged
     }
 }

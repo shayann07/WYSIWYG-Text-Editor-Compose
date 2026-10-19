@@ -14,17 +14,39 @@ import dev.shayxo.composedoc.model.patchParagraphs
 import dev.shayxo.composedoc.ui.EditorIntent
 import dev.shayxo.composedoc.ui.EditorViewModel
 
+private const val SAMPLE_PNG_WIDTH_PX = 240
+private const val SAMPLE_PNG_HEIGHT_PX = 100
+private const val SAMPLE_PNG_BACKGROUND_RGB = 0xe7f0f8
+private const val SAMPLE_PNG_INK_RGB = 0x174ea6
+private const val CIRCLE_ORIGIN_PX = 24
+private const val CIRCLE_DIAMETER_PX = 52
+private const val LINES_X_PX = 96
+private const val LONG_LINE_Y_PX = 36
+private const val LONG_LINE_WIDTH_PX = 112
+private const val LONG_LINE_HEIGHT_PX = 12
+private const val SHORT_LINE_Y_PX = 58
+private const val SHORT_LINE_WIDTH_PX = 80
+private const val SHORT_LINE_HEIGHT_PX = 8
+private const val SAMPLE_SECTION_LEVELS = 3
+private const val SECTION_HEADING_ROLE = 2
+private const val SUBSECTION_HEADING_ROLE = 3
+private const val SAMPLE_IMAGE_WIDTH_DP = 240
+
 /** Local generated pixels, self-authored text; no remote asset or typography review. */
 fun samplePng(): ByteArray {
-    val image = java.awt.image.BufferedImage(240, 100, java.awt.image.BufferedImage.TYPE_INT_RGB)
+    val image = java.awt.image.BufferedImage(
+        SAMPLE_PNG_WIDTH_PX,
+        SAMPLE_PNG_HEIGHT_PX,
+        java.awt.image.BufferedImage.TYPE_INT_RGB,
+    )
     val g = image.createGraphics()
     try {
-        g.color = java.awt.Color(0xe7f0f8)
-        g.fillRect(0, 0, 240, 100)
-        g.color = java.awt.Color(0x174ea6)
-        g.fillOval(24, 24, 52, 52)
-        g.fillRect(96, 36, 112, 12)
-        g.fillRect(96, 58, 80, 8)
+        g.color = java.awt.Color(SAMPLE_PNG_BACKGROUND_RGB)
+        g.fillRect(0, 0, SAMPLE_PNG_WIDTH_PX, SAMPLE_PNG_HEIGHT_PX)
+        g.color = java.awt.Color(SAMPLE_PNG_INK_RGB)
+        g.fillOval(CIRCLE_ORIGIN_PX, CIRCLE_ORIGIN_PX, CIRCLE_DIAMETER_PX, CIRCLE_DIAMETER_PX)
+        g.fillRect(LINES_X_PX, LONG_LINE_Y_PX, LONG_LINE_WIDTH_PX, LONG_LINE_HEIGHT_PX)
+        g.fillRect(LINES_X_PX, SHORT_LINE_Y_PX, SHORT_LINE_WIDTH_PX, SHORT_LINE_HEIGHT_PX)
     } finally {
         g.dispose()
     }
@@ -34,13 +56,19 @@ fun samplePng(): ByteArray {
 }
 fun structuredWritingSample(): Document {
     val e = EditorViewModel(urduWritingSample())
+    typeStructuredSampleText(e)
+    return withStableStructuredIds(withSampleImage(structuredListSample(e)))
+}
+
+private fun typeStructuredSampleText(e: EditorViewModel) {
     val text = e.snapshot().committed.text
     e.dispatch(EditorIntent.Select(Selection(0, 0)))
     e.dispatch(EditorIntent.Structure(StructureCommand.Role(1)))
-    for (level in 1..3) {
+    for (level in 1..SAMPLE_SECTION_LEVELS) {
         val at = text.indexOf("حصہ $level")
         e.dispatch(EditorIntent.Select(Selection(at, at)))
-        e.dispatch(EditorIntent.Structure(StructureCommand.Role(if (level == 1)2 else 3)))
+        val role = if (level == 1)SECTION_HEADING_ROLE else SUBSECTION_HEADING_ROLE
+        e.dispatch(EditorIntent.Structure(StructureCommand.Role(role)))
     }
     val at = text.indexOf("Disposable")
     e.dispatch(EditorIntent.Select(Selection(at, at + "Disposable writing sample".length)))
@@ -48,11 +76,15 @@ fun structuredWritingSample(): Document {
     e.dispatch(EditorIntent.Select(Selection(text.length, text.length)))
     e.dispatch(
         EditorIntent.Type(
-            "\nساختی نمونہ — Structured sample\nپہلی فہرست کی شق\nاس شق کا دوسرا پیراگراف\nNested English item\nدوسری شق\n\n",
+            "\nساختی نمونہ — Structured sample\nپہلی فہرست کی شق\n" +
+                "اس شق کا دوسرا پیراگراف\nNested English item\nدوسری شق\n\n",
             "sample",
             true,
         ),
     )
+}
+
+private fun structuredListSample(e: EditorViewModel): Document {
     val d = e.snapshot().committed
     val title = d.text.indexOf("ساختی نمونہ")
     e.dispatch(EditorIntent.Select(Selection(title, title)))
@@ -86,6 +118,10 @@ fun structuredWritingSample(): Document {
                 s.anchor to s.properties.copy(item = freshStructureId(), list = ListKind.NUMBER),
             ),
         )
+    return sample
+}
+
+private fun withSampleImage(sample: Document): Document {
     val image = ImageDecoder.validate(samplePng())
     val owner = EditorViewModel(sample)
     val end = owner.snapshot().committed.units.size
@@ -93,12 +129,19 @@ fun structuredWritingSample(): Document {
     owner.dispatch(
         EditorIntent.Structure(
             StructureCommand.InsertImage(
-                ImageBlock(image.first, 240, "مقامی نمونہ: نیلا دائرہ اور دو لکیریں — blue circle and lines"),
+                ImageBlock(
+                    image.first,
+                    SAMPLE_IMAGE_WIDTH_DP,
+                    "مقامی نمونہ: نیلا دائرہ اور دو لکیریں — blue circle and lines",
+                ),
                 image.second,
             ),
         ),
     )
-    val result = owner.snapshot().committed
+    return owner.snapshot().committed
+}
+
+private fun withStableStructuredIds(result: Document): Document {
     val ids = result.paragraphs().map {
         it.properties.item
     }.filter { it.isNotEmpty() }.distinct().withIndex().associate {

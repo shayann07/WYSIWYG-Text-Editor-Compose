@@ -10,12 +10,25 @@ import javax.swing.JScrollPane
 import javax.swing.JTabbedPane
 import javax.swing.SwingUtilities
 
+private const val WRAP_HGAP_PX = 4
+private const val WRAP_VGAP_PX = 2
+private const val FALLBACK_BOUND_WIDTH_PX = 900
+private const val MIN_ROW_LIMIT_PX = 100
+private const val TAB_EXTRA_HEIGHT_PX = 12
+private const val HEADER_SCROLL_UNIT_PX = 24
+private const val HEADER_CAP_UNSIZED_PX = 220
+private const val HEADER_CAP_WINDOW_FRACTION = .42
+private const val HEADER_CAP_MIN_PX = 130
+private const val HEADER_CAP_MAX_PX = 260
+
 /** Flow controls wrap into measured rows instead of disappearing outside short windows. */
-class WrappingControls : FlowLayout(LEFT, 4, 2) {
+class WrappingControls : FlowLayout(LEFT, WRAP_HGAP_PX, WRAP_VGAP_PX) {
     override fun preferredLayoutSize(target: Container): Dimension = synchronized(target.treeLock) {
-        val bound = generateSequence(target as Container?) { it.parent }.map { it.width }.firstOrNull { it > 0 } ?: 900
+        val bound =
+            generateSequence(target as Container?) { it.parent }.map { it.width }.firstOrNull { it > 0 }
+                ?: FALLBACK_BOUND_WIDTH_PX
         val insets = target.insets
-        val limit = (bound - insets.left - insets.right - hgap * 2).coerceAtLeast(100)
+        val limit = (bound - insets.left - insets.right - hgap * 2).coerceAtLeast(MIN_ROW_LIMIT_PX)
         var rowWidth = 0
         var rowHeight = 0
         var height = 0
@@ -46,7 +59,8 @@ class WritingTabs : JTabbedPane() {
         val active = selectedComponent ?: return original
         return Dimension(
             original.width,
-            active.preferredSize.height + getFontMetrics(font).height + insets.top + insets.bottom + 12,
+            active.preferredSize.height + getFontMetrics(font).height + insets.top + insets.bottom +
+                TAB_EXTRA_HEIGHT_PX,
         )
     }
 }
@@ -57,11 +71,15 @@ class WritingHeaderScroll(header: JComponent, private val window: JFrame) :
     init {
         border = null
         viewport.background = header.background
-        verticalScrollBar.unitIncrement = 24
+        verticalScrollBar.unitIncrement = HEADER_SCROLL_UNIT_PX
     }
     override fun getPreferredSize(): Dimension {
         val size = super.getPreferredSize()
-        val cap = if (window.height <= 0)220 else (window.height * .42).toInt().coerceIn(130, 260)
+        val cap = if (window.height <= 0) {
+            HEADER_CAP_UNSIZED_PX
+        } else {
+            (window.height * HEADER_CAP_WINDOW_FRACTION).toInt().coerceIn(HEADER_CAP_MIN_PX, HEADER_CAP_MAX_PX)
+        }
         return Dimension(size.width, minOf(size.height, cap))
     }
 }
