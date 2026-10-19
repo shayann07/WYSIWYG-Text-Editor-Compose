@@ -9,6 +9,8 @@ plugins {
 
 val versions = extensions.getByType<VersionCatalogsExtension>().named("libs")
 extensions.configure<SpotlessExtension> {
+    // `.gitattributes` disables conversion, so pin LF; otherwise Windows and Linux disagree.
+    lineEndings = com.diffplug.spotless.LineEnding.UNIX
     kotlin {
         target("src/**/*.kt")
         targetExclude("**/generated/**")

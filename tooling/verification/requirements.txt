@@ -1,0 +1,2 @@
+# Python packages required by tooling/verification/verify.py --workspace-milestone (Urdu U0 font checks).
+fonttools==4.64.0

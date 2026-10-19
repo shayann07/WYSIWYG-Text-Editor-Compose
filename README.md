@@ -27,6 +27,7 @@ python tooling/docs/validate_docs.py
 node tooling/verification/v6.mjs
 .\gradlew.bat check apiCheck
 python tooling/verification/test_verification.py
+python -m pip install -r tooling/verification/requirements.txt
 python tooling/verification/verify.py --workspace-milestone
 .\apps\desktop-workspace\write-urdu.cmd --workspace-sample
 ```

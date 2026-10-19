@@ -3,6 +3,7 @@ from pathlib import Path
 import hashlib
 import json
 import re
+import subprocess
 from urllib.parse import unquote
 from doc_paths import ROOT, resolve, original, relocation_record
 
@@ -42,16 +43,24 @@ def main():
     frozen_paths = {original(n).resolve() for n in expected}
     current = [ROOT / 'README.md', ROOT / 'AGENTS.md']
     current += [p for p in (ROOT / 'docs').rglob('*.md') if 'archive' not in p.parts and p.resolve() not in frozen_paths and 'v5.2' not in p.parts]
-    bad = []; checked = 0
+    # Ignored local-evidence receipts exist only on the machine that produced them;
+    # every other link must reach a file that a fresh clone also has.
+    local_evidence = [(ROOT / d).resolve() for d in ('tests/local-evidence', 'apps/desktop-workspace/local-evidence')]
+    bad = []; checked = 0; machine_local = 0
     for file in current:
         for match in re.finditer(r'!?\[[^\]\n]*\]\((<[^>\n]+>|[^)\n]+)\)', file.read_text(encoding='utf-8')):
             target = match[1].strip('<>').split('#', 1)[0]
             if not target or re.match(r'^[a-zA-Z][a-zA-Z0-9+.-]*:', target) or target.startswith('/'):
                 continue
+            resolved = (file.parent / unquote(target)).resolve()
+            if any(resolved == d or d in resolved.parents for d in local_evidence):
+                machine_local += 1
+                continue
             checked += 1
-            if not (file.parent / unquote(target)).resolve().exists():
+            ignored = resolved.exists() and subprocess.run(['git', '-C', str(ROOT), 'check-ignore', '-q', str(resolved)]).returncode == 0
+            if not resolved.exists() or ignored:
                 bad.append({'file': file.relative_to(ROOT).as_posix(), 'target': target})
-    print(json.dumps({'historicalHashes': sum(counts[:2]), 'sealedV6Hashes': counts[2], 'originalManifestsExact': True, 'reviewSnapshotExact': True, 'activeLinksChecked': checked, 'brokenActiveLinks': bad, 'historicalNavigation': 'Original sealed/archive link text is immutable; use docs/relocations.json for historical destinations'}, indent=2))
+    print(json.dumps({'historicalHashes': sum(counts[:2]), 'sealedV6Hashes': counts[2], 'originalManifestsExact': True, 'reviewSnapshotExact': True, 'activeLinksChecked': checked, 'machineLocalEvidenceLinks': machine_local, 'brokenActiveLinks': bad, 'historicalNavigation': 'Original sealed/archive link text is immutable; use docs/relocations.json for historical destinations'}, indent=2))
     assert not bad, 'Broken active navigation links'
 
 if __name__ == '__main__':
