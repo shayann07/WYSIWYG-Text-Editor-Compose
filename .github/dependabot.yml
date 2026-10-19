@@ -1,12 +1,35 @@
 version: 2
+# One grouped pull request per ecosystem per month instead of one branch per
+# dependency. Kotlin, Compose, Skiko and the Compose compiler must move together.
 updates:
   - package-ecosystem: gradle
     directory: /
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 2
+    groups:
+      kotlin-compose-stack:
+        patterns:
+          - 'org.jetbrains.kotlin*'
+          - 'org.jetbrains.compose*'
+          - 'org.jetbrains.skiko*'
+          - 'org.jetbrains.androidx*'
+          - 'androidx.*'
+          - 'com.android.tools.build*'
+          - 'com.android.kotlin.multiplatform.library*'
+      build-and-quality-tools:
+        patterns:
+          - '*'
+    ignore:
+      # Major upgrades (for example Gradle 9) are planned deliberately, not bot-driven.
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 1
+    groups:
+      github-actions:
+        patterns:
+          - '*'

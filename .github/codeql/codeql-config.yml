@@ -1,0 +1,9 @@
+name: ComposeDoc CodeQL
+# Archived research (including vendored Skia sources), preserved external
+# reviews and installed packages are evidence, not maintained code.
+paths-ignore:
+  - tests/archive
+  - tests/reviews
+  - '**/node_modules'
+  - '**/build'
+  - kotlin-js-store
