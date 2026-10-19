@@ -18,6 +18,15 @@ allprojects {
     }
 }
 
+// Kotlin/JS tests run under mocha; force its transitive dev dependencies onto patched
+// releases (Dependabot cannot update the Kotlin-generated kotlin-js-store/yarn.lock).
+plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin> {
+    the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension>().apply {
+        resolution("serialize-javascript", "7.0.5")
+        resolution("diff", "8.0.3")
+    }
+}
+
 apiValidation {
     ignoredProjects.addAll(listOf("desktop-workspace", "desktop-harness"))
 }
