@@ -21,6 +21,9 @@ data class ListMarkerLayout(
 )
 data class ListColumn(val left: Float, val width: Float, val rootRtl: Boolean, val gutter: Float)
 data class ListNominal(val font: StoredFont, val size: Int)
+
+// Reason: public API (see apiCheck); the parameter is part of the published signature.
+@Suppress("UnusedParameter")
 fun Document.listNominal(item: String, defaultSize: Int): ListNominal {
     val seed = paragraphs().first { it.properties.item == item }.properties.markerTypography
     return ListNominal(seed.font, seed.size)

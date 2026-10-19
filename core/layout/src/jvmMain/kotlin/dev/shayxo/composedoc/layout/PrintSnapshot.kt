@@ -6,6 +6,7 @@ import androidx.compose.ui.text.TextPainter
 import dev.shayxo.composedoc.model.documentToPoints
 import dev.shayxo.composedoc.model.outputUnicodeIssues
 import dev.shayxo.composedoc.model.paragraphs
+import org.jetbrains.skia.Canvas
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image
 import org.jetbrains.skia.Paint
@@ -21,6 +22,40 @@ import java.awt.print.Printable
 import java.awt.print.PrinterAbortException
 import java.io.ByteArrayInputStream
 
+/** Lowest and highest raster resolution accepted for rendered pages. */
+private const val MIN_RENDER_DPI = 72
+private const val MAX_RENDER_DPI = 300
+
+/** Resolution used when rasterizing a page for the printer. */
+private const val PRINT_DPI = 300
+
+/** Document units per inch (CSS pixels). */
+private const val DOCUMENT_UNITS_PER_INCH = 96f
+
+/** Upper bound on the pixel count of one rendered page. */
+private const val MAX_RENDER_PIXELS = 16_000_000
+
+/** Allowed difference, in points, between printer paper and the captured page size. */
+private const val PAPER_SIZE_TOLERANCE_POINTS = .25
+
+/** Bounded preview/print page count. */
+private const val MAX_SNAPSHOT_PAGES = 200
+
+/** Number of Unicode issues quoted when output is refused. */
+private const val REPORTED_UNICODE_ISSUES = 8
+
+/** Upper bound on the memory held by captured page pictures (64 MiB). */
+private const val MAX_PICTURE_BYTES = 64L * 1024 * 1024
+
+/** Extra clip around a fragment so ascenders/descenders at its edges are not cut. */
+private const val FRAGMENT_CLIP_BLEED = 2f
+
+/** Opaque white page background. */
+private const val PAGE_BACKGROUND = 0xffffffff
+
+/** Bullet marker ink colour. */
+private const val BULLET_COLOR = 0xff202b3c
+
 /** Immutable Skia pictures recorded from the actual editor plan, not remeasured text. */
 class PrintSnapshot private constructor(val plan: DocumentPagePlan, private val pictures: List<Picture>) :
     AutoCloseable {
@@ -28,13 +63,13 @@ class PrintSnapshot private constructor(val plan: DocumentPagePlan, private val 
 
     @Synchronized fun render(page: Int, dpi: Int = 120): BufferedImage {
         check(!closed)
-        require(page in pictures.indices && dpi in 72..300)
-        val factor = dpi / 96f
+        require(page in pictures.indices && dpi in MIN_RENDER_DPI..MAX_RENDER_DPI)
+        val factor = dpi / DOCUMENT_UNITS_PER_INCH
         val width = kotlin.math.ceil(plan.width * factor).toInt()
         val height = kotlin.math.ceil(plan.height * factor).toInt()
-        require(width.toLong() * height <= 16_000_000)
+        require(width.toLong() * height <= MAX_RENDER_PIXELS)
         return Surface.makeRasterN32Premul(width, height).use { surface ->
-            surface.canvas.clear(0xffffffff.toInt())
+            surface.canvas.clear(PAGE_BACKGROUND.toInt())
             surface.canvas.scale(factor, factor)
             pictures[page].playback(surface.canvas)
             surface.makeImageSnapshot().use { image ->
@@ -54,19 +89,20 @@ class PrintSnapshot private constructor(val plan: DocumentPagePlan, private val 
         }
     }
     fun warnings(format: PageFormat): List<String> = buildList {
-        if (kotlin.math.abs(format.width - documentToPoints(plan.width)) > .25 ||
-            kotlin.math.abs(format.height - documentToPoints(plan.height)) > .25
+        if (kotlin.math.abs(format.width - documentToPoints(plan.width)) > PAPER_SIZE_TOLERANCE_POINTS ||
+            kotlin.math.abs(format.height - documentToPoints(plan.height)) > PAPER_SIZE_TOLERANCE_POINTS
         ) {
             add("Printer paper differs from the captured document; pages will not be repaginated")
         }
-        if (format.imageableX > 0 ||
-            format.imageableY > 0 ||
-            format.imageableWidth < format.width ||
-            format.imageableHeight < format.height
-        ) {
+        if (hasUnprintableMargins(format)) {
             add("Printer has unprintable margins; actual size may clip. Fit scales uniformly to the printable area")
         }
     }
+    private fun hasUnprintableMargins(format: PageFormat): Boolean = format.imageableX > 0 ||
+        format.imageableY > 0 ||
+        format.imageableWidth < format.width ||
+        format.imageableHeight < format.height
+
     fun pageable(
         first: Int = 1,
         last: Int = plan.pageCount,
@@ -88,7 +124,7 @@ class PrintSnapshot private constructor(val plan: DocumentPagePlan, private val 
                     if (n !in 0 until numberOfPages) {
                         Printable.NO_SUCH_PAGE
                     } else {
-                        val image = render(first - 1 + n, 300)
+                        val image = render(first - 1 + n, PRINT_DPI)
                         val g = graphics.create() as java.awt.Graphics2D
                         try {
                             val width = documentToPoints(plan.width).toDouble()
@@ -130,9 +166,10 @@ class PrintSnapshot private constructor(val plan: DocumentPagePlan, private val 
         }.distinct().associateWith { requireNotNull(bitmap(it)) { "Image decoding pending; wait and retry preview" } }
         val completed get() = pictures.size
         init {
-            require(plan.pageCount <= 200) { "Bounded preview/print supports at most200 pages" }
+            require(plan.pageCount <= MAX_SNAPSHOT_PAGES) { "Bounded preview/print supports at most200 pages" }
             require(outputUnicodeIssues(plan.document).isEmpty()) {
-                "Output refused; source unchanged. ${outputUnicodeIssues(plan.document).take(8).joinToString("; ")}"
+                val issues = outputUnicodeIssues(plan.document).take(REPORTED_UNICODE_ISSUES)
+                "Output refused; source unchanged. ${issues.joinToString("; ")}"
             }
             plan.assertCoverage()
         }
@@ -144,60 +181,9 @@ class PrintSnapshot private constructor(val plan: DocumentPagePlan, private val 
             val page = completed
             PictureRecorder().use { recorder ->
                 val canvas = recorder.beginRecording(Rect.makeWH(plan.width, plan.height))
-                canvas.clear(0xffffffff.toInt())
+                canvas.clear(PAGE_BACKGROUND.toInt())
                 for (f in plan.fragments.filter { it.page == page }) {
-                    val p = plan.paragraphs[f.paragraphIndex]
-                    val y = plan.margin + f.top - page * (plan.height + plan.gap)
-                    canvas.save()
-                    canvas.clipRect(
-                        Rect.makeLTRB(
-                            0f,
-                            (y - 2f).coerceAtLeast(0f),
-                            plan.width,
-                            (y + f.height + 2f).coerceAtMost(plan.height),
-                        ),
-                    )
-                    if (p.image != null) {
-                        Image.makeFromBitmap(images.getValue(p.image.resource).asSkiaBitmap()).use { image ->
-                            canvas.drawImageRect(
-                                image,
-                                Rect.makeXYWH(
-                                    plan.margin + p.imageLeft,
-                                    y,
-                                    p.imageWidth,
-                                    p.height,
-                                ),
-                            )
-                        }
-                    } else {
-                        canvas.save()
-                        canvas.translate(plan.margin + p.contentLeft, y - f.sourceTop)
-                        synchronized(p.layout.multiParagraph) { TextPainter.paint(canvas.asComposeCanvas(), p.layout) }
-                        canvas.restore()
-                    }
-                    if (f.firstLine == 0) {
-                        p.marker?.let { marker ->
-                            if (marker.layout != null) {
-                                canvas.save()
-                                canvas.translate(plan.margin + marker.left, y + marker.top)
-                                synchronized(marker.layout.multiParagraph) {
-                                    TextPainter.paint(canvas.asComposeCanvas(), marker.layout)
-                                }
-                                canvas.restore()
-                            } else {
-                                Paint().use { paint ->
-                                    paint.color = 0xff202b3c.toInt()
-                                    canvas.drawCircle(
-                                        plan.margin + marker.left + marker.bulletRadius,
-                                        y + marker.opticalCenter,
-                                        marker.bulletRadius,
-                                        paint,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    canvas.restore()
+                    drawFragment(canvas, f, page)
                 }
                 for (r in plan.running.filter { it.page == page }) {
                     canvas.save()
@@ -210,8 +196,63 @@ class PrintSnapshot private constructor(val plan: DocumentPagePlan, private val 
             require(
                 pictures.sumOf {
                     it.approximateBytesUsed.toLong()
-                } <= 64L * 1024 * 1024,
+                } <= MAX_PICTURE_BYTES,
             ) { "Captured print pictures exceed64MiB" }
+        }
+        private fun drawFragment(canvas: Canvas, f: ParagraphFragment, page: Int) {
+            val p = plan.paragraphs[f.paragraphIndex]
+            val y = plan.margin + f.top - page * (plan.height + plan.gap)
+            canvas.save()
+            canvas.clipRect(
+                Rect.makeLTRB(
+                    0f,
+                    (y - FRAGMENT_CLIP_BLEED).coerceAtLeast(0f),
+                    plan.width,
+                    (y + f.height + FRAGMENT_CLIP_BLEED).coerceAtMost(plan.height),
+                ),
+            )
+            if (p.image != null) {
+                Image.makeFromBitmap(images.getValue(p.image.resource).asSkiaBitmap()).use { image ->
+                    canvas.drawImageRect(
+                        image,
+                        Rect.makeXYWH(
+                            plan.margin + p.imageLeft,
+                            y,
+                            p.imageWidth,
+                            p.height,
+                        ),
+                    )
+                }
+            } else {
+                canvas.save()
+                canvas.translate(plan.margin + p.contentLeft, y - f.sourceTop)
+                synchronized(p.layout.multiParagraph) { TextPainter.paint(canvas.asComposeCanvas(), p.layout) }
+                canvas.restore()
+            }
+            if (f.firstLine == 0) {
+                p.marker?.let { marker -> drawMarker(canvas, marker, y) }
+            }
+            canvas.restore()
+        }
+        private fun drawMarker(canvas: Canvas, marker: ListMarkerLayout, y: Float) {
+            if (marker.layout != null) {
+                canvas.save()
+                canvas.translate(plan.margin + marker.left, y + marker.top)
+                synchronized(marker.layout.multiParagraph) {
+                    TextPainter.paint(canvas.asComposeCanvas(), marker.layout)
+                }
+                canvas.restore()
+            } else {
+                Paint().use { paint ->
+                    paint.color = BULLET_COLOR.toInt()
+                    canvas.drawCircle(
+                        plan.margin + marker.left + marker.bulletRadius,
+                        y + marker.opticalCenter,
+                        marker.bulletRadius,
+                        paint,
+                    )
+                }
+            }
         }
         fun finish(): PrintSnapshot {
             check(completed == plan.pageCount && !handedOff)

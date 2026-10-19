@@ -6,6 +6,14 @@ import dev.shayxo.composedoc.model.ImageBlock
 import dev.shayxo.composedoc.model.paragraphs
 import java.awt.Rectangle
 
+/** Bounds of an image width produced by a resize drag, in document dp. */
+private const val MIN_IMAGE_WIDTH = 10
+private const val MAX_IMAGE_WIDTH = 600
+
+/** Square resize-handle size and its half, in AWT pixels. */
+private const val HANDLE_SIZE = 12
+private const val HANDLE_HALF_SIZE = 6
+
 /** Pure preview math in document dp. The adapter supplies AWT pixels and exactly one zoom transform. */
 class ImageResizeGesture(
     val capture: ClipboardCapture,
@@ -17,7 +25,10 @@ class ImageResizeGesture(
     init {
         require(zoom.isFinite() && zoom > 0f && zoom <= 1f)
     }
-    fun width(x: Int) = (image.width + (x - startX) * (if (rightHandle)1 else -1) / zoom).toInt().coerceIn(10, 600)
+    fun width(x: Int) = (image.width + (x - startX) * (if (rightHandle)1 else -1) / zoom).toInt().coerceIn(
+        MIN_IMAGE_WIDTH,
+        MAX_IMAGE_WIDTH,
+    )
     fun finish(viewModel: EditorViewModel, x: Int): Boolean {
         if (viewModel.clipboardCapture() != capture)return false
         val n = width(x)
@@ -29,11 +40,20 @@ class ImageResizeGesture(
 data class ImageHandleGeometry(val bounds: Rectangle, val left: Rectangle, val right: Rectangle)
 fun imageHandles(surface: EditorSurface): ImageHandleGeometry? {
     val f = surface.viewModel.snapshot()
-    if (!f.selection.let { it.end - it.start == 1 } || f.marked != null)return null
-    val p =
+    val singleUnit = f.selection.let { it.end - it.start == 1 } && f.marked == null
+    val p = if (singleUnit) {
         surface.geometry()?.paragraphs?.firstOrNull { it.startOffset == f.selection.start && it.image != null }
-            ?: return null
-    val g = surface.geometry() ?: return null
+    } else {
+        null
+    }
+    val g = if (p != null) surface.geometry() else null
+    return if (p == null || g == null) null else imageHandleGeometry(g, p)
+}
+
+private fun imageHandleGeometry(
+    g: dev.shayxo.composedoc.layout.Geometry,
+    p: dev.shayxo.composedoc.layout.ParagraphLayout,
+): ImageHandleGeometry {
     val fragment = g.fragments.first { it.paragraphIndex == p.index }
     val bounds =
         Rectangle(
@@ -48,12 +68,12 @@ fun imageHandles(surface: EditorSurface): ImageHandleGeometry? {
     val cy = bounds.y + bounds.height / 2
     return ImageHandleGeometry(
         bounds,
-        Rectangle(bounds.x - 6, cy - 6, 12, 12),
+        Rectangle(bounds.x - HANDLE_HALF_SIZE, cy - HANDLE_HALF_SIZE, HANDLE_SIZE, HANDLE_SIZE),
         Rectangle(
-            bounds.x + bounds.width - 6,
-            cy - 6,
-            12,
-            12,
+            bounds.x + bounds.width - HANDLE_HALF_SIZE,
+            cy - HANDLE_HALF_SIZE,
+            HANDLE_SIZE,
+            HANDLE_SIZE,
         ),
     )
 }

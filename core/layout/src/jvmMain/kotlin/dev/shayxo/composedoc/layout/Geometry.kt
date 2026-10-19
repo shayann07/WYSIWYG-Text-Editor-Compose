@@ -64,7 +64,21 @@ fun attributedDisplay(document: Document): AnnotatedString = buildAnnotatedStrin
     }
 }
 
-fun paragraphBaseDirection(units: List<TextUnit>, fallback: ResolvedTextDirection): ResolvedTextDirection = if (resolveParagraphDirection(units, ParagraphProperties(), if (fallback == ResolvedTextDirection.Rtl) ParagraphDirection.RTL else ParagraphDirection.LTR) == ParagraphDirection.RTL) ResolvedTextDirection.Rtl else ResolvedTextDirection.Ltr
+/** Width of the strip that marks a selected paragraph break or empty paragraph, before scaling. */
+private const val SELECTION_BREAK_STRIP_WIDTH = 8f
+
+/** Caret stroke width, before scaling. */
+private const val CARET_WIDTH = 1.5f
+
+fun paragraphBaseDirection(units: List<TextUnit>, fallback: ResolvedTextDirection): ResolvedTextDirection {
+    val fallbackDirection = if (fallback == ResolvedTextDirection.Rtl) {
+        ParagraphDirection.RTL
+    } else {
+        ParagraphDirection.LTR
+    }
+    val resolved = resolveParagraphDirection(units, ParagraphProperties(), fallbackDirection)
+    return if (resolved == ParagraphDirection.RTL) ResolvedTextDirection.Rtl else ResolvedTextDirection.Ltr
+}
 fun paragraphAlignment(properties: ParagraphProperties, rtl: Boolean): TextAlign = when (properties.alignment) {
     ParagraphAlignment.CENTER -> TextAlign.Center
     ParagraphAlignment.START -> if (rtl) TextAlign.Right else TextAlign.Left
@@ -80,7 +94,9 @@ data class ParagraphSpan(
     val properties: ParagraphProperties = ParagraphProperties(),
 )
 
-fun partitionParagraphs(document: Document): List<ParagraphSpan> = document.paragraphs().map { ParagraphSpan(it.index, it.start, it.end, it.hasBreak, document.units.subList(it.start, it.end), it.properties) }
+fun partitionParagraphs(document: Document): List<ParagraphSpan> = document.paragraphs().map {
+    ParagraphSpan(it.index, it.start, it.end, it.hasBreak, document.units.subList(it.start, it.end), it.properties)
+}
 
 data class ParagraphLayout(
     val index: Int,
@@ -110,7 +126,9 @@ data class ParagraphLayout(
 
     fun toLocalOffset(documentOffset: Int): Int = (documentOffset - startOffset).coerceIn(0, textLength)
     fun toDocumentOffset(localOffset: Int): Int = (startOffset + localOffset).coerceIn(startOffset, endOffset)
-    fun isSoftWrapBoundary(local: Int): Boolean = local in 1 until textLength && text[local - 1] != '\n' && layout.getLineForOffset(local) > layout.getLineForOffset(local - 1)
+    fun isSoftWrapBoundary(local: Int): Boolean = local in 1 until textLength &&
+        text[local - 1] != '\n' &&
+        layout.getLineForOffset(local) > layout.getLineForOffset(local - 1)
 }
 
 data class Geometry(
@@ -125,7 +143,9 @@ data class Geometry(
     val hostWidth: Int = 0,
     val hostHeight: Int = 0,
     val typographyKey: String = TypographyProfile.system.key + ":continuous",
-    val fragments: List<ParagraphFragment> = paragraphs.map { ParagraphFragment(it.index, 0, it.lineCount - 1, 0f, it.height, it.top, 0) },
+    val fragments: List<ParagraphFragment> = paragraphs.map {
+        ParagraphFragment(it.index, 0, it.lineCount - 1, 0f, it.height, it.top, 0)
+    },
     val pageHeight: Float = 0f,
     val pageGap: Float = 0f,
     val pageCount: Int = 1,
@@ -133,17 +153,20 @@ data class Geometry(
 ) {
     val layout: TextLayoutResult get() = paragraphs.first().layout
     val totalLineCount: Int get() = paragraphs.sumOf { it.lineCount }
-    fun paragraphTop(p: ParagraphLayout, line: Int): Float = fragments.first { it.paragraphIndex == p.index && line in it.firstLine..it.lastLine }.let { it.top - it.sourceTop }
-    fun fragmentAtY(contentY: Float): ParagraphFragment = fragments.firstOrNull { contentY in it.top..(it.top + it.height) }
+    fun paragraphTop(p: ParagraphLayout, line: Int): Float = fragments
+        .first { it.paragraphIndex == p.index && line in it.firstLine..it.lastLine }
+        .let { it.top - it.sourceTop }
+    fun fragmentAtY(contentY: Float): ParagraphFragment = fragments
+        .firstOrNull { contentY in it.top..(it.top + it.height) }
         ?: fragments.minBy { if (contentY < it.top) it.top - contentY else contentY - it.top - it.height }
 
     fun paragraphForOffset(documentOffset: Int): ParagraphLayout {
-        if (paragraphs.isEmpty()) throw IllegalStateException("Geometry has no paragraphs")
-        if (documentOffset <= 0) return paragraphs.first()
-        for (p in paragraphs) {
-            if (documentOffset in p.startOffset..p.endOffset) return p
+        check(paragraphs.isNotEmpty()) { "Geometry has no paragraphs" }
+        return if (documentOffset <= 0) {
+            paragraphs.first()
+        } else {
+            paragraphs.firstOrNull { documentOffset in it.startOffset..it.endOffset } ?: paragraphs.last()
         }
-        return paragraphs.last()
     }
 
     fun getLineForOffset(documentOffset: Int, wrapAffinity: WrapAffinity = WrapAffinity.DOWNSTREAM): Int {
@@ -158,11 +181,15 @@ data class Geometry(
         return p.startLineIndex + line
     }
 
-    fun getParagraphDirection(documentOffset: Int): ResolvedTextDirection = paragraphForOffset(documentOffset).baseDirection
+    fun getParagraphDirection(documentOffset: Int): ResolvedTextDirection =
+        paragraphForOffset(documentOffset).baseDirection
 
     fun getHorizontalPosition(documentOffset: Int, primary: Boolean = true): Float {
         val p = paragraphForOffset(documentOffset)
-        if (p.image != null)return p.imageLeft + (if ((documentOffset == p.startOffset) == (p.baseDirection == ResolvedTextDirection.Rtl))p.imageWidth else 0f)
+        if (p.image != null) {
+            val trailing = (documentOffset == p.startOffset) == (p.baseDirection == ResolvedTextDirection.Rtl)
+            return p.imageLeft + (if (trailing) p.imageWidth else 0f)
+        }
         return p.contentLeft + p.layout.getHorizontalPosition(p.toLocalOffset(documentOffset), primary)
     }
 
@@ -170,83 +197,117 @@ data class Geometry(
         if (selection.collapsed) return emptyList()
         val s = selection
         val rects = ArrayList<androidx.compose.ui.geometry.Rect>()
-        val stripWidth = 8f * scale
+        val stripWidth = SELECTION_BREAK_STRIP_WIDTH * scale
         for (p in paragraphs) {
-            if (p.image != null) {
-                if (p.hasBreak && s.start <= p.endOffset && s.end > p.endOffset) {
-                    val c = caret(p.endOffset)
-                    val rtl = p.baseDirection == ResolvedTextDirection.Rtl
-                    rects += androidx.compose.ui.geometry.Rect(c.left - if (rtl)stripWidth else 0f, c.top, c.left + if (rtl)0f else stripWidth, c.bottom)
-                }
-                continue
+            val strip = if (p.image != null) {
+                imageBreakStrip(p, s, stripWidth)
+            } else {
+                textBreakOrEmptyStrip(p, s, stripWidth)
             }
-            val line = p.layout.getLineForOffset(p.textLength)
-            val py = y + paragraphTop(p, line)
-            if (p.hasBreak && s.start <= p.endOffset && s.end > p.endOffset) {
-                val local = p.textLength
-                val cx = p.contentLeft + p.layout.getHorizontalPosition(local, true)
-                val r = p.layout.getCursorRect(local)
-                val top = py + r.top
-                val height = if (r.height > 0) r.height else p.height
-                if (p.baseDirection == ResolvedTextDirection.Rtl) {
-                    rects.add(androidx.compose.ui.geometry.Rect(x + cx - stripWidth, top, x + cx, top + height))
-                } else {
-                    rects.add(androidx.compose.ui.geometry.Rect(x + cx, top, x + cx + stripWidth, top + height))
-                }
-            } else if (p.textLength == 0 && s.start <= p.startOffset && s.end > p.startOffset) {
-                val cx = p.contentLeft + p.layout.getHorizontalPosition(0, true)
-                val r = p.layout.getCursorRect(0)
-                val top = py + r.top
-                val height = if (r.height > 0) r.height else p.height
-                if (p.baseDirection == ResolvedTextDirection.Rtl) {
-                    rects.add(androidx.compose.ui.geometry.Rect(x + cx - stripWidth, top, x + cx, top + height))
-                } else {
-                    rects.add(androidx.compose.ui.geometry.Rect(x + cx, top, x + cx + stripWidth, top + height))
-                }
-            }
+            if (strip != null) rects.add(strip)
         }
         return rects
+    }
+
+    private fun selectsBreak(p: ParagraphLayout, s: Selection): Boolean =
+        p.hasBreak && s.start <= p.endOffset && s.end > p.endOffset
+
+    private fun imageBreakStrip(
+        p: ParagraphLayout,
+        s: Selection,
+        stripWidth: Float,
+    ): androidx.compose.ui.geometry.Rect? {
+        if (!selectsBreak(p, s)) return null
+        val c = caret(p.endOffset)
+        val rtl = p.baseDirection == ResolvedTextDirection.Rtl
+        return androidx.compose.ui.geometry.Rect(
+            c.left - if (rtl) stripWidth else 0f,
+            c.top,
+            c.left + if (rtl) 0f else stripWidth,
+            c.bottom,
+        )
+    }
+
+    private fun textBreakOrEmptyStrip(
+        p: ParagraphLayout,
+        s: Selection,
+        stripWidth: Float,
+    ): androidx.compose.ui.geometry.Rect? {
+        val line = p.layout.getLineForOffset(p.textLength)
+        val py = y + paragraphTop(p, line)
+        val local = when {
+            selectsBreak(p, s) -> p.textLength
+            p.textLength == 0 && s.start <= p.startOffset && s.end > p.startOffset -> 0
+            else -> return null
+        }
+        val cx = p.contentLeft + p.layout.getHorizontalPosition(local, true)
+        val r = p.layout.getCursorRect(local)
+        val top = py + r.top
+        val height = if (r.height > 0) r.height else p.height
+        return if (p.baseDirection == ResolvedTextDirection.Rtl) {
+            androidx.compose.ui.geometry.Rect(x + cx - stripWidth, top, x + cx, top + height)
+        } else {
+            androidx.compose.ui.geometry.Rect(x + cx, top, x + cx + stripWidth, top + height)
+        }
     }
 
     fun hasRenderedSelection(selection: Selection): Boolean {
         if (selection.collapsed) return false
         val s = selection
-        for (p in paragraphs) {
-            val selStart = maxOf(s.start, p.startOffset)
-            val selEnd = minOf(s.end, p.endOffset)
-            if (selStart < selEnd) return true
-        }
-        return breakAndEmptySelectionRects(selection).isNotEmpty()
+        return paragraphs.any { p -> maxOf(s.start, p.startOffset) < minOf(s.end, p.endOffset) } ||
+            breakAndEmptySelectionRects(selection).isNotEmpty()
     }
 
-    fun caret(offset: Int, primary: Boolean = true, wrapAffinity: WrapAffinity = WrapAffinity.DOWNSTREAM): androidx.compose.ui.geometry.Rect {
+    fun caret(
+        offset: Int,
+        primary: Boolean = true,
+        wrapAffinity: WrapAffinity = WrapAffinity.DOWNSTREAM,
+    ): androidx.compose.ui.geometry.Rect {
         val p = paragraphForOffset(offset)
         val local = p.toLocalOffset(offset)
-        val line = if (wrapAffinity == WrapAffinity.UPSTREAM && p.isSoftWrapBoundary(local)) p.layout.getLineForOffset(local - 1) else p.layout.getLineForOffset(local)
+        val upstream = wrapAffinity == WrapAffinity.UPSTREAM && p.isSoftWrapBoundary(local)
+        val line = if (upstream) p.layout.getLineForOffset(local - 1) else p.layout.getLineForOffset(local)
         val py = y + paragraphTop(p, line)
-        if (wrapAffinity == WrapAffinity.UPSTREAM && p.isSoftWrapBoundary(local)) {
-            val upstreamLine = p.layout.getLineForOffset(local - 1)
-            val box = p.layout.getBoundingBox(local - 1)
-            val rtl = p.layout.getBidiRunDirection(local - 1) == ResolvedTextDirection.Rtl
-            val cx = p.contentLeft + if (rtl) box.left else box.right
-            val top = p.layout.getLineTop(upstreamLine)
-            val bottom = p.layout.getLineBottom(upstreamLine)
-            val caretHeight = if (bottom > top) bottom - top else p.height
-            return androidx.compose.ui.geometry.Rect(x + cx, py + top, x + cx + scale * 1.5f, py + top + caretHeight)
+        return when {
+            upstream -> upstreamCaret(p, local, py)
+            p.image != null -> {
+                val left = p.imageLeft
+                val trailing = (local == 0) == (p.baseDirection == ResolvedTextDirection.Rtl)
+                val cx = left + if (trailing) p.imageWidth else 0f
+                androidx.compose.ui.geometry.Rect(x + cx, py, x + cx + scale * CARET_WIDTH, py + p.height)
+            }
+            else -> {
+                val r = p.layout.getCursorRect(local)
+                val cx = p.contentLeft + p.layout.getHorizontalPosition(local, primary)
+                val caretHeight = if (r.height > 0) r.height else p.height
+                androidx.compose.ui.geometry.Rect(
+                    x + cx,
+                    py + r.top,
+                    x + cx + scale * CARET_WIDTH,
+                    py + r.top + caretHeight,
+                )
+            }
         }
-        if (p.image != null) {
-            val left = p.imageLeft
-            val cx = left + if ((local == 0) == (p.baseDirection == ResolvedTextDirection.Rtl))p.imageWidth else 0f
-            return androidx.compose.ui.geometry.Rect(x + cx, py, x + cx + scale * 1.5f, py + p.height)
-        }
-        val r = p.layout.getCursorRect(local)
-        val cx = p.contentLeft + p.layout.getHorizontalPosition(local, primary)
-        val caretHeight = if (r.height > 0) r.height else p.height
-        return androidx.compose.ui.geometry.Rect(x + cx, py + r.top, x + cx + scale * 1.5f, py + r.top + caretHeight)
+    }
+
+    private fun upstreamCaret(p: ParagraphLayout, local: Int, py: Float): androidx.compose.ui.geometry.Rect {
+        val upstreamLine = p.layout.getLineForOffset(local - 1)
+        val box = p.layout.getBoundingBox(local - 1)
+        val rtl = p.layout.getBidiRunDirection(local - 1) == ResolvedTextDirection.Rtl
+        val cx = p.contentLeft + if (rtl) box.left else box.right
+        val top = p.layout.getLineTop(upstreamLine)
+        val bottom = p.layout.getLineBottom(upstreamLine)
+        val caretHeight = if (bottom > top) bottom - top else p.height
+        return androidx.compose.ui.geometry.Rect(x + cx, py + top, x + cx + scale * CARET_WIDTH, py + top + caretHeight)
     }
 }
 
-fun referenceMeasure(document: Document, textWidth: Int, measurer: TextMeasurer, style: TextStyle): List<Pair<ParagraphSpan, TextLayoutResult>> {
+fun referenceMeasure(
+    document: Document,
+    textWidth: Int,
+    measurer: TextMeasurer,
+    style: TextStyle,
+): List<Pair<ParagraphSpan, TextLayoutResult>> {
     val spans = partitionParagraphs(document)
 
     var fallbackRtl = false
@@ -254,7 +315,11 @@ fun referenceMeasure(document: Document, textWidth: Int, measurer: TextMeasurer,
         val rawText = buildString(span.units.size) { for (u in span.units) append(u.char) }
         val bidi = java.text.Bidi(
             rawText,
-            if (fallbackRtl) java.text.Bidi.DIRECTION_DEFAULT_RIGHT_TO_LEFT else java.text.Bidi.DIRECTION_DEFAULT_LEFT_TO_RIGHT,
+            if (fallbackRtl) {
+                java.text.Bidi.DIRECTION_DEFAULT_RIGHT_TO_LEFT
+            } else {
+                java.text.Bidi.DIRECTION_DEFAULT_LEFT_TO_RIGHT
+            },
         )
         val isRtl = when (span.properties.direction) {
             ParagraphDirection.RTL -> true
@@ -263,14 +328,17 @@ fun referenceMeasure(document: Document, textWidth: Int, measurer: TextMeasurer,
         }
         fallbackRtl = isRtl
         val image = span.units.singleOrNull()?.image
-        val imageResource = image?.let { document.resources[it.resource] }
         val annotated = if (image != null) AnnotatedString(" ") else paragraphAttributedDisplay(span.units)
         val paraStyle = style.copy(
             textDirection = if (isRtl) TextDirection.Rtl else TextDirection.Ltr,
             textAlign = paragraphAlignment(span.properties, isRtl),
         )
         val layout = synchronized(measurer) {
-            measurer.measure(annotated, style = paraStyle, constraints = Constraints(minWidth = textWidth, maxWidth = textWidth))
+            measurer.measure(
+                annotated,
+                style = paraStyle,
+                constraints = Constraints(minWidth = textWidth, maxWidth = textWidth),
+            )
         }
         span to layout
     }

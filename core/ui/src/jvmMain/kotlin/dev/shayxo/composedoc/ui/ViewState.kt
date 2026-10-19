@@ -15,6 +15,10 @@ import dev.shayxo.composedoc.layout.TypographyProfile
 import dev.shayxo.composedoc.layout.referenceMeasure
 import dev.shayxo.composedoc.model.Document
 import dev.shayxo.composedoc.model.Selection
+
+/** Smallest supported zoom factor; the largest is 1. */
+private const val MIN_ZOOM = .5f
+
 class ViewState(frame: EditorFrame) {
     var paged by mutableStateOf(false)
         private set
@@ -39,7 +43,7 @@ class ViewState(frame: EditorFrame) {
     var zoom by mutableStateOf(1f)
         private set
     fun changeZoom(value: Float) {
-        require(value in .5f..1f)
+        require(value in MIN_ZOOM..1f)
         zoom = value
         invalidateGeometry()
     }

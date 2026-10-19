@@ -63,14 +63,18 @@ class FindSession(private val surface: () -> EditorSurface) {
     }
     fun replace(value: String, all: Boolean): FindReplaceResult {
         refresh()
-        if (blocked) return FindReplaceResult.Busy
-        val captured = basis ?: return FindReplaceResult.Invalid
+        val captured = basis
         val targets = if (all) matches else listOfNotNull(current)
-        if (targets.isEmpty() || targets.any { !it.editable }) return FindReplaceResult.Invalid
-        val result = surface().viewModel.dispatch(EditorIntent.ReplaceFound(captured, targets, value, all))
-        basis = null
-        refresh()
-        reveal()
-        return result
+        return when {
+            blocked -> FindReplaceResult.Busy
+            captured == null || targets.isEmpty() || targets.any { !it.editable } -> FindReplaceResult.Invalid
+            else -> {
+                val result = surface().viewModel.dispatch(EditorIntent.ReplaceFound(captured, targets, value, all))
+                basis = null
+                refresh()
+                reveal()
+                result
+            }
+        }
     }
 }

@@ -8,6 +8,15 @@ import dev.shayxo.composedoc.model.TextStyleFlags
 import java.io.File
 import java.security.MessageDigest
 
+/** Text size used by the pinned candidate font profiles. */
+private const val CANDIDATE_PROFILE_SIZE_SP = 26
+
+/** Colour of hyperlinked text that has no explicit colour. */
+private const val LINK_COLOR = 0xff174ea6
+
+/** Opaque alpha channel combined with a stored RGB colour. */
+private const val OPAQUE_ALPHA = 0xff000000L
+
 /** Candidate profiles for the desktop qualification harness; no production font decision. */
 data class TypographyProfile(
     val id: String,
@@ -34,7 +43,8 @@ data class TypographyProfile(
                 "naskh" -> "NotoSansArabic[wdth,wght].ttf"
                 else -> error("Unknown typography profile: $id")
             }
-            val manifest = SimpleJson(File(fontsDir.parentFile, "fonts.json").readText(Charsets.UTF_8)).parse() as Map<*, *>
+            val manifestText = File(fontsDir.parentFile, "fonts.json").readText(Charsets.UTF_8)
+            val manifest = SimpleJson(manifestText).parse() as Map<*, *>
             val entries = (manifest["candidateFonts"] as List<*>) + (manifest["fallbackFonts"] as List<*>)
             val entry = entries.map { it as Map<*, *> }.single { it["fileName"] == filename }
             val file = File(fontsDir, filename)
@@ -43,8 +53,17 @@ data class TypographyProfile(
             require(bytes.size.toLong() == (entry["sizeBytes"] as Number).toLong() && hash == entry["sha256"]) {
                 "Pinned font identity mismatch: $filename; current profile retained"
             }
-            val requestedFamily = checkNotNull(org.jetbrains.skia.FontMgr.default.makeFromFile(file.path)).use { it.familyName }
-            return TypographyProfile(id, labels.getValue(id), FontFamily(Font(file)), 26, "$id:$hash", requestedFamily)
+            val requestedFamily = checkNotNull(org.jetbrains.skia.FontMgr.default.makeFromFile(file.path)).use {
+                it.familyName
+            }
+            return TypographyProfile(
+                id,
+                labels.getValue(id),
+                FontFamily(Font(file)),
+                CANDIDATE_PROFILE_SIZE_SP,
+                "$id:$hash",
+                requestedFamily,
+            )
         }
     }
 }
@@ -72,20 +91,36 @@ object StoredFonts {
     }
 }
 fun storedSpan(s: TextStyleFlags) = androidx.compose.ui.text.SpanStyle(
-    fontWeight = if (s.bold) androidx.compose.ui.text.font.FontWeight.Bold else androidx.compose.ui.text.font.FontWeight.Normal,
-    fontStyle = if (s.italic) androidx.compose.ui.text.font.FontStyle.Italic else androidx.compose.ui.text.font.FontStyle.Normal,
+    fontWeight = if (s.bold) {
+        androidx.compose.ui.text.font.FontWeight.Bold
+    } else {
+        androidx.compose.ui.text.font.FontWeight.Normal
+    },
+    fontStyle = if (s.italic) {
+        androidx.compose.ui.text.font.FontStyle.Italic
+    } else {
+        androidx.compose.ui.text.font.FontStyle.Normal
+    },
     fontFamily = StoredFonts.profile(s.font)?.family,
-    fontSize = if (s.size == 0) androidx.compose.ui.unit.TextUnit.Unspecified else with(androidx.compose.ui.unit.Density(1f)) { s.size.toSp() },
+    fontSize = if (s.size == 0) {
+        androidx.compose.ui.unit.TextUnit.Unspecified
+    } else {
+        with(androidx.compose.ui.unit.Density(1f)) { s.size.toSp() }
+    },
     color = if (s.color < 0 && s.link != null) {
-        androidx.compose.ui.graphics.Color(0xff174ea6)
+        androidx.compose.ui.graphics.Color(LINK_COLOR)
     } else if (s.color < 0) {
         androidx.compose.ui.graphics.Color.Unspecified
     } else {
-        androidx.compose.ui.graphics.Color(0xff000000L or s.color.toLong())
+        androidx.compose.ui.graphics.Color(OPAQUE_ALPHA or s.color.toLong())
     },
     textDecoration = androidx.compose.ui.text.style.TextDecoration.combine(
         listOfNotNull(
-            if (s.underline || s.link != null) androidx.compose.ui.text.style.TextDecoration.Underline else null,
+            if (s.underline || s.link != null) {
+                androidx.compose.ui.text.style.TextDecoration.Underline
+            } else {
+                null
+            },
             if (s.strike) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
         ),
     ),
