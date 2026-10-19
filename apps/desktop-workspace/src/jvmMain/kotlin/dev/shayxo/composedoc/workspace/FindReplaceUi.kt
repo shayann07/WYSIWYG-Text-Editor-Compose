@@ -1,12 +1,22 @@
 package dev.shayxo.composedoc.workspace
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import java.awt.*
-import javax.swing.*
+import dev.shayxo.composedoc.domain.FindReplaceResult
+import dev.shayxo.composedoc.ui.EditorSurface
+import dev.shayxo.composedoc.ui.FindSession
+import java.awt.BorderLayout
+import java.awt.Dimension
+import java.awt.FlowLayout
+import java.awt.Font
+import javax.swing.AbstractAction
+import javax.swing.BoxLayout
+import javax.swing.JButton
+import javax.swing.JComponent
+import javax.swing.JFrame
+import javax.swing.JLabel
+import javax.swing.JPanel
+import javax.swing.JScrollPane
+import javax.swing.JTextArea
+import javax.swing.KeyStroke
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 

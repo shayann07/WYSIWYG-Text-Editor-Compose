@@ -1,15 +1,53 @@
 package dev.shayxo.composedoc.harness
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import dev.shayxo.composedoc.workspace.*
+import dev.shayxo.composedoc.data.DocumentFiles
+import dev.shayxo.composedoc.data.FragmentCodec
+import dev.shayxo.composedoc.data.ImageDecoder
+import dev.shayxo.composedoc.data.LocalCopy
+import dev.shayxo.composedoc.data.LocalRecoveryEntry
+import dev.shayxo.composedoc.data.LocalRecoveryStore
+import dev.shayxo.composedoc.domain.ClipboardCapture
+import dev.shayxo.composedoc.domain.EditAction
+import dev.shayxo.composedoc.domain.EditorEngine
+import dev.shayxo.composedoc.domain.FindReplaceResult
+import dev.shayxo.composedoc.domain.RecoveryApplyResult
+import dev.shayxo.composedoc.domain.RichFragment
+import dev.shayxo.composedoc.domain.StructureCommand
+import dev.shayxo.composedoc.domain.findLiteral
+import dev.shayxo.composedoc.layout.TypographyProfile
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.ImageBlock
+import dev.shayxo.composedoc.model.ListKind
+import dev.shayxo.composedoc.model.ParagraphAlignment
+import dev.shayxo.composedoc.model.ParagraphDirection
+import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.model.TextStylePatch
+import dev.shayxo.composedoc.model.TextUnit
+import dev.shayxo.composedoc.model.UnitKind
+import dev.shayxo.composedoc.model.evidenceJson
+import dev.shayxo.composedoc.model.freshStructureId
+import dev.shayxo.composedoc.model.itemDepth
+import dev.shayxo.composedoc.model.listMarkers
+import dev.shayxo.composedoc.model.outlineEntries
+import dev.shayxo.composedoc.model.paragraphAt
+import dev.shayxo.composedoc.model.paragraphs
+import dev.shayxo.composedoc.model.patchParagraphs
+import dev.shayxo.composedoc.model.plainText
+import dev.shayxo.composedoc.model.validateStructure
+import dev.shayxo.composedoc.ui.EditorSurface
+import dev.shayxo.composedoc.ui.ImageResources
+import dev.shayxo.composedoc.ui.RichClipboard
+import dev.shayxo.composedoc.workspace.LocalRecoveryController
+import dev.shayxo.composedoc.workspace.StructureControls
+import dev.shayxo.composedoc.workspace.samplePng
+import dev.shayxo.composedoc.workspace.showEditor
+import dev.shayxo.composedoc.workspace.structuredWritingSample
+import dev.shayxo.composedoc.workspace.windowCurrentSurface
 import java.io.File
 import java.nio.file.Files
-import javax.swing.*
-
+import javax.swing.JFrame
+import javax.swing.JTabbedPane
+import javax.swing.SwingUtilities
 fun structureDescription(d: Document): Map<String, Any> {
     val items = d.paragraphs().map { it.properties.item }.filter { it.isNotEmpty() }.distinct()
     val links = d.units.mapNotNull { it.style.link?.id }.distinct()

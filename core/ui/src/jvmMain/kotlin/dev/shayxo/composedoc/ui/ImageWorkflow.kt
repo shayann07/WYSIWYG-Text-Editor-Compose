@@ -1,9 +1,11 @@
 package dev.shayxo.composedoc.ui
 
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import java.awt.*
+import dev.shayxo.composedoc.domain.ClipboardCapture
+import dev.shayxo.composedoc.domain.EditorEngine
+import dev.shayxo.composedoc.domain.StructureCommand
+import dev.shayxo.composedoc.model.ImageBlock
+import dev.shayxo.composedoc.model.paragraphs
+import java.awt.Rectangle
 
 /** Pure preview math in document dp. The adapter supplies AWT pixels and exactly one zoom transform. */
 class ImageResizeGesture(val capture: ClipboardCapture, val image: ImageBlock, val startX: Int, val zoom: Float, val rightHandle: Boolean) {

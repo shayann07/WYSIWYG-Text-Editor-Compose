@@ -1,9 +1,13 @@
 package dev.shayxo.composedoc.data
 
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.model.*
-import java.io.*
-import java.nio.file.*
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.model.WrapAffinity
+import java.io.DataOutputStream
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardCopyOption
+import java.nio.file.StandardOpenOption
 import java.util.UUID
 
 enum class UnfinishedKind { ACTIVE_CANDIDATE, RETAINED_DRAFT, QUARANTINE }

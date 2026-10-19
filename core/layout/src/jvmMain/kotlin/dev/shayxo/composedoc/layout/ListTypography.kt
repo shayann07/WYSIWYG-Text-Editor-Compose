@@ -1,9 +1,9 @@
 package dev.shayxo.composedoc.layout
 
 import androidx.compose.ui.text.TextLayoutResult
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.model.*
-
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.StoredFont
+import dev.shayxo.composedoc.model.paragraphs
 /** Presentation only: marker ownership and root-side nesting never alter raw text. */
 data class ListMarkerLayout(
     val text: String,

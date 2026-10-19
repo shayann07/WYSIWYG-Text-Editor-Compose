@@ -1,15 +1,22 @@
 package dev.shayxo.composedoc.workspace
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
+import dev.shayxo.composedoc.data.DocumentFiles
+import dev.shayxo.composedoc.data.FileConflict
+import dev.shayxo.composedoc.data.FileFingerprint
+import dev.shayxo.composedoc.data.SafeDocumentIO
+import dev.shayxo.composedoc.data.SavePoint
+import dev.shayxo.composedoc.domain.EditorEngine
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.ui.QuarantinedCallback
+import dev.shayxo.composedoc.ui.quarantineDiagnostic
 import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
 import java.nio.file.Files
 import java.nio.file.Path
-import javax.swing.*
+import javax.swing.JFileChooser
+import javax.swing.JFrame
+import javax.swing.JOptionPane
+import javax.swing.SwingWorker
 import javax.swing.filechooser.FileNameExtensionFilter
 
 /** Swing shell only. Disk work is off the editing thread; results publish on the EDT. */

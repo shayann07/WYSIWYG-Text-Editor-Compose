@@ -1,7 +1,8 @@
 package dev.shayxo.composedoc.harness
 
 import androidx.compose.ui.graphics.asComposeCanvas
-import androidx.compose.ui.text.*
+import androidx.compose.ui.text.Paragraph
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.createFontFamilyResolver
 import androidx.compose.ui.text.platform.Font
@@ -9,12 +10,15 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.sp
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import dev.shayxo.composedoc.workspace.*
+import dev.shayxo.composedoc.data.DocumentFiles
+import dev.shayxo.composedoc.domain.EditAction
+import dev.shayxo.composedoc.domain.EditorEngine
+import dev.shayxo.composedoc.domain.EditorFrame
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.FormatKey
+import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.model.SimpleJson
+import dev.shayxo.composedoc.model.TextStyleFlags
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image

@@ -1,12 +1,19 @@
 package dev.shayxo.composedoc.workspace
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import java.awt.*
-import javax.swing.*
+import java.awt.BorderLayout
+import java.awt.Color
+import java.awt.Dimension
+import java.awt.FlowLayout
+import java.awt.GridLayout
+import javax.swing.JButton
+import javax.swing.JComboBox
+import javax.swing.JComponent
+import javax.swing.JDialog
+import javax.swing.JFrame
+import javax.swing.JLabel
+import javax.swing.JPanel
+import javax.swing.KeyStroke
+import javax.swing.WindowConstants
 
 /** The same components remain mounted until valid admission or explicit Cancel. */
 fun validatedDialog(owner: JFrame, title: String, name: String, fields: List<Pair<String, JComponent>>, buttons: List<Pair<String, () -> String?>>) {

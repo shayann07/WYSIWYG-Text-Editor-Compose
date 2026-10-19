@@ -1,12 +1,17 @@
 package dev.shayxo.composedoc.workspace
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import java.awt.*
-import javax.swing.*
+import dev.shayxo.composedoc.domain.EditorFrame
+import dev.shayxo.composedoc.model.FormatKey
+import dev.shayxo.composedoc.model.StoredFont
+import dev.shayxo.composedoc.model.TextStylePatch
+import dev.shayxo.composedoc.ui.EditorSurface
+import java.awt.Color
+import java.awt.Dimension
+import javax.swing.JButton
+import javax.swing.JColorChooser
+import javax.swing.JComboBox
+import javax.swing.JLabel
+import javax.swing.JPanel
 
 data class WritingCounts(val words: Int, val units: Int, val selected: Int)
 fun writingCounts(frame: EditorFrame): WritingCounts {

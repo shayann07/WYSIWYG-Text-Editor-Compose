@@ -2,18 +2,19 @@
 
 package dev.shayxo.composedoc.ui
 
-import androidx.compose.runtime.*
-import androidx.compose.ui.text.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import java.awt.*
-import java.awt.datatransfer.*
-import java.awt.event.*
-import javax.accessibility.*
-import javax.swing.*
-import kotlin.math.*
-
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.referentialEqualityPolicy
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.TextLayoutResult
+import dev.shayxo.composedoc.domain.EditorFrame
+import dev.shayxo.composedoc.domain.FindMatch
+import dev.shayxo.composedoc.layout.Geometry
+import dev.shayxo.composedoc.layout.ParagraphSpan
+import dev.shayxo.composedoc.layout.TypographyProfile
+import dev.shayxo.composedoc.layout.referenceMeasure
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.Selection
 class ViewState(frame: EditorFrame) {
     var paged by mutableStateOf(false)
         private set

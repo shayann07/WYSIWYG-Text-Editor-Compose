@@ -1,6 +1,6 @@
 package dev.shayxo.composedoc.ui
 import androidx.compose.ui.graphics.toComposeImageBitmap
-import dev.shayxo.composedoc.model.*
+import dev.shayxo.composedoc.model.Document
 object ImageResources {
     private val bitmaps = java.util.LinkedHashMap<String, androidx.compose.ui.graphics.ImageBitmap>(16, .75f, true)
     private val pending = HashSet<String>()

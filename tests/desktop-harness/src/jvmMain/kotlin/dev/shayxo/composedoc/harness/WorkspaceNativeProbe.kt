@@ -1,15 +1,32 @@
 package dev.shayxo.composedoc.harness
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import dev.shayxo.composedoc.workspace.*
-import java.nio.file.*
+import dev.shayxo.composedoc.data.DocumentFiles
+import dev.shayxo.composedoc.data.FileFingerprint
+import dev.shayxo.composedoc.data.SafeDocumentIO
+import dev.shayxo.composedoc.domain.EditorEngine
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.model.evidenceJson
+import dev.shayxo.composedoc.ui.QuarantinedCallback
+import dev.shayxo.composedoc.ui.findSurface
+import dev.shayxo.composedoc.ui.imageHandles
+import dev.shayxo.composedoc.workspace.LocalRecoveryController
+import dev.shayxo.composedoc.workspace.UnfinishedController
+import dev.shayxo.composedoc.workspace.WorkspaceUi
+import dev.shayxo.composedoc.workspace.pagesWritingSample
+import dev.shayxo.composedoc.workspace.samplePng
+import dev.shayxo.composedoc.workspace.showEditor
+import dev.shayxo.composedoc.workspace.showLocalRecovery
+import dev.shayxo.composedoc.workspace.showUnfinishedRecovery
+import dev.shayxo.composedoc.workspace.windowFiles
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardCopyOption
+import java.nio.file.StandardOpenOption
 import java.util.Base64
-import javax.swing.*
-
+import javax.swing.JFrame
+import javax.swing.SwingUtilities
+import javax.swing.UIManager
 /** Owned disposable fixture. Commands only inspect, set up external faults/synthetic input, or close owned windows. */
 fun workspaceNativeProbe(args: Array<String>) {
     val root = Path.of(args.single { it.startsWith("--root=") }.substringAfter('=')).toAbsolutePath().normalize()

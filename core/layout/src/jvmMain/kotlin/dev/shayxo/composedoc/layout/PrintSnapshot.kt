@@ -3,11 +3,22 @@ package dev.shayxo.composedoc.layout
 import androidx.compose.ui.graphics.asComposeCanvas
 import androidx.compose.ui.graphics.asSkiaBitmap
 import androidx.compose.ui.text.TextPainter
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.model.*
-import org.jetbrains.skia.*
+import dev.shayxo.composedoc.model.documentToPoints
+import dev.shayxo.composedoc.model.outputUnicodeIssues
+import dev.shayxo.composedoc.model.paragraphs
+import org.jetbrains.skia.EncodedImageFormat
+import org.jetbrains.skia.Image
+import org.jetbrains.skia.Paint
+import org.jetbrains.skia.Picture
+import org.jetbrains.skia.PictureRecorder
+import org.jetbrains.skia.Rect
+import org.jetbrains.skia.Surface
 import java.awt.image.BufferedImage
-import java.awt.print.*
+import java.awt.print.PageFormat
+import java.awt.print.Pageable
+import java.awt.print.Paper
+import java.awt.print.Printable
+import java.awt.print.PrinterAbortException
 import java.io.ByteArrayInputStream
 
 /** Immutable Skia pictures recorded from the actual editor plan, not remeasured text. */

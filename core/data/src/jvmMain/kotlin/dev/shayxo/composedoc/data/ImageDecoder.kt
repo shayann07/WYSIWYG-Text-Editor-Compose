@@ -1,7 +1,6 @@
 package dev.shayxo.composedoc.data
 
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.model.*
+import dev.shayxo.composedoc.model.ImageResource
 import java.io.ByteArrayInputStream
 import java.nio.file.Files
 import java.nio.file.Path

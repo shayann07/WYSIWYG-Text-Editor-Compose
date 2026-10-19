@@ -1,11 +1,17 @@
 package dev.shayxo.composedoc.harness
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import dev.shayxo.composedoc.workspace.*
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.ListKind
+import dev.shayxo.composedoc.model.MarkerTypography
+import dev.shayxo.composedoc.model.ParagraphAlignment
+import dev.shayxo.composedoc.model.ParagraphDirection
+import dev.shayxo.composedoc.model.ParagraphProperties
+import dev.shayxo.composedoc.model.StoredFont
+import dev.shayxo.composedoc.model.TextStyleFlags
+import dev.shayxo.composedoc.model.TextUnit
+import dev.shayxo.composedoc.model.UnitKind
+import dev.shayxo.composedoc.model.validateStructure
+
 /** Independently constructed structural expectations, not the list-command reducer. */
 fun markerMatrixDocument(rtl: Boolean, size: Int): Document {
     data class Block(val text: String, val properties: ParagraphProperties)

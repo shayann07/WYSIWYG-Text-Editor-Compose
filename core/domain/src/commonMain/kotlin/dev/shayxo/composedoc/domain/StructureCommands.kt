@@ -1,6 +1,28 @@
 package dev.shayxo.composedoc.domain
 
-import dev.shayxo.composedoc.model.*
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.ImageBlock
+import dev.shayxo.composedoc.model.ImageResource
+import dev.shayxo.composedoc.model.LinkValue
+import dev.shayxo.composedoc.model.ListKind
+import dev.shayxo.composedoc.model.MarkerTypography
+import dev.shayxo.composedoc.model.PageSettings
+import dev.shayxo.composedoc.model.PaginationRules
+import dev.shayxo.composedoc.model.ParagraphBlock
+import dev.shayxo.composedoc.model.ParagraphProperties
+import dev.shayxo.composedoc.model.RunningContent
+import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.model.StructuralBreak
+import dev.shayxo.composedoc.model.TextUnit
+import dev.shayxo.composedoc.model.UnitKind
+import dev.shayxo.composedoc.model.contiguousLinkAt
+import dev.shayxo.composedoc.model.displayedStyles
+import dev.shayxo.composedoc.model.freshStructureId
+import dev.shayxo.composedoc.model.paragraphAt
+import dev.shayxo.composedoc.model.paragraphs
+import dev.shayxo.composedoc.model.patchParagraphs
+import dev.shayxo.composedoc.model.validateStructure
+
 sealed interface StructureCommand {
     data object PageBreak : StructureCommand
     data class Pagination(val rules: PaginationRules) : StructureCommand

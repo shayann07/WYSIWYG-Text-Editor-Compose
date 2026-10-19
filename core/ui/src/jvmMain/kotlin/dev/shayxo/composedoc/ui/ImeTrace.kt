@@ -1,8 +1,6 @@
 package dev.shayxo.composedoc.ui
 
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
+import dev.shayxo.composedoc.domain.EditorFrame
 import java.io.File
 
 /** Opt-in local test evidence; never enabled for ordinary documents. */

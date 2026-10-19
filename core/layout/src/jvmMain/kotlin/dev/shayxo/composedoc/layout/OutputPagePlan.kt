@@ -1,9 +1,11 @@
 package dev.shayxo.composedoc.layout
 
 import androidx.compose.ui.text.TextLayoutResult
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.model.*
-
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.RunningFlow
+import dev.shayxo.composedoc.model.StructuralBreak
+import dev.shayxo.composedoc.model.mmToDocument
+import dev.shayxo.composedoc.model.paragraphs
 data class RunningPlacement(val page: Int, val header: Boolean, val flowId: String, val text: String, val left: Float, val top: Float, val layout: TextLayoutResult)
 data class PageBox(val page: Int, val width: Float, val height: Float, val contentLeft: Float, val contentTop: Float, val contentRight: Float, val contentBottom: Float)
 

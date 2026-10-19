@@ -1,15 +1,50 @@
 package dev.shayxo.composedoc.harness
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import dev.shayxo.composedoc.workspace.*
+import dev.shayxo.composedoc.data.DocumentFiles
+import dev.shayxo.composedoc.data.ExactDocument
+import dev.shayxo.composedoc.data.FragmentCodec
+import dev.shayxo.composedoc.data.LocalCopy
+import dev.shayxo.composedoc.data.LocalRecoveryStore
+import dev.shayxo.composedoc.data.cloneDocument
+import dev.shayxo.composedoc.domain.EditAction
+import dev.shayxo.composedoc.domain.EditorEngine
+import dev.shayxo.composedoc.domain.RichFragment
+import dev.shayxo.composedoc.domain.StructureCommand
+import dev.shayxo.composedoc.layout.DocumentPagePlan
+import dev.shayxo.composedoc.layout.PrintSnapshot
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.ListKind
+import dev.shayxo.composedoc.model.PaginationRules
+import dev.shayxo.composedoc.model.ParagraphProperties
+import dev.shayxo.composedoc.model.RunningContent
+import dev.shayxo.composedoc.model.RunningField
+import dev.shayxo.composedoc.model.RunningFlow
+import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.model.StructuralBreak
+import dev.shayxo.composedoc.model.TextUnit
+import dev.shayxo.composedoc.model.UnitKind
+import dev.shayxo.composedoc.model.documentToPoints
+import dev.shayxo.composedoc.model.evidenceJson
+import dev.shayxo.composedoc.model.itemDepth
+import dev.shayxo.composedoc.model.mmToDocument
+import dev.shayxo.composedoc.model.outputUnicodeIssues
+import dev.shayxo.composedoc.model.paragraphs
+import dev.shayxo.composedoc.model.plainText
+import dev.shayxo.composedoc.model.validateStructure
+import dev.shayxo.composedoc.ui.EditorSurface
+import dev.shayxo.composedoc.ui.ImageResources
+import dev.shayxo.composedoc.ui.findSurface
+import dev.shayxo.composedoc.workspace.PageOutputUi
+import dev.shayxo.composedoc.workspace.pagesWritingSample
+import dev.shayxo.composedoc.workspace.showEditor
 import java.io.File
-import java.nio.file.*
-import javax.swing.*
-
+import java.nio.file.Files
+import javax.swing.JButton
+import javax.swing.JDialog
+import javax.swing.JFrame
+import javax.swing.JLabel
+import javax.swing.SwingUtilities
+import javax.swing.Timer
 fun runPagesOutputChecks(result: File) {
     val root = Files.createTempDirectory("astra-pages-output-")
     val groups = ArrayList<String>()

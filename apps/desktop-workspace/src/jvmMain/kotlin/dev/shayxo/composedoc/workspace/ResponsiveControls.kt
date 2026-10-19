@@ -1,12 +1,14 @@
 package dev.shayxo.composedoc.workspace
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import java.awt.*
-import javax.swing.*
+import java.awt.Container
+import java.awt.Dimension
+import java.awt.FlowLayout
+import java.awt.Rectangle
+import javax.swing.JComponent
+import javax.swing.JFrame
+import javax.swing.JScrollPane
+import javax.swing.JTabbedPane
+import javax.swing.SwingUtilities
 
 /** Flow controls wrap into measured rows instead of disappearing outside short windows. */
 class WrappingControls : FlowLayout(LEFT, 4, 2) {

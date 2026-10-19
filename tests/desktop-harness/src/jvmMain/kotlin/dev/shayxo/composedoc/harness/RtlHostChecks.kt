@@ -2,12 +2,20 @@ package dev.shayxo.composedoc.harness
 
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.ResolvedTextDirection
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import dev.shayxo.composedoc.workspace.*
+import dev.shayxo.composedoc.data.DocumentFiles
+import dev.shayxo.composedoc.domain.EditAction
+import dev.shayxo.composedoc.layout.paragraphBaseDirection
+import dev.shayxo.composedoc.layout.partitionParagraphs
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.FormatKey
+import dev.shayxo.composedoc.model.Graphemes
+import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.model.TextStyleFlags
+import dev.shayxo.composedoc.model.TextUnit
+import dev.shayxo.composedoc.model.UnitKind
+import dev.shayxo.composedoc.model.WrapAffinity
+import dev.shayxo.composedoc.model.paragraphs
+import dev.shayxo.composedoc.ui.EditorSurface
 import java.awt.event.KeyEvent
 import java.awt.event.MouseEvent
 import java.awt.font.TextHitInfo

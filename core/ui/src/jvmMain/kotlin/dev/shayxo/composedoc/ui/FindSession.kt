@@ -1,8 +1,11 @@
 package dev.shayxo.composedoc.ui
 
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
+import dev.shayxo.composedoc.domain.FindBasis
+import dev.shayxo.composedoc.domain.FindMatch
+import dev.shayxo.composedoc.domain.FindReplaceResult
+import dev.shayxo.composedoc.domain.findLiteral
+import dev.shayxo.composedoc.model.Selection
+
 class FindSession(private val surface: () -> EditorSurface) {
     var query = ""
         private set

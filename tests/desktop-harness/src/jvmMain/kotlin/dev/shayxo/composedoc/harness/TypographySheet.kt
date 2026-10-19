@@ -1,14 +1,21 @@
 package dev.shayxo.composedoc.harness
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import dev.shayxo.composedoc.workspace.*
+import dev.shayxo.composedoc.data.DocumentFiles
+import dev.shayxo.composedoc.domain.EditorEngine
+import dev.shayxo.composedoc.domain.StructureCommand
+import dev.shayxo.composedoc.layout.DocumentPagePlan
+import dev.shayxo.composedoc.layout.PrintSnapshot
+import dev.shayxo.composedoc.layout.TypographyProfile
+import dev.shayxo.composedoc.model.PaginationRules
+import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.model.evidenceJson
+import dev.shayxo.composedoc.ui.EditorSurface
+import dev.shayxo.composedoc.ui.ImageResources
+import dev.shayxo.composedoc.ui.findSurface
+import dev.shayxo.composedoc.workspace.showEditor
 import java.io.File
-import javax.swing.*
-
+import javax.swing.JFrame
+import javax.swing.SwingUtilities
 /** Numbered human-review artifact from actual editor layouts; no expert verdict. */
 fun typographySheet(output: File) {
     check(output.mkdirs()) { "Use a new typography-sheet directory" }

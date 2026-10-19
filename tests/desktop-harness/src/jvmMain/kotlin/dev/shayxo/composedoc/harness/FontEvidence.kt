@@ -1,9 +1,9 @@
 package dev.shayxo.composedoc.harness
 
 import androidx.compose.ui.text.TextLayoutResult
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.model.*
-import org.jetbrains.skia.*
+import org.jetbrains.skia.Font
+import org.jetbrains.skia.FontMgr
+import org.jetbrains.skia.FontStyle
 
 /** Read the installed backend's actual unresolved-codepoint result. Family matching
  * below is an independent fallback diagnostic, not a claim of per-glyph Compose runs. */

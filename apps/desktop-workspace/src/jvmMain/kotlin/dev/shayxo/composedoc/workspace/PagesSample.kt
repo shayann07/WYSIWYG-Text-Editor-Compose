@@ -1,10 +1,29 @@
 package dev.shayxo.composedoc.workspace
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
+import dev.shayxo.composedoc.data.ImageDecoder
+import dev.shayxo.composedoc.domain.EditorEngine
+import dev.shayxo.composedoc.domain.StructureCommand
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.ImageBlock
+import dev.shayxo.composedoc.model.ListKind
+import dev.shayxo.composedoc.model.PageDigits
+import dev.shayxo.composedoc.model.PageSettings
+import dev.shayxo.composedoc.model.PaginationRules
+import dev.shayxo.composedoc.model.PaperSize
+import dev.shayxo.composedoc.model.ParagraphAlignment
+import dev.shayxo.composedoc.model.ParagraphDirection
+import dev.shayxo.composedoc.model.RunningContent
+import dev.shayxo.composedoc.model.RunningField
+import dev.shayxo.composedoc.model.RunningFlow
+import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.model.StoredFont
+import dev.shayxo.composedoc.model.StructuralBreak
+import dev.shayxo.composedoc.model.TextStyleFlags
+import dev.shayxo.composedoc.model.UnitKind
+import dev.shayxo.composedoc.model.paragraphs
+import dev.shayxo.composedoc.model.patchParagraphs
+import dev.shayxo.composedoc.model.validateStructure
+
 /** Self-authored disposable specimen, not proficient-reader typography approval. */
 fun pagesWritingSample(): Document {
     val e = EditorEngine()

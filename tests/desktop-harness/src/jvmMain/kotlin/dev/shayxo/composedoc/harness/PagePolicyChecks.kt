@@ -1,11 +1,11 @@
 package dev.shayxo.composedoc.harness
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import dev.shayxo.composedoc.workspace.*
+import dev.shayxo.composedoc.layout.FragmentPlan
+import dev.shayxo.composedoc.layout.PageParagraphMetrics
+import dev.shayxo.composedoc.layout.planPageFragments
+import dev.shayxo.composedoc.model.PaginationRules
+import dev.shayxo.composedoc.model.ParagraphProperties
+
 /** Pure planner regressions with independently stated ten-unit line/page placements. */
 fun runPagePolicyChecks(): List<String> {
     // Exact synthetic source boxes isolate paragraph policy from platform font metrics.

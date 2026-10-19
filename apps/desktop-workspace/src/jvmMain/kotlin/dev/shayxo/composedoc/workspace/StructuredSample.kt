@@ -1,10 +1,18 @@
 package dev.shayxo.composedoc.workspace
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
+import dev.shayxo.composedoc.data.ImageDecoder
+import dev.shayxo.composedoc.domain.EditorEngine
+import dev.shayxo.composedoc.domain.StructureCommand
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.ImageBlock
+import dev.shayxo.composedoc.model.ListKind
+import dev.shayxo.composedoc.model.ParagraphDirection
+import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.model.freshStructureId
+import dev.shayxo.composedoc.model.paragraphAt
+import dev.shayxo.composedoc.model.paragraphs
+import dev.shayxo.composedoc.model.patchParagraphs
+
 /** Local generated pixels, self-authored text; no remote asset or typography review. */
 fun samplePng(): ByteArray {
     val image = java.awt.image.BufferedImage(240, 100, java.awt.image.BufferedImage.TYPE_INT_RGB)

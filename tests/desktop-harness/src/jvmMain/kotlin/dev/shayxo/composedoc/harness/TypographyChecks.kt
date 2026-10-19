@@ -1,8 +1,9 @@
 package dev.shayxo.composedoc.harness
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
+import dev.shayxo.composedoc.domain.EditAction
+import dev.shayxo.composedoc.domain.EditorEngine
+import dev.shayxo.composedoc.layout.TypographyProfile
+import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.ui.ViewState
 import java.io.File
 fun runTypographyProfileChecks(fontsDir: File): Map<String, Any> {
     val profiles = TypographyProfile.labels.keys.map { TypographyProfile.load(it, fontsDir) }

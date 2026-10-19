@@ -1,17 +1,42 @@
 package dev.shayxo.composedoc.harness
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import dev.shayxo.composedoc.workspace.*
-import java.awt.*
-import java.awt.event.*
+import dev.shayxo.composedoc.data.LocalRecoveryStore
+import dev.shayxo.composedoc.data.UnfinishedCapture
+import dev.shayxo.composedoc.data.UnfinishedEntry
+import dev.shayxo.composedoc.data.UnfinishedKind
+import dev.shayxo.composedoc.data.UnfinishedStore
+import dev.shayxo.composedoc.data.WorkspaceEntry
+import dev.shayxo.composedoc.domain.EditAction
+import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.model.UnitKind
+import dev.shayxo.composedoc.model.evidenceJson
+import dev.shayxo.composedoc.ui.EditorSurface
+import dev.shayxo.composedoc.ui.QuarantinedCallback
+import dev.shayxo.composedoc.ui.RetainedCompositionPreimage
+import dev.shayxo.composedoc.ui.findSurface
+import dev.shayxo.composedoc.ui.imageHandles
+import dev.shayxo.composedoc.workspace.FindReplaceUi
+import dev.shayxo.composedoc.workspace.StructureControls
+import dev.shayxo.composedoc.workspace.UnfinishedController
+import dev.shayxo.composedoc.workspace.WorkspaceUi
+import dev.shayxo.composedoc.workspace.WritingHeaderScroll
+import dev.shayxo.composedoc.workspace.showEditor
+import dev.shayxo.composedoc.workspace.showUnfinishedRecovery
+import java.awt.Component
+import java.awt.Container
+import java.awt.Window
+import java.awt.event.InputEvent
+import java.awt.event.KeyEvent
+import java.awt.event.MouseEvent
 import java.io.File
-import java.nio.file.*
-import javax.swing.*
-
+import java.nio.file.Files
+import javax.swing.JButton
+import javax.swing.JDialog
+import javax.swing.JFrame
+import javax.swing.JList
+import javax.swing.JViewport
+import javax.swing.SwingUtilities
+import javax.swing.SwingWorker
 fun runWorkspaceHostChecks(result: File) {
     val dir = Files.createTempDirectory("workspace-mounted-")
     System.setProperty("astra.lockRoot", dir.resolve("locks").toString())

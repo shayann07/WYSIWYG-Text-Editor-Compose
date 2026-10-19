@@ -1,18 +1,38 @@
 package dev.shayxo.composedoc.harness
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import dev.shayxo.composedoc.workspace.*
+import dev.shayxo.composedoc.data.DocumentFiles
+import dev.shayxo.composedoc.data.LocalCopy
+import dev.shayxo.composedoc.data.LocalRecoveryEntry
+import dev.shayxo.composedoc.data.LocalRecoveryStore
+import dev.shayxo.composedoc.domain.EditorEngine
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.ParagraphAlignment
+import dev.shayxo.composedoc.model.ParagraphDirection
+import dev.shayxo.composedoc.model.ParagraphProperties
+import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.model.StoredFont
+import dev.shayxo.composedoc.model.TextStyleFlags
+import dev.shayxo.composedoc.model.TextUnit
+import dev.shayxo.composedoc.model.UnitKind
+import dev.shayxo.composedoc.model.evidenceJson
+import dev.shayxo.composedoc.ui.EditorSurface
+import dev.shayxo.composedoc.workspace.LocalRecoveryController
+import dev.shayxo.composedoc.workspace.WindowFiles
+import dev.shayxo.composedoc.workspace.showEditor
+import dev.shayxo.composedoc.workspace.showLocalRecovery
+import dev.shayxo.composedoc.workspace.structuredWritingSample
+import dev.shayxo.composedoc.workspace.windowCurrentSurface
+import dev.shayxo.composedoc.workspace.windowFiles
 import java.io.File
-import java.nio.file.*
+import java.nio.file.Files
+import java.nio.file.Path
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import javax.swing.*
-
+import javax.swing.JButton
+import javax.swing.JFrame
+import javax.swing.JList
+import javax.swing.SwingUtilities
 fun crashSpecimen(tag: String): Document {
     val text = "کتاب $tag\nکِتاب\nEnglish 123 \uD800\uFFFF"
     val hard = text.indexOf('\n')

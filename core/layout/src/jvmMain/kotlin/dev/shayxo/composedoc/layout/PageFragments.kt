@@ -1,7 +1,8 @@
 package dev.shayxo.composedoc.layout
 
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.model.*
+import dev.shayxo.composedoc.model.ParagraphProperties
+import dev.shayxo.composedoc.model.paragraphs
+
 /** Derived planning only; whole-paragraph shaping survives every fragment. */
 class PageCursor(private val height: Float, private val margin: Float, private val header: Float = 0f, private val footer: Float = 0f) {
     data class Slot(val page: Int, val y: Float)

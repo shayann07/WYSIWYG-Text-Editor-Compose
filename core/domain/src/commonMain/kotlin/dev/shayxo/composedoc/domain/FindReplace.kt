@@ -1,6 +1,9 @@
 package dev.shayxo.composedoc.domain
 
-import dev.shayxo.composedoc.model.*
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.Graphemes
+import dev.shayxo.composedoc.model.UnitKind
+
 data class FindMatch(val start: Int, val end: Int, val editable: Boolean)
 data class FindBasis(val document: Document, val revision: Long, val owner: Any)
 enum class FindReplaceResult { Applied, NoChange, Busy, Stale, Invalid, TooLarge }

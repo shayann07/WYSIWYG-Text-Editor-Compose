@@ -1,9 +1,27 @@
 package dev.shayxo.composedoc.data
 
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.model.*
-import java.io.*
-import java.nio.file.*
+import dev.shayxo.composedoc.domain.EditorEngine
+import dev.shayxo.composedoc.domain.StructureCommand
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.ListKind
+import dev.shayxo.composedoc.model.ParagraphAlignment
+import dev.shayxo.composedoc.model.ParagraphDirection
+import dev.shayxo.composedoc.model.ParagraphProperties
+import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.model.StoredFont
+import dev.shayxo.composedoc.model.TextStyleFlags
+import dev.shayxo.composedoc.model.TextStylePatch
+import dev.shayxo.composedoc.model.TypographyProfileIds
+import dev.shayxo.composedoc.model.UnitKind
+import dev.shayxo.composedoc.model.WrapAffinity
+import dev.shayxo.composedoc.model.freshStructureId
+import dev.shayxo.composedoc.model.paragraphAnchor
+import dev.shayxo.composedoc.model.paragraphs
+import dev.shayxo.composedoc.model.patchParagraphs
+import dev.shayxo.composedoc.model.validateStructure
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
 import java.util.UUID
 
 /** Independent unsaved content: owner, units, paragraph, list and link identities are freshly allocated. */

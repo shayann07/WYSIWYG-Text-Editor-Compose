@@ -1,15 +1,12 @@
 package dev.shayxo.composedoc.workspace
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import java.io.*
-import java.nio.file.*
-import java.util.*
+import dev.shayxo.composedoc.data.LocalCopy
+import dev.shayxo.composedoc.data.LocalRecoveryStore
+import dev.shayxo.composedoc.model.Document
+import java.nio.file.Path
+import java.util.UUID
 import java.util.concurrent.Executors
-import javax.swing.*
+import javax.swing.SwingUtilities
 class LocalRecoveryController(val store: LocalRecoveryStore, val refresh: () -> Unit, interval: Int = 2000) {
     val session = UUID.randomUUID().toString()
     private val executor = Executors.newSingleThreadExecutor { task -> Thread(task, "astra-recovery-$session") }

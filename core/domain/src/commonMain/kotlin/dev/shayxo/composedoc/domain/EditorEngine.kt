@@ -1,6 +1,33 @@
 package dev.shayxo.composedoc.domain
 
-import dev.shayxo.composedoc.model.*
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.DocumentLimits
+import dev.shayxo.composedoc.model.FormatKey
+import dev.shayxo.composedoc.model.Graphemes
+import dev.shayxo.composedoc.model.OverlaySegment
+import dev.shayxo.composedoc.model.ParagraphAlignment
+import dev.shayxo.composedoc.model.ParagraphDirection
+import dev.shayxo.composedoc.model.ParagraphProperties
+import dev.shayxo.composedoc.model.SegmentOrigin
+import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.model.StructuralBreak
+import dev.shayxo.composedoc.model.TextStyleFlags
+import dev.shayxo.composedoc.model.TextStylePatch
+import dev.shayxo.composedoc.model.TextUnit
+import dev.shayxo.composedoc.model.TypingSide
+import dev.shayxo.composedoc.model.UnitKind
+import dev.shayxo.composedoc.model.WrapAffinity
+import dev.shayxo.composedoc.model.displayedStyles
+import dev.shayxo.composedoc.model.evidenceJson
+import dev.shayxo.composedoc.model.freshStructureId
+import dev.shayxo.composedoc.model.outlineEntries
+import dev.shayxo.composedoc.model.paragraphAt
+import dev.shayxo.composedoc.model.paragraphs
+import dev.shayxo.composedoc.model.patchParagraphs
+import dev.shayxo.composedoc.model.repairListParents
+import dev.shayxo.composedoc.model.repairRemovedImageHeads
+import dev.shayxo.composedoc.model.targetParagraphs
+import dev.shayxo.composedoc.model.validateStructure
 import kotlin.jvm.JvmOverloads
 data class EditorFrame(val visible: Document, val committed: Document, val selection: Selection, val marked: IntRange?, val documentRevision: Long, val sessionRevision: Long, val undoCount: Int, val redoCount: Int, val waiting: Boolean, val notice: String, val typingStyle: TextStyleFlags, val identityGeneration: Long, val recoveryBasisRevision: Long)
 

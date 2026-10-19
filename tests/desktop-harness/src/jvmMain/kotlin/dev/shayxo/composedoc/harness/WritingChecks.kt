@@ -1,19 +1,27 @@
 package dev.shayxo.composedoc.harness
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import dev.shayxo.composedoc.workspace.*
+import dev.shayxo.composedoc.data.DocumentFiles
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.model.UnitKind
+import dev.shayxo.composedoc.model.evidenceJson
+import dev.shayxo.composedoc.ui.EditorSurface
+import dev.shayxo.composedoc.workspace.WindowFiles
+import dev.shayxo.composedoc.workspace.showEditor
+import dev.shayxo.composedoc.workspace.urduWritingSample
+import dev.shayxo.composedoc.workspace.windowCurrentSurface
+import dev.shayxo.composedoc.workspace.windowFiles
 import java.awt.Component
 import java.awt.Container
 import java.awt.event.InputEvent
 import java.awt.event.KeyEvent
 import java.awt.event.MouseWheelEvent
 import java.io.File
-import javax.swing.*
-
+import javax.swing.JButton
+import javax.swing.JCheckBox
+import javax.swing.JFrame
+import javax.swing.SwingUtilities
+import javax.swing.UIManager
 /** Real offscreen shell/render/file pipeline; key callbacks here are synthetic. */
 fun runWritingChecks(result: File) {
     fun <T> owner(block: () -> T): T {

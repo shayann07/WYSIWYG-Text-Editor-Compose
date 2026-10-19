@@ -2,24 +2,54 @@
 
 package dev.shayxo.composedoc.workspace
 
-import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.toString
 import androidx.compose.ui.awt.ComposePanel
 import androidx.compose.ui.awt.RenderSettings
-import androidx.compose.ui.text.*
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import java.awt.*
-import java.awt.datatransfer.*
-import java.awt.event.*
+import dev.shayxo.composedoc.data.DocumentFiles
+import dev.shayxo.composedoc.data.FragmentCodec
+import dev.shayxo.composedoc.data.LocalRecoveryStore
+import dev.shayxo.composedoc.data.UnfinishedStore
+import dev.shayxo.composedoc.domain.EditAction
+import dev.shayxo.composedoc.domain.EditorEngine
+import dev.shayxo.composedoc.domain.RecoveryApplyResult
+import dev.shayxo.composedoc.layout.StoredFonts
+import dev.shayxo.composedoc.layout.TypographyProfile
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.FormatKey
+import dev.shayxo.composedoc.ui.DocumentCanvas
+import dev.shayxo.composedoc.ui.EditorPlatformServices
+import dev.shayxo.composedoc.ui.EditorSurface
+import dev.shayxo.composedoc.ui.ImeTrace
+import dev.shayxo.composedoc.ui.RecoveryStatus
+import dev.shayxo.composedoc.ui.RetainedCompositionPreimage
+import dev.shayxo.composedoc.ui.ViewState
+import dev.shayxo.composedoc.ui.quarantineDiagnostic
+import java.awt.BorderLayout
+import java.awt.Color
+import java.awt.Dimension
+import java.awt.FlowLayout
+import java.awt.Font
+import java.awt.GridLayout
+import java.awt.Point
+import java.awt.event.WindowAdapter
+import java.awt.event.WindowEvent
 import java.io.File
-import javax.accessibility.*
-import javax.swing.*
+import javax.swing.BoxLayout
+import javax.swing.JButton
+import javax.swing.JCheckBox
+import javax.swing.JComboBox
+import javax.swing.JComponent
+import javax.swing.JFrame
+import javax.swing.JLabel
+import javax.swing.JLayeredPane
+import javax.swing.JOptionPane
+import javax.swing.JPanel
+import javax.swing.JScrollPane
+import javax.swing.JTextArea
+import javax.swing.SwingUtilities
 import javax.swing.border.EmptyBorder
-import kotlin.math.*
-
 fun windowFiles(window: JFrame): WindowFiles? = window.rootPane?.getClientProperty("editor.files") as? WindowFiles
 fun windowLayeredPane(window: JFrame): JLayeredPane? = window.rootPane?.getClientProperty("editor.layers") as? JLayeredPane
 

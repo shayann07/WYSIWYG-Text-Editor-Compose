@@ -2,8 +2,9 @@ package dev.shayxo.composedoc.layout
 
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.platform.Font
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.model.*
+import dev.shayxo.composedoc.model.SimpleJson
+import dev.shayxo.composedoc.model.StoredFont
+import dev.shayxo.composedoc.model.TextStyleFlags
 import java.io.File
 import java.security.MessageDigest
 

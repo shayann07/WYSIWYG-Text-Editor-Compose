@@ -1,10 +1,17 @@
 package dev.shayxo.composedoc.ui
 
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import java.awt.datatransfer.*
-import java.io.*
+import dev.shayxo.composedoc.domain.ClipboardCapture
+import dev.shayxo.composedoc.domain.RichFragment
+import dev.shayxo.composedoc.domain.RichFragmentCodec
+import dev.shayxo.composedoc.model.DocumentLimits
+import dev.shayxo.composedoc.model.plainText
+import java.awt.datatransfer.Clipboard
+import java.awt.datatransfer.DataFlavor
+import java.awt.datatransfer.Transferable
+import java.awt.datatransfer.UnsupportedFlavorException
+import java.io.ByteArrayInputStream
+import java.io.InputStream
+
 /** AWT adapter: native OS transferable stream works between independent JVMs. */
 object RichClipboard {
     val flavor = DataFlavor("application/x-astra-fragment;class=java.io.InputStream", "Astra rich fragment v4")

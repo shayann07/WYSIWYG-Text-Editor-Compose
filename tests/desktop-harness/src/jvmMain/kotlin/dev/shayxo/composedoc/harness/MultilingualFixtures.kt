@@ -1,11 +1,5 @@
 package dev.shayxo.composedoc.harness
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import dev.shayxo.composedoc.workspace.*
 /** Self-authored short strings; code points are exported verbatim in each receipt. */
 data class LanguageFixture(val id: String, val text: String, val notes: String)
 val multilingualFixtures = listOf(

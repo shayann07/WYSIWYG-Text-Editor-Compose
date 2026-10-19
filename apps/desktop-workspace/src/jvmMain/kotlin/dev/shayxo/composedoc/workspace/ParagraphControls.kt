@@ -1,13 +1,12 @@
 package dev.shayxo.composedoc.workspace
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
+import dev.shayxo.composedoc.model.ParagraphAlignment
+import dev.shayxo.composedoc.model.ParagraphDirection
+import dev.shayxo.composedoc.ui.EditorSurface
 import java.awt.FlowLayout
-import javax.swing.*
-
+import javax.swing.JComboBox
+import javax.swing.JLabel
+import javax.swing.JPanel
 /** Shell consumer only; targeting, inheritance, settlement and history live in document/commands. */
 class ParagraphControls(private val surface: () -> EditorSurface, private val fileBusy: () -> Boolean) {
     val panel = JPanel(FlowLayout(FlowLayout.LEFT, 4, 0)).apply {

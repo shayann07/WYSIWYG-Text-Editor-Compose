@@ -1,11 +1,43 @@
 package dev.shayxo.composedoc.data
 
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.model.*
-import java.io.*
+import dev.shayxo.composedoc.domain.DocumentCodec
+import dev.shayxo.composedoc.domain.DocumentRepository
+import dev.shayxo.composedoc.domain.EditorFrame
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.ImageBlock
+import dev.shayxo.composedoc.model.ImageResource
+import dev.shayxo.composedoc.model.LinkValue
+import dev.shayxo.composedoc.model.ListKind
+import dev.shayxo.composedoc.model.MarkerTypography
+import dev.shayxo.composedoc.model.PageDigits
+import dev.shayxo.composedoc.model.PageSettings
+import dev.shayxo.composedoc.model.PaginationRules
+import dev.shayxo.composedoc.model.PaperSize
+import dev.shayxo.composedoc.model.ParagraphAlignment
+import dev.shayxo.composedoc.model.ParagraphDirection
+import dev.shayxo.composedoc.model.ParagraphProperties
+import dev.shayxo.composedoc.model.RunningContent
+import dev.shayxo.composedoc.model.RunningField
+import dev.shayxo.composedoc.model.RunningFlow
+import dev.shayxo.composedoc.model.StoredFont
+import dev.shayxo.composedoc.model.StructuralBreak
+import dev.shayxo.composedoc.model.TextStyleFlags
+import dev.shayxo.composedoc.model.TextUnit
+import dev.shayxo.composedoc.model.UnitKind
+import dev.shayxo.composedoc.model.migrateMarkerTypography
+import dev.shayxo.composedoc.model.paragraphs
+import dev.shayxo.composedoc.model.patchParagraphs
+import dev.shayxo.composedoc.model.validateStructure
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.DataInputStream
+import java.io.DataOutputStream
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
-import java.nio.file.*
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardCopyOption
+import java.nio.file.StandardOpenOption
 import java.security.MessageDigest
 
 /** Prototype-only snapshot format. Not the v5 production journal/container. */

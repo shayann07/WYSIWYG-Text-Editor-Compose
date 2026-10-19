@@ -1,15 +1,43 @@
 package dev.shayxo.composedoc.workspace
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import java.awt.*
-import java.awt.event.*
+import dev.shayxo.composedoc.domain.StructureCommand
+import dev.shayxo.composedoc.layout.PrintSnapshot
+import dev.shayxo.composedoc.model.PageDigits
+import dev.shayxo.composedoc.model.PaginationRules
+import dev.shayxo.composedoc.model.ParagraphAlignment
+import dev.shayxo.composedoc.model.ParagraphDirection
+import dev.shayxo.composedoc.model.RunningContent
+import dev.shayxo.composedoc.model.RunningField
+import dev.shayxo.composedoc.model.RunningFlow
+import dev.shayxo.composedoc.model.StoredFont
+import dev.shayxo.composedoc.model.TextStyleFlags
+import dev.shayxo.composedoc.model.targetParagraphs
+import dev.shayxo.composedoc.ui.EditorSurface
+import dev.shayxo.composedoc.ui.ImageResources
+import java.awt.BorderLayout
+import java.awt.event.ActionEvent
+import java.awt.event.WindowAdapter
+import java.awt.event.WindowEvent
 import java.awt.print.PrinterJob
-import javax.swing.*
-
+import javax.swing.AbstractAction
+import javax.swing.ImageIcon
+import javax.swing.JButton
+import javax.swing.JCheckBox
+import javax.swing.JComboBox
+import javax.swing.JComponent
+import javax.swing.JDialog
+import javax.swing.JFrame
+import javax.swing.JLabel
+import javax.swing.JOptionPane
+import javax.swing.JPanel
+import javax.swing.JScrollPane
+import javax.swing.JSpinner
+import javax.swing.JTextArea
+import javax.swing.JTextField
+import javax.swing.KeyStroke
+import javax.swing.SpinnerNumberModel
+import javax.swing.SwingWorker
+import javax.swing.Timer
 /** Desktop consumer. Commands own content; preview/print use a captured immutable plan. */
 class PageOutputUi(private val window: JFrame, private val surface: () -> EditorSurface, private val busy: () -> Boolean) {
     val panel = JPanel(WrappingControls()).apply {

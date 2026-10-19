@@ -1,15 +1,52 @@
 package dev.shayxo.composedoc.workspace
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import java.awt.*
-import java.nio.file.*
+import dev.shayxo.composedoc.data.DocumentFiles
+import dev.shayxo.composedoc.data.FileFingerprint
+import dev.shayxo.composedoc.data.LocalCopy
+import dev.shayxo.composedoc.data.LocalRecoveryStore
+import dev.shayxo.composedoc.data.SafeDocumentIO
+import dev.shayxo.composedoc.data.TemplateEntry
+import dev.shayxo.composedoc.data.TemplateStore
+import dev.shayxo.composedoc.data.UnfinishedStore
+import dev.shayxo.composedoc.data.WorkspaceBytes
+import dev.shayxo.composedoc.data.WorkspaceEntry
+import dev.shayxo.composedoc.data.WorkspaceStore
+import dev.shayxo.composedoc.data.workspacePositionsValid
+import dev.shayxo.composedoc.domain.StructureCommand
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.PageSettings
+import dev.shayxo.composedoc.model.PaperSize
+import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.ui.EditorSurface
+import dev.shayxo.composedoc.ui.findSurface
+import java.awt.BorderLayout
+import java.awt.Color
+import java.awt.Component
+import java.awt.Font
+import java.nio.file.Files
+import java.nio.file.Path
 import java.util.UUID
-import javax.swing.*
-
+import javax.swing.AbstractAction
+import javax.swing.BorderFactory
+import javax.swing.DefaultListCellRenderer
+import javax.swing.DefaultListModel
+import javax.swing.JButton
+import javax.swing.JComboBox
+import javax.swing.JComponent
+import javax.swing.JDialog
+import javax.swing.JFileChooser
+import javax.swing.JFrame
+import javax.swing.JLabel
+import javax.swing.JList
+import javax.swing.JOptionPane
+import javax.swing.JPanel
+import javax.swing.JScrollPane
+import javax.swing.JTextArea
+import javax.swing.JTextField
+import javax.swing.KeyStroke
+import javax.swing.ListSelectionModel
+import javax.swing.SwingWorker
+import javax.swing.Timer
 fun <T> workspaceWork(parent: Component, action: () -> T, success: (T) -> Unit) {
     object : SwingWorker<T, Unit>() {
         override fun doInBackground() = action()

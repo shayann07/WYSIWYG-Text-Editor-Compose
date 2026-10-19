@@ -1,11 +1,15 @@
 package dev.shayxo.composedoc.harness
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import dev.shayxo.composedoc.workspace.*
+import dev.shayxo.composedoc.data.DocumentFiles
+import dev.shayxo.composedoc.domain.CanonicalProbeBasis
+import dev.shayxo.composedoc.domain.CanonicalProbeEdit
+import dev.shayxo.composedoc.domain.CanonicalProbeOutcome
+import dev.shayxo.composedoc.domain.EditAction
+import dev.shayxo.composedoc.domain.EditorEngine
+import dev.shayxo.composedoc.domain.EditorFrame
+import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.model.TextStyleFlags
+
 private fun EditorFrame.canonicalBasis() = CanonicalProbeBasis(documentRevision, committed.units.map { it.id }, identityGeneration)
 
 /** Internal experiment boundary; not a production replication API or collaborative algorithm. */

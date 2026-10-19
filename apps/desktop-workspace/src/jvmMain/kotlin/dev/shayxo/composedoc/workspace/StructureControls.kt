@@ -1,12 +1,41 @@
 package dev.shayxo.composedoc.workspace
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import java.awt.*
-import javax.swing.*
+import dev.shayxo.composedoc.data.ImageDecoder
+import dev.shayxo.composedoc.domain.StructureCommand
+import dev.shayxo.composedoc.model.ImageBlock
+import dev.shayxo.composedoc.model.LinkValue
+import dev.shayxo.composedoc.model.ListKind
+import dev.shayxo.composedoc.model.MarkerTypography
+import dev.shayxo.composedoc.model.OutlineEntry
+import dev.shayxo.composedoc.model.StoredFont
+import dev.shayxo.composedoc.model.UnitKind
+import dev.shayxo.composedoc.model.contiguousLinkAt
+import dev.shayxo.composedoc.model.paragraphAt
+import dev.shayxo.composedoc.model.paragraphs
+import dev.shayxo.composedoc.ui.EditorSurface
+import dev.shayxo.composedoc.ui.ImageResources
+import java.awt.Component
+import java.awt.Container
+import java.awt.Desktop
+import java.awt.Dimension
+import java.awt.FlowLayout
+import javax.swing.AbstractAction
+import javax.swing.BoxLayout
+import javax.swing.DefaultListModel
+import javax.swing.JButton
+import javax.swing.JCheckBox
+import javax.swing.JComboBox
+import javax.swing.JComponent
+import javax.swing.JFileChooser
+import javax.swing.JFrame
+import javax.swing.JLabel
+import javax.swing.JList
+import javax.swing.JOptionPane
+import javax.swing.JPanel
+import javax.swing.JScrollPane
+import javax.swing.JTextField
+import javax.swing.KeyStroke
+import javax.swing.ListSelectionModel
 
 /** Desktop shell adapter; every mutation delegates to the semantic reducer. */
 class StructureControls(private val window: JFrame, private val surface: () -> EditorSurface, private val busy: () -> Boolean) {

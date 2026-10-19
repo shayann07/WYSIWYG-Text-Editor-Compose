@@ -1,11 +1,17 @@
 package dev.shayxo.composedoc.harness
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import dev.shayxo.composedoc.workspace.*
+import dev.shayxo.composedoc.domain.EditAction
+import dev.shayxo.composedoc.layout.TypographyProfile
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.SimpleJson
+import dev.shayxo.composedoc.model.TextStyleFlags
+import dev.shayxo.composedoc.model.TextUnit
+import dev.shayxo.composedoc.model.UnitKind
+import dev.shayxo.composedoc.model.evidenceJson
+import dev.shayxo.composedoc.model.paragraphs
+import dev.shayxo.composedoc.ui.EditorSurface
+import dev.shayxo.composedoc.ui.findSurface
+import dev.shayxo.composedoc.workspace.showEditor
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import javax.swing.SwingUtilities

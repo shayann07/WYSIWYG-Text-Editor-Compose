@@ -1,11 +1,18 @@
 package dev.shayxo.composedoc.data
 
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.model.*
-import java.io.*
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.validateStructure
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.DataInputStream
+import java.io.DataOutputStream
+import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
-import java.nio.file.*
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardCopyOption
+import java.nio.file.StandardOpenOption
 import java.security.MessageDigest
 import java.util.UUID
 

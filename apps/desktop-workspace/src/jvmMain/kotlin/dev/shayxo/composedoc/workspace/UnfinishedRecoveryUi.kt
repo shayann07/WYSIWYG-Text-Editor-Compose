@@ -1,14 +1,28 @@
 package dev.shayxo.composedoc.workspace
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import java.awt.*
+import dev.shayxo.composedoc.data.LocalRecoveryStore
+import dev.shayxo.composedoc.data.UnfinishedEntry
+import dev.shayxo.composedoc.data.UnfinishedKind
+import dev.shayxo.composedoc.data.UnfinishedRecord
+import dev.shayxo.composedoc.data.UnfinishedStore
+import dev.shayxo.composedoc.data.cloneDocument
+import java.awt.BorderLayout
+import java.awt.Dimension
+import java.awt.Font
 import java.nio.file.Path
-import javax.swing.*
-
+import javax.swing.BorderFactory
+import javax.swing.DefaultListModel
+import javax.swing.JButton
+import javax.swing.JFileChooser
+import javax.swing.JFrame
+import javax.swing.JList
+import javax.swing.JOptionPane
+import javax.swing.JPanel
+import javax.swing.JScrollPane
+import javax.swing.JTextArea
+import javax.swing.ListSelectionModel
+import javax.swing.SwingUtilities
+import javax.swing.SwingWorker
 /** Metadata-only list; decode at most one selected draft for inspection/open. Never resumes native input. */
 fun showUnfinishedRecovery(directory: Path, fontProfile: String, paged: Boolean, onlyIfNeeded: Boolean = false, offscreen: Boolean = false): JFrame {
     check(SwingUtilities.isEventDispatchThread())

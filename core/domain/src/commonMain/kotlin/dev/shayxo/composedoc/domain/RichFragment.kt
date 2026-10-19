@@ -1,6 +1,12 @@
 package dev.shayxo.composedoc.domain
 
-import dev.shayxo.composedoc.model.*
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.model.UnitKind
+import dev.shayxo.composedoc.model.paragraphAt
+import dev.shayxo.composedoc.model.paragraphs
+import dev.shayxo.composedoc.model.patchParagraphs
+
 data class ClipboardCapture(val basis: FindBasis, val selection: Selection, val sessionRevision: Long)
 data class RichFragment(val document: Document, val complete: List<Boolean>) {
     init {

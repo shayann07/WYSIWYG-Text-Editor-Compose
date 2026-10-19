@@ -1,15 +1,21 @@
 package dev.shayxo.composedoc.workspace
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import java.awt.*
-import java.awt.font.*
+import dev.shayxo.composedoc.model.OutlineEntry
+import java.awt.Color
+import java.awt.Component
+import java.awt.Dimension
+import java.awt.Font
+import java.awt.Graphics
+import java.awt.Graphics2D
+import java.awt.RenderingHints
+import java.awt.font.FontRenderContext
+import java.awt.font.LineBreakMeasurer
+import java.awt.font.TextAttribute
+import java.awt.font.TextLayout
 import java.text.AttributedString
-import javax.swing.*
-
+import javax.swing.JList
+import javax.swing.JPanel
+import javax.swing.ListCellRenderer
 /** Explicit font fallback for Swing labels; canonical heading text is never changed. */
 object OutlineFonts {
     private val primary = Font.createFont(Font.TRUETYPE_FONT, java.io.File("tests/suites/urdu/u0/fonts/NotoNastaliqUrdu[wght].ttf")).deriveFont(19f)

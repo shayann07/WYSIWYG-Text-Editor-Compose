@@ -2,21 +2,27 @@
 
 package dev.shayxo.composedoc.layout
 
-import androidx.compose.runtime.*
-import androidx.compose.ui.text.*
+import androidx.compose.runtime.key
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.ResolvedTextDirection
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.Constraints
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.model.*
-import java.awt.*
-import java.awt.datatransfer.*
-import java.awt.event.*
-import javax.accessibility.*
-import javax.swing.*
-import kotlin.math.*
-
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.ImageBlock
+import dev.shayxo.composedoc.model.ParagraphAlignment
+import dev.shayxo.composedoc.model.ParagraphDirection
+import dev.shayxo.composedoc.model.ParagraphProperties
+import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.model.TextUnit
+import dev.shayxo.composedoc.model.WrapAffinity
+import dev.shayxo.composedoc.model.displayedStyles
+import dev.shayxo.composedoc.model.paragraphs
+import dev.shayxo.composedoc.model.resolveParagraphDirection
 fun displayText(text: String): String = buildString {
     var i = 0
     while (i < text.length) {

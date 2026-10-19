@@ -1,15 +1,30 @@
 package dev.shayxo.composedoc.harness
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import dev.shayxo.composedoc.workspace.*
+import dev.shayxo.composedoc.data.DocumentFiles
+import dev.shayxo.composedoc.data.LocalRecoveryStore
+import dev.shayxo.composedoc.domain.EditAction
+import dev.shayxo.composedoc.domain.EditorEngine
+import dev.shayxo.composedoc.domain.FindMatch
+import dev.shayxo.composedoc.domain.FindReplaceResult
+import dev.shayxo.composedoc.domain.findLiteral
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.model.TextStyleFlags
+import dev.shayxo.composedoc.model.TextUnit
+import dev.shayxo.composedoc.model.UnitKind
+import dev.shayxo.composedoc.model.evidenceJson
+import dev.shayxo.composedoc.ui.EditorSurface
+import dev.shayxo.composedoc.workspace.FindReplaceUi
+import dev.shayxo.composedoc.workspace.LocalRecoveryController
+import dev.shayxo.composedoc.workspace.showEditor
+import dev.shayxo.composedoc.workspace.urduWritingSample
+import dev.shayxo.composedoc.workspace.windowCurrentSurface
+import dev.shayxo.composedoc.workspace.windowFiles
 import java.io.File
 import java.nio.file.Files
-import javax.swing.*
-
+import javax.swing.JButton
+import javax.swing.JFrame
+import javax.swing.SwingUtilities
 fun runFindReplaceChecks(result: File) {
     result.absoluteFile.parentFile.mkdirs()
     val checks = ArrayList<String>()

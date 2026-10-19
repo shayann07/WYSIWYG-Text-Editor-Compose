@@ -1,10 +1,14 @@
 package dev.shayxo.composedoc.workspace
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
+import dev.shayxo.composedoc.domain.EditorEngine
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.FormatKey
+import dev.shayxo.composedoc.model.ParagraphAlignment
+import dev.shayxo.composedoc.model.ParagraphDirection
+import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.model.StoredFont
+import dev.shayxo.composedoc.model.TextStylePatch
+
 /** Self-authored disposable exercise, not linguistically reviewed or a product font decision. */
 fun urduWritingSample(): Document {
     val e = EditorEngine()

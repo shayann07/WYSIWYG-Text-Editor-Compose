@@ -1,14 +1,19 @@
 package dev.shayxo.composedoc.workspace
 
-import dev.shayxo.composedoc.data.*
-import dev.shayxo.composedoc.domain.*
-import dev.shayxo.composedoc.layout.*
-import dev.shayxo.composedoc.model.*
-import dev.shayxo.composedoc.ui.*
-import java.io.*
-import java.nio.file.*
-import java.util.*
-import javax.swing.*
+import dev.shayxo.composedoc.data.LocalRecoveryStore
+import dev.shayxo.composedoc.data.UnfinishedCapture
+import dev.shayxo.composedoc.data.UnfinishedKind
+import dev.shayxo.composedoc.data.UnfinishedStore
+import dev.shayxo.composedoc.domain.EditorEngine
+import dev.shayxo.composedoc.model.Document
+import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.ui.QuarantinedCallback
+import dev.shayxo.composedoc.ui.RecoverySession
+import dev.shayxo.composedoc.ui.RetainedCompositionPreimage
+import java.nio.file.Path
+import java.util.UUID
+import javax.swing.SwingUtilities
+
 private data class UnfinishedBatch(val captures: List<UnfinishedCapture>, val accepted: Document, val name: String, val generation: Long)
 
 class UnfinishedController(val store: UnfinishedStore, val owner: String, val refresh: () -> Unit, val failed: (String) -> Unit) {
