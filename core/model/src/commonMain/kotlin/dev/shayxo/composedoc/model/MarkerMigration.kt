@@ -1,5 +1,9 @@
 package dev.shayxo.composedoc.model
 
+private const val C0_CONTROL_LAST = 31
+private const val ASCII_DELETE = 127
+private const val C1_CONTROL_LAST = 159
+
 /** Old formats migrate exactly once, from the first substantive cluster, never a vote. */
 fun Document.migrateMarkerTypography(): Document {
     val seeds =
@@ -10,8 +14,8 @@ fun Document.migrateMarkerTypography(): Document {
                 raw.indexOfFirst {
                     !it.char.isWhitespace() &&
                         it.char.category != CharCategory.FORMAT &&
-                        it.char.code !in 0..31 &&
-                        it.char.code !in 127..159
+                        it.char.code !in 0..C0_CONTROL_LAST &&
+                        it.char.code !in ASCII_DELETE..C1_CONTROL_LAST
                 }
             MarkerTypography.from(
                 if (at >= 0) {

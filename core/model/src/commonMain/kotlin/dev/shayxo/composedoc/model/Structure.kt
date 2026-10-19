@@ -1,25 +1,43 @@
 package dev.shayxo.composedoc.model
 
+private const val MAX_LINK_ID_LENGTH = 64
+private const val MAX_URI_LENGTH = 2048
+private const val FIRST_NON_C0_CONTROL = 32
+private const val RESOURCE_HASH_LENGTH = 64
+private const val MIN_IMAGE_WIDTH = 10
+private const val MAX_IMAGE_WIDTH = 600
+private const val MAX_ALT_TEXT_LENGTH = 2048
+private const val MAX_RESOURCE_DATA_LENGTH = 6_000_000
+private const val MAX_IMAGE_DIMENSION = 8192
+private const val MAX_IMAGE_PIXELS = 16_000_000L
+private const val MAX_LIST_DEPTH = 8
+private const val MAX_DOCUMENT_RESOURCES = 32
+private const val MAX_DOCUMENT_RESOURCE_DATA = 12_000_000L
+private const val MAX_DOCUMENT_PIXELS = 16_000_000L
+
 enum class ListKind { NONE, BULLET, NUMBER }
 data class LinkValue(val id: String, val uri: String) {
     init {
-        require(id.length in 1..64 && uri.length in 1..2048)
+        require(id.length in 1..MAX_LINK_ID_LENGTH && uri.length in 1..MAX_URI_LENGTH)
         require(isAbsoluteDocumentUri(uri))
-        require(uri.none { it.code < 32 })
+        require(uri.none { it.code < FIRST_NON_C0_CONTROL })
     }
     fun activatable() = uri.substringBefore(':').lowercase() in setOf("http", "https", "mailto")
 }
 data class ImageBlock(val resource: String, val width: Int = 240, val alt: String = "") {
     init {
-        require(resource.length == 64 && resource.all { it in "0123456789abcdef" })
-        require(width in 10..600)
-        require(alt.length <= 2048)
+        require(resource.length == RESOURCE_HASH_LENGTH && resource.all { it in "0123456789abcdef" })
+        require(width in MIN_IMAGE_WIDTH..MAX_IMAGE_WIDTH)
+        require(alt.length <= MAX_ALT_TEXT_LENGTH)
     }
 }
 data class ImageResource(val data: String, val width: Int, val height: Int, val mime: String) {
     init {
         require(
-            data.length <= 6_000_000 && width in 1..8192 && height in 1..8192 && width.toLong() * height <= 16_000_000,
+            data.length <= MAX_RESOURCE_DATA_LENGTH &&
+                width in 1..MAX_IMAGE_DIMENSION &&
+                height in 1..MAX_IMAGE_DIMENSION &&
+                width.toLong() * height <= MAX_IMAGE_PIXELS,
         )
         require(mime in setOf("image/png", "image/jpeg"))
     }
@@ -52,7 +70,7 @@ fun Document.itemDepth(item: String): Int {
     var n = 0
     val seen = HashSet<String>()
     while (id.isNotEmpty()) {
-        require(seen.add(id) && n < 8) { "Invalid list ancestry" }
+        require(seen.add(id) && n < MAX_LIST_DEPTH) { "Invalid list ancestry" }
         val p = blocks.firstOrNull { it.properties.item == id } ?: error("Missing item parent")
         id = p.properties.parent
         n++
@@ -69,62 +87,86 @@ fun Document.listMarkers(): Map<Long?, String> {
         if (v.item.isEmpty()) {
             counters.clear()
             kinds.clear()
-            continue
+        } else if (seen.add(v.item)) {
+            result[p.anchor] = nextMarker(v, counters, kinds)
         }
-        if (!seen.add(v.item))continue
-        val key = v.parent
-        val n = if (v.restart > 0) {
-            v.restart
-        } else if (kinds[key] == v.list) {
-            (counters[key] ?: 0) + 1
-        } else {
-            1
-        }
-        counters[key] = n
-        kinds[key] = v.list
-        result[p.anchor] = if (v.list == ListKind.BULLET) "•" else "$n."
     }
     return result
 }
+
+private fun nextMarker(
+    v: ParagraphProperties,
+    counters: HashMap<String, Int>,
+    kinds: HashMap<String, ListKind>,
+): String {
+    val key = v.parent
+    val n = if (v.restart > 0) {
+        v.restart
+    } else if (kinds[key] == v.list) {
+        (counters[key] ?: 0) + 1
+    } else {
+        1
+    }
+    counters[key] = n
+    kinds[key] = v.list
+    return if (v.list == ListKind.BULLET) "•" else "$n."
+}
 fun validateStructure(d: Document) {
-    require(
-        d.units.size <= DocumentLimits.MAX_UNITS &&
-            d.resources.size <= 32 &&
-            d.resources.values.sumOf { it.data.length.toLong() } <= 12_000_000 &&
-            d.resources.values.sumOf {
-                it.width.toLong() * it.height
-            } <= 16_000_000,
-    ) { "Document resource budget exceeded" }
+    validateResourceBudget(d)
     val blocks = d.paragraphs()
     require(blocks.map { it.anchor }.distinct().size == blocks.size) { "Duplicate paragraph identity" }
     val items = blocks.filter { it.properties.item.isNotEmpty() }.groupBy { it.properties.item }
-    for ((id, ps) in items) {
-        val p = ps.first().properties
-        require(
-            ps.all {
-                it.properties.list == p.list &&
-                    it.properties.parent == p.parent &&
-                    it.properties.restart == p.restart
-            },
-        ) { "Inconsistent list item" }
-        require(ps.all { it.properties.markerTypography == p.markerTypography }) { "Inconsistent marker typography" }
-        require(
-            p.parent.isEmpty() ||
-                items[p.parent]?.first()?.index?.let {
-                    it < ps.first().index
-                } == true,
-        ) { "Missing/late list parent" }
-        d.itemDepth(id)
-        for (i in ps.first().index..ps.last().index) {
-            var current = blocks[i].properties.item
-            val seen = HashSet<String>()
-            while (current.isNotEmpty() && current != id) {
-                require(seen.add(current))
-                current = items[current]?.first()?.properties?.parent ?: ""
-            }
-            require(current == id) { "Noncontiguous item paragraphs" }
+    for ((id, ps) in items) validateListItem(d, blocks, items, id, ps)
+    validateImageBlocks(d, blocks)
+    for (u in d.units) validateUnit(d, u)
+}
+
+private fun validateResourceBudget(d: Document) {
+    require(
+        d.units.size <= DocumentLimits.MAX_UNITS &&
+            d.resources.size <= MAX_DOCUMENT_RESOURCES &&
+            d.resources.values.sumOf { it.data.length.toLong() } <= MAX_DOCUMENT_RESOURCE_DATA &&
+            d.resources.values.sumOf {
+                it.width.toLong() * it.height
+            } <= MAX_DOCUMENT_PIXELS,
+    ) { "Document resource budget exceeded" }
+}
+
+private fun validateListItem(
+    d: Document,
+    blocks: List<ParagraphBlock>,
+    items: Map<String, List<ParagraphBlock>>,
+    id: String,
+    ps: List<ParagraphBlock>,
+) {
+    val p = ps.first().properties
+    require(
+        ps.all {
+            it.properties.list == p.list &&
+                it.properties.parent == p.parent &&
+                it.properties.restart == p.restart
+        },
+    ) { "Inconsistent list item" }
+    require(ps.all { it.properties.markerTypography == p.markerTypography }) { "Inconsistent marker typography" }
+    require(
+        p.parent.isEmpty() ||
+            items[p.parent]?.first()?.index?.let {
+                it < ps.first().index
+            } == true,
+    ) { "Missing/late list parent" }
+    d.itemDepth(id)
+    for (i in ps.first().index..ps.last().index) {
+        var current = blocks[i].properties.item
+        val seen = HashSet<String>()
+        while (current.isNotEmpty() && current != id) {
+            require(seen.add(current))
+            current = items[current]?.first()?.properties?.parent ?: ""
         }
+        require(current == id) { "Noncontiguous item paragraphs" }
     }
+}
+
+private fun validateImageBlocks(d: Document, blocks: List<ParagraphBlock>) {
     for (p in blocks) {
         val us = d.units.subList(p.start, p.end)
         if (us.any { it.kind == UnitKind.IMAGE }) {
@@ -135,27 +177,27 @@ fun validateStructure(d: Document) {
             }
         }
     }
-    for (u in d.units) {
-        require(u.kind == UnitKind.PARAGRAPH_BREAK || u.structuralBreak == StructuralBreak.PARAGRAPH)
-        if (u.kind ==
-            UnitKind.PARAGRAPH_BREAK
-        ) {
-            require(u.char == if (u.structuralBreak == StructuralBreak.PAGE)'\u000c' else '\n')
-        }
-        require((u.kind == UnitKind.IMAGE) == (u.image != null))
-        if (u.kind == UnitKind.IMAGE) {
-            require(u.char == '\ufffc' && d.resources.containsKey(u.image!!.resource))
-            require(u.style == TextStyleFlags())
-        }
+}
+
+private fun validateUnit(d: Document, u: TextUnit) {
+    require(u.kind == UnitKind.PARAGRAPH_BREAK || u.structuralBreak == StructuralBreak.PARAGRAPH)
+    if (u.kind ==
+        UnitKind.PARAGRAPH_BREAK
+    ) {
+        require(u.char == if (u.structuralBreak == StructuralBreak.PAGE)'\u000c' else '\n')
+    }
+    require((u.kind == UnitKind.IMAGE) == (u.image != null))
+    if (u.kind == UnitKind.IMAGE) {
+        require(u.char == '\ufffc' && d.resources.containsKey(u.image!!.resource))
+        require(u.style == TextStyleFlags())
     }
 }
 
 /** A caret recognizes only strict interior affinity. URI equality never merges IDs. */
 fun Document.contiguousLinkAt(selection: Selection): Pair<LinkValue, Selection>? {
-    if (!selection.collapsed)return null
     val at = selection.focus
-    val link = units.getOrNull(at - 1)?.style?.link ?: return null
-    if (units.getOrNull(at)?.style?.link != link)return null
+    val link = if (selection.collapsed) units.getOrNull(at - 1)?.style?.link else null
+    if (link == null || units.getOrNull(at)?.style?.link != link) return null
     var a = at
     var b = at
     while (a > 0 && units[a - 1].kind == UnitKind.TEXT && units[a - 1].style.link == link)a--
@@ -201,6 +243,29 @@ fun Document.repairListParents(before: Document): Document {
     val properties = current.filter {
         it.properties.item.isNotEmpty()
     }.associate { it.properties.item to it.properties }
+    val ownerByUnit = ownersByUnit(units, current)
+    val mergedInto = HashMap<String, String>()
+    // A consumed first leaf can leave continuation paragraphs behind. Direct
+    // sibling joins move those paragraphs and children into the surviving left
+    // item; original provenance must not resurrect the emptied right container.
+    for ((id, ps) in priorItems) {
+        val first = ps.first()
+        if (first.anchor !in currentHeads) {
+            siblingMergeTarget(before, id, first, ownerByUnit, properties)?.let { mergedInto[id] = it }
+        }
+    }
+    val surviving = properties.keys.mapTo(HashSet()) { mergedItem(mergedInto, it) }
+    return patchParagraphs(
+        current.associate { p ->
+            val original = p.properties
+            val item = mergedItem(mergedInto, original.item)
+            val moved = movedItemProperties(original, item, properties[item])
+            p.anchor to moved.copy(parent = survivingParent(moved.parent, mergedInto, surviving, priorItems))
+        },
+    )
+}
+
+private fun ownersByUnit(units: List<TextUnit>, current: List<ParagraphBlock>): HashMap<Long, String> {
     val ownerByUnit = HashMap<Long, String>()
     for (p in current) {
         for (i in p.start until (p.end + if (p.hasBreak)1 else 0)) {
@@ -208,59 +273,66 @@ fun Document.repairListParents(before: Document): Document {
                 p.properties.item
         }
     }
-    val mergedInto = HashMap<String, String>()
-    // A consumed first leaf can leave continuation paragraphs behind. Direct
-    // sibling joins move those paragraphs and children into the surviving left
-    // item; original provenance must not resurrect the emptied right container.
-    for ((id, ps) in priorItems) {
-        val first = ps.first()
-        if (first.anchor in currentHeads)continue
-        val owner = (first.start until (first.end + if (first.hasBreak)1 else 0)).firstNotNullOfOrNull {
-            ownerByUnit[before.units[it].id]?.takeIf { item -> item.isNotEmpty() && item != id }
-        } ?: continue
-        val left = properties[owner] ?: continue
-        if (left.parent == first.properties.parent && left.list == first.properties.list)mergedInto[id] = owner
+    return ownerByUnit
+}
+
+private fun siblingMergeTarget(
+    before: Document,
+    id: String,
+    first: ParagraphBlock,
+    ownerByUnit: Map<Long, String>,
+    properties: Map<String, ParagraphProperties>,
+): String? {
+    val owner = (first.start until (first.end + if (first.hasBreak)1 else 0)).firstNotNullOfOrNull {
+        ownerByUnit[before.units[it].id]?.takeIf { item -> item.isNotEmpty() && item != id }
     }
-    fun merged(id: String): String {
-        var value = id
-        val seen = HashSet<String>()
-        while (value in mergedInto) {
-            require(seen.add(value))
-            value = mergedInto.getValue(value)
-        }
-        return value
+    val left = owner?.let { properties[it] }
+    return owner.takeIf {
+        left != null && left.parent == first.properties.parent && left.list == first.properties.list
     }
-    val surviving = properties.keys.mapTo(HashSet()) { merged(it) }
-    fun parentOf(id: String): String {
-        var value = merged(id)
-        val seen = HashSet<String>()
-        while (value.isNotEmpty() && value !in surviving) {
-            require(seen.add(value))
-            value = merged(priorItems[value]?.first()?.properties?.parent ?: "")
-        }
-        return value
+}
+
+private fun mergedItem(mergedInto: Map<String, String>, id: String): String {
+    var value = id
+    val seen = HashSet<String>()
+    while (value in mergedInto) {
+        require(seen.add(value))
+        value = mergedInto.getValue(value)
     }
-    return patchParagraphs(
-        current.associate { p ->
-            val original = p.properties
-            val item = merged(original.item)
-            val owner = properties[item]
-            val moved = if (item != original.item &&
-                owner != null
-            ) {
-                original.copy(
-                    item = item,
-                    parent = owner.parent,
-                    list = owner.list,
-                    restart = owner.restart,
-                    markerTypography = owner.markerTypography,
-                )
-            } else {
-                original
-            }
-            p.anchor to moved.copy(parent = parentOf(moved.parent))
-        },
+    return value
+}
+
+private fun survivingParent(
+    id: String,
+    mergedInto: Map<String, String>,
+    surviving: Set<String>,
+    priorItems: Map<String, List<ParagraphBlock>>,
+): String {
+    var value = mergedItem(mergedInto, id)
+    val seen = HashSet<String>()
+    while (value.isNotEmpty() && value !in surviving) {
+        require(seen.add(value))
+        value = mergedItem(mergedInto, priorItems[value]?.first()?.properties?.parent ?: "")
+    }
+    return value
+}
+
+private fun movedItemProperties(
+    original: ParagraphProperties,
+    item: String,
+    owner: ParagraphProperties?,
+): ParagraphProperties = if (item != original.item &&
+    owner != null
+) {
+    original.copy(
+        item = item,
+        parent = owner.parent,
+        list = owner.list,
+        restart = owner.restart,
+        markerTypography = owner.markerTypography,
     )
+} else {
+    original
 }
 
 /** Removed object heads cannot absorb a surviving right text leaf. Follow retained
@@ -276,39 +348,60 @@ fun Document.repairRemovedImageHeads(before: Document, end: Int): Document {
             p.hasBreak &&
             before.units[p.end].id !in surviving
     }
-    if (removed.isEmpty())return this
+    return if (removed.isEmpty()) this else reattachRemovedHeads(before, end, prior, removed)
+}
+
+private fun Document.reattachRemovedHeads(
+    before: Document,
+    end: Int,
+    prior: List<ParagraphBlock>,
+    removed: List<ParagraphBlock>,
+): Document {
     val groups = paragraphs().associateBy { it.anchor }
     val sourceByUnit = HashMap<Long, ParagraphBlock>()
     for (p in prior)for (i in p.start until p.end + if (p.hasBreak)1 else 0)sourceByUnit[before.units[i].id] = p
     val fallback = before.paragraphAt(end)
     var result = this
     for (old in removed) {
-        val group = groups[old.anchor] ?: continue
-        val retained = (group.start until group.end + if (group.hasBreak)1 else 0).firstNotNullOfOrNull {
-            sourceByUnit[units[it].id]
-        }
-        val head = retained ?: fallback.takeIf { it.index > old.index } ?: continue
-        if (head.index == old.index)continue
-        val typing = if (head.start == 0)before.startStyle else before.units[head.start - 1].paragraphStyle
-        result = if (group.start == 0) {
-            result.copy(startParagraph = head.properties, rootBlockId = head.anchor, startStyle = typing)
-        } else {
-            result.copy(
-                units = result.units.mapIndexed { i, u ->
-                    if (i ==
-                        group.start - 1
-                    ) {
-                        u.copy(
-                            followingParagraph = head.properties,
-                            followingBlockId = head.anchor,
-                            paragraphStyle = typing,
-                        )
-                    } else {
-                        u
-                    }
-                },
-            )
-        }
+        val group = groups[old.anchor]
+        val head = group?.let { replacementHead(it, old, sourceByUnit, fallback) }
+        if (group != null && head != null) result = result.withReplacementHead(before, group, head)
     }
     return result
+}
+
+private fun Document.replacementHead(
+    group: ParagraphBlock,
+    old: ParagraphBlock,
+    sourceByUnit: Map<Long, ParagraphBlock>,
+    fallback: ParagraphBlock,
+): ParagraphBlock? {
+    val retained = (group.start until group.end + if (group.hasBreak)1 else 0).firstNotNullOfOrNull {
+        sourceByUnit[units[it].id]
+    }
+    val head = retained ?: fallback.takeIf { it.index > old.index }
+    return head?.takeIf { it.index != old.index }
+}
+
+private fun Document.withReplacementHead(before: Document, group: ParagraphBlock, head: ParagraphBlock): Document {
+    val typing = if (head.start == 0)before.startStyle else before.units[head.start - 1].paragraphStyle
+    return if (group.start == 0) {
+        copy(startParagraph = head.properties, rootBlockId = head.anchor, startStyle = typing)
+    } else {
+        copy(
+            units = units.mapIndexed { i, u ->
+                if (i ==
+                    group.start - 1
+                ) {
+                    u.copy(
+                        followingParagraph = head.properties,
+                        followingBlockId = head.anchor,
+                        paragraphStyle = typing,
+                    )
+                } else {
+                    u
+                }
+            },
+        )
+    }
 }

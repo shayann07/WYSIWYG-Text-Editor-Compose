@@ -1,7 +1,5 @@
 package dev.shayxo.composedoc.model
 
-data class DisplayStyle(val start: Int, val end: Int, val style: TextStyleFlags)
-
 /** Rendering projection only: raw constituent styles are never rewritten by segmentation. */
 fun displayedStyles(document: Document): List<DisplayStyle> {
     val result = ArrayList<DisplayStyle>()

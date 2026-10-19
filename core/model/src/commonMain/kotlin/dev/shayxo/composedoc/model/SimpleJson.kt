@@ -1,4 +1,9 @@
 package dev.shayxo.composedoc.model
+
+private const val UNICODE_ESCAPE_DIGITS = 4
+private const val HEX_RADIX = 16
+private const val NUMBER_PUNCTUATION = ".eE+-"
+
 class SimpleJson(private val src: String) {
     private var pos = 0
 
@@ -28,7 +33,8 @@ class SimpleJson(private val src: String) {
             pos++
             return map
         }
-        while (pos < src.length) {
+        var done = false
+        while (!done && pos < src.length) {
             skipWhitespace()
             val key = parseString()
             skipWhitespace()
@@ -36,15 +42,14 @@ class SimpleJson(private val src: String) {
             val value = parse()
             map[key] = value
             skipWhitespace()
-            if (peek() == ',') {
-                pos++
-                continue
+            when (peek()) {
+                ',' -> pos++
+                '}' -> {
+                    pos++
+                    done = true
+                }
+                else -> error("Expected ',' or '}' at pos $pos")
             }
-            if (peek() == '}') {
-                pos++
-                break
-            }
-            error("Expected ',' or '}' at pos $pos")
         }
         return map
     }
@@ -57,18 +62,18 @@ class SimpleJson(private val src: String) {
             pos++
             return list
         }
-        while (pos < src.length) {
+        var done = false
+        while (!done && pos < src.length) {
             list.add(parse())
             skipWhitespace()
-            if (peek() == ',') {
-                pos++
-                continue
+            when (peek()) {
+                ',' -> pos++
+                ']' -> {
+                    pos++
+                    done = true
+                }
+                else -> error("Expected ',' or ']' at pos $pos")
             }
-            if (peek() == ']') {
-                pos++
-                break
-            }
-            error("Expected ',' or ']' at pos $pos")
         }
         return list
     }
@@ -90,9 +95,9 @@ class SimpleJson(private val src: String) {
                     'r' -> sb.append('\r')
                     't' -> sb.append('\t')
                     'u' -> {
-                        val hex = src.substring(pos, pos + 4)
-                        pos += 4
-                        sb.append(hex.toInt(16).toChar())
+                        val hex = src.substring(pos, pos + UNICODE_ESCAPE_DIGITS)
+                        pos += UNICODE_ESCAPE_DIGITS
+                        sb.append(hex.toInt(HEX_RADIX).toChar())
                     }
                     else -> error("Unknown escape '\\$esc' at pos $pos")
                 }
@@ -106,16 +111,7 @@ class SimpleJson(private val src: String) {
     private fun parseNumber(): Number {
         val start = pos
         if (src[pos] == '-') pos++
-        while (pos < src.length &&
-            (
-                src[pos].isDigit() ||
-                    src[pos] == '.' ||
-                    src[pos] == 'e' ||
-                    src[pos] == 'E' ||
-                    src[pos] == '+' ||
-                    src[pos] == '-'
-                )
-        ) {
+        while (pos < src.length && (src[pos].isDigit() || src[pos] in NUMBER_PUNCTUATION)) {
             pos++
         }
         val s = src.substring(start, pos)
@@ -124,11 +120,11 @@ class SimpleJson(private val src: String) {
 
     private fun parseBoolean(): Boolean {
         if (src.startsWith("true", pos)) {
-            pos += 4
+            pos += "true".length
             return true
         }
         if (src.startsWith("false", pos)) {
-            pos += 5
+            pos += "false".length
             return false
         }
         error("Expected boolean at pos $pos")
@@ -136,7 +132,7 @@ class SimpleJson(private val src: String) {
 
     private fun parseNull(): Any? {
         if (src.startsWith("null", pos)) {
-            pos += 4
+            pos += "null".length
             return null
         }
         error("Expected null at pos $pos")

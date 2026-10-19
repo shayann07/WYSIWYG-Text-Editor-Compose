@@ -12,14 +12,20 @@ enum class WrapAffinity { DOWNSTREAM, UPSTREAM }
 
 enum class SegmentOrigin { RETAINED, REPLACEMENT }
 
-data class OverlaySegment(
-    val dcStart: Int,
-    val dcEnd: Int,
-    val units: List<TextUnit>,
-    val origin: SegmentOrigin,
-)
+data class OverlaySegment(val dcStart: Int, val dcEnd: Int, val units: List<TextUnit>, val origin: SegmentOrigin)
 
 enum class StoredFont { DEFAULT, SYSTEM, NOTO_NASTALIQ, GULZAR, NASKH }
+
+data class DisplayStyle(val start: Int, val end: Int, val style: TextStyleFlags)
+
+private const val MIN_STORED_FONT_SIZE = 8
+private const val MAX_STORED_FONT_SIZE = 96
+private const val MAX_RGB_COLOR = 0xffffff
+private const val BOLD_BIT = 1
+private const val ITALIC_BIT = 2
+private const val UNDERLINE_BIT = 4
+private const val STRIKE_BIT = 8
+private const val ALL_STYLE_BITS = 15
 
 data class TextStyleFlags
 @JvmOverloads
@@ -34,8 +40,8 @@ constructor(
     val link: LinkValue? = null,
 ) {
     init {
-        require(size == 0 || size in 8..96)
-        require(color in -1..0xffffff)
+        require(size == 0 || size in MIN_STORED_FONT_SIZE..MAX_STORED_FONT_SIZE)
+        require(color in -1..MAX_RGB_COLOR)
     }
 
     fun get(key: FormatKey) = when (key) {
@@ -45,26 +51,30 @@ constructor(
         FormatKey.STRIKE -> strike
     }
 
-    fun patch(
-        key: FormatKey,
-        value: Boolean,
-    ) = when (key) {
+    fun patch(key: FormatKey, value: Boolean) = when (key) {
         FormatKey.BOLD -> copy(bold = value)
         FormatKey.ITALIC -> copy(italic = value)
         FormatKey.UNDERLINE -> copy(underline = value)
         FormatKey.STRIKE -> copy(strike = value)
     }
 
-    val bits get() = (if (bold) 1 else 0) or (if (italic) 2 else 0) or (if (underline) 4 else 0) or (if (strike) 8 else 0)
+    val bits: Int
+        get() {
+            val boldBit = if (bold) BOLD_BIT else 0
+            val italicBit = if (italic) ITALIC_BIT else 0
+            val underlineBit = if (underline) UNDERLINE_BIT else 0
+            val strikeBit = if (strike) STRIKE_BIT else 0
+            return boldBit or italicBit or underlineBit or strikeBit
+        }
 
     companion object {
         fun fromBits(bits: Int): TextStyleFlags {
-            require(bits in 0..15)
+            require(bits in 0..ALL_STYLE_BITS)
             return TextStyleFlags(
-                bits and 1 != 0,
-                bits and 2 != 0,
-                bits and 4 != 0,
-                bits and 8 != 0,
+                bits and BOLD_BIT != 0,
+                bits and ITALIC_BIT != 0,
+                bits and UNDERLINE_BIT != 0,
+                bits and STRIKE_BIT != 0,
             )
         }
     }
@@ -135,12 +145,8 @@ constructor(
                 units[it].image == other.units[it].image
         }
 
-    @JvmOverloads fun splice(
-        a: Int,
-        b: Int,
-        inserted: List<TextUnit>,
-        canonicalRetainedParagraphs: Boolean = false,
-    ): Document {
+    @JvmOverloads
+    fun splice(a: Int, b: Int, inserted: List<TextUnit>, canonicalRetainedParagraphs: Boolean = false): Document {
         // Composition epochs retain raw attribution, but accepted structural moves
         // own paragraph metadata. A later partial commit must not revive old parents.
         val currentHeads =

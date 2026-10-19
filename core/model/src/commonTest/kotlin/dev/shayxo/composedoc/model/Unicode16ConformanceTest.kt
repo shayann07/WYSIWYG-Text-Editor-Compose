@@ -7,31 +7,38 @@ import kotlin.test.assertEquals
 class Unicode16ConformanceTest {
     @Test
     fun allPinnedGraphemeBreakCases() {
-        for (row in cases().flatMap { it.lines() }.filter { it.isNotBlank() }) {
-            val text = StringBuilder()
-            val expected = mutableListOf<Int>()
-            for (part in row.trim().split(Regex("\\s+"))) {
-                when (part) {
-                    "÷" -> expected.add(text.length)
-                    "×" -> Unit
-                    else -> {
-                        val point = part.toInt(16)
-                        if (point <= 0xFFFF) {
-                            text.append(point.toChar())
-                        } else {
-                            val scalar = point - 0x10000
-                            text.append((0xD800 + (scalar shr 10)).toChar())
-                            text.append((0xDC00 + (scalar and 0x3FF)).toChar())
-                        }
-                    }
-                }
-            }
-            assertEquals(expected, Graphemes.stops(text.toString()).toList(), row)
+        for (row in PINNED_CASES.flatMap { it.lines() }.filter { it.isNotBlank() }) {
+            val (text, expected) = parseRow(row)
+            assertEquals(expected, Graphemes.stops(text).toList(), row)
         }
     }
 
-    private fun cases(): List<String> = listOf(
-        """
+    private fun parseRow(row: String): Pair<String, List<Int>> {
+        val text = StringBuilder()
+        val expected = mutableListOf<Int>()
+        for (part in row.trim().split(Regex("\\s+"))) {
+            when (part) {
+                "÷" -> expected.add(text.length)
+                "×" -> Unit
+                else -> appendScalar(text, part.toInt(16))
+            }
+        }
+        return text.toString() to expected
+    }
+
+    private fun appendScalar(text: StringBuilder, point: Int) {
+        if (point <= 0xFFFF) {
+            text.append(point.toChar())
+        } else {
+            val scalar = point - 0x10000
+            text.append((0xD800 + (scalar shr 10)).toChar())
+            text.append((0xDC00 + (scalar and 0x3FF)).toChar())
+        }
+    }
+}
+
+private val PINNED_CASES: List<String> = listOf(
+    """
 ÷ 0020 ÷ 0020 ÷
 ÷ 0020 × 0308 ÷ 0020 ÷
 ÷ 0020 ÷ 000D ÷
@@ -133,7 +140,7 @@ class Unicode16ConformanceTest {
 ÷ 000A ÷ 0001 ÷
 ÷ 000A ÷ 0308 ÷ 0001 ÷
 """,
-        """
+    """
 ÷ 000A ÷ 200C ÷
 ÷ 000A ÷ 0308 × 200C ÷
 ÷ 000A ÷ 1F1E6 ÷
@@ -235,7 +242,7 @@ class Unicode16ConformanceTest {
 ÷ 200C × 0A03 ÷
 ÷ 200C × 0308 × 0A03 ÷
 """,
-        """
+    """
 ÷ 200C ÷ 1100 ÷
 ÷ 200C × 0308 ÷ 1100 ÷
 ÷ 200C ÷ 1160 ÷
@@ -337,7 +344,7 @@ class Unicode16ConformanceTest {
 ÷ 0600 × AC00 ÷
 ÷ 0600 × 0308 ÷ AC00 ÷
 """,
-        """
+    """
 ÷ 0600 × AC01 ÷
 ÷ 0600 × 0308 ÷ AC01 ÷
 ÷ 0600 × 0903 ÷
@@ -439,7 +446,7 @@ class Unicode16ConformanceTest {
 ÷ 1100 ÷ 0D4E ÷
 ÷ 1100 × 0308 ÷ 0D4E ÷
 """,
-        """
+    """
 ÷ 1100 ÷ 0915 ÷
 ÷ 1100 × 0308 ÷ 0915 ÷
 ÷ 1100 ÷ 231A ÷
@@ -541,7 +548,7 @@ class Unicode16ConformanceTest {
 ÷ 11A8 × 0900 ÷
 ÷ 11A8 × 0308 × 0900 ÷
 """,
-        """
+    """
 ÷ 11A8 × 094D ÷
 ÷ 11A8 × 0308 × 094D ÷
 ÷ 11A8 × 200D ÷
@@ -643,7 +650,7 @@ class Unicode16ConformanceTest {
 ÷ 0903 ÷ 0020 ÷
 ÷ 0903 × 0308 ÷ 0020 ÷
 """,
-        """
+    """
 ÷ 0903 ÷ 000D ÷
 ÷ 0903 × 0308 ÷ 000D ÷
 ÷ 0903 ÷ 000A ÷
@@ -745,7 +752,7 @@ class Unicode16ConformanceTest {
 ÷ 0D4E × 200C ÷
 ÷ 0D4E × 0308 × 200C ÷
 """,
-        """
+    """
 ÷ 0D4E × 1F1E6 ÷
 ÷ 0D4E × 0308 ÷ 1F1E6 ÷
 ÷ 0D4E × 0600 ÷
@@ -847,7 +854,7 @@ class Unicode16ConformanceTest {
 ÷ 231A ÷ 1100 ÷
 ÷ 231A × 0308 ÷ 1100 ÷
 """,
-        """
+    """
 ÷ 231A ÷ 1160 ÷
 ÷ 231A × 0308 ÷ 1160 ÷
 ÷ 231A ÷ 11A8 ÷
@@ -949,7 +956,7 @@ class Unicode16ConformanceTest {
 ÷ 0900 ÷ AC01 ÷
 ÷ 0900 × 0308 ÷ AC01 ÷
 """,
-        """
+    """
 ÷ 0900 × 0903 ÷
 ÷ 0900 × 0308 × 0903 ÷
 ÷ 0900 ÷ 0904 ÷
@@ -1051,7 +1058,7 @@ class Unicode16ConformanceTest {
 ÷ 200D ÷ 0915 ÷
 ÷ 200D × 0308 ÷ 0915 ÷
 """,
-        """
+    """
 ÷ 200D ÷ 231A ÷
 ÷ 200D × 0308 ÷ 231A ÷
 ÷ 200D × 0300 ÷
@@ -1146,5 +1153,4 @@ class Unicode16ConformanceTest {
 ÷ 003F × 094D ÷ 0924 ÷
 ÷ 0915 × 094D × 094D × 0924 ÷
 """,
-    )
-}
+)

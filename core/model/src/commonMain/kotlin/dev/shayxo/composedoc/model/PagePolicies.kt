@@ -3,9 +3,18 @@ package dev.shayxo.composedoc.model
 /** Prototype document units are96/inch. Display density/zoom are separate transforms. */
 const val DOCUMENT_UNITS_PER_INCH = 96f
 
-fun mmToDocument(mm: Float) = mm * DOCUMENT_UNITS_PER_INCH / 25.4f
+private const val MILLIMETRES_PER_INCH = 25.4f
+private const val POINTS_PER_INCH = 72f
+private const val MAX_WIDOW_ORPHAN_LINES = 5
+private const val MAX_RUNNING_TEXT_LENGTH = 512
+private const val MAX_RUNNING_LINE_BREAKS = 3
+private const val MIN_RUNNING_TEXT_SIZE = 8
+private const val MAX_RUNNING_TEXT_SIZE = 32
+private const val HEX_RADIX = 16
 
-fun documentToPoints(value: Float) = value * 72f / DOCUMENT_UNITS_PER_INCH
+fun mmToDocument(mm: Float) = mm * DOCUMENT_UNITS_PER_INCH / MILLIMETRES_PER_INCH
+
+fun documentToPoints(value: Float) = value * POINTS_PER_INCH / DOCUMENT_UNITS_PER_INCH
 
 enum class StructuralBreak { PARAGRAPH, PAGE }
 
@@ -17,7 +26,7 @@ data class PaginationRules(
     val orphans: Int = 2,
 ) {
     init {
-        require(widows in 1..5 && orphans in 1..5)
+        require(widows in 1..MAX_WIDOW_ORPHAN_LINES && orphans in 1..MAX_WIDOW_ORPHAN_LINES)
     }
 }
 
@@ -36,13 +45,13 @@ data class RunningFlow(
     init {
         require(isStructureIdentity(id))
         require(
-            text.length <= 512 &&
+            text.length <= MAX_RUNNING_TEXT_LENGTH &&
                 text.count {
                     it == '\n'
-                } <= 3,
+                } <= MAX_RUNNING_LINE_BREAKS,
         ) { "Running text supports512 UTF-16 units and up to4 soft lines" }
         require(
-            style.size == 0 || style.size in 8..32,
+            style.size == 0 || style.size in MIN_RUNNING_TEXT_SIZE..MAX_RUNNING_TEXT_SIZE,
         ) { "Running text size must be8-32" }
         require(style.link == null)
     }
@@ -114,7 +123,7 @@ fun outputUnicodeIssues(d: Document): List<String> {
             } else {
                 if (c.isSurrogate()) {
                     result +=
-                        "$label UTF-16 offset$i: isolated surrogate U+${c.code.toString(16).uppercase()}"
+                        "$label UTF-16 offset$i: isolated surrogate U+${c.code.toString(HEX_RADIX).uppercase()}"
                 }
                 i++
             }
