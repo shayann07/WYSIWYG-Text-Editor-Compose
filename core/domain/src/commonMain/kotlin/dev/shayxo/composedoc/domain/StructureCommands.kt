@@ -404,7 +404,7 @@ private class StructureEditor(
             link != null &&
                 command.label.isNotEmpty() &&
                 command.label.length <= MAX_LINK_LABEL_LENGTH &&
-                command.label.none { it == '\n' || it == '￼' },
+                command.label.none { it == '\n' || it == '\uFFFC' },
         )
         val seed = d.units.getOrNull(target.start - 1)?.style ?: d.startStyle
         d =
@@ -451,7 +451,7 @@ private class StructureEditor(
                     followingParagraph = p.properties.copy(heading = 0),
                 )
         }
-        inserted += TextUnit(allocate(), '￼', UnitKind.IMAGE, image = command.image)
+        inserted += TextUnit(allocate(), '\uFFFC', UnitKind.IMAGE, image = command.image)
         val suffix = d.paragraphAt(target.end)
         val retainTail = target.end < suffix.end
         val tailProperties = if (retainTail)suffix.properties else p.properties.copy(heading = 0)
