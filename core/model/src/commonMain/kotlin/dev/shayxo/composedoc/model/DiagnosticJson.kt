@@ -10,7 +10,14 @@ fun evidenceJson(value: Any?): String = when (value) {
                 when (c) {
                     '\\' -> append("\\\\")
                     '"' -> append("\\\"")
-                    else -> if (c.code < 32 || c.isSurrogate()) append("\\u" + c.code.toString(16).padStart(4, '0')) else append(c)
+                    else ->
+                        if (c.code < 32 ||
+                            c.isSurrogate()
+                        ) {
+                            append("\\u" + c.code.toString(16).padStart(4, '0'))
+                        } else {
+                            append(c)
+                        }
                 }
             }
             append('"')

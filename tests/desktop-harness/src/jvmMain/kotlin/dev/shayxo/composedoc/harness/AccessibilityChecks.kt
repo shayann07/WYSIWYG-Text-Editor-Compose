@@ -49,7 +49,11 @@ fun runAccessibilityHostChecks(surface: EditorSurface) {
     var publications = 0
     val attributeEvents = ArrayList<java.beans.PropertyChangeEvent>()
     val styleListener = java.beans.PropertyChangeListener { event ->
-        if (event.propertyName == javax.accessibility.AccessibleContext.ACCESSIBLE_TEXT_ATTRIBUTES_CHANGED) attributeEvents += event
+        if (event.propertyName ==
+            javax.accessibility.AccessibleContext.ACCESSIBLE_TEXT_ATTRIBUTES_CHANGED
+        ) {
+            attributeEvents += event
+        }
     }
     surface.accessibleContext.addPropertyChangeListener(styleListener)
     val oldObserver = e.onChange
@@ -65,9 +69,17 @@ fun runAccessibilityHostChecks(surface: EditorSurface) {
     }
     check(publications == 1 && e.snapshot().undoCount == stylesBefore.undoCount + 1)
     val attributeSequence = attributeEvents.single().newValue as javax.accessibility.AccessibleAttributeSequence
-    check(attributeSequence.startIndex == 0 && attributeSequence.endIndex == 4 && StyleConstants.isBold(attributeSequence.attributes) && StyleConstants.isItalic(attributeSequence.attributes))
+    check(
+        attributeSequence.startIndex == 0 &&
+            attributeSequence.endIndex == 4 &&
+            StyleConstants.isBold(attributeSequence.attributes) &&
+            StyleConstants.isItalic(attributeSequence.attributes),
+    )
     check(e.snapshot().visible.units.take(4).all { it.style == TextStyleFlags(true, true) })
-    check(StyleConstants.isBold(editable.getCharacterAttribute(0)) && StyleConstants.isItalic(editable.getCharacterAttribute(0)))
+    check(
+        StyleConstants.isBold(editable.getCharacterAttribute(0)) &&
+            StyleConstants.isItalic(editable.getCharacterAttribute(0)),
+    )
     e.perform(EditAction.Undo)
     check(e.snapshot().committed == stylesBefore.committed && e.snapshot().selection == stylesBefore.selection)
     e.perform(EditAction.Redo)
@@ -83,7 +95,9 @@ fun runAccessibilityHostChecks(surface: EditorSurface) {
     editable.selectText(editable.charCount, editable.charCount)
     val targetedBefore = e.snapshot()
     editable.insertTextAtIndex(2, "X")
-    check(e.snapshot().committed.units[2].style == TextStyleFlags(true, true)) { "AT insertion inherited unrelated current-caret style" }
+    check(e.snapshot().committed.units[2].style == TextStyleFlags(true, true)) {
+        "AT insertion inherited unrelated current-caret style"
+    }
     e.perform(EditAction.Undo)
     check(e.snapshot().committed == targetedBefore.committed && e.snapshot().selection == targetedBefore.selection)
     val beforeUnrelatedCaret = e.snapshot()
@@ -93,7 +107,11 @@ fun runAccessibilityHostChecks(surface: EditorSurface) {
     editable.setTextContents("A😀Z")
     val surrogate = e.snapshot()
     editable.delete(1, 2)
-    check(e.snapshot().visible.units.map { it.char.code } == listOf(65, 0xDE00, 90)) { "AT protocol range was grapheme-snapped or normalized" }
+    check(
+        e.snapshot().visible.units.map {
+            it.char.code
+        } == listOf(65, 0xDE00, 90),
+    ) { "AT protocol range was grapheme-snapped or normalized" }
     e.perform(EditAction.Undo)
     check(e.snapshot().committed == surrogate.committed)
     editable.setTextContents("ک")
@@ -157,12 +175,16 @@ fun runAccessibilityHostChecks(surface: EditorSurface) {
     input("日", 1, null)
     check(e.snapshot().committed.text == "A日" && e.snapshot().marked == null)
     check(e.snapshot().committed.units.first().style == TextStyleFlags())
-    check(e.snapshot().undoCount == beforePendingAttributes.undoCount + 1) { "Queued Undo must remove the real multi-attribute transaction, preserving the composition group" }
+    check(e.snapshot().undoCount == beforePendingAttributes.undoCount + 1) {
+        "Queued Undo must remove the real multi-attribute transaction, preserving the composition group"
+    }
     e.perform(EditAction.Undo)
     check(e.snapshot().committed.text == "A")
     while (e.snapshot().undoCount > 0) e.perform(EditAction.Undo)
     check(e.snapshot().visible.text.isEmpty())
-    println("PASS editable accessibility: exact UTF-16, target capture, attributes, structure and composition history; OS AT NOT RUN")
+    println(
+        "PASS editable accessibility: exact UTF-16, target capture, attributes, structure and composition history; OS AT NOT RUN",
+    )
 }
 
 /** Run outside EDT so the actual accessibility owner-thread handoff can be tested. */
@@ -177,7 +199,9 @@ fun runAccessibilityThreadChecks(resultFile: File) {
     try {
         var windowTreeContexts = 0
         SwingUtilities.invokeAndWait {
-            val seen = java.util.Collections.newSetFromMap(java.util.IdentityHashMap<javax.accessibility.AccessibleContext, Boolean>())
+            val seen = java.util.Collections.newSetFromMap(
+                java.util.IdentityHashMap<javax.accessibility.AccessibleContext, Boolean>(),
+            )
             val editors = ArrayList<javax.accessibility.AccessibleContext>()
             fun visit(accessible: javax.accessibility.Accessible?) {
                 val context = accessible?.accessibleContext ?: return
@@ -197,7 +221,10 @@ fun runAccessibilityThreadChecks(resultFile: File) {
         editable.replaceText(0, 4, "کتاب")
         check(editable.getTextRange(0, editable.charCount) == "کتاب English")
         val initialAttributes = checkNotNull(editable.getCharacterAttribute(0)) // Bridge worker, not EDT.
-        check(StyleConstants.getFontFamily(initialAttributes) == "SansSerif" && StyleConstants.getFontSize(initialAttributes) == 18)
+        check(
+            StyleConstants.getFontFamily(initialAttributes) == "SansSerif" &&
+                StyleConstants.getFontSize(initialAttributes) == 18,
+        )
         var typographyEvents = 0
         SwingUtilities.invokeAndWait {
             surface.viewModel.verificationEngine.selectAll()
@@ -215,11 +242,19 @@ fun runAccessibilityThreadChecks(resultFile: File) {
                     val old = event.oldValue as javax.accessibility.AccessibleAttributeSequence
                     val next = event.newValue as javax.accessibility.AccessibleAttributeSequence
                     check(old.startIndex == next.startIndex && old.endIndex == next.endIndex)
-                    check(StyleConstants.getFontFamily(old.attributes) == "SansSerif" && StyleConstants.getFontSize(old.attributes) == 18)
-                    check(StyleConstants.getFontFamily(next.attributes) == "Noto Nastaliq Urdu" && StyleConstants.getFontSize(next.attributes) == 26)
+                    check(
+                        StyleConstants.getFontFamily(old.attributes) == "SansSerif" &&
+                            StyleConstants.getFontSize(old.attributes) == 18,
+                    )
+                    check(
+                        StyleConstants.getFontFamily(next.attributes) == "Noto Nastaliq Urdu" &&
+                            StyleConstants.getFontSize(next.attributes) == 26,
+                    )
                     for (index in next.startIndex until next.endIndex) {
                         val observed = checkNotNull(editable.getCharacterAttribute(index))
-                        check(observed.isEqual(next.attributes)) { "Font notification disagreed with the published attributes" }
+                        check(observed.isEqual(next.attributes)) {
+                            "Font notification disagreed with the published attributes"
+                        }
                         check(StyleConstants.isBold(old.attributes) == StyleConstants.isBold(observed))
                         check(StyleConstants.isItalic(old.attributes) == StyleConstants.isItalic(observed))
                         covered += index
@@ -243,7 +278,10 @@ fun runAccessibilityThreadChecks(resultFile: File) {
             surface.viewModel.verificationEngine.abortComposition()
         }
         val requested = checkNotNull(editable.getCharacterAttribute(0))
-        check(StyleConstants.getFontFamily(requested) == "Noto Nastaliq Urdu" && StyleConstants.getFontSize(requested) == 26)
+        check(
+            StyleConstants.getFontFamily(requested) == "Noto Nastaliq Urdu" &&
+                StyleConstants.getFontSize(requested) == 26,
+        )
         val entered = CountDownLatch(1)
         val release = CountDownLatch(1)
         val failure = AtomicReference<Throwable?>()
@@ -266,7 +304,9 @@ fun runAccessibilityThreadChecks(resultFile: File) {
             val deadline = System.nanoTime() + 2_000_000_000L
             var queued = false
             while (worker.isAlive && System.nanoTime() < deadline) {
-                if (worker.state == Thread.State.WAITING && worker.stackTrace.any { it.methodName == "invokeAndWait" }) {
+                if (worker.state == Thread.State.WAITING &&
+                    worker.stackTrace.any { it.methodName == "invokeAndWait" }
+                ) {
                     queued = true
                     break
                 }
@@ -291,7 +331,8 @@ fun runAccessibilityThreadChecks(resultFile: File) {
                     "requestedTypographyWorkerRead" to "PASS", "typographyNotifications" to typographyEvents,
                     "typographyPreservesCompositionAndHistory" to "PASS",
                     "changedBasisQueuedRequest" to "REJECTED_PRESERVED", "retiredSurfaceAdmission" to "REJECTED",
-                    "scope" to "Java AccessibleEditableText API calls on a real mounted AWT surface; no OS screen reader or system clipboard qualification",
+                    "scope" to
+                        "Java AccessibleEditableText API calls on a real mounted AWT surface; no OS screen reader or system clipboard qualification",
                 ),
             ),
             Charsets.UTF_8,

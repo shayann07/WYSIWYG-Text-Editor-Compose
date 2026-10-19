@@ -35,18 +35,19 @@ data class RunningFlow(
 ) {
     init {
         require(isStructureIdentity(id))
-        require(text.length <= 512 && text.count { it == '\n' } <= 3) { "Running text supports512 UTF-16 units and up to4 soft lines" }
+        require(
+            text.length <= 512 &&
+                text.count {
+                    it == '\n'
+                } <= 3,
+        ) { "Running text supports512 UTF-16 units and up to4 soft lines" }
         require(
             style.size == 0 || style.size in 8..32,
         ) { "Running text size must be8-32" }
         require(style.link == null)
     }
 
-    fun display(
-        page: Int,
-        total: Int,
-        digits: PageDigits,
-    ): String {
+    fun display(page: Int, total: Int, digits: PageDigits): String {
         require(page > 0 && total >= page)
 
         fun number(n: Int): String {
@@ -88,10 +89,7 @@ data class RunningContent(
     }
 
     fun same(other: RunningContent): Boolean {
-        fun equal(
-            a: RunningFlow?,
-            b: RunningFlow?,
-        ) = if (a == null || b == null)a == b else a.same(b)
+        fun equal(a: RunningFlow?, b: RunningFlow?) = if (a == null || b == null)a == b else a.same(b)
         return differentFirst == other.differentFirst &&
             digits == other.digits &&
             equal(
@@ -101,14 +99,12 @@ data class RunningContent(
             equal(footer, other.footer)
     }
 
-    fun fresh() = copy(header = header?.copy(id = newStructureIdentity()), footer = footer?.copy(id = newStructureIdentity()))
+    fun fresh() =
+        copy(header = header?.copy(id = newStructureIdentity()), footer = footer?.copy(id = newStructureIdentity()))
 }
 
 fun outputUnicodeIssues(d: Document): List<String> {
-    fun invalid(
-        label: String,
-        text: String,
-    ): List<String> {
+    fun invalid(label: String, text: String): List<String> {
         val result = ArrayList<String>()
         var i = 0
         while (i < text.length) {
@@ -116,7 +112,10 @@ fun outputUnicodeIssues(d: Document): List<String> {
             if (c.isHighSurrogate() && i + 1 < text.length && text[i + 1].isLowSurrogate()) {
                 i += 2
             } else {
-                if (c.isSurrogate())result += "$label UTF-16 offset$i: isolated surrogate U+${c.code.toString(16).uppercase()}"
+                if (c.isSurrogate()) {
+                    result +=
+                        "$label UTF-16 offset$i: isolated surrogate U+${c.code.toString(16).uppercase()}"
+                }
                 i++
             }
         }

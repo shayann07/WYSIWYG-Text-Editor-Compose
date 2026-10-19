@@ -82,7 +82,11 @@ fun runPagesOutputChecks(result: File) {
         val before = e.snapshot()
         e.structure(StructureCommand.PageBreak)
         val after = e.snapshot()
-        check(after.committed.text == "کتاب\u000c English" && after.committed.units[4].structuralBreak == StructuralBreak.PAGE && after.selection == Selection(5, 5))
+        check(
+            after.committed.text == "کتاب\u000c English" &&
+                after.committed.units[4].structuralBreak == StructuralBreak.PAGE &&
+                after.selection == Selection(5, 5),
+        )
         check(after.undoCount == before.undoCount + 1 && after.committed.plainText() == "کتاب\u000c English")
         e.perform(EditAction.Undo)
         check(e.snapshot().committed == before.committed)
@@ -90,7 +94,10 @@ fun runPagesOutputChecks(result: File) {
         check(e.snapshot().committed == after.committed)
         val plain = EditorEngine()
         plain.replace("a\u000cb\nc\n", "Plain", paragraphBreaks = true)
-        check(plain.snapshot().committed.units[1].structuralBreak == StructuralBreak.PAGE && plain.snapshot().committed.units[3].structuralBreak == StructuralBreak.PARAGRAPH)
+        check(
+            plain.snapshot().committed.units[1].structuralBreak == StructuralBreak.PAGE &&
+                plain.snapshot().committed.units[3].structuralBreak == StructuralBreak.PARAGRAPH,
+        )
     }
     test("half-open/backward paragraph targeting and split inheritance") {
         val e = EditorEngine()
@@ -99,11 +106,17 @@ fun runPagesOutputChecks(result: File) {
         val rules = PaginationRules(true, true, true, 3, 2)
         e.move(Selection(4, 0))
         e.structure(StructureCommand.Pagination(rules))
-        check(e.snapshot().committed.paragraphs().map { it.properties.pagination } == listOf(rules, PaginationRules(), PaginationRules()))
+        check(
+            e.snapshot().committed.paragraphs().map { it.properties.pagination } ==
+                listOf(rules, PaginationRules(), PaginationRules()),
+        )
         check(e.snapshot().committed.units.map { it.id } == raw.units.map { it.id })
         e.move(Selection(1, 1))
         e.structure(StructureCommand.Enter(false))
-        check(e.snapshot().committed.paragraphs()[1].properties.pagination == rules.copy(breakBefore = false, keepWithNext = false))
+        check(
+            e.snapshot().committed.paragraphs()[1].properties.pagination ==
+                rules.copy(breakBefore = false, keepWithNext = false),
+        )
     }
     val specimen = pagesWritingSample()
     val encoded = DocumentFiles.encode(specimen)
@@ -117,7 +130,9 @@ fun runPagesOutputChecks(result: File) {
         val id = java.util.UUID.randomUUID().toString()
         store.acquire(id).use { store.publish(it, LocalCopy(id, 1, 1, null, specimen)) }
         check(store.restore(store.scan().single()).document.same(specimen))
-        val raw = specimen.copy(running = specimen.running.copy(header = specimen.running.header!!.copy(text = "کِ \ud800")))
+        val raw = specimen.copy(
+            running = specimen.running.copy(header = specimen.running.header!!.copy(text = "کِ \ud800")),
+        )
         check(DocumentFiles.decode(DocumentFiles.encode(raw)).running.header!!.text == "کِ \ud800")
     }
     test("rich clipboard retains page-breaks/rules but destination running content owns its flows") {
@@ -145,11 +160,36 @@ fun runPagesOutputChecks(result: File) {
         e.perform(EditAction.Redo)
         check(e.snapshot().committed.running == RunningContent())
         val copy = cloneDocument(specimen)
-        check(copy.text == specimen.text && copy.resources == specimen.resources && copy.running.same(specimen.running) && copy.running.header!!.id != specimen.running.header!!.id && copy.running.footer!!.id != specimen.running.footer!!.id)
+        check(
+            copy.text == specimen.text &&
+                copy.resources == specimen.resources &&
+                copy.running.same(specimen.running) &&
+                copy.running.header!!.id != specimen.running.header!!.id &&
+                copy.running.footer!!.id != specimen.running.footer!!.id,
+        )
         check(copy.units.map { it.id }.toSet().intersect(specimen.units.map { it.id }.toSet()).isEmpty())
         val originalItems = specimen.paragraphs().map { it.properties.item }.filter { it.isNotEmpty() }.toSet()
         check(copy.paragraphs().none { it.properties.item in originalItems })
-        check(copy.paragraphs().map { listOf(it.properties.heading, it.properties.direction, it.properties.alignment, it.properties.pagination, copy.itemDepth(it.properties.item)) } == specimen.paragraphs().map { listOf(it.properties.heading, it.properties.direction, it.properties.alignment, it.properties.pagination, specimen.itemDepth(it.properties.item)) })
+        check(
+            copy.paragraphs().map {
+                listOf(
+                    it.properties.heading,
+                    it.properties.direction,
+                    it.properties.alignment,
+                    it.properties.pagination,
+                    copy.itemDepth(it.properties.item),
+                )
+            } ==
+                specimen.paragraphs().map {
+                    listOf(
+                        it.properties.heading,
+                        it.properties.direction,
+                        it.properties.alignment,
+                        it.properties.pagination,
+                        specimen.itemDepth(it.properties.item),
+                    )
+                },
+        )
     }
     test("pagination commands settle synthetic composition without accepting candidates") {
         val e = EditorEngine()
@@ -174,10 +214,20 @@ fun runPagesOutputChecks(result: File) {
     lateinit var window: JFrame
     lateinit var surface: EditorSurface
     edt {
-        window = showEditor(initial = specimen, offscreenTest = true, fontProfile = "noto-nastaliq", paged = true, recoveryDirectory = root.resolve("live"))
+        window =
+            showEditor(
+                initial = specimen,
+                offscreenTest = true,
+                fontProfile = "noto-nastaliq",
+                paged = true,
+                recoveryDirectory = root.resolve("live"),
+            )
         surface = findSurface(window)!!
     }
-    waitFor("page plan/resources") { surface.geometry()?.documentPagePlan != null && specimen.units.mapNotNull { it.image?.resource }.all { ImageResources.cached(it) != null } }
+    waitFor("page plan/resources") {
+        surface.geometry()?.documentPagePlan != null &&
+            specimen.units.mapNotNull { it.image?.resource }.all { ImageResources.cached(it) != null }
+    }
     lateinit var plan: DocumentPagePlan
     test("actual captured plan coverage and8-12page specimen") {
         edt {
@@ -186,7 +236,13 @@ fun runPagesOutputChecks(result: File) {
             check(plan.pageCount in 8..12)
             check(plan.document.same(specimen))
             check(plan.running.none { it.page == 0 })
-            check(plan.running.filter { !it.header }.all { it.text.endsWith(" / " + plan.pageCount.toString().map { c -> '\u06f0' + (c - '0') }.joinToString("")) })
+            check(
+                plan.running.filter { !it.header }.all {
+                    it.text.endsWith(
+                        " / " + plan.pageCount.toString().map { c -> '\u06f0' + (c - '0') }.joinToString(""),
+                    )
+                },
+            )
         }
         metrics["specimenPages"] = plan.pageCount
         metrics["specimenUnits"] = specimen.units.size
@@ -197,7 +253,12 @@ fun runPagesOutputChecks(result: File) {
         metrics["independentPagePolicyCases"] = policyChecks
     }
     test("canonical line plan stable across continuous/paged and all zooms/viewport widths") {
-        val expected = plan.paragraphs.map { p -> (0 until p.lineCount).map { p.layout.getLineStart(it) to p.layout.getLineEnd(it) } }
+        val expected = plan.paragraphs.map { p ->
+            (0 until p.lineCount).map {
+                p.layout.getLineStart(it) to
+                    p.layout.getLineEnd(it)
+            }
+        }
         val before = surface.viewModel.verificationEngine.snapshot()
         for (paged in listOf(false, true)) {
             for (zoom in listOf(.5f, .75f, 1f)) {
@@ -210,9 +271,20 @@ fun runPagesOutputChecks(result: File) {
                 waitFor("view") { surface.geometry()?.documentPagePlan != null }
                 edt {
                     val p = surface.geometry()!!.documentPagePlan!!
-                    check(p.paragraphs.map { q -> (0 until q.lineCount).map { q.layout.getLineStart(it) to q.layout.getLineEnd(it) } } == expected)
+                    check(
+                        p.paragraphs.map { q ->
+                            (0 until q.lineCount).map {
+                                q.layout.getLineStart(it) to
+                                    q.layout.getLineEnd(it)
+                            }
+                        } ==
+                            expected,
+                    )
                     check(p.pageCount == plan.pageCount)
-                    check(surface.viewModel.verificationEngine.snapshot().committed == before.committed && surface.viewModel.verificationEngine.snapshot().undoCount == before.undoCount)
+                    check(
+                        surface.viewModel.verificationEngine.snapshot().committed == before.committed &&
+                            surface.viewModel.verificationEngine.snapshot().undoCount == before.undoCount,
+                    )
                 }
             }
         }
@@ -247,7 +319,11 @@ fun runPagesOutputChecks(result: File) {
             val g = canvas.createGraphics()
             try {
                 check(pg.getPrintable(0).print(g, pg.getPageFormat(0), 3) == java.awt.print.Printable.NO_SUCH_PAGE)
-                check(runCatching { captured.pageable(cancelled = { true }).getPrintable(0).print(g, captured.paperFormat(), 0) }.exceptionOrNull() is java.awt.print.PrinterAbortException)
+                check(
+                    runCatching {
+                        captured.pageable(cancelled = { true }).getPrintable(0).print(g, captured.paperFormat(), 0)
+                    }.exceptionOrNull() is java.awt.print.PrinterAbortException,
+                )
             } finally {
                 g.dispose()
                 canvas.flush()
@@ -269,7 +345,8 @@ fun runPagesOutputChecks(result: File) {
             last = now
             ticks++
         }
-        fun children(c: java.awt.Component): List<java.awt.Component> = listOf(c) + (if (c is java.awt.Container)c.components.flatMap(::children) else emptyList())
+        fun children(c: java.awt.Component): List<java.awt.Component> =
+            listOf(c) + (if (c is java.awt.Container)c.components.flatMap(::children) else emptyList())
         val ui = window.rootPane.getClientProperty("editor.pageOutput") as PageOutputUi
         lateinit var dialog: JDialog
         edt {
@@ -277,31 +354,49 @@ fun runPagesOutputChecks(result: File) {
             children(ui.panel).filterIsInstance<JButton>().single { it.name == "print-preview" }.doClick()
         }
         waitFor("preview progress") {
-            val candidate = java.awt.Window.getWindows().filterIsInstance<JDialog>().firstOrNull { it.isVisible && it.title.startsWith("Captured print preview") }
+            val candidate = java.awt.Window.getWindows().filterIsInstance<JDialog>().firstOrNull {
+                it.isVisible &&
+                    it.title.startsWith("Captured print preview")
+            }
             if (candidate == null) {
                 false
             } else {
                 dialog = candidate
-                children(dialog).filterIsInstance<JLabel>().any { Regex("Captured[1-9][0-9]*/[0-9]+").matches(it.text ?: "") }
+                children(dialog).filterIsInstance<JLabel>().any {
+                    Regex("Captured[1-9][0-9]*/[0-9]+").matches(
+                        it.text ?: "",
+                    )
+                }
             }
         }
         edt {
             children(dialog).filterIsInstance<JButton>().single { it.text == "Cancel / Close" }.doClick()
             heartbeat.stop()
             check(!dialog.isDisplayable)
-            check(surface.viewModel.verificationEngine.snapshot().committed == prior.committed && surface.viewModel.verificationEngine.snapshot().undoCount == prior.undoCount)
+            check(
+                surface.viewModel.verificationEngine.snapshot().committed == prior.committed &&
+                    surface.viewModel.verificationEngine.snapshot().undoCount == prior.undoCount,
+            )
         }
-        metrics["previewCaptureHeartbeat"] = mapOf("ticks" to ticks, "maxGapMs" to longest / 1e6, "declaredLimitMs" to 250)
+        metrics["previewCaptureHeartbeat"] =
+            mapOf("ticks" to ticks, "maxGapMs" to longest / 1e6, "declaredLimitMs" to 250)
         check(ticks > 0 && longest < 250_000_000L)
     }
     fun fixedPages(count: Int): Document {
         val units = ArrayList<TextUnit>()
         var id = 0L
         repeat(count) { page ->
-            if (page > 0)units += TextUnit(++id, '\u000c', UnitKind.PARAGRAPH_BREAK, structuralBreak = StructuralBreak.PAGE)
+            if (page >
+                0
+            ) {
+                units += TextUnit(++id, '\u000c', UnitKind.PARAGRAPH_BREAK, structuralBreak = StructuralBreak.PAGE)
+            }
             "صفحہ${page + 1} — Urdu English".forEach { units += TextUnit(++id, it) }
         }
-        return Document(units, running = RunningContent(footer = RunningFlow(text = "صفحہ", field = RunningField.PAGE_TOTAL)))
+        return Document(
+            units,
+            running = RunningContent(footer = RunningFlow(text = "صفحہ", field = RunningField.PAGE_TOTAL)),
+        )
     }
     test("page fields stabilize at9-10 and99-100 without a content/history entry") {
         for (count in listOf(10, 100)) {
@@ -317,7 +412,10 @@ fun runPagesOutputChecks(result: File) {
                 val p = s.geometry()!!.documentPagePlan!!
                 check(p.running.last().text == "صفحہ $count / $count")
                 check(p.running[count - 2].text == "صفحہ ${count - 1} / $count")
-                check(s.viewModel.verificationEngine.snapshot().committed.same(d) && s.viewModel.verificationEngine.snapshot().undoCount == 0)
+                check(
+                    s.viewModel.verificationEngine.snapshot().committed.same(d) &&
+                        s.viewModel.verificationEngine.snapshot().undoCount == 0,
+                )
                 owner.dispose()
             }
         }
@@ -328,11 +426,35 @@ fun runPagesOutputChecks(result: File) {
         val units = ArrayList<TextUnit>()
         var serial = 0L
         repeat(5) { group ->
-            fun props(p: ParagraphProperties) = p.copy(item = if (p.item.isEmpty())"" else "$group-${p.item}", parent = if (p.parent.isEmpty())"" else "$group-${p.parent}")
-            if (group > 0)units += TextUnit(++serial, '\u000c', UnitKind.PARAGRAPH_BREAK, followingParagraph = props(specimen.startParagraph), structuralBreak = StructuralBreak.PAGE)
-            specimen.units.forEach { units += it.copy(id = ++serial, followingBlockId = Long.MIN_VALUE, followingParagraph = props(it.followingParagraph)) }
+            fun props(p: ParagraphProperties) = p.copy(
+                item = if (p.item.isEmpty())"" else "$group-${p.item}",
+                parent = if (p.parent.isEmpty())"" else "$group-${p.parent}",
+            )
+            if (group >
+                0
+            ) {
+                units +=
+                    TextUnit(
+                        ++serial,
+                        '\u000c',
+                        UnitKind.PARAGRAPH_BREAK,
+                        followingParagraph = props(specimen.startParagraph),
+                        structuralBreak = StructuralBreak.PAGE,
+                    )
+            }
+            specimen.units.forEach {
+                units +=
+                    it.copy(
+                        id = ++serial,
+                        followingBlockId = Long.MIN_VALUE,
+                        followingParagraph = props(it.followingParagraph),
+                    )
+            }
         }
-        val large = specimen.copy(units = units, startParagraph = specimen.startParagraph.copy(item = "", parent = "", list = ListKind.NONE))
+        val large = specimen.copy(
+            units = units,
+            startParagraph = specimen.startParagraph.copy(item = "", parent = "", list = ListKind.NONE),
+        )
         validateStructure(large)
         lateinit var owner: JFrame
         lateinit var s: EditorSurface
@@ -360,14 +482,35 @@ fun runPagesOutputChecks(result: File) {
         }
         val raster = (System.nanoTime() - renderStart) / 1e6
         check(raster < limits.getValue("endpointRasterMs"))
-        metrics["fiftyPageWorkload"] = mapOf("units" to large.units.size, "layoutMs" to layout, "captureMs" to capture, "endpointRasterMs" to raster, "heapUsedBytes" to java.lang.management.ManagementFactory.getMemoryMXBean().heapMemoryUsage.used)
+        metrics["fiftyPageWorkload"] =
+            mapOf(
+                "units" to large.units.size,
+                "layoutMs" to layout,
+                "captureMs" to capture,
+                "endpointRasterMs" to raster,
+                "heapUsedBytes" to java.lang.management.ManagementFactory.getMemoryMXBean().heapMemoryUsage.used,
+            )
         edt {
-            check(s.viewModel.verificationEngine.snapshot().committed.same(large) && s.viewModel.verificationEngine.snapshot().undoCount == 0)
+            check(
+                s.viewModel.verificationEngine.snapshot().committed.same(large) &&
+                    s.viewModel.verificationEngine.snapshot().undoCount == 0,
+            )
             owner.dispose()
         }
     }
     edt { window.dispose() }
     check(errors.isEmpty())
-    result.writeText(evidenceJson(mapOf("status" to "PASS", "groups" to groups, "metrics" to metrics, "evidenceLevel" to "Synthetic commands/mounted rendering/print callbacks; not native interaction or semantic PDF/physical printing")), Charsets.UTF_8)
+    result.writeText(
+        evidenceJson(
+            mapOf(
+                "status" to "PASS",
+                "groups" to groups,
+                "metrics" to metrics,
+                "evidenceLevel" to
+                    "Synthetic commands/mounted rendering/print callbacks; not native interaction or semantic PDF/physical printing",
+            ),
+        ),
+        Charsets.UTF_8,
+    )
     println("PASS pages/output checks ${groups.size}")
 }

@@ -16,7 +16,13 @@ import javax.swing.KeyStroke
 import javax.swing.WindowConstants
 
 /** The same components remain mounted until valid admission or explicit Cancel. */
-fun validatedDialog(owner: JFrame, title: String, name: String, fields: List<Pair<String, JComponent>>, buttons: List<Pair<String, () -> String?>>) {
+fun validatedDialog(
+    owner: JFrame,
+    title: String,
+    name: String,
+    fields: List<Pair<String, JComponent>>,
+    buttons: List<Pair<String, () -> String?>>,
+) {
     val dialog = JDialog(owner, title, true).apply {
         this.name = name
         defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
@@ -69,7 +75,9 @@ fun validatedDialog(owner: JFrame, title: String, name: String, fields: List<Pai
             BorderLayout.SOUTH,
         )
     }
-    dialog.rootPane.registerKeyboardAction({ dialog.dispose() }, KeyStroke.getKeyStroke("ESCAPE"), JComponent.WHEN_IN_FOCUSED_WINDOW)
+    dialog.rootPane.registerKeyboardAction({
+        dialog.dispose()
+    }, KeyStroke.getKeyStroke("ESCAPE"), JComponent.WHEN_IN_FOCUSED_WINDOW)
     dialog.pack()
     dialog.setLocationRelativeTo(owner)
     dialog.isVisible = true
@@ -80,6 +88,7 @@ fun fitCombo(combo: JComboBox<*>) {
     val d = combo.preferredSize
     val fm = combo.getFontMetrics(combo.font)
     val width = (0 until combo.itemCount).maxOfOrNull { fm.stringWidth(combo.getItemAt(it).toString()) } ?: 0
-    combo.preferredSize = Dimension(maxOf(d.width, width + combo.insets.left + combo.insets.right + 36), maxOf(d.height, 26))
+    combo.preferredSize =
+        Dimension(maxOf(d.width, width + combo.insets.left + combo.insets.right + 36), maxOf(d.height, 26))
     combo.minimumSize = combo.preferredSize
 }

@@ -239,7 +239,9 @@ fun runChecks() {
         check(e.snapshot().visible.same(before))
         check(e.snapshot().marked != null)
     }
-    test("settlement watchdog deadline persists across candidate updates, repeated preedits, partial commits, and repeated commands") {
+    test(
+        "settlement watchdog deadline persists across candidate updates, repeated preedits, partial commits, and repeated commands",
+    ) {
         // Exact RecoveryAudit case 3: candidate update while command is pending must preserve deadline
         var clock = 0L
         val e = EditorEngine(Document(emptyList())) { clock }
@@ -250,7 +252,9 @@ fun runChecks() {
         clock = 1000L
         e.inputMethod("ab", 0, 2) // non-terminal candidate update
         check(e.snapshot().waiting) { "Engine must remain waiting while composition is still active" }
-        check(e.settlementRequestedAt == 0L) { "Non-terminal candidate update must preserve original settlementRequestedAt deadline" }
+        check(e.settlementRequestedAt == 0L) {
+            "Non-terminal candidate update must preserve original settlementRequestedAt deadline"
+        }
         check(!e.checkSettlementWatchdog(2000L)) { "Watchdog must not time out before 2000ms deadline" }
         // Repeated identical preedit and repeated queued command must also preserve original deadline
         clock = 1500L
@@ -279,7 +283,11 @@ fun runChecks() {
         // If composition later commits, cancelled commands never execute
         e.inputMethod("bc", 2, null)
         check(e.snapshot().visible.text == "abc")
-        check(e.snapshot().visible.units.none { it.style.bold || it.style.italic }) { "Timed-out cancelled commands must not execute on later commit" }
+        check(
+            e.snapshot().visible.units.none {
+                it.style.bold || it.style.italic
+            },
+        ) { "Timed-out cancelled commands must not execute on later commit" }
         check(!e.settlementTimedOut && e.settlementRequestedAt == null)
 
         // Queuing a new command after a timeout while composition is still active starts a fresh deadline
@@ -298,17 +306,46 @@ fun runChecks() {
         e.abortComposition()
         check(e.snapshot().visible.text == "abc")
     }
-    test("ordinary AWT callback retirement, reentrant abort/settlement, stale caret, identical subsequent input, partial-commit recovery, and disposal guards") {
+    test(
+        "ordinary AWT callback retirement, reentrant abort/settlement, stale caret, identical subsequent input, partial-commit recovery, and disposal guards",
+    ) {
         fun dispatchCommit(target: EditorSurface, text: String) {
             val it = if (text.isEmpty()) null else java.text.AttributedString(text).iterator
-            target.dispatchEvent(java.awt.event.InputMethodEvent(target, java.awt.event.InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, it, text.length, java.awt.font.TextHitInfo.leading(0), null))
+            target.dispatchEvent(
+                java.awt.event.InputMethodEvent(
+                    target,
+                    java.awt.event.InputMethodEvent.INPUT_METHOD_TEXT_CHANGED,
+                    it,
+                    text.length,
+                    java.awt.font.TextHitInfo.leading(0),
+                    null,
+                ),
+            )
         }
         fun dispatchIme(target: EditorSurface, text: String, committed: Int, caret: Int?) {
             val it = if (text.isEmpty()) null else java.text.AttributedString(text).iterator
-            target.dispatchEvent(java.awt.event.InputMethodEvent(target, java.awt.event.InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, it, committed, caret?.let(java.awt.font.TextHitInfo::leading), null))
+            target.dispatchEvent(
+                java.awt.event.InputMethodEvent(
+                    target,
+                    java.awt.event.InputMethodEvent.INPUT_METHOD_TEXT_CHANGED,
+                    it,
+                    committed,
+                    caret?.let(java.awt.font.TextHitInfo::leading),
+                    null,
+                ),
+            )
         }
         fun dispatchCaret(target: EditorSurface, caret: Int) {
-            target.dispatchEvent(java.awt.event.InputMethodEvent(target, java.awt.event.InputMethodEvent.CARET_POSITION_CHANGED, null, 0, java.awt.font.TextHitInfo.leading(caret), null))
+            target.dispatchEvent(
+                java.awt.event.InputMethodEvent(
+                    target,
+                    java.awt.event.InputMethodEvent.CARET_POSITION_CHANGED,
+                    null,
+                    0,
+                    java.awt.font.TextHitInfo.leading(caret),
+                    null,
+                ),
+            )
         }
 
         // 1 & 4 & 5: Ordinary delayed AWT commit after abort + identical text "X" in consecutive legitimate sessions
@@ -321,7 +358,9 @@ fun runChecks() {
             // Late ordinary commit on retired s1 must be ignored
             dispatchCommit(s1, "X")
             dispatchIme(s1, "X", 0, 1)
-            check(e1.snapshot().committed.text == "") { "Late ordinary AWT commit after abort must not mutate document" }
+            check(e1.snapshot().committed.text == "") {
+                "Late ordinary AWT commit after abort must not mutate document"
+            }
             check(e1.snapshot().visible.text == "")
             check(e1.snapshot().undoCount == 0)
 
@@ -417,8 +456,19 @@ fun runChecks() {
         check(!eDisp.snapshot().waiting && eDisp.settlementRequestedAt == null)
         dispatchCommit(sDisp, "committed-after-dispose")
         dispatchCaret(sDisp, 2)
-        sDisp.dispatchEvent(java.awt.event.KeyEvent(sDisp, java.awt.event.KeyEvent.KEY_TYPED, 0L, 0, java.awt.event.KeyEvent.VK_UNDEFINED, 'Q'))
-        check(eDisp.snapshot().committed.text == "keep") { "Callbacks after disposal must not mutate committed document" }
+        sDisp.dispatchEvent(
+            java.awt.event.KeyEvent(
+                sDisp,
+                java.awt.event.KeyEvent.KEY_TYPED,
+                0L,
+                0,
+                java.awt.event.KeyEvent.VK_UNDEFINED,
+                'Q',
+            ),
+        )
+        check(eDisp.snapshot().committed.text == "keep") {
+            "Callbacks after disposal must not mutate committed document"
+        }
     }
     test("1000 deterministic edits match a flat oracle and unwind exactly") {
         val random = Random(501)

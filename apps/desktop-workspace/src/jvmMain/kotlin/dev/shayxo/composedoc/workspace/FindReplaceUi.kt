@@ -20,7 +20,11 @@ import javax.swing.KeyStroke
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 
-class FindReplaceUi(private val window: JFrame, private val surface: () -> EditorSurface, private val relayout: () -> Unit) {
+class FindReplaceUi(
+    private val window: JFrame,
+    private val surface: () -> EditorSurface,
+    private val relayout: () -> Unit,
+) {
     val session = FindSession(surface)
     val panel = JPanel().apply {
         layout = BoxLayout(this, BoxLayout.Y_AXIS)
@@ -62,7 +66,13 @@ class FindReplaceUi(private val window: JFrame, private val surface: () -> Edito
         horizontalScrollBarPolicy = JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
         verticalScrollBarPolicy = JScrollPane.VERTICAL_SCROLLBAR_NEVER
     }
-    private fun action(target: JComponent, key: String, name: String, condition: Int = JComponent.WHEN_FOCUSED, perform: () -> Unit) {
+    private fun action(
+        target: JComponent,
+        key: String,
+        name: String,
+        condition: Int = JComponent.WHEN_FOCUSED,
+        perform: () -> Unit,
+    ) {
         target.getInputMap(condition).put(KeyStroke.getKeyStroke(key), name)
         target.actionMap.put(
             name,
@@ -146,7 +156,9 @@ class FindReplaceUi(private val window: JFrame, private val surface: () -> Edito
         }
         action(window.rootPane, "ctrl F", "editor.find", JComponent.WHEN_IN_FOCUSED_WINDOW) { open(false) }
         action(window.rootPane, "ctrl H", "editor.replace", JComponent.WHEN_IN_FOCUSED_WINDOW) { open(true) }
-        action(window.rootPane, "ESCAPE", "editor.closeFind", JComponent.WHEN_IN_FOCUSED_WINDOW) { if (panel.isVisible) close() }
+        action(window.rootPane, "ESCAPE", "editor.closeFind", JComponent.WHEN_IN_FOCUSED_WINDOW) {
+            if (panel.isVisible) close()
+        }
     }
     fun open(withReplace: Boolean) {
         panel.isVisible = true
@@ -200,7 +212,11 @@ class FindReplaceUi(private val window: JFrame, private val surface: () -> Edito
             next.isEnabled = previous.isEnabled
             val warning = when {
                 session.blocked -> "Finish document composition/recovery first."
-                matches.any { !it.editable } -> "${matches.count { !it.editable }} split a grapheme: no expanded replacement; Replace All disabled."
+                matches.any {
+                    !it.editable
+                } -> "${matches.count {
+                    !it.editable
+                }} split a grapheme: no expanded replacement; Replace All disabled."
                 else -> "Within hard paragraphs; Ctrl+Enter = soft break."
             }
             status.text = "Exact Unicode · case-sensitive · $warning $message"

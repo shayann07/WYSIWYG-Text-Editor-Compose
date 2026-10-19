@@ -60,11 +60,15 @@ fun runFindReplaceChecks(result: File) {
     check(em.size == 2 && em.all { it.editable })
     check(emoji.replaceFound(emoji.captureFindBasis(), em, "🙂", true) == FindReplaceResult.Applied)
     check(emoji.snapshot().committed.text == "🙂 🙂")
-    checks += "Diacritics/joiners/emoji/surrogate-interior literals stay visible but replacements refuse, with no expansion or partial batch"
+    checks +=
+        "Diacritics/joiners/emoji/surrogate-interior literals stay visible but replacements refuse, with no expansion or partial batch"
     val safeOne = EditorEngine(doc("کِ ک"))
     val safeMatches = findLiteral(safeOne.snapshot().committed, "ک")
     check(!safeMatches.first().editable && safeMatches.last().editable)
-    check(safeOne.replaceFound(safeOne.captureFindBasis(), listOf(safeMatches.last()), "x", false) == FindReplaceResult.Applied)
+    check(
+        safeOne.replaceFound(safeOne.captureFindBasis(), listOf(safeMatches.last()), "x", false) ==
+            FindReplaceResult.Applied,
+    )
     check(safeOne.snapshot().committed.text == "کِ x")
     val structured = doc("a\nb a\nb", setOf(1))
     val sm = findLiteral(structured, "a\nb")
@@ -90,7 +94,8 @@ fun runFindReplaceChecks(result: File) {
     check(e.snapshot().committed == before.committed && e.snapshot().selection == before.selection)
     e.perform(EditAction.Redo)
     check(e.snapshot().committed == after.committed && e.snapshot().selection == after.selection)
-    checks += "Replace All captures one basis, inherits first matched formatting, does not rescan inserted search text and has one exact Undo/Redo"
+    checks +=
+        "Replace All captures one basis, inherits first matched formatting, does not rescan inserted search text and has one exact Undo/Redo"
     // Compare empty-paragraph retention to the established ordinary replacement command.
     for (text in listOf("aa", "aa\naa", "x aa\naa\n", "aa\n\naa")) {
         val initial = doc(text, text.indices.filter { text[it] == '\n' }.toSet())
@@ -100,7 +105,10 @@ fun runFindReplaceChecks(result: File) {
         check(all.replaceFound(all.captureFindBasis(), ms, "", true) == FindReplaceResult.Applied)
         for (m in ms.asReversed()) normal.replace("", "ControlDeletion", range = Selection(m.start, m.end))
         check(all.snapshot().committed.same(normal.snapshot().committed))
-        check(all.snapshot().committed.units.filter { it.kind == UnitKind.PARAGRAPH_BREAK }.map { it.id } == initial.units.filter { it.kind == UnitKind.PARAGRAPH_BREAK }.map { it.id })
+        check(
+            all.snapshot().committed.units.filter { it.kind == UnitKind.PARAGRAPH_BREAK }.map { it.id } ==
+                initial.units.filter { it.kind == UnitKind.PARAGRAPH_BREAK }.map { it.id },
+        )
     }
     check(findLiteral(doc("abc"), "").isEmpty())
     checks += "Empty search is inert; deletion preserves hard separators and existing empty-paragraph style inheritance"
@@ -117,26 +125,41 @@ fun runFindReplaceChecks(result: File) {
     val atomic = EditorEngine(doc("abc\nabc", setOf(3)))
     val ab = atomic.captureFindBasis()
     val snap = atomic.snapshot()
-    check(atomic.replaceFound(ab, listOf(FindMatch(0, 3, true), FindMatch(3, 5, true)), "x", true) == FindReplaceResult.Invalid)
+    check(
+        atomic.replaceFound(ab, listOf(FindMatch(0, 3, true), FindMatch(3, 5, true)), "x", true) ==
+            FindReplaceResult.Invalid,
+    )
     check(atomic.snapshot() == snap)
-    checks += "Intervening edit/Undo and foreign owners refuse stale bases; invalid later structural target leaves the whole batch unchanged"
+    checks +=
+        "Intervening edit/Undo and foreign owners refuse stale bases; invalid later structural target leaves the whole batch unchanged"
     val composing = EditorEngine(doc("abc abc"))
     val cb = composing.captureFindBasis()
     val cm = findLiteral(cb.document, "abc")
     composing.inputMethod("候補", 0, 2)
     val candidate = composing.snapshot()
-    check(composing.replaceFound(cb, cm, "x", true) == FindReplaceResult.Busy && composing.snapshot() == candidate && !composing.snapshot().waiting)
+    check(
+        composing.replaceFound(cb, cm, "x", true) == FindReplaceResult.Busy &&
+            composing.snapshot() == candidate &&
+            !composing.snapshot().waiting,
+    )
     composing.inputMethod("ن候補", 1, 2)
     val partial = composing.snapshot()
     check(composing.replaceFound(cb, cm, "x", true) == FindReplaceResult.Busy && composing.snapshot() == partial)
     composing.abortComposition()
     check(composing.replaceFound(cb, cm, "x", true) == FindReplaceResult.Stale)
-    checks += "Active and partially committed composition refuse replacement without queueing, settlement fiction or candidate mutation"
+    checks +=
+        "Active and partially committed composition refuse replacement without queueing, settlement fiction or candidate mutation"
     val many = EditorEngine(Document(List(10000) { TextUnit(it + 1L, 'a') }))
-    check(many.replaceFound(many.captureFindBasis(), findLiteral(many.snapshot().committed, "a"), "bb", true) == FindReplaceResult.Applied)
+    check(
+        many.replaceFound(many.captureFindBasis(), findLiteral(many.snapshot().committed, "a"), "bb", true) ==
+            FindReplaceResult.Applied,
+    )
     check(many.snapshot().committed.text == "bb".repeat(10000) && many.snapshot().undoCount == 1)
     val limitBefore = many.snapshot()
-    check(many.replaceFound(many.captureFindBasis(), findLiteral(many.snapshot().committed, "b"), "too much", true) == FindReplaceResult.TooLarge)
+    check(
+        many.replaceFound(many.captureFindBasis(), findLiteral(many.snapshot().committed, "b"), "too much", true) ==
+            FindReplaceResult.TooLarge,
+    )
     check(many.snapshot() == limitBefore)
     checks += "Bounded 10000-match bulk replacement publishes once with one history entry"
 
@@ -163,7 +186,15 @@ fun runFindReplaceChecks(result: File) {
     var created = false
     try {
         owner {
-            window = showEditor(initial = sample, initialPath = original, fontProfile = "noto-nastaliq", paged = true, offscreenTest = true, recoveryDirectory = directory.resolve("recovery"))
+            window =
+                showEditor(
+                    initial = sample,
+                    initialPath = original,
+                    fontProfile = "noto-nastaliq",
+                    paged = true,
+                    offscreenTest = true,
+                    recoveryDirectory = directory.resolve("recovery"),
+                )
             created = true
             surface = checkNotNull(windowCurrentSurface(window))
             ui = window.rootPane.getClientProperty("editor.find") as FindReplaceUi
@@ -174,30 +205,50 @@ fun runFindReplaceChecks(result: File) {
             repeat(7) { ui.query.actionMap.get("find.next").actionPerformed(null) }
             check(ui.count.text == "8 / 8")
         }
-        await("Paged search reveal") { surface.view.findReveal == null && surface.view.geometry?.scroll == surface.view.scroll && surface.view.scroll > 0 }
+        await("Paged search reveal") {
+            surface.view.findReveal == null &&
+                surface.view.geometry?.scroll == surface.view.scroll &&
+                surface.view.scroll > 0
+        }
         owner {
             val g = checkNotNull(surface.view.geometry)
             val match = checkNotNull(ui.session.current)
             val caret = g.caret(match.start)
             check(caret.top >= 0 && caret.bottom <= surface.height * g.scale)
-            check(surface.viewModel.verificationEngine.snapshot().committed.same(sample) && surface.viewModel.verificationEngine.snapshot().undoCount == 0 && !checkNotNull(windowFiles(window)).dirty)
+            check(
+                surface.viewModel.verificationEngine.snapshot().committed.same(sample) &&
+                    surface.viewModel.verificationEngine.snapshot().undoCount == 0 &&
+                    !checkNotNull(windowFiles(window)).dirty,
+            )
             check(controller.state()["observed"] == 1L)
             ui.query.actionMap.get("find.previous").actionPerformed(null)
             check(ui.count.text == "7 / 8")
             surface.view.setPagedMode(false)
             ui.session.reveal()
         }
-        await("Continuous search reveal") { surface.view.findReveal == null && surface.view.geometry?.typographyKey?.endsWith(":continuous") == true }
+        await("Continuous search reveal") {
+            surface.view.findReveal == null &&
+                surface.view.geometry?.typographyKey?.endsWith(":continuous") == true
+        }
         owner {
             val g = checkNotNull(surface.view.geometry)
             val caret = g.caret(checkNotNull(ui.session.current).start)
             check(caret.top >= 0 && caret.bottom <= surface.height * g.scale)
-            fun all(c: java.awt.Component): List<java.awt.Component> = listOf(c) + if (c is java.awt.Container) c.components.flatMap(::all) else emptyList()
+            fun all(c: java.awt.Component): List<java.awt.Component> =
+                listOf(c) + if (c is java.awt.Container) c.components.flatMap(::all) else emptyList()
             for ((w, h) in listOf(940 to 400, 1020 to 700)) {
                 window.setSize(w, h)
                 window.validate()
                 for (row in ui.panel.components.filterIsInstance<java.awt.Container>().filter { it.isVisible }) {
-                    if (row.layout is java.awt.FlowLayout) check(row.components.filter { it.isVisible }.all { it.x >= 0 && it.x + it.width <= row.width && it.y + it.height <= row.height })
+                    if (row.layout is java.awt.FlowLayout) {
+                        check(
+                            row.components.filter { it.isVisible }.all {
+                                it.x >= 0 &&
+                                    it.x + it.width <= row.width &&
+                                    it.y + it.height <= row.height
+                            },
+                        )
+                    }
                 }
                 val image = java.awt.image.BufferedImage(w, h, java.awt.image.BufferedImage.TYPE_INT_RGB)
                 image.createGraphics().let { g2 ->
@@ -213,7 +264,10 @@ fun runFindReplaceChecks(result: File) {
             all(ui.panel).filterIsInstance<JButton>().single { it.text == "Replace All" }.doClick()
             val target = surface.viewModel.verificationEngine.snapshot().committed
             check(target.text == sample.text.replace("English notes", "English notes changed"))
-            check(surface.viewModel.verificationEngine.snapshot().undoCount == 1 && checkNotNull(windowFiles(window)).dirty)
+            check(
+                surface.viewModel.verificationEngine.snapshot().undoCount == 1 &&
+                    checkNotNull(windowFiles(window)).dirty,
+            )
             surface.viewModel.verificationEngine.perform(EditAction.Undo)
             check(surface.viewModel.verificationEngine.snapshot().committed.same(sample))
             surface.viewModel.verificationEngine.perform(EditAction.Redo)
@@ -233,7 +287,10 @@ fun runFindReplaceChecks(result: File) {
             ui.query.actionMap.get("find.close").actionPerformed(null)
             check(!ui.panel.isVisible && surface.view.findMatches.isEmpty())
         }
-        await("Replacement recovery checkpoint") { controller.state()["completed"] == controller.state()["observed"] && controller.state()["running"] == false }
+        await("Replacement recovery checkpoint") {
+            controller.state()["completed"] == controller.state()["observed"] &&
+                controller.state()["running"] == false
+        }
         lateinit var expected: Document
         owner {
             expected = surface.viewModel.verificationEngine.snapshot().committed
@@ -249,12 +306,25 @@ fun runFindReplaceChecks(result: File) {
             entries = store.scan()
         }
         check(store.restore(entries.single()).document.same(expected) && DocumentFiles.read(original).same(sample))
-        checks += "Actual panel/count/Enter/Shift+Enter, cross-page and continuous reveal do not dirty history or recovery; field edits stay out of document Undo"
-        checks += "Actual Replace All button has exact Undo/Redo, grapheme/composition guards and transient highlight clearing at minimum/default layouts"
-        checks += "Completed automatic recovery checkpoint after replacement/Undo/Redo roundtrips full supported content/format/breaks; original file untouched"
+        checks +=
+            "Actual panel/count/Enter/Shift+Enter, cross-page and continuous reveal do not dirty history or recovery; field edits stay out of document Undo"
+        checks +=
+            "Actual Replace All button has exact Undo/Redo, grapheme/composition guards and transient highlight clearing at minimum/default layouts"
+        checks +=
+            "Completed automatic recovery checkpoint after replacement/Undo/Redo roundtrips full supported content/format/breaks; original file untouched"
     } finally {
         if (created) owner { if (window.isDisplayable) window.dispose() }
     }
-    result.writeText(evidenceJson(mapOf("status" to "PASS", "checks" to checks, "scope" to "Engine and actual offscreen shell/render/IO; field actions and composition are synthetic, real desktop evidence separate")), Charsets.UTF_8)
+    result.writeText(
+        evidenceJson(
+            mapOf(
+                "status" to "PASS",
+                "checks" to checks,
+                "scope" to
+                    "Engine and actual offscreen shell/render/IO; field actions and composition are synthetic, real desktop evidence separate",
+            ),
+        ),
+        Charsets.UTF_8,
+    )
     println("PASS exact Unicode Find/Replace checks")
 }

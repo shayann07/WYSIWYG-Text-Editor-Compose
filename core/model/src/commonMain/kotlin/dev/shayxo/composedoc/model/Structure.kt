@@ -18,7 +18,9 @@ data class ImageBlock(val resource: String, val width: Int = 240, val alt: Strin
 }
 data class ImageResource(val data: String, val width: Int, val height: Int, val mime: String) {
     init {
-        require(data.length <= 6_000_000 && width in 1..8192 && height in 1..8192 && width.toLong() * height <= 16_000_000)
+        require(
+            data.length <= 6_000_000 && width in 1..8192 && height in 1..8192 && width.toLong() * height <= 16_000_000,
+        )
         require(mime in setOf("image/png", "image/jpeg"))
     }
     fun bytes() = kotlin.io.encoding.Base64.decode(data)
@@ -34,7 +36,15 @@ fun Document.outlineEntries() = paragraphs().filter { it.properties.heading > 0 
 }
 fun Document.patchParagraphs(changes: Map<Long?, ParagraphProperties>): Document = copy(
     startParagraph = changes[rootBlockId] ?: startParagraph,
-    units = units.map { if (it.kind == UnitKind.PARAGRAPH_BREAK && changes.containsKey(it.paragraphAnchor))it.copy(followingParagraph = changes.getValue(it.paragraphAnchor)) else it },
+    units = units.map {
+        if (it.kind == UnitKind.PARAGRAPH_BREAK &&
+            changes.containsKey(it.paragraphAnchor)
+        ) {
+            it.copy(followingParagraph = changes.getValue(it.paragraphAnchor))
+        } else {
+            it
+        }
+    },
 )
 fun Document.itemDepth(item: String): Int {
     val blocks = paragraphs()
@@ -77,15 +87,33 @@ fun Document.listMarkers(): Map<Long?, String> {
     return result
 }
 fun validateStructure(d: Document) {
-    require(d.units.size <= DocumentLimits.MAX_UNITS && d.resources.size <= 32 && d.resources.values.sumOf { it.data.length.toLong() } <= 12_000_000 && d.resources.values.sumOf { it.width.toLong() * it.height } <= 16_000_000) { "Document resource budget exceeded" }
+    require(
+        d.units.size <= DocumentLimits.MAX_UNITS &&
+            d.resources.size <= 32 &&
+            d.resources.values.sumOf { it.data.length.toLong() } <= 12_000_000 &&
+            d.resources.values.sumOf {
+                it.width.toLong() * it.height
+            } <= 16_000_000,
+    ) { "Document resource budget exceeded" }
     val blocks = d.paragraphs()
     require(blocks.map { it.anchor }.distinct().size == blocks.size) { "Duplicate paragraph identity" }
     val items = blocks.filter { it.properties.item.isNotEmpty() }.groupBy { it.properties.item }
     for ((id, ps) in items) {
         val p = ps.first().properties
-        require(ps.all { it.properties.list == p.list && it.properties.parent == p.parent && it.properties.restart == p.restart }) { "Inconsistent list item" }
+        require(
+            ps.all {
+                it.properties.list == p.list &&
+                    it.properties.parent == p.parent &&
+                    it.properties.restart == p.restart
+            },
+        ) { "Inconsistent list item" }
         require(ps.all { it.properties.markerTypography == p.markerTypography }) { "Inconsistent marker typography" }
-        require(p.parent.isEmpty() || items[p.parent]?.first()?.index?.let { it < ps.first().index } == true) { "Missing/late list parent" }
+        require(
+            p.parent.isEmpty() ||
+                items[p.parent]?.first()?.index?.let {
+                    it < ps.first().index
+                } == true,
+        ) { "Missing/late list parent" }
         d.itemDepth(id)
         for (i in ps.first().index..ps.last().index) {
             var current = blocks[i].properties.item
@@ -99,11 +127,21 @@ fun validateStructure(d: Document) {
     }
     for (p in blocks) {
         val us = d.units.subList(p.start, p.end)
-        if (us.any { it.kind == UnitKind.IMAGE })require(us.size == 1 && us.single().image != null && p.properties.heading == 0) { "Image must occupy its own block" }
+        if (us.any { it.kind == UnitKind.IMAGE }) {
+            require(
+                us.size == 1 && us.single().image != null && p.properties.heading == 0,
+            ) {
+                "Image must occupy its own block"
+            }
+        }
     }
     for (u in d.units) {
         require(u.kind == UnitKind.PARAGRAPH_BREAK || u.structuralBreak == StructuralBreak.PARAGRAPH)
-        if (u.kind == UnitKind.PARAGRAPH_BREAK)require(u.char == if (u.structuralBreak == StructuralBreak.PAGE)'\u000c' else '\n')
+        if (u.kind ==
+            UnitKind.PARAGRAPH_BREAK
+        ) {
+            require(u.char == if (u.structuralBreak == StructuralBreak.PAGE)'\u000c' else '\n')
+        }
         require((u.kind == UnitKind.IMAGE) == (u.image != null))
         if (u.kind == UnitKind.IMAGE) {
             require(u.char == '\ufffc' && d.resources.containsKey(u.image!!.resource))
@@ -135,12 +173,19 @@ fun Document.plainText(): String {
         } else {
             "\n"
         }
-        val prefix = markers[p.anchor]?.let { "  ".repeat((itemDepth(p.properties.item) - 1).coerceAtLeast(0)) + it + " " } ?: ""
+        val prefix =
+            markers[p.anchor]?.let { "  ".repeat((itemDepth(p.properties.item) - 1).coerceAtLeast(0)) + it + " " } ?: ""
         separator + prefix + buildString {
             var previous: LinkValue? = null
             for (u in units.subList(p.start, p.end)) {
                 if (previous != null && previous != u.style.link)append(" <${previous.uri}>")
-                if (u.kind == UnitKind.IMAGE)append("[Image: ${u.image!!.alt.ifEmpty { "No alternative text" }}]") else append(u.char)
+                if (u.kind ==
+                    UnitKind.IMAGE
+                ) {
+                    append("[Image: ${u.image!!.alt.ifEmpty { "No alternative text" }}]")
+                } else {
+                    append(u.char)
+                }
                 previous = u.style.link
             }
             if (previous != null)append(" <${previous.uri}>")
@@ -153,9 +198,16 @@ fun Document.repairListParents(before: Document): Document {
     val previous = before.paragraphs()
     val currentHeads = current.mapTo(HashSet()) { it.anchor }
     val priorItems = previous.filter { it.properties.item.isNotEmpty() }.groupBy { it.properties.item }
-    val properties = current.filter { it.properties.item.isNotEmpty() }.associate { it.properties.item to it.properties }
+    val properties = current.filter {
+        it.properties.item.isNotEmpty()
+    }.associate { it.properties.item to it.properties }
     val ownerByUnit = HashMap<Long, String>()
-    for (p in current)for (i in p.start until (p.end + if (p.hasBreak)1 else 0))ownerByUnit[units[i].id] = p.properties.item
+    for (p in current) {
+        for (i in p.start until (p.end + if (p.hasBreak)1 else 0)) {
+            ownerByUnit[units[i].id] =
+                p.properties.item
+        }
+    }
     val mergedInto = HashMap<String, String>()
     // A consumed first leaf can leave continuation paragraphs behind. Direct
     // sibling joins move those paragraphs and children into the surviving left
@@ -193,7 +245,19 @@ fun Document.repairListParents(before: Document): Document {
             val original = p.properties
             val item = merged(original.item)
             val owner = properties[item]
-            val moved = if (item != original.item && owner != null)original.copy(item = item, parent = owner.parent, list = owner.list, restart = owner.restart, markerTypography = owner.markerTypography) else original
+            val moved = if (item != original.item &&
+                owner != null
+            ) {
+                original.copy(
+                    item = item,
+                    parent = owner.parent,
+                    list = owner.list,
+                    restart = owner.restart,
+                    markerTypography = owner.markerTypography,
+                )
+            } else {
+                original
+            }
             p.anchor to moved.copy(parent = parentOf(moved.parent))
         },
     )
@@ -205,7 +269,13 @@ fun Document.repairRemovedImageHeads(before: Document, end: Int): Document {
     if (before.units.none { it.kind == UnitKind.IMAGE })return this
     val surviving = units.mapTo(HashSet()) { it.id }
     val prior = before.paragraphs()
-    val removed = prior.filter { p -> p.start < p.end && before.units[p.start].kind == UnitKind.IMAGE && before.units[p.start].id !in surviving && p.hasBreak && before.units[p.end].id !in surviving }
+    val removed = prior.filter { p ->
+        p.start < p.end &&
+            before.units[p.start].kind == UnitKind.IMAGE &&
+            before.units[p.start].id !in surviving &&
+            p.hasBreak &&
+            before.units[p.end].id !in surviving
+    }
     if (removed.isEmpty())return this
     val groups = paragraphs().associateBy { it.anchor }
     val sourceByUnit = HashMap<Long, ParagraphBlock>()
@@ -214,14 +284,30 @@ fun Document.repairRemovedImageHeads(before: Document, end: Int): Document {
     var result = this
     for (old in removed) {
         val group = groups[old.anchor] ?: continue
-        val retained = (group.start until group.end + if (group.hasBreak)1 else 0).firstNotNullOfOrNull { sourceByUnit[units[it].id] }
+        val retained = (group.start until group.end + if (group.hasBreak)1 else 0).firstNotNullOfOrNull {
+            sourceByUnit[units[it].id]
+        }
         val head = retained ?: fallback.takeIf { it.index > old.index } ?: continue
         if (head.index == old.index)continue
         val typing = if (head.start == 0)before.startStyle else before.units[head.start - 1].paragraphStyle
         result = if (group.start == 0) {
             result.copy(startParagraph = head.properties, rootBlockId = head.anchor, startStyle = typing)
         } else {
-            result.copy(units = result.units.mapIndexed { i, u -> if (i == group.start - 1)u.copy(followingParagraph = head.properties, followingBlockId = head.anchor, paragraphStyle = typing) else u })
+            result.copy(
+                units = result.units.mapIndexed { i, u ->
+                    if (i ==
+                        group.start - 1
+                    ) {
+                        u.copy(
+                            followingParagraph = head.properties,
+                            followingBlockId = head.anchor,
+                            paragraphStyle = typing,
+                        )
+                    } else {
+                        u
+                    }
+                },
+            )
         }
     }
     return result

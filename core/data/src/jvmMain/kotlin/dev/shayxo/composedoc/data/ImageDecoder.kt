@@ -20,7 +20,11 @@ object ImageDecoder {
         java.util.concurrent.ThreadFactory { r -> Thread(r, "image-import").apply { isDaemon = true } },
         java.util.concurrent.ThreadPoolExecutor.AbortPolicy(),
     )
-    fun importAsync(path: Path, success: (Pair<String, ImageResource>) -> Unit, failure: (Exception) -> Unit): java.util.concurrent.Future<*>? {
+    fun importAsync(
+        path: Path,
+        success: (Pair<String, ImageResource>) -> Unit,
+        failure: (Exception) -> Unit,
+    ): java.util.concurrent.Future<*>? {
         try {
             return imports.submit {
                 try {
@@ -31,7 +35,12 @@ object ImageDecoder {
                 }
             }
         } catch (e: java.util.concurrent.RejectedExecutionException) {
-            failure(IllegalStateException("Image import queue is full (one decoding, four queued). Retry after it finishes.", e))
+            failure(
+                IllegalStateException(
+                    "Image import queue is full (one decoding, four queued). Retry after it finishes.",
+                    e,
+                ),
+            )
             return null
         }
     }
@@ -48,7 +57,9 @@ object ImageDecoder {
         require(png || jpeg) { "Only PNG/JPEG signatures accepted" }
         // This decoder does not apply EXIF orientation. Refuse tagged orientation rather than silently rotate incorrectly.
         if (jpeg) {
-            require(bytes[bytes.size - 2] == 255.toByte() && bytes.last() == 217.toByte()) { "Incomplete JPEG end marker" }
+            require(bytes[bytes.size - 2] == 255.toByte() && bytes.last() == 217.toByte()) {
+                "Incomplete JPEG end marker"
+            }
             rejectExifOrientation(bytes)
         }
         if (png) {
@@ -59,7 +70,9 @@ object ImageDecoder {
                 require(n >= 0 && at.toLong() + 12 + n <= bytes.size) { "Truncated PNG chunk" }
                 val type = String(bytes, at + 4, 4, Charsets.US_ASCII)
                 val crc = java.util.zip.CRC32().apply { update(bytes, at + 4, n + 4) }.value
-                require(crc == (java.nio.ByteBuffer.wrap(bytes, at + 8 + n, 4).int.toLong() and 0xffffffffL)) { "PNG chunk checksum failed" }
+                require(crc == (java.nio.ByteBuffer.wrap(bytes, at + 8 + n, 4).int.toLong() and 0xffffffffL)) {
+                    "PNG chunk checksum failed"
+                }
                 require(type != "eXIf") { "PNG EXIF orientation is not supported; export a pixel-oriented PNG first" }
                 at += 12 + n
                 if (type == "IEND") {
@@ -71,16 +84,25 @@ object ImageDecoder {
             require(ended && at == bytes.size) { "Incomplete PNG or trailing data" }
         }
         ImageIO.createImageInputStream(ByteArrayInputStream(bytes)).use { stream ->
-            val reader = ImageIO.getImageReaders(stream).asSequence().firstOrNull() ?: error("Image decoder unavailable")
+            val reader =
+                ImageIO.getImageReaders(stream).asSequence().firstOrNull() ?: error("Image decoder unavailable")
             try {
                 reader.input = stream
                 val w = reader.getWidth(0)
                 val h = reader.getHeight(0)
-                require(w in 1..8192 && h in 1..8192 && w.toLong() * h <= 16_000_000) { "Decoded image dimensions exceed limits" }
+                require(w in 1..8192 && h in 1..8192 && w.toLong() * h <= 16_000_000) {
+                    "Decoded image dimensions exceed limits"
+                }
                 val decoded = reader.read(0)
                 require(decoded.width == w && decoded.height == h)
                 val id = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
-                return id to ImageResource(Base64.getEncoder().encodeToString(bytes), w, h, if (png)"image/png" else "image/jpeg")
+                return id to
+                    ImageResource(
+                        Base64.getEncoder().encodeToString(bytes),
+                        w,
+                        h,
+                        if (png)"image/png" else "image/jpeg",
+                    )
             } finally {
                 reader.dispose()
             }
@@ -98,7 +120,9 @@ object ImageDecoder {
                 require(base + 8 <= at + 2 + n)
                 val little = b[base] == 0x49.toByte() && b[base + 1] == 0x49.toByte()
                 require(little || (b[base] == 0x4d.toByte() && b[base + 1] == 0x4d.toByte()))
-                val buf = java.nio.ByteBuffer.wrap(b).order(if (little)java.nio.ByteOrder.LITTLE_ENDIAN else java.nio.ByteOrder.BIG_ENDIAN)
+                val buf = java.nio.ByteBuffer.wrap(
+                    b,
+                ).order(if (little)java.nio.ByteOrder.LITTLE_ENDIAN else java.nio.ByteOrder.BIG_ENDIAN)
                 require(buf.getShort(base + 2).toInt() == 42)
                 val offset = buf.getInt(base + 4)
                 require(offset >= 8 && base.toLong() + offset + 2 <= at + 2 + n)
@@ -108,7 +132,13 @@ object ImageDecoder {
                 repeat(count) { index ->
                     val p = table + 2 + index * 12
                     if ((buf.getShort(p).toInt() and 65535) == 0x112) {
-                        require(buf.getShort(p + 2).toInt() == 3 && buf.getInt(p + 4) == 1 && buf.getShort(p + 8).toInt() == 1) { "EXIF orientation is not supported; save a pixel-oriented image first" }
+                        require(
+                            buf.getShort(p + 2).toInt() == 3 &&
+                                buf.getInt(p + 4) == 1 &&
+                                buf.getShort(p + 8).toInt() == 1,
+                        ) {
+                            "EXIF orientation is not supported; save a pixel-oriented image first"
+                        }
                     }
                 }
             }

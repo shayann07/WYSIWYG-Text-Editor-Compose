@@ -2,11 +2,7 @@ package dev.shayxo.composedoc.model
 
 enum class PaperSize { A4, LETTER }
 
-data class PageSettings(
-    val paper: PaperSize = PaperSize.A4,
-    val landscape: Boolean = false,
-    val marginMm: Int = 14,
-) {
+data class PageSettings(val paper: PaperSize = PaperSize.A4, val landscape: Boolean = false, val marginMm: Int = 14) {
     init {
         require(marginMm in 5..40) { "Margins must be 5–40 mm" }
     }

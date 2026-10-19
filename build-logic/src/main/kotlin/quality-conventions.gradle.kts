@@ -15,10 +15,12 @@ extensions.configure<SpotlessExtension> {
         target("src/**/*.kt")
         targetExclude("**/generated/**")
         ktlint(versions.findVersion("ktlint").get().requiredVersion)
+            .setEditorConfigPath(rootProject.file(".editorconfig"))
     }
     kotlinGradle {
         target("*.gradle.kts")
         ktlint(versions.findVersion("ktlint").get().requiredVersion)
+            .setEditorConfigPath(rootProject.file(".editorconfig"))
     }
 }
 extensions.configure<DetektExtension> {

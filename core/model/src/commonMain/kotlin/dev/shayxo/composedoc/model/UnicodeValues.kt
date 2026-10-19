@@ -1,14 +1,8 @@
 package dev.shayxo.composedoc.model
 
-fun scalarValue(
-    high: Char,
-    low: Char,
-): Int = 0x10000 + ((high.code - 0xd800) shl 10) + (low.code - 0xdc00)
+fun scalarValue(high: Char, low: Char): Int = 0x10000 + ((high.code - 0xd800) shl 10) + (low.code - 0xdc00)
 
-fun codePointAt(
-    text: String,
-    offset: Int,
-): Int = if (text[offset].isHighSurrogate() &&
+fun codePointAt(text: String, offset: Int): Int = if (text[offset].isHighSurrogate() &&
     offset + 1 < text.length &&
     text[offset + 1].isLowSurrogate()
 ) {

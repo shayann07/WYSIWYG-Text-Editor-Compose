@@ -36,7 +36,8 @@ fun runWritingChecks(result: File) {
             Thread.sleep(20)
         }
     }
-    fun components(c: Component): List<Component> = listOf(c) + if (c is Container) c.components.flatMap(::components) else emptyList()
+    fun components(c: Component): List<Component> =
+        listOf(c) + if (c is Container) c.components.flatMap(::components) else emptyList()
     val checks = ArrayList<String>()
     val owned = ArrayList<JFrame>()
     result.absoluteFile.parentFile.mkdirs()
@@ -48,18 +49,34 @@ fun runWritingChecks(result: File) {
     lateinit var surface: EditorSurface
     lateinit var files: WindowFiles
     fun key(code: Int, modifiers: Int = 0) {
-        val event = KeyEvent(surface, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), modifiers, code, KeyEvent.CHAR_UNDEFINED)
+        val event =
+            KeyEvent(
+                surface,
+                KeyEvent.KEY_PRESSED,
+                System.currentTimeMillis(),
+                modifiers,
+                code,
+                KeyEvent.CHAR_UNDEFINED,
+            )
         surface.keyListeners.forEach { it.keyPressed(event) }
     }
-    fun ready(): Boolean = surface.view.geometry?.revision == surface.viewModel.verificationEngine.snapshot().documentRevision && !surface.view.ensureCaret
+    fun ready(): Boolean =
+        surface.view.geometry?.revision == surface.viewModel.verificationEngine.snapshot().documentRevision &&
+            !surface.view.ensureCaret
     fun caretVisible() {
         val g = checkNotNull(surface.view.geometry)
         val frame = surface.viewModel.verificationEngine.snapshot()
         val caret = g.caret(frame.selection.focus, frame.selection.primary, frame.selection.wrapAffinity)
-        check(caret.top >= 0 && caret.bottom <= surface.height * g.scale) { "Active caret outside viewport: $caret / ${surface.height * g.scale}" }
+        check(caret.top >= 0 && caret.bottom <= surface.height * g.scale) {
+            "Active caret outside viewport: $caret / ${surface.height * g.scale}"
+        }
     }
     fun capture(name: String) {
-        val bitmap = java.awt.image.BufferedImage(window.width, window.height, java.awt.image.BufferedImage.TYPE_INT_RGB)
+        val bitmap = java.awt.image.BufferedImage(
+            window.width,
+            window.height,
+            java.awt.image.BufferedImage.TYPE_INT_RGB,
+        )
         bitmap.createGraphics().let { g ->
             try {
                 window.paint(g)
@@ -72,7 +89,14 @@ fun runWritingChecks(result: File) {
     try {
         owner {
             runCatching { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()) }
-            window = showEditor(initial = sample, initialPath = source, fontProfile = "noto-nastaliq", paged = true, offscreenTest = true)
+            window =
+                showEditor(
+                    initial = sample,
+                    initialPath = source,
+                    fontProfile = "noto-nastaliq",
+                    paged = true,
+                    offscreenTest = true,
+                )
             owned += window
             surface = checkNotNull(windowCurrentSurface(window))
             files = checkNotNull(windowFiles(window))
@@ -80,8 +104,12 @@ fun runWritingChecks(result: File) {
         await("Initial multipage layout", ::ready)
         owner {
             check(surface.view.typography.id == "noto-nastaliq" && checkNotNull(surface.view.geometry).pageCount >= 3)
-            check(sample.units.any { it.char == '\n' && it.kind == UnitKind.TEXT } && sample.units.any { it.kind == UnitKind.PARAGRAPH_BREAK })
-            checks += "Pinned Noto Nastaliq sample renders at least three pages with mixed scripts, styles and hard/soft breaks"
+            check(
+                sample.units.any { it.char == '\n' && it.kind == UnitKind.TEXT } &&
+                    sample.units.any { it.kind == UnitKind.PARAGRAPH_BREAK },
+            )
+            checks +=
+                "Pinned Noto Nastaliq sample renders at least three pages with mixed scripts, styles and hard/soft breaks"
             for ((width, height) in listOf(940 to 400, 1020 to 700)) {
                 window.setSize(width, height)
                 window.validate()
@@ -98,7 +126,10 @@ fun runWritingChecks(result: File) {
         }
         await("End caret scrolling", ::ready)
         owner {
-            check(surface.viewModel.verificationEngine.snapshot().selection.focus == sample.units.size && surface.view.scroll > 0)
+            check(
+                surface.viewModel.verificationEngine.snapshot().selection.focus == sample.units.size &&
+                    surface.view.scroll > 0,
+            )
             caretVisible()
             key(KeyEvent.VK_ENTER)
             key(KeyEvent.VK_ENTER, InputEvent.SHIFT_DOWN_MASK)
@@ -122,12 +153,16 @@ fun runWritingChecks(result: File) {
             check(surface.viewModel.verificationEngine.snapshot().committed == formatted.committed)
             surface.viewModel.verificationEngine.replace("notes", "ReplaceSelected")
             val replaced = surface.viewModel.verificationEngine.snapshot()
-            check(replaced.committed.text == formatted.committed.text.take(start) + "notes" + formatted.committed.text.drop(start + 7))
+            check(
+                replaced.committed.text ==
+                    formatted.committed.text.take(start) + "notes" + formatted.committed.text.drop(start + 7),
+            )
             key(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK)
             check(surface.viewModel.verificationEngine.snapshot().committed == formatted.committed)
             key(KeyEvent.VK_Y, InputEvent.CTRL_DOWN_MASK)
             check(surface.viewModel.verificationEngine.snapshot().committed == replaced.committed)
-            checks += "End navigation/typing scroll the caret into view; selection replacement and bold/italic have exact Undo/Redo"
+            checks +=
+                "End navigation/typing scroll the caret into view; selection replacement and bold/italic have exact Undo/Redo"
             val toggle = components(window).filterIsInstance<JCheckBox>().single { it.name == "page-mode" }
             val beforeToggle = surface.viewModel.verificationEngine.snapshot()
             toggle.doClick()
@@ -165,12 +200,18 @@ fun runWritingChecks(result: File) {
             val reopened = JFrame.getFrames().filterIsInstance<JFrame>().single { it !in prior }
             owned += reopened
             val reopenedSurface = checkNotNull(windowCurrentSurface(reopened))
-            check(reopenedSurface.viewModel.verificationEngine.snapshot().committed.same(saved) && reopenedSurface.view.typography.id == "noto-nastaliq" && !reopenedSurface.view.paged)
+            check(
+                reopenedSurface.viewModel.verificationEngine.snapshot().committed.same(saved) &&
+                    reopenedSurface.view.typography.id == "noto-nastaliq" &&
+                    !reopenedSurface.view.paged,
+            )
             check(checkNotNull(windowFiles(reopened)).dirty.not())
             files.close()
             check(!window.isDisplayable)
-            checks += "Continuous/paged presentation leaves content/history unchanged; wheel browsing followed by typing reveals the caret"
-            checks += "Actual asynchronous Save and shell reopen preserve exact supported raw text/styles/start style/hard-soft breaks and current presentation profile"
+            checks +=
+                "Continuous/paged presentation leaves content/history unchanged; wheel browsing followed by typing reveals the caret"
+            checks +=
+                "Actual asynchronous Save and shell reopen preserve exact supported raw text/styles/start style/hard-soft breaks and current presentation profile"
             window = reopened
             surface = reopenedSurface
             files = checkNotNull(windowFiles(window))
@@ -192,7 +233,8 @@ fun runWritingChecks(result: File) {
                     "status" to "PASS",
                     "checks" to checks,
                     "sampleUnits" to sample.units.size,
-                    "scope" to "Actual offscreen shell/render/IO; synthetic key callbacks and model replacement, not real keyboard qualification",
+                    "scope" to
+                        "Actual offscreen shell/render/IO; synthetic key callbacks and model replacement, not real keyboard qualification",
                 ),
             ),
             Charsets.UTF_8,

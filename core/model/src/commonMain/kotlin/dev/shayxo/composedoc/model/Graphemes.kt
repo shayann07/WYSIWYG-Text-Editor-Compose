@@ -2,11 +2,7 @@ package dev.shayxo.composedoc.model
 
 /** Unicode 16 tables generated from pinned UCD data; segmentation performs no IO. */
 object Graphemes {
-    private data class Range(
-        val start: Int,
-        val end: Int,
-        val value: String,
-    )
+    private data class Range(val start: Int, val end: Int, val value: String)
 
     private fun decode(data: String) = data.split(';').map { row ->
         val p = row.split(',')
@@ -29,11 +25,7 @@ object Graphemes {
         )
     }
 
-    private fun find(
-        table: List<Range>,
-        cp: Int,
-        fallback: String,
-    ): String {
+    private fun find(table: List<Range>, cp: Int, fallback: String): String {
         var lo = 0
         var hi = table.lastIndex
         while (lo <=
@@ -51,12 +43,7 @@ object Graphemes {
         return fallback
     }
 
-    private data class Scalar(
-        val offset: Int,
-        val g: String,
-        val pictograph: Boolean,
-        val indic: String,
-    )
+    private data class Scalar(val offset: Int, val g: String, val pictograph: Boolean, val indic: String)
 
     fun stops(text: String): List<Int> {
         if (text.isEmpty()) return listOf(0)
@@ -131,11 +118,7 @@ object Graphemes {
         return stops
     }
 
-    fun snap(
-        text: String,
-        offset: Int,
-        after: Boolean = true,
-    ): Int {
+    fun snap(text: String, offset: Int, after: Boolean = true): Int {
         val stops = stops(text)
         return if (after) {
             stops.first {

@@ -30,7 +30,9 @@ fun runNativeKeyboardProbe(args: Array<String>) {
     check(output.mkdirs()) { "Use a new native keyboard directory" }
     val crashWriting = "--native-crash-writing" in args
     val writing = "--native-writing" in args || crashWriting
-    val recoveryDirectory = args.firstOrNull { it.startsWith("--recovery-dir=") }?.substringAfter('=')?.let { java.nio.file.Path.of(it).toAbsolutePath().normalize() }
+    val recoveryDirectory = args.firstOrNull {
+        it.startsWith("--recovery-dir=")
+    }?.substringAfter('=')?.let { java.nio.file.Path.of(it).toAbsolutePath().normalize() }
     val writingPath = File(output, "disposable-native-writing.astra").toPath()
     val initialWriting = if ("--native-structured" in args) {
         structuredWritingSample()
@@ -66,7 +68,8 @@ fun runNativeKeyboardProbe(args: Array<String>) {
                     mapOf(
                         "status" to value["status"], "pid" to value["pid"], "title" to value["title"],
                         "length" to (frame?.get("text") as? String)?.length, "selection" to frame?.get("selection"),
-                        "focusOwner" to frame?.get("focusOwner"), "paged" to frame?.get("paged"), "displayable" to frame?.get("displayable"),
+                        "focusOwner" to frame?.get("focusOwner"), "paged" to frame?.get("paged"),
+                        "displayable" to frame?.get("displayable"),
                         "dirty" to frame?.get("dirty"), "busy" to frame?.get("busy"), "native" to value["native"],
                     ),
                 ),
@@ -107,8 +110,23 @@ fun runNativeKeyboardProbe(args: Array<String>) {
             "zoom" to surface.view.zoom,
             "structure" to structureDescription(frame.committed),
             "outline" to frame.committed.outlineEntries().map { listOf(it.anchor, it.level, it.label) },
-            "paragraphSpacing" to frame.visible.paragraphs().map { listOf(it.properties.spaceBefore, it.properties.spaceAfter, it.properties.linePermille) },
-            "inlineAttributes" to frame.visible.units.map { listOf(it.style.bits, it.style.font.ordinal, it.style.size, it.style.color, it.paragraphStyle.bits, it.paragraphStyle.font.ordinal, it.paragraphStyle.size, it.paragraphStyle.color) },
+            "paragraphSpacing" to
+                frame.visible.paragraphs().map {
+                    listOf(it.properties.spaceBefore, it.properties.spaceAfter, it.properties.linePermille)
+                },
+            "inlineAttributes" to
+                frame.visible.units.map {
+                    listOf(
+                        it.style.bits,
+                        it.style.font.ordinal,
+                        it.style.size,
+                        it.style.color,
+                        it.paragraphStyle.bits,
+                        it.paragraphStyle.font.ordinal,
+                        it.paragraphStyle.size,
+                        it.paragraphStyle.color,
+                    )
+                },
             "find" to find?.let { ui ->
                 mapOf(
                     "visible" to ui.panel.isVisible,
@@ -120,22 +138,44 @@ fun runNativeKeyboardProbe(args: Array<String>) {
                     "queryFocused" to ui.query.isFocusOwner,
                 )
             },
-            "units" to frame.visible.units.map { listOf(it.id, it.char.code, it.kind.ordinal, it.style.bits, it.paragraphStyle.bits) },
-            "undo" to frame.undoCount, "redo" to frame.redoCount, "marked" to frame.marked?.let { listOf(it.first, it.last + 1) },
-            "revision" to frame.documentRevision, "locale" to surface.inputContext?.locale?.toLanguageTag(), "focusOwner" to surface.isFocusOwner,
-            "referenceText" to reference?.text, "referenceFocus" to reference?.isFocusOwner, "referenceLocale" to reference?.inputContext?.locale?.toLanguageTag(),
+            "units" to
+                frame.visible.units.map {
+                    listOf(it.id, it.char.code, it.kind.ordinal, it.style.bits, it.paragraphStyle.bits)
+                },
+            "undo" to frame.undoCount, "redo" to frame.redoCount,
+            "marked" to frame.marked?.let { listOf(it.first, it.last + 1) },
+            "revision" to frame.documentRevision, "locale" to surface.inputContext?.locale?.toLanguageTag(),
+            "focusOwner" to surface.isFocusOwner,
+            "referenceText" to reference?.text, "referenceFocus" to reference?.isFocusOwner,
+            "referenceLocale" to reference?.inputContext?.locale?.toLanguageTag(),
             "referenceImeEvents" to referenceImeEvents, "referenceMarkedUnits" to referenceMarkedUnits,
             "displayable" to window.isDisplayable, "paged" to surface.view.paged, "scroll" to surface.view.scroll,
-            "fontProfile" to surface.view.typography.key, "dirty" to windowFiles(window)?.dirty, "busy" to windowFiles(window)?.busy,
+            "fontProfile" to surface.view.typography.key, "dirty" to windowFiles(window)?.dirty,
+            "busy" to windowFiles(window)?.busy,
             "path" to windowFiles(window)?.path?.toString(), "viewport" to listOf(surface.width, surface.height),
-            "localRecovery" to (window.rootPane.getClientProperty("editor.localRecovery") as? LocalRecoveryController)?.state(),
-            "visualControls" to (window.rootPane.getClientProperty("editor.structure") as? StructureControls)?.let { ui -> mapOf("hasCurrentSection" to ui.hasCurrentSection, "currentSection" to ui.currentSection, "outlineKeyboardRow" to ui.outline.selectedIndex, "outlineWidth" to ui.outlinePane.width, "roleWidth" to ui.role.width, "roleValue" to ui.role.selectedItem.toString()) },
+            "localRecovery" to
+                (window.rootPane.getClientProperty("editor.localRecovery") as? LocalRecoveryController)?.state(),
+            "visualControls" to
+                (window.rootPane.getClientProperty("editor.structure") as? StructureControls)?.let { ui ->
+                    mapOf(
+                        "hasCurrentSection" to ui.hasCurrentSection,
+                        "currentSection" to ui.currentSection,
+                        "outlineKeyboardRow" to ui.outline.selectedIndex,
+                        "outlineWidth" to ui.outlinePane.width,
+                        "roleWidth" to ui.role.width,
+                        "roleValue" to ui.role.selectedItem.toString(),
+                    )
+                },
             "geometry" to surface.view.geometry?.let { g ->
                 val c = g.caret(frame.selection.focus, frame.selection.primary, frame.selection.wrapAffinity)
                 mapOf(
                     "listMarkers" to g.paragraphs.filter { it.marker != null }.map { p ->
                         val m = p.marker!!
-                        mapOf("paragraph" to p.index, "label" to m.text, "nominalSize" to m.nominalSize, "baseline" to m.baseline, "left" to m.left, "top" to m.top, "width" to m.width, "contentLeft" to p.contentLeft, "contentWidth" to p.contentWidth, "fontKey" to m.fontKey)
+                        mapOf(
+                            "paragraph" to p.index, "label" to m.text, "nominalSize" to m.nominalSize,
+                            "baseline" to m.baseline, "left" to m.left, "top" to m.top, "width" to m.width,
+                            "contentLeft" to p.contentLeft, "contentWidth" to p.contentWidth, "fontKey" to m.fontKey,
+                        )
                     },
                     "pages" to g.pageCount,
                     "scale" to g.scale,
@@ -160,7 +200,9 @@ fun runNativeKeyboardProbe(args: Array<String>) {
     }
     val watchdog = Executors.newSingleThreadScheduledExecutor()
     watchdog.schedule({
-        runCatching { restore() }.onSuccess { File(output, "deadline-cleanup.json").writeText(evidenceJson(it), Charsets.UTF_8) }
+        runCatching {
+            restore()
+        }.onSuccess { File(output, "deadline-cleanup.json").writeText(evidenceJson(it), Charsets.UTF_8) }
         kotlin.system.exitProcess(124)
     }, if (writing) 12 else 8, TimeUnit.MINUTES)
     try {
@@ -183,15 +225,16 @@ fun runNativeKeyboardProbe(args: Array<String>) {
                     addInputMethodListener(object : java.awt.event.InputMethodListener {
                         override fun inputMethodTextChanged(event: java.awt.event.InputMethodEvent) {
                             referenceImeEvents++
-                            val text = (event.text?.clone() as? java.text.AttributedCharacterIterator)?.let { iterator ->
-                                buildString {
-                                    var char = iterator.first()
-                                    while (char != java.text.CharacterIterator.DONE) {
-                                        append(char)
-                                        char = iterator.next()
+                            val text =
+                                (event.text?.clone() as? java.text.AttributedCharacterIterator)?.let { iterator ->
+                                    buildString {
+                                        var char = iterator.first()
+                                        while (char != java.text.CharacterIterator.DONE) {
+                                            append(char)
+                                            char = iterator.next()
+                                        }
                                     }
-                                }
-                            } ?: ""
+                                } ?: ""
                             referenceMarkedUnits = text.length - event.committedCharacterCount
                             File(output, "reference-events.jsonl").appendText(
                                 evidenceJson(
@@ -209,15 +252,28 @@ fun runNativeKeyboardProbe(args: Array<String>) {
                     })
                 }
                 val panel = javax.swing.JPanel(java.awt.BorderLayout()).apply {
-                    add(javax.swing.JLabel("Reference JTextArea — disposable comparison, separate from the editor document"), java.awt.BorderLayout.NORTH)
+                    add(
+                        javax.swing.JLabel(
+                            "Reference JTextArea — disposable comparison, separate from the editor document",
+                        ),
+                        java.awt.BorderLayout.NORTH,
+                    )
                     add(javax.swing.JScrollPane(reference), java.awt.BorderLayout.CENTER)
                 }
-                (window.contentPane.layout as java.awt.BorderLayout).getLayoutComponent(java.awt.BorderLayout.SOUTH)?.let { window.contentPane.remove(it) }
+                (window.contentPane.layout as java.awt.BorderLayout).getLayoutComponent(
+                    java.awt.BorderLayout.SOUTH,
+                )?.let {
+                    window.contentPane.remove(it)
+                }
                 window.contentPane.add(panel, java.awt.BorderLayout.SOUTH)
                 window.validate()
             }
             window.title = "Astra Native Keyboard Probe ${ProcessHandle.current().pid()}"
-            if ("--restore-copies" in args) showLocalRecovery(checkNotNull(recoveryDirectory), "noto-nastaliq", true, onlyIfNeeded = true)
+            if ("--restore-copies" in
+                args
+            ) {
+                showLocalRecovery(checkNotNull(recoveryDirectory), "noto-nastaliq", true, onlyIfNeeded = true)
+            }
             mapOf("created" to true)
         }
         emit(
@@ -234,8 +290,22 @@ fun runNativeKeyboardProbe(args: Array<String>) {
         for (line in System.`in`.bufferedReader(Charsets.UTF_8).lineSequence()) {
             val request = SimpleJson(line).parse() as Map<*, *>
             when (val command = request["command"] as String) {
-                "snapshot" -> emit(owner { mapOf("status" to "OK", "frame" to snapshot(), "native" to nativeCall("snapshot")) })
-                "tsf-query" -> emit(mapOf("status" to "TSF_QUERY", "main" to nativeCall("tsf"), "owner" to owner { mapOf("query" to nativeCall("tsf")) }))
+                "snapshot" -> emit(
+                    owner {
+                        mapOf(
+                            "status" to "OK",
+                            "frame" to snapshot(),
+                            "native" to nativeCall("snapshot"),
+                        )
+                    },
+                )
+                "tsf-query" -> emit(
+                    mapOf(
+                        "status" to "TSF_QUERY",
+                        "main" to nativeCall("tsf"),
+                        "owner" to owner { mapOf("query" to nativeCall("tsf")) },
+                    ),
+                )
                 "prepare-ime" -> emit(mapOf("status" to "IME_PROFILE_RESULT", "native" to nativeCall("prepareIme")))
                 "prepare" -> {
                     val language = request["language"] as String
@@ -249,7 +319,16 @@ fun runNativeKeyboardProbe(args: Array<String>) {
                     emit(
                         owner {
                             val accepted = if ((result as Map<*, *>)["status"] == "Prepared") {
-                                surface.selectInputLocale(java.util.Locale.forLanguageTag(language), if (language == "ja-JP") true else null)
+                                surface.selectInputLocale(
+                                    java.util.Locale.forLanguageTag(language),
+                                    if (language ==
+                                        "ja-JP"
+                                    ) {
+                                        true
+                                    } else {
+                                        null
+                                    },
+                                )
                             } else {
                                 false
                             }
@@ -259,14 +338,27 @@ fun runNativeKeyboardProbe(args: Array<String>) {
                                     if (language == "ja-JP") runCatching { context.isCompositionEnabled = true }
                                 }
                             }
-                            mapOf("status" to "SETUP_RESULT", "native" to result, "localeAccepted" to accepted, "frame" to snapshot())
+                            mapOf(
+                                "status" to "SETUP_RESULT",
+                                "native" to result,
+                                "localeAccepted" to accepted,
+                                "frame" to snapshot(),
+                            )
                         },
                     )
                 }
-                "restore" -> emit(mapOf("status" to "RESTORE_RESULT", "native" to restore(), "frame" to owner { snapshot() }))
+                "restore" -> emit(
+                    mapOf(
+                        "status" to "RESTORE_RESULT",
+                        "native" to restore(),
+                        "frame" to owner { snapshot() },
+                    ),
+                )
                 "reopen" -> emit(
                     owner {
-                        check(writing && !window.isDisplayable) { "Close the disposable writing window before reopening" }
+                        check(writing && !window.isDisplayable) {
+                            "Close the disposable writing window before reopening"
+                        }
                         val saved = DocumentFiles.read(writingPath)
                         val paged = surface.view.paged
                         window = showEditor(
@@ -285,7 +377,11 @@ fun runNativeKeyboardProbe(args: Array<String>) {
                 )
                 "adopt-open" -> emit(
                     owner {
-                        val opened = javax.swing.JFrame.getFrames().filterIsInstance<javax.swing.JFrame>().single { it.isDisplayable && it !== window && windowFiles(it)?.path == writingPath }
+                        val opened = javax.swing.JFrame.getFrames().filterIsInstance<javax.swing.JFrame>().single {
+                            it.isDisplayable &&
+                                it !== window &&
+                                windowFiles(it)?.path == writingPath
+                        }
                         window = opened
                         surface = checkNotNull(windowCurrentSurface(window))
                         mapOf("status" to "ADOPTED_NATIVE_OPEN", "frame" to snapshot())
@@ -304,8 +400,14 @@ fun runNativeKeyboardProbe(args: Array<String>) {
                 )
                 "clean" -> emit(
                     owner {
-                        check(surface.viewModel.verificationEngine.snapshot().marked == null) { "Native composition must settle before fixture cleanup" }
-                        while (surface.viewModel.verificationEngine.snapshot().undoCount > 0) surface.viewModel.verificationEngine.perform(EditAction.Undo)
+                        check(surface.viewModel.verificationEngine.snapshot().marked == null) {
+                            "Native composition must settle before fixture cleanup"
+                        }
+                        while (surface.viewModel.verificationEngine.snapshot().undoCount >
+                            0
+                        ) {
+                            surface.viewModel.verificationEngine.perform(EditAction.Undo)
+                        }
                         mapOf("status" to "CLEAN", "frame" to snapshot())
                     },
                 )

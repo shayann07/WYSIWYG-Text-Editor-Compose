@@ -63,13 +63,22 @@ fun clipboardChild(args: Array<String>) {
     if (mode == "publish") {
         val e = EditorEngine(DocumentFiles.read(path))
         e.selectAll()
-        ownedClipboardRetry { RichClipboard.publish(checkNotNull(e.clipboardCapture()), Toolkit.getDefaultToolkit().systemClipboard, codec = FragmentCodec) }
+        ownedClipboardRetry {
+            RichClipboard.publish(
+                checkNotNull(e.clipboardCapture()),
+                Toolkit.getDefaultToolkit().systemClipboard,
+                codec = FragmentCodec,
+            )
+        }
         println("OWNED_CLIPBOARD_READY")
         System.out.flush()
         readlnOrNull()
     } else {
         val e = EditorEngine()
-        val r = ownedClipboardRetry { RichClipboard.read(Toolkit.getDefaultToolkit().systemClipboard, mode == "plain", codec = FragmentCodec) }
+        val r =
+            ownedClipboardRetry {
+                RichClipboard.read(Toolkit.getDefaultToolkit().systemClipboard, mode == "plain", codec = FragmentCodec)
+            }
         check(e.clipboardApply(checkNotNull(e.clipboardCapture()), r.rich, r.plain))
         DocumentFiles.write(path, e.snapshot().committed)
         println("OWNED_CLIPBOARD_READ")
@@ -106,7 +115,10 @@ fun runConnectedWritingChecks(result: File) {
     val style = TextStyleFlags(true, true, true, true, StoredFont.GULZAR, 32, 0x174ea6)
     val p0 = ParagraphProperties(ParagraphDirection.RTL, ParagraphAlignment.CENTER, 8, 12, 1500)
     val p1 = ParagraphProperties(ParagraphDirection.LTR, ParagraphAlignment.END, 4, 16, 2000)
-    val raw = "کِتاب\u200c English 123 😀\n\nب\u200dت\nsoft\nline".replace("\\u200c", "\u200c").replace("\\u200d", "\u200d")
+    val raw = "کِتاب\u200c English 123 😀\n\nب\u200dت\nsoft\nline".replace(
+        "\\u200c",
+        "\u200c",
+    ).replace("\\u200d", "\u200d")
     val base = doc(raw).let { d ->
         d.copy(
             startStyle = style.copy(font = StoredFont.SYSTEM, size = 18, color = -1),
@@ -115,7 +127,16 @@ fun runConnectedWritingChecks(result: File) {
                 if (u.kind == UnitKind.PARAGRAPH_BREAK && i != raw.lastIndexOf('\n')) {
                     u.copy(paragraphStyle = style, followingParagraph = if (i % 2 == 0)p0 else p1)
                 } else {
-                    u.copy(kind = UnitKind.TEXT, style = if (i % 3 == 0)style else style.copy(font = StoredFont.NASKH, size = 22, color = -1, underline = false))
+                    u.copy(
+                        kind = UnitKind.TEXT,
+                        style = if (i % 3 ==
+                            0
+                        ) {
+                            style
+                        } else {
+                            style.copy(font = StoredFont.NASKH, size = 22, color = -1, underline = false)
+                        },
+                    )
                 }
             },
         )
@@ -125,7 +146,12 @@ fun runConnectedWritingChecks(result: File) {
         check(DocumentFiles.decode(bytes).same(base))
         val b = java.nio.ByteBuffer.wrap(bytes)
         check(b.getInt(4) == 9 && b.getInt(8) == raw.length)
-        check(bytes[12].toInt() == 15 && bytes[13].toInt() == StoredFont.SYSTEM.ordinal && bytes[14].toInt() == 18 && b.getInt(15) == -1)
+        check(
+            bytes[12].toInt() == 15 &&
+                bytes[13].toInt() == StoredFont.SYSTEM.ordinal &&
+                bytes[14].toInt() == 18 &&
+                b.getInt(15) == -1,
+        )
         check(b.getShort(20).toInt() == 8 && b.getShort(22).toInt() == 12 && b.getShort(24).toInt() == 1500)
         // Independent v4 bytes: RTL/Center root and LTR/End following; defaults for all new fields.
         val out = java.io.ByteArrayOutputStream()
@@ -146,12 +172,23 @@ fun runConnectedWritingChecks(result: File) {
         }
         val body = out.toByteArray()
         val old = DocumentFiles.decode(body + java.security.MessageDigest.getInstance("SHA-256").digest(body))
-        check(old.startStyle == TextStyleFlags(true, true) && old.startParagraph == ParagraphProperties(ParagraphDirection.RTL, ParagraphAlignment.CENTER))
-        check(old.units.last().followingParagraph == ParagraphProperties(ParagraphDirection.LTR, ParagraphAlignment.END))
+        check(
+            old.startStyle == TextStyleFlags(true, true) &&
+                old.startParagraph == ParagraphProperties(ParagraphDirection.RTL, ParagraphAlignment.CENTER),
+        )
+        check(
+            old.units.last().followingParagraph == ParagraphProperties(ParagraphDirection.LTR, ParagraphAlignment.END),
+        )
         fun invalid(offset: Int, value: Int) {
             val bad = bytes.copyOf(bytes.size - 32)
             bad[offset] = value.toByte()
-            check(runCatching { DocumentFiles.decode(bad + java.security.MessageDigest.getInstance("SHA-256").digest(bad)) }.isFailure)
+            check(
+                runCatching {
+                    DocumentFiles.decode(
+                        bad + java.security.MessageDigest.getInstance("SHA-256").digest(bad),
+                    )
+                }.isFailure,
+            )
         }
         invalid(13, 99)
         invalid(14, 7)
@@ -167,7 +204,12 @@ fun runConnectedWritingChecks(result: File) {
         e.setTextStyle(TextStylePatch(color = 0xb3261e))
         val f = e.snapshot()
         check(f.committed.units.take(2).all { it.style.color == 0xb3261e })
-        check(f.committed.units.zip(before.committed.units).all { (a, b) -> a.style.copy(color = b.style.color) == b.style })
+        check(
+            f.committed.units.zip(before.committed.units).all { (a, b) ->
+                a.style.copy(color = b.style.color) ==
+                    b.style
+            },
+        )
         e.perform(EditAction.Undo)
         check(e.snapshot().committed == before.committed)
         e.perform(EditAction.Redo)
@@ -178,7 +220,14 @@ fun runConnectedWritingChecks(result: File) {
         check(e.snapshot().undoCount == n)
         e.inputMethod("اردو", 0, 4)
         e.inputMethod("اردو", 4, null)
-        check(e.snapshot().committed.units.take(4).all { it.style.font == StoredFont.NOTO_NASTALIQ && it.style.size == 40 && it.style.underline && it.style.color == 0 })
+        check(
+            e.snapshot().committed.units.take(4).all {
+                it.style.font == StoredFont.NOTO_NASTALIQ &&
+                    it.style.size == 40 &&
+                    it.style.underline &&
+                    it.style.color == 0
+            },
+        )
         e.perform(EditAction.Undo)
         check(e.snapshot().committed == f.committed)
     }
@@ -215,10 +264,19 @@ fun runConnectedWritingChecks(result: File) {
         val after = e.snapshot()
         val expectedChars = "LEFT\nR" + raw + "GHT"
         check(after.committed.text == expectedChars)
-        val expectedStyles = before.committed.units.take(6).map { it.style } + base.units.map { it.style } + before.committed.units.drop(7).map { it.style }
+        val expectedStyles =
+            before.committed.units.take(6).map { it.style } + base.units.map { it.style } +
+                before.committed.units.drop(7).map { it.style }
         check(after.committed.units.map { it.style } == expectedStyles)
         check(after.committed.units.map { it.id }.distinct().size == after.committed.units.size)
-        check(after.committed.units.subList(6, 6 + base.units.size).none { u -> before.committed.units.any { it.id == u.id } })
+        check(
+            after.committed.units.subList(6, 6 + base.units.size).none { u ->
+                before.committed.units.any {
+                    it.id ==
+                        u.id
+                }
+            },
+        )
         check(after.undoCount == before.undoCount + 1)
         e.perform(EditAction.Undo)
         check(e.snapshot().committed == before.committed)
@@ -247,7 +305,13 @@ fun runConnectedWritingChecks(result: File) {
             object : Transferable {
                 override fun getTransferDataFlavors() = arrayOf(RichClipboard.flavor, DataFlavor.stringFlavor)
                 override fun isDataFlavorSupported(f: DataFlavor) = true
-                override fun getTransferData(f: DataFlavor): Any = if (f == RichClipboard.flavor)java.io.ByteArrayInputStream(invalid) else "plain\r\ntext"
+                override fun getTransferData(f: DataFlavor): Any = if (f ==
+                    RichClipboard.flavor
+                ) {
+                    java.io.ByteArrayInputStream(invalid)
+                } else {
+                    "plain\r\ntext"
+                }
             },
             null,
         )
@@ -279,8 +343,12 @@ fun runConnectedWritingChecks(result: File) {
         check(e.replaceFound(basis, matches, "Q", true) == FindReplaceResult.Applied)
         val m = matches.single()
         val after = e.snapshot().committed
-        val expected = before.units.take(m.start) + listOf(before.units[m.start].copy(char = 'Q')) + before.units.drop(m.end)
-        check(after.units.map { listOf(it.char, it.kind, it.style, it.paragraphStyle, it.followingParagraph) } == expected.map { listOf(it.char, it.kind, it.style, it.paragraphStyle, it.followingParagraph) })
+        val expected =
+            before.units.take(m.start) + listOf(before.units[m.start].copy(char = 'Q')) + before.units.drop(m.end)
+        check(
+            after.units.map { listOf(it.char, it.kind, it.style, it.paragraphStyle, it.followingParagraph) } ==
+                expected.map { listOf(it.char, it.kind, it.style, it.paragraphStyle, it.followingParagraph) },
+        )
         check(after.startParagraph == before.startParagraph)
         e.perform(EditAction.Undo)
         check(e.snapshot().committed == before)
@@ -303,7 +371,8 @@ fun runConnectedWritingChecks(result: File) {
         val c = checkNotNull(e.clipboardCapture())
         val before = e.snapshot()
         val failed = object : Clipboard("owned-failure") {
-            override fun setContents(t: Transferable?, o: ClipboardOwner?): Unit = throw IllegalStateException("owned publish failure")
+            override fun setContents(t: Transferable?, o: ClipboardOwner?): Unit =
+                throw IllegalStateException("owned publish failure")
         }
         check(runCatching { RichClipboard.publish(c, failed, codec = FragmentCodec) }.isFailure)
         check(e.snapshot() == before)
@@ -331,16 +400,31 @@ fun runConnectedWritingChecks(result: File) {
         DocumentFiles.write(input, base)
         val javaExe = java.nio.file.Path.of(System.getProperty("java.home"), "bin", "java.exe").toString()
         val cmd = listOf(javaExe, "-cp", System.getProperty("java.class.path"), "editor.MainKt")
-        val publisher = ProcessBuilder(cmd + listOf("--clipboard-child=publish", "--clipboard-file=$input")).redirectErrorStream(true).start()
+        val publisher = ProcessBuilder(
+            cmd + listOf("--clipboard-child=publish", "--clipboard-file=$input"),
+        ).redirectErrorStream(true).start()
         try {
             check(publisher.inputStream.bufferedReader().readLine() == "OWNED_CLIPBOARD_READY")
             for (mode in listOf("rich", "plain")) {
                 val output = root.resolve("clipboard-$mode.astra")
-                val p = ProcessBuilder(cmd + listOf("--clipboard-child=$mode", "--clipboard-file=$output")).redirectErrorStream(true).start()
-                check(p.waitFor(30, java.util.concurrent.TimeUnit.SECONDS) && p.exitValue() == 0) { p.inputStream.bufferedReader().readText() }
+                val p = ProcessBuilder(
+                    cmd + listOf("--clipboard-child=$mode", "--clipboard-file=$output"),
+                ).redirectErrorStream(true).start()
+                check(p.waitFor(30, java.util.concurrent.TimeUnit.SECONDS) && p.exitValue() == 0) {
+                    p.inputStream.bufferedReader().readText()
+                }
                 val d = DocumentFiles.read(output)
                 check(d.text == raw)
-                if (mode == "rich") check(d.same(base)) else check(d.units.filter { it.kind == UnitKind.TEXT }.all { it.style == TextStyleFlags() } && d.paragraphs().all { it.properties == ParagraphProperties() })
+                if (mode ==
+                    "rich"
+                ) {
+                    check(d.same(base))
+                } else {
+                    check(
+                        d.units.filter { it.kind == UnitKind.TEXT }.all { it.style == TextStyleFlags() } &&
+                            d.paragraphs().all { it.properties == ParagraphProperties() },
+                    )
+                }
             }
         } finally {
             publisher.outputStream.write("done\n".toByteArray())
@@ -352,7 +436,13 @@ fun runConnectedWritingChecks(result: File) {
     try {
         lateinit var s: EditorSurface
         owner {
-            window = showEditor(initial = base, fontProfile = "noto-nastaliq", offscreenTest = true, recoveryDirectory = root.resolve("recovery"))
+            window =
+                showEditor(
+                    initial = base,
+                    fontProfile = "noto-nastaliq",
+                    offscreenTest = true,
+                    recoveryDirectory = root.resolve("recovery"),
+                )
             s = checkNotNull(windowCurrentSurface(checkNotNull(window)))
         }
         await("mount") { s.view.measure != null }
@@ -365,7 +455,10 @@ fun runConnectedWritingChecks(result: File) {
                         checkNotNull(window).setSize(940, 400)
                         checkNotNull(window).validate()
                     }
-                    await("zoom measure") { s.view.measure != null && s.view.geometry?.typographyKey?.contains(":zoom=$zoom") == true }
+                    await("zoom measure") {
+                        s.view.measure != null &&
+                            s.view.geometry?.typographyKey?.contains(":zoom=$zoom") == true
+                    }
                     owner {
                         val before = s.viewModel.verificationEngine.snapshot()
                         val g = checkNotNull(s.geometry())
@@ -373,13 +466,19 @@ fun runConnectedWritingChecks(result: File) {
                         check(g.scale > 0 && p.layout.size.height > 0)
                         val page = base.pageSettings
                         val expectedWidth = ((page.widthMm - 2 * page.marginMm) * 96f / 25.4f).roundToInt()
-                        check(g.textWidth == expectedWidth) { "Document width changed at zoom: ${g.textWidth}, expected $expectedWidth" }
+                        check(g.textWidth == expectedWidth) {
+                            "Document width changed at zoom: ${g.textWidth}, expected $expectedWidth"
+                        }
                         val caret = g.caret(0)
                         val location = checkNotNull(s.getTextLocation(null))
                         val screen = s.locationOnScreen
                         check(kotlin.math.abs(location.x - screen.x - caret.left / g.scale) < 2)
                         val attrs = s.accessibleContext.accessibleText.getCharacterAttribute(0)
-                        check(javax.swing.text.StyleConstants.isUnderline(attrs) && javax.swing.text.StyleConstants.isStrikeThrough(attrs) && javax.swing.text.StyleConstants.getFontSize(attrs) == 32)
+                        check(
+                            javax.swing.text.StyleConstants.isUnderline(attrs) &&
+                                javax.swing.text.StyleConstants.isStrikeThrough(attrs) &&
+                                javax.swing.text.StyleConstants.getFontSize(attrs) == 32,
+                        )
                         val natural = p.layout.getLineBottom(0) - p.layout.getLineTop(0)
                         check(natural >= 32)
                         if (!paged) {
@@ -399,13 +498,24 @@ fun runConnectedWritingChecks(result: File) {
             owner {
                 val w = checkNotNull(window)
                 val tabs = w.rootPane.getClientProperty("editor.writingTabs") as JTabbedPane
-                fun components(c: Component): List<Component> = listOf(c) + if (c is Container)c.components.flatMap(::components) else emptyList()
+                fun components(c: Component): List<Component> =
+                    listOf(c) + if (c is Container)c.components.flatMap(::components) else emptyList()
                 for (i in 0..2) {
                     tabs.selectedIndex = i
                     w.validate()
                     check(s.height >= 120) { "Minimum writing area ${s.height}" }
-                    components(w).filter { it.isShowing && (it is JButton || it is JComboBox<*>) }.forEach { c -> check(c.x >= 0 && c.x + c.width <= c.parent.width && c.height > 0) { "Clipped ${c.name} ${c.bounds}/${c.parent.size}" } }
-                    val image = java.awt.image.BufferedImage(w.width, w.height, java.awt.image.BufferedImage.TYPE_INT_RGB)
+                    components(w).filter { it.isShowing && (it is JButton || it is JComboBox<*>) }.forEach { c ->
+                        check(
+                            c.x >= 0 && c.x + c.width <= c.parent.width && c.height > 0,
+                        ) {
+                            "Clipped ${c.name} ${c.bounds}/${c.parent.size}"
+                        }
+                    }
+                    val image = java.awt.image.BufferedImage(
+                        w.width,
+                        w.height,
+                        java.awt.image.BufferedImage.TYPE_INT_RGB,
+                    )
                     val g = image.createGraphics()
                     w.paint(g)
                     g.dispose()
@@ -414,12 +524,23 @@ fun runConnectedWritingChecks(result: File) {
                     images += name
                 }
                 fun key(code: Int, shift: Boolean = false) {
-                    val k = KeyEvent(s, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), (if (shift)InputEvent.SHIFT_DOWN_MASK else 0), code, KeyEvent.CHAR_UNDEFINED)
+                    val k =
+                        KeyEvent(
+                            s,
+                            KeyEvent.KEY_PRESSED,
+                            System.currentTimeMillis(),
+                            (if (shift)InputEvent.SHIFT_DOWN_MASK else 0),
+                            code,
+                            KeyEvent.CHAR_UNDEFINED,
+                        )
                     s.keyListeners.forEach { it.keyPressed(k) }
                 }
                 s.viewModel.verificationEngine.move(Selection(0, 0))
                 key(KeyEvent.VK_PAGE_DOWN, true)
-                check(s.viewModel.verificationEngine.snapshot().selection.focus > 0 && s.viewModel.verificationEngine.snapshot().selection.anchor == 0)
+                check(
+                    s.viewModel.verificationEngine.snapshot().selection.focus > 0 &&
+                        s.viewModel.verificationEngine.snapshot().selection.anchor == 0,
+                )
                 key(KeyEvent.VK_PAGE_UP)
                 check(s.viewModel.verificationEngine.snapshot().selection.collapsed)
                 val before = s.viewModel.verificationEngine.snapshot()
@@ -439,8 +560,16 @@ fun runConnectedWritingChecks(result: File) {
                 s.viewModel.verificationEngine.inputMethod("provisional", 0, 11)
             }
             val expected = owner { s.viewModel.verificationEngine.snapshot().committed }
-            val controller = owner { checkNotNull(window).rootPane.getClientProperty("editor.localRecovery") as LocalRecoveryController }
-            await("completed committed copy") { controller.state().let { it["completed"] == it["observed"] && (it["completed"] as Long) > 0 } }
+            val controller =
+                owner {
+                    checkNotNull(window).rootPane.getClientProperty("editor.localRecovery") as LocalRecoveryController
+                }
+            await("completed committed copy") {
+                controller.state().let {
+                    it["completed"] == it["observed"] &&
+                        (it["completed"] as Long) > 0
+                }
+            }
             owner { controller.finish(discard = false) }
             val store = LocalRecoveryStore(root.resolve("recovery"))
             var entry: LocalRecoveryEntry? = null
@@ -456,6 +585,17 @@ fun runConnectedWritingChecks(result: File) {
     } finally {
         owner { window?.dispose() }
     }
-    result.writeText(evidenceJson(mapOf("status" to "PASS", "checks" to checks, "screenshots" to images, "scope" to "Engine/independent byte+unit oracles, actual OS clipboard owned JVMs, offscreen Compose shell. Keyboard/IME callbacks here are synthetic; live desktop separate.")), Charsets.UTF_8)
+    result.writeText(
+        evidenceJson(
+            mapOf(
+                "status" to "PASS",
+                "checks" to checks,
+                "screenshots" to images,
+                "scope" to
+                    "Engine/independent byte+unit oracles, actual OS clipboard owned JVMs, offscreen Compose shell. Keyboard/IME callbacks here are synthetic; live desktop separate.",
+            ),
+        ),
+        Charsets.UTF_8,
+    )
     println("PASS connected writing deliveries checks")
 }

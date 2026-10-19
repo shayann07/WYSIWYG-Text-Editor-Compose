@@ -28,12 +28,29 @@ import java.util.UUID
 fun cloneDocument(source: Document): Document {
     val units = source.units.map { freshCloneId.getAndIncrement() }
     val blocks = source.paragraphs().associate { it.anchor to freshCloneId.getAndIncrement() }
-    val items = source.paragraphs().map { it.properties.item }.filter { it.isNotEmpty() }.distinct().associateWith { freshStructureId() }
+    val items = source.paragraphs().map {
+        it.properties.item
+    }.filter { it.isNotEmpty() }.distinct().associateWith { freshStructureId() }
     val links = HashMap<String, String>()
-    fun style(s: TextStyleFlags) = s.copy(link = s.link?.let { it.copy(id = links.getOrPut(it.id) { freshStructureId() }) })
+    fun style(s: TextStyleFlags) =
+        s.copy(link = s.link?.let { it.copy(id = links.getOrPut(it.id) { freshStructureId() }) })
     fun p(p: ParagraphProperties) = p.copy(item = items[p.item] ?: "", parent = items[p.parent] ?: "")
     return source.copy(
-        units = source.units.mapIndexed { at, u -> u.copy(id = units[at], style = style(u.style), paragraphStyle = style(u.paragraphStyle), followingParagraph = p(u.followingParagraph), followingBlockId = if (u.kind == UnitKind.PARAGRAPH_BREAK)blocks.getValue(u.paragraphAnchor) else Long.MIN_VALUE) },
+        units = source.units.mapIndexed { at, u ->
+            u.copy(
+                id = units[at],
+                style = style(u.style),
+                paragraphStyle = style(u.paragraphStyle),
+                followingParagraph = p(u.followingParagraph),
+                followingBlockId = if (u.kind ==
+                    UnitKind.PARAGRAPH_BREAK
+                ) {
+                    blocks.getValue(u.paragraphAnchor)
+                } else {
+                    Long.MIN_VALUE
+                },
+            )
+        },
         rootBlockId = blocks.getValue(source.rootBlockId),
         startStyle = style(source.startStyle),
         startParagraph = p(source.startParagraph),
@@ -47,10 +64,17 @@ data class TemplateEntry(val id: String, val label: String, val builtIn: Boolean
     override fun toString() = label
 }
 class TemplateStore(val root: Path) {
-    val builtIns = listOf(TemplateEntry("blank", "Blank Urdu", true), TemplateEntry("letter", "Urdu Letter", true), TemplateEntry("article", "Urdu Article / Report", true))
+    val builtIns =
+        listOf(
+            TemplateEntry("blank", "Blank Urdu", true),
+            TemplateEntry("letter", "Urdu Letter", true),
+            TemplateEntry("article", "Urdu Article / Report", true),
+        )
     fun list(): List<TemplateEntry> {
         if (!Files.exists(root))return builtIns
-        val user = Files.list(root).use { files -> files.filter { it.fileName.toString().endsWith(".template") }.limit(129).toList() }
+        val user = Files.list(root).use { files ->
+            files.filter { it.fileName.toString().endsWith(".template") }.limit(129).toList()
+        }
         require(user.size <= 128)
         return builtIns + user.map { path ->
             val id = path.fileName.toString().removeSuffix(".template")
@@ -67,7 +91,10 @@ class TemplateStore(val root: Path) {
             require(entry in builtIns)
             return builtIn(entry.id)
         }
-        return WorkspaceBytes.unpack(WorkspaceBytes.read(root.resolve(WorkspaceBytes.uuid(entry.id) + ".template")), 0x4154544d) { i ->
+        return WorkspaceBytes.unpack(
+            WorkspaceBytes.read(root.resolve(WorkspaceBytes.uuid(entry.id) + ".template")),
+            0x4154544d,
+        ) { i ->
             WorkspaceBytes.text(i, 128)
             DocumentFiles.decode(WorkspaceBytes.bytes(i))
         }
@@ -92,8 +119,20 @@ class TemplateStore(val root: Path) {
         val e = EditorEngine()
         e.setTextStyle(TextStylePatch(font = StoredFont.NOTO_NASTALIQ))
         e.setParagraphProperties(ParagraphDirection.RTL, ParagraphAlignment.START)
-        if (id == "blank")return e.snapshot().committed.copy(startStyle = TextStyleFlags(font = StoredFont.NOTO_NASTALIQ, size = 26))
-        val text = if (id == "letter") "خط کا عنوان\nتاریخ: ۱۹ اکتوبر ۲۰۲۶\nمحترم دوست،\nیہاں اپنا پیغام لکھیں۔\nنیک تمناؤں کے ساتھ،\nآپ کا نام\nOriginal template — not expert linguistically reviewed." else "مضمون کا عنوان\nمصنف کا نام — تاریخ\nتعارف\nیہاں اپنے مضمون کا تعارف لکھیں۔\nاہم نکات\nپہلا نکتہ\nدوسرا نکتہ\nEnglish notes — café, 123 and اردو\nنتیجہ\nیہاں اپنی بات مکمل کریں۔\nOriginal template — not expert linguistically reviewed."
+        if (id ==
+            "blank"
+        ) {
+            return e.snapshot().committed.copy(
+                startStyle = TextStyleFlags(font = StoredFont.NOTO_NASTALIQ, size = 26),
+            )
+        }
+        val text = if (id ==
+            "letter"
+        ) {
+            "خط کا عنوان\nتاریخ: ۱۹ اکتوبر ۲۰۲۶\nمحترم دوست،\nیہاں اپنا پیغام لکھیں۔\nنیک تمناؤں کے ساتھ،\nآپ کا نام\nOriginal template — not expert linguistically reviewed."
+        } else {
+            "مضمون کا عنوان\nمصنف کا نام — تاریخ\nتعارف\nیہاں اپنے مضمون کا تعارف لکھیں۔\nاہم نکات\nپہلا نکتہ\nدوسرا نکتہ\nEnglish notes — café, 123 and اردو\nنتیجہ\nیہاں اپنی بات مکمل کریں۔\nOriginal template — not expert linguistically reviewed."
+        }
         e.replace(text, "Template", paragraphBreaks = true)
         fun at(label: String, command: StructureCommand) {
             val n = text.indexOf(label)
@@ -109,8 +148,18 @@ class TemplateStore(val root: Path) {
             e.setParagraphProperties(ParagraphDirection.LTR, ParagraphAlignment.START)
         }
         val result = e.snapshot().committed
-        val ids = result.paragraphs().map { it.properties.item }.filter { it.isNotEmpty() }.distinct().mapIndexed { index, value -> value to UUID.nameUUIDFromBytes(("builtin-template-v1:$id:$index").toByteArray()).toString() }.toMap()
-        return result.patchParagraphs(result.paragraphs().associate { it.anchor to it.properties.copy(item = ids[it.properties.item] ?: "", parent = ids[it.properties.parent] ?: "") })
+        val ids = result.paragraphs().map {
+            it.properties.item
+        }.filter { it.isNotEmpty() }.distinct().mapIndexed { index, value ->
+            value to
+                UUID.nameUUIDFromBytes(("builtin-template-v1:$id:$index").toByteArray()).toString()
+        }.toMap()
+        return result.patchParagraphs(
+            result.paragraphs().associate {
+                it.anchor to
+                    it.properties.copy(item = ids[it.properties.item] ?: "", parent = ids[it.properties.parent] ?: "")
+            },
+        )
     }
 }
 
@@ -133,7 +182,8 @@ data class WorkspaceEntry(
     val viewportHeight: Int = 0,
     val contentHash: String = "",
 ) {
-    override fun toString() = "$name${if (path != null)" — $path" else " (unsaved recovery)"} · ${if (active)"open at last checkpoint" else "deliberately closed"}"
+    override fun toString() =
+        "$name${if (path != null)" — $path" else " (unsaved recovery)"} · ${if (active)"open at last checkpoint" else "deliberately closed"}"
 }
 
 /** Bounded two-slot index, merged under a process lock. Paths are references, not owner identities. */
@@ -193,7 +243,15 @@ class WorkspaceStore(val root: Path) {
                             val id = WorkspaceBytes.uuid(WorkspaceBytes.text(i, 36))
                             val path = if (i.readBoolean())WorkspaceBytes.text(i) else null
                             val name = WorkspaceBytes.text(i, 512)
-                            val fp = if (i.readBoolean())FileFingerprint(i.readBoolean(), i.readLong(), WorkspaceBytes.text(i, 64)) else null
+                            val fp = if (i.readBoolean()) {
+                                FileFingerprint(
+                                    i.readBoolean(),
+                                    i.readLong(),
+                                    WorkspaceBytes.text(i, 64),
+                                )
+                            } else {
+                                null
+                            }
                             val time = i.readLong()
                             val r = WorkspaceBytes.uuid(WorkspaceBytes.text(i, 36))
                             val u = WorkspaceBytes.uuid(WorkspaceBytes.text(i, 36))
@@ -214,8 +272,24 @@ class WorkspaceStore(val root: Path) {
                             require(vw in 0..16384 && vh in 0..16384)
                             val content = WorkspaceBytes.text(i, 64)
                             require(content.isEmpty() || content.matches(Regex("[0-9a-f]{64}")))
-                            require(a in 0..100000 && f in 0..100000 && scroll.isFinite() && scroll >= 0 && zoom in setOf(.5f, .75f, 1f) && font in TypographyProfileIds.supported)
-                            WorkspaceEntry(id, path, name, fp, time, r, u, Selection(a, f, primary, WrapAffinity.entries[affinity]), scroll, paged, zoom, font, active, process, vw, vh, content)
+                            require(
+                                a in 0..100000 &&
+                                    f in 0..100000 &&
+                                    scroll.isFinite() &&
+                                    scroll >= 0 &&
+                                    zoom in setOf(.5f, .75f, 1f) &&
+                                    font in TypographyProfileIds.supported,
+                            )
+                            WorkspaceEntry(
+                                id, path, name, fp, time, r, u,
+                                Selection(
+                                    a,
+                                    f,
+                                    primary,
+                                    WrapAffinity.entries[affinity],
+                                ),
+                                scroll, paged, zoom, font, active, process, vw, vh, content,
+                            )
                         }.also { require(it.map { it.id }.distinct().size == it.size) }
                     }
                 }.getOrElse {
@@ -236,23 +310,41 @@ class WorkspaceStore(val root: Path) {
     fun entries() = locked { read().second }
     fun update(entry: WorkspaceEntry, interrupt: (String) -> Unit = {}) = mutate(interrupt) { old ->
         val replacement = old.filter { it.id != entry.id } + entry
-        check(replacement.count { it.active } <= 32) { "Workspace has 32 active window references; close a window first" }
+        check(
+            replacement.count {
+                it.active
+            } <= 32,
+        ) { "Workspace has 32 active window references; close a window first" }
         // Recent history may be bounded, but unresolved/active window references cannot be evicted.
-        replacement.sortedByDescending { it.opened }.let { all -> all.filter { it.active } + all.filter { !it.active }.take((128 - all.count { it.active }).coerceAtLeast(0)) }
+        replacement.sortedByDescending { it.opened }.let { all ->
+            all.filter { it.active } +
+                all.filter { !it.active }.take((128 - all.count { it.active }).coerceAtLeast(0))
+        }
     }
     fun remove(id: String) = mutate { it.filter { e -> e.id != id } }
     fun clear() = mutate { emptyList() }
-    private fun mutate(interrupt: (String) -> Unit = {}, change: (List<WorkspaceEntry>) -> List<WorkspaceEntry>) = locked {
-        val (g, old) = read()
-        val entries = change(old)
-        require(entries.size <= 128)
-        WorkspaceBytes.atomic(root.resolve("workspace-${(g + 1) % 2}.bin"), encode(g + 1, entries), interrupt)
-    }
+    private fun mutate(interrupt: (String) -> Unit = {}, change: (List<WorkspaceEntry>) -> List<WorkspaceEntry>) =
+        locked {
+            val (g, old) = read()
+            val entries = change(old)
+            require(entries.size <= 128)
+            WorkspaceBytes.atomic(root.resolve("workspace-${(g + 1) % 2}.bin"), encode(g + 1, entries), interrupt)
+        }
     private fun <T> locked(action: () -> T): T {
         check(!javax.swing.SwingUtilities.isEventDispatchThread())
         Files.createDirectories(root)
-        synchronized(monitor) { java.nio.channels.FileChannel.open(root.resolve("index.lock"), StandardOpenOption.CREATE, StandardOpenOption.WRITE).use { c -> c.lock().use { return action() } } }
+        synchronized(monitor) {
+            java.nio.channels.FileChannel.open(
+                root.resolve("index.lock"),
+                StandardOpenOption.CREATE,
+                StandardOpenOption.WRITE,
+            ).use { c ->
+                c.lock().use { return action() }
+            }
+        }
     }
 }
 
-fun workspacePositionsValid(entry: WorkspaceEntry, document: Document) = entry.contentHash.isNotEmpty() && entry.contentHash == WorkspaceBytes.hash(DocumentFiles.encode(document)) && entry.selection.end <= document.units.size
+fun workspacePositionsValid(entry: WorkspaceEntry, document: Document) = entry.contentHash.isNotEmpty() &&
+    entry.contentHash == WorkspaceBytes.hash(DocumentFiles.encode(document)) &&
+    entry.selection.end <= document.units.size

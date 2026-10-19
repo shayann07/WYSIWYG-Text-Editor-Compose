@@ -4,7 +4,12 @@ import dev.shayxo.composedoc.model.ParagraphProperties
 import dev.shayxo.composedoc.model.paragraphs
 
 /** Derived planning only; whole-paragraph shaping survives every fragment. */
-class PageCursor(private val height: Float, private val margin: Float, private val header: Float = 0f, private val footer: Float = 0f) {
+class PageCursor(
+    private val height: Float,
+    private val margin: Float,
+    private val header: Float = 0f,
+    private val footer: Float = 0f,
+) {
     data class Slot(val page: Int, val y: Float)
     var page = 0
         private set
@@ -28,21 +33,43 @@ class PageCursor(private val height: Float, private val margin: Float, private v
         y = (y + amount).coerceAtMost(bottom)
     }
     fun place(lineHeight: Float): Slot {
-        require(lineHeight.isFinite() && lineHeight > 0 && lineHeight <= capacity + .01f) { "A line/image exceeds the body area; reduce running content, font size or margins" }
+        require(lineHeight.isFinite() && lineHeight > 0 && lineHeight <= capacity + .01f) {
+            "A line/image exceeds the body area; reduce running content, font size or margins"
+        }
         if (y + lineHeight > bottom + .01f)newPage()
         return Slot(page, y).also { y += lineHeight }
     }
 }
-data class ParagraphFragment(val paragraphIndex: Int, val firstLine: Int, val lastLine: Int, val sourceTop: Float, val sourceBottom: Float, val top: Float, val page: Int) {
+data class ParagraphFragment(
+    val paragraphIndex: Int,
+    val firstLine: Int,
+    val lastLine: Int,
+    val sourceTop: Float,
+    val sourceBottom: Float,
+    val top: Float,
+    val page: Int,
+) {
     val height get() = sourceBottom - sourceTop
 }
-data class FragmentPlan(val fragments: List<ParagraphFragment>, val pages: Int, val totalHeight: Float, val relaxations: List<String> = emptyList())
+data class FragmentPlan(
+    val fragments: List<ParagraphFragment>,
+    val pages: Int,
+    val totalHeight: Float,
+    val relaxations: List<String> = emptyList(),
+)
 
 /** Already-shaped source line boxes. Pagination never remeasures or reshapes their text. */
 data class PageParagraphMetrics(val index: Int, val lineTops: List<Float>, val height: Float) {
     val lineCount get() = lineTops.size
     init {
-        require(lineTops.isNotEmpty() && height.isFinite() && height > 0 && lineTops.all { it.isFinite() } && lineTops.zipWithNext().all { (a, b) -> b > a } && lineTops.last() < height)
+        require(
+            lineTops.isNotEmpty() &&
+                height.isFinite() &&
+                height > 0 &&
+                lineTops.all { it.isFinite() } &&
+                lineTops.zipWithNext().all { (a, b) -> b > a } &&
+                lineTops.last() < height,
+        )
     }
 }
 
@@ -56,7 +83,12 @@ fun pageFragments(
     explicitBefore: Set<Int> = emptySet(),
     header: Float = 0f,
     footer: Float = 0f,
-): FragmentPlan = planPageFragments(paragraphs.map { p -> PageParagraphMetrics(p.index, List(p.lineCount) { p.layout.getLineTop(it) }, p.height) }, pageHeight, margin, gap, properties, density, explicitBefore, header, footer)
+): FragmentPlan = planPageFragments(
+    paragraphs.map { p ->
+        PageParagraphMetrics(p.index, List(p.lineCount) { p.layout.getLineTop(it) }, p.height)
+    },
+    pageHeight, margin, gap, properties, density, explicitBefore, header, footer,
+)
 
 fun planPageFragments(
     paragraphs: List<PageParagraphMetrics>,
@@ -73,12 +105,27 @@ fun planPageFragments(
     val lines = ArrayList<ParagraphFragment>()
     val relaxed = ArrayList<String>()
     fun props(p: PageParagraphMetrics) = properties.getOrNull(p.index) ?: ParagraphProperties()
-    fun heights(p: PageParagraphMetrics) = List(p.lineCount) { line -> (if (line + 1 < p.lineCount)p.lineTops[line + 1] else p.height) - p.lineTops[line] }
+    fun heights(p: PageParagraphMetrics) = List(p.lineCount) { line ->
+        (
+            if (line + 1 <
+                p.lineCount
+            ) {
+                p.lineTops[line + 1]
+            } else {
+                p.height
+            }
+            ) -
+            p.lineTops[line]
+    }
     for ((at, p) in paragraphs.withIndex()) {
         val v = props(p)
         val r = v.pagination
         val hs = heights(p)
-        require(hs.all { it > 0 && it.isFinite() && it <= cursor.capacity + .01f }) { "Paragraph${p.index + 1} has an indivisible line/image larger than the body area" }
+        require(
+            hs.all {
+                it > 0 && it.isFinite() && it <= cursor.capacity + .01f
+            },
+        ) { "Paragraph${p.index + 1} has an indivisible line/image larger than the body area" }
         if (p.index in explicitBefore) {
             cursor.newPage(force = p.index > 0)
         } else if (r.breakBefore) {
@@ -112,14 +159,22 @@ fun planPageFragments(
                 relaxed += "Paragraph${p.index + 1}: keep chain relaxed (capacity/32-paragraph bound)"
             }
         }
-        if (r.keepLines && hs.sum() + v.spaceBefore * density <= cursor.capacity && hs.sum() + v.spaceBefore * density > cursor.remaining) {
+        if (r.keepLines &&
+            hs.sum() + v.spaceBefore * density <= cursor.capacity &&
+            hs.sum() + v.spaceBefore * density > cursor.remaining
+        ) {
             cursor.newPage()
         } else if (r.keepLines && hs.sum() + v.spaceBefore * density > cursor.capacity) {
             relaxed += "Paragraph${p.index + 1}: keep-lines relaxed for oversized paragraph"
         }
         if (v.spaceBefore * density + hs.first() > cursor.remaining && !cursor.atTop)cursor.newPage()
         val before = (v.spaceBefore * density).coerceAtMost((cursor.remaining - hs.first()).coerceAtLeast(0f))
-        if (before < v.spaceBefore * density)relaxed += "Paragraph${p.index + 1}: excessive space-before constrained to preserve first line"
+        if (before <
+            v.spaceBefore * density
+        ) {
+            relaxed +=
+                "Paragraph${p.index + 1}: excessive space-before constrained to preserve first line"
+        }
         cursor.space(before)
         var line = 0
         while (line < hs.size) {
@@ -147,14 +202,29 @@ fun planPageFragments(
                     cursor.newPage()
                     continue
                 } else {
-                    relaxed += "Paragraph${p.index + 1}: widow/orphan request cannot fit; forward progress takes priority"
+                    relaxed +=
+                        "Paragraph${p.index + 1}: widow/orphan request cannot fit; forward progress takes priority"
                 }
             }
-            if (line == 0 && count < hs.size && count < r.orphans)relaxed += "Paragraph${p.index + 1}: orphan request relaxed for available body area"
+            if (line == 0 &&
+                count < hs.size &&
+                count < r.orphans
+            ) {
+                relaxed += "Paragraph${p.index + 1}: orphan request relaxed for available body area"
+            }
             repeat(count) {
                 val top = p.lineTops[line]
                 val slot = cursor.place(hs[line])
-                lines += ParagraphFragment(p.index, line, line, top, top + hs[line], slot.page * (pageHeight + gap) + slot.y - margin, slot.page)
+                lines +=
+                    ParagraphFragment(
+                        p.index,
+                        line,
+                        line,
+                        top,
+                        top + hs[line],
+                        slot.page * (pageHeight + gap) + slot.y - margin,
+                        slot.page,
+                    )
                 line++
             }
             if (line < hs.size)cursor.newPage()
@@ -164,12 +234,23 @@ fun planPageFragments(
     val fragments = ArrayList<ParagraphFragment>()
     for (line in lines) {
         val prior = fragments.lastOrNull()
-        if (prior != null && prior.paragraphIndex == line.paragraphIndex && prior.page == line.page && prior.lastLine + 1 == line.firstLine && kotlin.math.abs(prior.sourceBottom - line.sourceTop) < .01f && kotlin.math.abs(prior.top + prior.height - line.top) < .01f) {
+        if (prior != null &&
+            prior.paragraphIndex == line.paragraphIndex &&
+            prior.page == line.page &&
+            prior.lastLine + 1 == line.firstLine &&
+            kotlin.math.abs(prior.sourceBottom - line.sourceTop) < .01f &&
+            kotlin.math.abs(prior.top + prior.height - line.top) < .01f
+        ) {
             fragments[fragments.lastIndex] = prior.copy(lastLine = line.lastLine, sourceBottom = line.sourceBottom)
         } else {
             fragments += line
         }
     }
     val pages = cursor.page + 1
-    return FragmentPlan(fragments.toList(), pages, pages * pageHeight + (pages - 1) * gap - 2 * margin, relaxed.distinct())
+    return FragmentPlan(
+        fragments.toList(),
+        pages,
+        pages * pageHeight + (pages - 1) * gap - 2 * margin,
+        relaxed.distinct(),
+    )
 }

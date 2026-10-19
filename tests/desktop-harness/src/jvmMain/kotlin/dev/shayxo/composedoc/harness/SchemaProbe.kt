@@ -53,7 +53,19 @@ fun runSchemaProbe(args: Array<String>) {
                 for (u in document.units) {
                     out.writeChar(u.char.code)
                     out.writeByte(u.kind.ordinal)
-                    if (version > 1) out.writeByte(if (u.kind == UnitKind.PARAGRAPH_BREAK) u.paragraphStyle.bits else u.style.bits)
+                    if (version >
+                        1
+                    ) {
+                        out.writeByte(
+                            if (u.kind ==
+                                UnitKind.PARAGRAPH_BREAK
+                            ) {
+                                u.paragraphStyle.bits
+                            } else {
+                                u.style.bits
+                            },
+                        )
+                    }
                 }
             }
             val payload = buffer.toByteArray()
@@ -63,7 +75,8 @@ fun runSchemaProbe(args: Array<String>) {
         val decoded = DocumentFiles.decode(bytes)
         golden[version.toString()] = mapOf(
             "startStyle" to decoded.startStyle.bits,
-            "units" to decoded.units.map { u -> listOf(u.char.code, u.kind.ordinal, u.style.bits, u.paragraphStyle.bits) },
+            "units" to
+                decoded.units.map { u -> listOf(u.char.code, u.kind.ordinal, u.style.bits, u.paragraphStyle.bits) },
         )
     }
     File(output, "golden.json").writeText(evidenceJson(golden), Charsets.UTF_8)
@@ -74,7 +87,8 @@ fun runSchemaProbe(args: Array<String>) {
                 "originalUnitIds" to identified.units.map { it.id },
                 "engineLoadedUnitIds" to EditorEngine(identified).snapshot().committed.units.map { it.id },
                 "codecLoadedUnitIds" to DocumentFiles.decode(DocumentFiles.encode(identified)).units.map { it.id },
-                "scope" to "Prototype intentionally allocates local identities; production persistence mapping remains unresolved",
+                "scope" to
+                    "Prototype intentionally allocates local identities; production persistence mapping remains unresolved",
             ),
         ),
         Charsets.UTF_8,

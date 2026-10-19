@@ -38,7 +38,8 @@ class FindSession(private val surface: () -> EditorSurface) {
         val oldStart = current?.start ?: f.selection.start
         basis = viewModel.captureFindBasis()
         matches = findLiteral(f.committed, query)
-        active = if (matches.isEmpty()) -1 else matches.indexOfFirst { it.start >= oldStart }.let { if (it < 0) 0 else it }
+        active =
+            if (matches.isEmpty()) -1 else matches.indexOfFirst { it.start >= oldStart }.let { if (it < 0) 0 else it }
     }
     fun search(value: String) {
         query = value

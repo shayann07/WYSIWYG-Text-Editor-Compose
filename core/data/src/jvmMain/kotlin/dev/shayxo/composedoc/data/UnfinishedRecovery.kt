@@ -49,14 +49,31 @@ data class UnfinishedRecord(
     val identityGeneration: Long,
     val provenance: String,
 ) {
-    override fun toString() = "$name · ${kind.name.lowercase().replace('_',' ')} · ${java.time.Instant.ofEpochMilli(timestamp).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("dd MMM HH:mm:ss"))}"
+    override fun toString() = "$name · ${kind.name.lowercase().replace(
+        '_',
+        ' ',
+    )} · ${java.time.Instant.ofEpochMilli(
+        timestamp,
+    ).atZone(
+        java.time.ZoneId.systemDefault(),
+    ).format(java.time.format.DateTimeFormatter.ofPattern("dd MMM HH:mm:ss"))}"
 }
-data class UnfinishedEntry(val record: UnfinishedRecord?, val owner: String, val id: String, val warning: String? = null) {
-    override fun toString() = (record?.toString() ?: "Unreadable unfinished record $id") + if (warning != null) " · warning / valid fallback: $warning" else ""
+data class UnfinishedEntry(
+    val record: UnfinishedRecord?,
+    val owner: String,
+    val id: String,
+    val warning: String? = null,
+) {
+    override fun toString() = (record?.toString() ?: "Unreadable unfinished record $id") +
+        if (warning != null) " · warning / valid fallback: $warning" else ""
 }
 
 /** Per-document lock is shared with committed recovery. All on-disk bytes, including temp/orphans, count. */
-class UnfinishedStore(val recovery: LocalRecoveryStore, val quota: Long = 64L * 1024 * 1024, val recordLimit: Int = 16) {
+class UnfinishedStore(
+    val recovery: LocalRecoveryStore,
+    val quota: Long = 64L * 1024 * 1024,
+    val recordLimit: Int = 16,
+) {
     private val magic = 0x41554652
     private fun dir(owner: String) = recovery.root.resolve(WorkspaceBytes.uuid(owner)).resolve("unfinished")
     private fun blobPath(owner: String, hash: String): Path {
@@ -70,7 +87,9 @@ class UnfinishedStore(val recovery: LocalRecoveryStore, val quota: Long = 64L * 
     }
     private fun capacity(owner: String, extra: Long, decision: Boolean = false) {
         val reserve = if (decision)0 else minOf(65536L, quota / 8)
-        check(accounted(owner) + extra <= quota - reserve) { "RecoveryCaptureFailed: retained payload budget reached; decision reserve kept for explicit discard; export/discard before retry" }
+        check(accounted(owner) + extra <= quota - reserve) {
+            "RecoveryCaptureFailed: retained payload budget reached; decision reserve kept for explicit discard; export/discard before retry"
+        }
     }
     private fun putBlob(owner: String, b: ByteArray): String {
         val hash = WorkspaceBytes.hash(b)
@@ -83,7 +102,11 @@ class UnfinishedStore(val recovery: LocalRecoveryStore, val quota: Long = 64L * 
         WorkspaceBytes.atomic(p, b)
         return hash
     }
-    private fun getBlob(owner: String, hash: String): ByteArray = WorkspaceBytes.read(blobPath(owner, hash)).also { require(WorkspaceBytes.hash(it) == hash) { "Missing/corrupt pinned prerequisite" } }
+    private fun getBlob(owner: String, hash: String): ByteArray = WorkspaceBytes.read(blobPath(owner, hash)).also {
+        require(
+            WorkspaceBytes.hash(it) == hash,
+        ) { "Missing/corrupt pinned prerequisite" }
+    }
     private fun delta(base: ByteArray, target: ByteArray): ByteArray {
         var a = 0
         while (a < minOf(base.size, target.size) && base[a] == target[a])a++
@@ -152,7 +175,16 @@ class UnfinishedStore(val recovery: LocalRecoveryStore, val quota: Long = 64L * 
         val committed = i.readInt()
         val caret = if (i.readBoolean())i.readInt() else null
         val epoch = i.readInt()
-        UnfinishedRecord(owner, id, gen, time, UnfinishedKind.entries[kind], name, basis, delta, Selection(a, f, primary, WrapAffinity.entries[wrap]), ms, me, text, committed, caret, epoch, i.readLong(), i.readLong(), WorkspaceBytes.text(i, 103000))
+        UnfinishedRecord(
+            owner, id, gen, time, UnfinishedKind.entries[kind], name, basis, delta,
+            Selection(
+                a,
+                f,
+                primary,
+                WrapAffinity.entries[wrap],
+            ),
+            ms, me, text, committed, caret, epoch, i.readLong(), i.readLong(), WorkspaceBytes.text(i, 103000),
+        )
     }
     private fun resolution(owner: String, id: String): Long {
         val p = dir(owner).resolve("$id.resolved")
@@ -165,7 +197,11 @@ class UnfinishedStore(val recovery: LocalRecoveryStore, val quota: Long = 64L * 
     fun entries(owner: String): List<UnfinishedEntry> {
         val d = dir(owner)
         if (!Files.exists(d))return emptyList()
-        val groups = Files.list(d).use { ps -> ps.filter { it.fileName.toString().matches(Regex("[0-9a-f-]{36}\\.[01]\\.record")) }.toList().groupBy { it.fileName.toString().take(36) } }
+        val groups = Files.list(d).use { ps ->
+            ps.filter {
+                it.fileName.toString().matches(Regex("[0-9a-f-]{36}\\.[01]\\.record"))
+            }.toList().groupBy { it.fileName.toString().take(36) }
+        }
         require(groups.size <= 256) { "Excess local record metadata; manual inspection required" }
         var resident = 0L
         var unresolved = 0
@@ -187,20 +223,34 @@ class UnfinishedStore(val recovery: LocalRecoveryStore, val quota: Long = 64L * 
                 null
             } else {
                 resident += (valid?.let { encode(it).size.toLong() + 4096 } ?: 4096)
-                require(++unresolved <= recordLimit && resident <= 4L * 1024 * 1024) { "Recovery metadata envelope exceeded; records kept for lossless export" }
+                require(++unresolved <= recordLimit && resident <= 4L * 1024 * 1024) {
+                    "Recovery metadata envelope exceeded; records kept for lossless export"
+                }
                 UnfinishedEntry(valid, owner, id, failure)
             }
         }.sortedByDescending { it.record?.timestamp ?: 0 }
     }
-    fun publish(lease: LocalRecoveryStore.Lease, c: UnfinishedCapture, name: String, interrupt: (String) -> Unit = {}): UnfinishedRecord {
+    fun publish(
+        lease: LocalRecoveryStore.Lease,
+        c: UnfinishedCapture,
+        name: String,
+        interrupt: (String) -> Unit = {},
+    ): UnfinishedRecord {
         check(lease.lock.isValid)
         val owner = lease.session
         WorkspaceBytes.uuid(c.id)
         val current = entries(owner)
         val old = current.firstOrNull { it.id == c.id }?.record
         if (old != null && old.generation >= c.generation)return old
-        require(old != null || current.size < recordLimit) { "RecoveryCaptureFailed: 16 unresolved draft records reached; export/discard before retry" }
-        require(c.text.length <= 100000 && c.selection.start >= 0 && c.selection.end <= 100000 && (c.draft == null || c.selection.end <= c.draft.units.size))
+        require(old != null || current.size < recordLimit) {
+            "RecoveryCaptureFailed: 16 unresolved draft records reached; export/discard before retry"
+        }
+        require(
+            c.text.length <= 100000 &&
+                c.selection.start >= 0 &&
+                c.selection.end <= 100000 &&
+                (c.draft == null || c.selection.end <= c.draft.units.size),
+        )
         val base = ExactDocument.encode(c.basis)
         require(base.size <= WorkspaceBytes.MAX)
         val target = c.draft?.let(ExactDocument::encode)
@@ -209,11 +259,21 @@ class UnfinishedStore(val recovery: LocalRecoveryStore, val quota: Long = 64L * 
         val dHash = target?.let { putBlob(owner, delta(base, it)) } ?: ""
         interrupt("after-delta")
         val r = UnfinishedRecord(
-            owner, c.id, c.generation, System.currentTimeMillis(), c.kind, name, bHash, dHash, c.selection, c.marked?.first ?: -1, c.marked?.let { it.last + 1 } ?: -1,
+            owner, c.id, c.generation, System.currentTimeMillis(), c.kind, name, bHash, dHash, c.selection,
+            c.marked?.first ?: -1, c.marked?.let { it.last + 1 } ?: -1,
             c.text, c.committed, c.caret, c.epoch, c.basisRevision, c.identityGeneration, c.provenance,
         )
         val b = encode(r)
-        require(b.size <= 256000 && current.filter { it.id != c.id }.sumOf { it.record?.let { value -> encode(value).size.toLong() + 4096 } ?: 4096L } + b.size + 4096 <= 4L * 1024 * 1024) {
+        require(
+            b.size <= 256000 &&
+                current.filter { it.id != c.id }.sumOf {
+                    it.record?.let { value -> encode(value).size.toLong() + 4096 }
+                        ?: 4096L
+                } +
+                b.size +
+                4096 <=
+                4L * 1024 * 1024,
+        ) {
             "RecoveryCaptureFailed: 4 MiB metadata/preview envelope exceeded; export/discard before retry"
         }
         capacity(owner, b.size.toLong())
@@ -228,13 +288,24 @@ class UnfinishedStore(val recovery: LocalRecoveryStore, val quota: Long = 64L * 
         check(live == r) { "Recovery record changed; refresh" }
         val base = getBlob(r.owner, r.basisHash)
         val basis = ExactDocument.decode(base)
-        val draft = r.deltaHash.takeIf { it.isNotEmpty() }?.let { ExactDocument.decode(inflate(base, getBlob(r.owner, it))) }
+        val draft = r.deltaHash.takeIf {
+            it.isNotEmpty()
+        }?.let { ExactDocument.decode(inflate(base, getBlob(r.owner, it))) }
         if (draft != null)require(r.selection.end <= draft.units.size)
         return basis to draft
     }
-    fun resolve(lease: LocalRecoveryStore.Lease, r: UnfinishedRecord, accepted: Document? = null, interrupt: (String) -> Unit = {}) {
+    fun resolve(
+        lease: LocalRecoveryStore.Lease,
+        r: UnfinishedRecord,
+        accepted: Document? = null,
+        interrupt: (String) -> Unit = {},
+    ) {
         require(lease.session == r.owner && lease.lock.isValid)
-        check(entries(r.owner).firstOrNull { it.id == r.id }?.record == r) { "Record changed; discard only the selected generation" }
+        check(
+            entries(r.owner).firstOrNull {
+                it.id == r.id
+            }?.record == r,
+        ) { "Record changed; discard only the selected generation" }
         // Apply/automatic lifecycle completion first protects the accepted result independently.
         if (accepted != null) {
             val b = ExactDocument.encode(accepted)
@@ -246,7 +317,19 @@ class UnfinishedStore(val recovery: LocalRecoveryStore, val quota: Long = 64L * 
             val rescueId = UUID.nameUUIDFromBytes((r.owner + "accepted-result").toByteArray()).toString()
             rescue.acquire(rescueId).use { acceptedLease ->
                 val existing = rescue.latest(acceptedLease)?.sequence ?: 0L
-                rescue.publish(acceptedLease, LocalCopy(rescueId, maxOf(existing + 1, r.generation), System.currentTimeMillis(), r.name.takeIf { it != "Untitled" }, accepted))
+                rescue.publish(
+                    acceptedLease,
+                    LocalCopy(
+                        rescueId,
+                        maxOf(existing + 1, r.generation),
+                        System.currentTimeMillis(),
+                        r.name.takeIf {
+                            it !=
+                                "Untitled"
+                        },
+                        accepted,
+                    ),
+                )
             }
             interrupt("after-accepted")
         }
@@ -278,10 +361,23 @@ class UnfinishedStore(val recovery: LocalRecoveryStore, val quota: Long = 64L * 
             }
         }
         val blobs = d.resolve("blobs")
-        if (Files.exists(blobs))Files.list(blobs).use { ps -> ps.filter { it.fileName.toString().endsWith(".bin") && it.fileName.toString().removeSuffix(".bin") !in pinned }.forEach(Files::deleteIfExists) }
+        if (Files.exists(blobs)) {
+            Files.list(blobs).use { ps ->
+                ps.filter {
+                    it.fileName.toString().endsWith(".bin") &&
+                        it.fileName.toString().removeSuffix(".bin") !in pinned
+                }.forEach(Files::deleteIfExists)
+            }
+        }
         // Under the exclusive inactive/live-owner lease, known unpublished temp files have no published references.
         // Unknown files and anything behind unreadable metadata remain accounted and untouched.
-        Files.walk(d).use { ps -> ps.filter { Files.isRegularFile(it) && it.fileName.toString().startsWith(".publication-") && it.fileName.toString().endsWith(".tmp") }.forEach(Files::deleteIfExists) }
+        Files.walk(d).use { ps ->
+            ps.filter {
+                Files.isRegularFile(it) &&
+                    it.fileName.toString().startsWith(".publication-") &&
+                    it.fileName.toString().endsWith(".tmp")
+            }.forEach(Files::deleteIfExists)
+        }
     }
     fun scan(): List<UnfinishedEntry> {
         if (!Files.exists(recovery.root))return emptyList()

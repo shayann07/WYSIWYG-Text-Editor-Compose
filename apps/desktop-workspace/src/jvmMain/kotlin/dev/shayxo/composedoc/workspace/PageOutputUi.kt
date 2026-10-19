@@ -40,7 +40,11 @@ import javax.swing.SpinnerNumberModel
 import javax.swing.SwingWorker
 import javax.swing.Timer
 /** Desktop consumer. Commands own content; preview/print use a captured immutable plan. */
-class PageOutputUi(private val window: JFrame, private val surface: () -> EditorSurface, private val busy: () -> Boolean) {
+class PageOutputUi(
+    private val window: JFrame,
+    private val surface: () -> EditorSurface,
+    private val busy: () -> Boolean,
+) {
     val panel = JPanel(WrappingControls()).apply {
         isOpaque = false
         name = "page-output-controls"
@@ -65,16 +69,36 @@ class PageOutputUi(private val window: JFrame, private val surface: () -> Editor
         button("Layout notices…", "page-layout-notices") {
             val s = surface()
             val plan = s.geometry()?.documentPagePlan
-            JOptionPane.showMessageDialog(window, s.view.layoutError ?: plan?.relaxations?.joinToString("\n")?.ifEmpty { "No pagination constraint was relaxed. Fixed paper size; fit-width and zoom are presentation only." } ?: "Layout is not ready")
+            JOptionPane.showMessageDialog(
+                window,
+                s.view.layoutError
+                    ?: plan?.relaxations?.joinToString("\n")?.ifEmpty {
+                        "No pagination constraint was relaxed. Fixed paper size; fit-width and zoom are presentation only."
+                    }
+                    ?: "Layout is not ready",
+            )
         }
-        button("PDF status…", "pdf-output-status") { JOptionPane.showMessageDialog(window, "Semantic PDF export is not qualified. The pinned paragraph binding does not expose the actual positioned glyph/cluster stream; independent shaping failed the mixed-script witness. Print preview uses actual captured page pictures, not searchable PDF. Your document is unchanged.", "PDF bridge blocked", JOptionPane.INFORMATION_MESSAGE) }
+        button("PDF status…", "pdf-output-status") {
+            JOptionPane.showMessageDialog(
+                window,
+                "Semantic PDF export is not qualified. The pinned paragraph binding does not expose the actual positioned glyph/cluster stream; independent shaping failed the mixed-script witness. Print preview uses actual captured page pictures, not searchable PDF. Your document is unchanged.",
+                "PDF bridge blocked",
+                JOptionPane.INFORMATION_MESSAGE,
+            )
+        }
         panel.add(JLabel("Fixed paper layout · Fit width × Zoom · PDF gate open"))
-        window.rootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("control ENTER"), "explicit-page-break")
+        window.rootPane.getInputMap(
+            JComponent.WHEN_IN_FOCUSED_WINDOW,
+        ).put(KeyStroke.getKeyStroke("control ENTER"), "explicit-page-break")
         window.rootPane.actionMap.put(
             "explicit-page-break",
             object : AbstractAction() {
                 override fun actionPerformed(e: ActionEvent?) {
-                    if (surface().admissionAllowed && !busy())surface().viewModel.dispatch(EditorIntent.Structure(StructureCommand.PageBreak))
+                    if (surface().admissionAllowed &&
+                        !busy()
+                    ) {
+                        surface().viewModel.dispatch(EditorIntent.Structure(StructureCommand.PageBreak))
+                    }
                 }
             },
         )
@@ -82,7 +106,9 @@ class PageOutputUi(private val window: JFrame, private val surface: () -> Editor
     private fun pagination() {
         val s = surface()
         val capture = s.viewModel.clipboardCapture() ?: return
-        val values = capture.basis.document.targetParagraphs(capture.selection).map { it.properties.pagination }.distinct()
+        val values = capture.basis.document.targetParagraphs(capture.selection).map {
+            it.properties.pagination
+        }.distinct()
         val old = values.singleOrNull() ?: PaginationRules()
         val before = JCheckBox("Page break before", old.breakBefore)
         val next = JCheckBox("Keep with next", old.keepWithNext)
@@ -93,7 +119,13 @@ class PageOutputUi(private val window: JFrame, private val surface: () -> Editor
             window,
             if (values.size > 1)"Mixed pagination - Apply sets all targets" else "Paragraph pagination",
             "pagination-dialog",
-            listOf("" to before, "" to next, "" to lines, "Widows (last-page lines1-5)" to widows, "Orphans (first-page lines1-5)" to orphans),
+            listOf(
+                "" to before,
+                "" to next,
+                "" to lines,
+                "Widows (last-page lines1-5)" to widows,
+                "Orphans (first-page lines1-5)" to orphans,
+            ),
             listOf(
                 "Apply" to {
                     val w = widows.text.toIntOrNull()
@@ -103,7 +135,15 @@ class PageOutputUi(private val window: JFrame, private val surface: () -> Editor
                         s.viewModel.clipboardCapture() != capture -> "Document/selection changed; reopen controls"
                         else -> {
                             val rules = PaginationRules(before.isSelected, next.isSelected, lines.isSelected, w, o)
-                            if (values.all { it == rules } || s.viewModel.dispatch(EditorIntent.ApplyStructure(capture, StructureCommand.Pagination(rules))))null else "Command refused; finish input and retry"
+                            if (values.all { it == rules } ||
+                                s.viewModel.dispatch(
+                                    EditorIntent.ApplyStructure(capture, StructureCommand.Pagination(rules)),
+                                )
+                            ) {
+                                null
+                            } else {
+                                "Command refused; finish input and retry"
+                            }
                         }
                     }
                 },
@@ -115,7 +155,16 @@ class PageOutputUi(private val window: JFrame, private val surface: () -> Editor
         val s = surface()
         val capture = s.viewModel.clipboardCapture() ?: return
         val old = capture.basis.document.running
-        data class Controls(val text: JTextArea, val font: JComboBox<String>, val size: JTextField, val bold: JCheckBox, val italic: JCheckBox, val direction: JComboBox<ParagraphDirection>, val alignment: JComboBox<ParagraphAlignment>, val field: JComboBox<RunningField>)
+        data class Controls(
+            val text: JTextArea,
+            val font: JComboBox<String>,
+            val size: JTextField,
+            val bold: JCheckBox,
+            val italic: JCheckBox,
+            val direction: JComboBox<ParagraphDirection>,
+            val alignment: JComboBox<ParagraphAlignment>,
+            val field: JComboBox<RunningField>,
+        )
         val rows = ArrayList<Pair<String, JComponent>>()
         fun controls(label: String, f: RunningFlow?): Controls {
             val text = JTextArea(f?.text ?: "", 3, 36).apply {
@@ -123,13 +172,25 @@ class PageOutputUi(private val window: JFrame, private val surface: () -> Editor
                 wrapStyleWord = true
                 name = "running-${label.lowercase()}-text"
             }
-            val font = JComboBox(StoredFont.entries.map { it.name }.toTypedArray()).apply { selectedIndex = (f?.style?.font ?: StoredFont.NOTO_NASTALIQ).ordinal }
+            val font = JComboBox(StoredFont.entries.map { it.name }.toTypedArray()).apply {
+                selectedIndex =
+                    (f?.style?.font ?: StoredFont.NOTO_NASTALIQ).ordinal
+            }
             val size = JTextField((f?.style?.size?.takeIf { it > 0 } ?: 18).toString(), 3)
             val bold = JCheckBox("Bold", f?.style?.bold == true)
             val italic = JCheckBox("Italic", f?.style?.italic == true)
-            val direction = JComboBox(ParagraphDirection.entries.toTypedArray()).apply { selectedItem = f?.direction ?: ParagraphDirection.RTL }
-            val alignment = JComboBox(ParagraphAlignment.entries.toTypedArray()).apply { selectedItem = f?.alignment ?: ParagraphAlignment.START }
-            val field = JComboBox(RunningField.entries.toTypedArray()).apply { selectedItem = f?.field ?: RunningField.NONE }
+            val direction = JComboBox(ParagraphDirection.entries.toTypedArray()).apply {
+                selectedItem =
+                    f?.direction ?: ParagraphDirection.RTL
+            }
+            val alignment = JComboBox(ParagraphAlignment.entries.toTypedArray()).apply {
+                selectedItem =
+                    f?.alignment ?: ParagraphAlignment.START
+            }
+            val field = JComboBox(RunningField.entries.toTypedArray()).apply {
+                selectedItem =
+                    f?.field ?: RunningField.NONE
+            }
             rows += label to JScrollPane(text)
             rows += "Style / field after text" to JPanel(WrappingControls()).apply {
                 add(font)
@@ -155,18 +216,51 @@ class PageOutputUi(private val window: JFrame, private val surface: () -> Editor
             rows,
             listOf(
                 "Apply" to apply@{
-                    if (s.viewModel.clipboardCapture() != capture)return@apply "Document changed; reopen running content"
+                    if (s.viewModel.clipboardCapture() !=
+                        capture
+                    ) {
+                        return@apply "Document changed; reopen running content"
+                    }
                     fun value(c: Controls, previous: RunningFlow?): RunningFlow? {
                         val field = c.field.selectedItem as RunningField
                         if (c.text.text.isEmpty() && field == RunningField.NONE)return null
                         val size = c.size.text.toIntOrNull() ?: error("Enter whole running font size8-32")
-                        return RunningFlow(previous?.id ?: java.util.UUID.randomUUID().toString(), c.text.text, (previous?.style ?: TextStyleFlags()).copy(bold = c.bold.isSelected, italic = c.italic.isSelected, font = StoredFont.entries[c.font.selectedIndex], size = size), c.direction.selectedItem as ParagraphDirection, c.alignment.selectedItem as ParagraphAlignment, field)
+                        return RunningFlow(
+                            previous?.id ?: java.util.UUID.randomUUID().toString(),
+                            c.text.text,
+                            (
+                                previous?.style
+                                    ?: TextStyleFlags()
+                                ).copy(
+                                bold = c.bold.isSelected,
+                                italic = c.italic.isSelected,
+                                font = StoredFont.entries[c.font.selectedIndex],
+                                size = size,
+                            ),
+                            c.direction.selectedItem as ParagraphDirection,
+                            c.alignment.selectedItem as ParagraphAlignment,
+                            field,
+                        )
                     }
                     try {
-                        val content = RunningContent(value(header, old.header), value(footer, old.footer), first.isSelected, digits.selectedItem as PageDigits)
+                        val content =
+                            RunningContent(
+                                value(header, old.header),
+                                value(footer, old.footer),
+                                first.isSelected,
+                                digits.selectedItem as PageDigits,
+                            )
                         val candidate = capture.basis.document.copy(running = content)
                         s.view.measure?.invoke(s.viewModel.snapshot().copy(visible = candidate, committed = candidate))
-                        if (content.same(old) || s.viewModel.dispatch(EditorIntent.ApplyStructure(capture, StructureCommand.Running(content))))null else "Change refused; finish input and retry"
+                        if (content.same(old) ||
+                            s.viewModel.dispatch(
+                                EditorIntent.ApplyStructure(capture, StructureCommand.Running(content)),
+                            )
+                        ) {
+                            null
+                        } else {
+                            "Change refused; finish input and retry"
+                        }
                     } catch (e: IllegalArgumentException) {
                         e.message ?: "Invalid running content"
                     } catch (e: IllegalStateException) {
@@ -181,7 +275,10 @@ class PageOutputUi(private val window: JFrame, private val surface: () -> Editor
         val s = surface()
         val frame = s.viewModel.snapshot()
         if (frame.marked != null || frame.waiting) {
-            JOptionPane.showMessageDialog(window, "Finish or cancel composition before output. No provisional text is exported.")
+            JOptionPane.showMessageDialog(
+                window,
+                "Finish or cancel composition before output. No provisional text is exported.",
+            )
             return
         }
         val plan = s.geometry()?.documentPagePlan
@@ -195,7 +292,8 @@ class PageOutputUi(private val window: JFrame, private val surface: () -> Editor
         }
         val dialog = JDialog(window, "Captured print preview - raster print, semantic PDF unqualified", false)
         val image = JLabel("Capturing page pictures…")
-        val note = JLabel("Captured revision${plan.revision};${plan.pageCount} pages; ${plan.document.pageSettings.paper}")
+        val note =
+            JLabel("Captured revision${plan.revision};${plan.pageCount} pages; ${plan.document.pageSettings.paper}")
         val index = JSpinner(SpinnerNumberModel(1, 1, plan.pageCount, 1))
         val first = JTextField("1", 3)
         val last = JTextField(plan.pageCount.toString(), 3)
@@ -302,7 +400,18 @@ class PageOutputUi(private val window: JFrame, private val surface: () -> Editor
                 }
                 val format = printer.validatePage(captured.paperFormat())
                 val warnings = captured.warnings(format)
-                if (warnings.isNotEmpty() && JOptionPane.showConfirmDialog(dialog, warnings.joinToString("\n") + "\nContinue with ${if (fit.isSelected)"uniform fit" else "actual size"}?", "Printer geometry", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION)return@addActionListener
+                if (warnings.isNotEmpty() &&
+                    JOptionPane.showConfirmDialog(
+                        dialog,
+                        warnings.joinToString("\n") +
+                            "\nContinue with ${if (fit.isSelected)"uniform fit" else "actual size"}?",
+                        "Printer geometry",
+                        JOptionPane.YES_NO_OPTION,
+                    ) !=
+                    JOptionPane.YES_OPTION
+                ) {
+                    return@addActionListener
+                }
                 printer.setPageable(captured.pageable(a, b, format, fit.isSelected) { closed || printer.isCancelled })
                 workerBusy = true
                 print.isEnabled = false

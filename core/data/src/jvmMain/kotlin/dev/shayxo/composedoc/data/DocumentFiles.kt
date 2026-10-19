@@ -62,13 +62,37 @@ object DocumentFiles : DocumentCodec, DocumentRepository {
             writeStyle(out, document.startStyle.copy(link = null))
             writeParagraph(out, document.startParagraph)
             document.units.forEach { unit ->
-                require(unit.kind == UnitKind.PARAGRAPH_BREAK || unit.paragraphStyle == TextStyleFlags()) { "Text units cannot own empty-paragraph styles" }
-                require(unit.kind != UnitKind.PARAGRAPH_BREAK || unit.char == if (unit.structuralBreak == StructuralBreak.PAGE)'\u000c' else '\n') { "Invalid paragraph break" }
-                require(unit.kind != UnitKind.PARAGRAPH_BREAK || unit.style == TextStyleFlags()) { "Paragraph break inline style must be unstyled" }
+                require(unit.kind == UnitKind.PARAGRAPH_BREAK || unit.paragraphStyle == TextStyleFlags()) {
+                    "Text units cannot own empty-paragraph styles"
+                }
+                require(
+                    unit.kind != UnitKind.PARAGRAPH_BREAK ||
+                        unit.char == if (unit.structuralBreak ==
+                            StructuralBreak.PAGE
+                        ) {
+                            '\u000c'
+                        } else {
+                            '\n'
+                        },
+                ) { "Invalid paragraph break" }
+                require(unit.kind != UnitKind.PARAGRAPH_BREAK || unit.style == TextStyleFlags()) {
+                    "Paragraph break inline style must be unstyled"
+                }
                 out.writeChar(unit.char.code)
                 out.writeByte(unit.kind.ordinal)
-                writeStyle(out, if (unit.kind == UnitKind.PARAGRAPH_BREAK) unit.paragraphStyle.copy(link = null) else unit.style.copy(link = null))
-                require(unit.kind == UnitKind.PARAGRAPH_BREAK || unit.followingParagraph == ParagraphProperties()) { "Text units cannot own paragraph properties" }
+                writeStyle(
+                    out,
+                    if (unit.kind ==
+                        UnitKind.PARAGRAPH_BREAK
+                    ) {
+                        unit.paragraphStyle.copy(link = null)
+                    } else {
+                        unit.style.copy(link = null)
+                    },
+                )
+                require(unit.kind == UnitKind.PARAGRAPH_BREAK || unit.followingParagraph == ParagraphProperties()) {
+                    "Text units cannot own paragraph properties"
+                }
                 writeParagraph(out, unit.followingParagraph)
             }
             writeStructure(out, document)
@@ -84,7 +108,14 @@ object DocumentFiles : DocumentCodec, DocumentRepository {
     override fun decode(bytes: ByteArray): Document {
         require(bytes.size in 12 + DIGEST..MAX_ENCODED_BYTES) { "Invalid or oversized prototype file" }
         val payload = bytes.copyOfRange(0, bytes.size - DIGEST)
-        require(MessageDigest.isEqual(MessageDigest.getInstance("SHA-256").digest(payload), bytes.copyOfRange(payload.size, bytes.size))) { "File checksum failed; document was not opened." }
+        require(
+            MessageDigest.isEqual(
+                MessageDigest.getInstance("SHA-256").digest(payload),
+                bytes.copyOfRange(payload.size, bytes.size),
+            ),
+        ) {
+            "File checksum failed; document was not opened."
+        }
         return DataInputStream(ByteArrayInputStream(payload)).use { input ->
             require(input.readInt() == MAGIC) { "Not an Astra prototype file" }
             val version = input.readInt()
@@ -125,7 +156,9 @@ object DocumentFiles : DocumentCodec, DocumentRepository {
                     val tag = input.readUnsignedByte()
                     require(tag in 0..(if (version >= 6)2 else 1)) { "Unknown unit kind" }
                     val kind = UnitKind.entries[tag]
-                    require(kind != UnitKind.PARAGRAPH_BREAK || char == '\n' || (version >= 9 && char == '\u000c')) { "Invalid paragraph break" }
+                    require(kind != UnitKind.PARAGRAPH_BREAK || char == '\n' || (version >= 9 && char == '\u000c')) {
+                        "Invalid paragraph break"
+                    }
                     val (style, paragraphStyle) = if (version == 1) {
                         TextStyleFlags() to TextStyleFlags()
                     } else {
@@ -143,7 +176,9 @@ object DocumentFiles : DocumentCodec, DocumentRepository {
                     } else {
                         ParagraphProperties()
                     }
-                    require(kind == UnitKind.PARAGRAPH_BREAK || properties == ParagraphProperties()) { "Text units cannot own paragraph properties" }
+                    require(kind == UnitKind.PARAGRAPH_BREAK || properties == ParagraphProperties()) {
+                        "Text units cannot own paragraph properties"
+                    }
                     TextUnit(index.toLong() + 1, char, kind, style, paragraphStyle, properties)
                 },
                 startStyle,
@@ -154,7 +189,13 @@ object DocumentFiles : DocumentCodec, DocumentRepository {
                     val result = if (version >= 8) {
                         val paper = input.readUnsignedByte()
                         require(paper in PaperSize.entries.indices)
-                        d.copy(pageSettings = PageSettings(PaperSize.entries[paper], input.readBoolean(), input.readUnsignedByte()))
+                        d.copy(
+                            pageSettings = PageSettings(
+                                PaperSize.entries[paper],
+                                input.readBoolean(),
+                                input.readUnsignedByte(),
+                            ),
+                        )
                     } else {
                         d
                     }
@@ -203,7 +244,11 @@ object DocumentFiles : DocumentCodec, DocumentRepository {
             o.writeByte(v.markerTypography.font.ordinal)
             o.writeByte(v.markerTypography.size)
         }
-        val links = (listOf(d.startStyle.link) + d.units.flatMap { listOf(it.style.link, it.paragraphStyle.link) }).filterNotNull().distinct()
+        val links = (
+            listOf(d.startStyle.link) + d.units.flatMap {
+                listOf(it.style.link, it.paragraphStyle.link)
+            }
+            ).filterNotNull().distinct()
         o.writeInt(links.size)
         for (l in links) {
             text(o, l.id, 64)
@@ -257,7 +302,15 @@ object DocumentFiles : DocumentCodec, DocumentRepository {
             } else {
                 MarkerTypography()
             }
-            patches[paragraphs[at].anchor] = paragraphs[at].properties.copy(heading = h, list = ListKind.entries[k], restart = restart, item = item, parent = parent, markerTypography = marker)
+            patches[paragraphs[at].anchor] =
+                paragraphs[at].properties.copy(
+                    heading = h,
+                    list = ListKind.entries[k],
+                    restart = restart,
+                    item = item,
+                    parent = parent,
+                    markerTypography = marker,
+                )
         }
         d = d.patchParagraphs(patches)
         val links = List(count(MAX_UNITS + 1)) { LinkValue(text(i, 64), text(i, 2048)) }
@@ -272,7 +325,14 @@ object DocumentFiles : DocumentCodec, DocumentRepository {
             val link = i.readInt()
             require(at in units.indices && used.add(at) && link in links.indices && units[at].kind != UnitKind.IMAGE)
             val u = units[at]
-            units[at] = if (u.kind == UnitKind.PARAGRAPH_BREAK)u.copy(paragraphStyle = u.paragraphStyle.copy(link = links[link])) else u.copy(style = u.style.copy(link = links[link]))
+            units[at] =
+                if (u.kind ==
+                    UnitKind.PARAGRAPH_BREAK
+                ) {
+                    u.copy(paragraphStyle = u.paragraphStyle.copy(link = links[link]))
+                } else {
+                    u.copy(style = u.style.copy(link = links[link]))
+                }
         }
         used.clear()
         repeat(count(MAX_UNITS)) {
@@ -344,12 +404,24 @@ object DocumentFiles : DocumentCodec, DocumentRepository {
         val props = ps.associate { p ->
             val flags = i.readUnsignedByte()
             require(flags in 0..7)
-            p.anchor to p.properties.copy(pagination = PaginationRules(flags and 1 != 0, flags and 2 != 0, flags and 4 != 0, i.readUnsignedByte(), i.readUnsignedByte()))
+            p.anchor to
+                p.properties.copy(
+                    pagination = PaginationRules(
+                        flags and 1 != 0,
+                        flags and 2 != 0,
+                        flags and 4 != 0,
+                        i.readUnsignedByte(),
+                        i.readUnsignedByte(),
+                    ),
+                )
         }
         val n = i.readInt()
         require(n in 0..base.units.size && n <= i.available() / 4)
         val indices = List(n) { i.readInt() }
-        require(indices.distinct().size == n && indices.all { it in base.units.indices && base.units[it].kind == UnitKind.PARAGRAPH_BREAK })
+        require(
+            indices.distinct().size == n &&
+                indices.all { it in base.units.indices && base.units[it].kind == UnitKind.PARAGRAPH_BREAK },
+        )
         val first = i.readBoolean()
         val digits = i.readUnsignedByte()
         require(digits in PageDigits.entries.indices)
@@ -361,12 +433,34 @@ object DocumentFiles : DocumentCodec, DocumentRepository {
             val dir = i.readUnsignedByte()
             val align = i.readUnsignedByte()
             val field = i.readUnsignedByte()
-            require(dir in ParagraphDirection.entries.indices && align in ParagraphAlignment.entries.indices && field in RunningField.entries.indices)
-            return RunningFlow(id, raw, style, ParagraphDirection.entries[dir], ParagraphAlignment.entries[align], RunningField.entries[field])
+            require(
+                dir in ParagraphDirection.entries.indices &&
+                    align in ParagraphAlignment.entries.indices &&
+                    field in RunningField.entries.indices,
+            )
+            return RunningFlow(
+                id,
+                raw,
+                style,
+                ParagraphDirection.entries[dir],
+                ParagraphAlignment.entries[align],
+                RunningField.entries[field],
+            )
         }
         val running = RunningContent(flow(), flow(), first, PageDigits.entries[digits])
         val set = indices.toSet()
-        return base.patchParagraphs(props).copy(units = base.patchParagraphs(props).units.mapIndexed { at, u -> if (at in set)u.copy(structuralBreak = StructuralBreak.PAGE) else u }, running = running)
+        return base.patchParagraphs(props).copy(
+            units = base.patchParagraphs(props).units.mapIndexed { at, u ->
+                if (at in
+                    set
+                ) {
+                    u.copy(structuralBreak = StructuralBreak.PAGE)
+                } else {
+                    u
+                }
+            },
+            running = running,
+        )
     }
     private fun readStyle(i: DataInputStream): TextStyleFlags {
         val bits = TextStyleFlags.fromBits(i.readUnsignedByte())
@@ -380,11 +474,19 @@ object DocumentFiles : DocumentCodec, DocumentRepository {
         out.writeShort(p.spaceAfter)
         out.writeShort(p.linePermille)
     }
-    private fun readParagraph(i: DataInputStream) = ParagraphProperties.fromBits(i.readUnsignedByte()).copy(spaceBefore = i.readUnsignedShort(), spaceAfter = i.readUnsignedShort(), linePermille = i.readUnsignedShort())
+    private fun readParagraph(i: DataInputStream) = ParagraphProperties.fromBits(
+        i.readUnsignedByte(),
+    ).copy(
+        spaceBefore = i.readUnsignedShort(),
+        spaceAfter = i.readUnsignedShort(),
+        linePermille = i.readUnsignedShort(),
+    )
 
     fun read(path: Path): Document = Files.newInputStream(path).use { input ->
         // Bounded even when a file grows between stat and read, or is not a regular file.
-        input.readNBytes(MAX_ENCODED_BYTES + 1).let { bytes -> decode(bytes).also { SafeDocumentIO.remember(it, path, bytes) } }
+        input.readNBytes(MAX_ENCODED_BYTES + 1).let { bytes ->
+            decode(bytes).also { SafeDocumentIO.remember(it, path, bytes) }
+        }
     }
 
     fun write(path: Path, document: Document, expected: Document? = null) = writeImpl(path, document, expected) {}
@@ -394,7 +496,13 @@ object DocumentFiles : DocumentCodec, DocumentRepository {
         val bytes = encode(document)
         val destination = path.toAbsolutePath().normalize()
         fun checkOriginal() {
-            if (expected != null) check(read(destination).same(expected)) { "This file changed outside this window. Use Save As to keep your edits in a separate file." }
+            if (expected !=
+                null
+            ) {
+                check(read(destination).same(expected)) {
+                    "This file changed outside this window. Use Save As to keep your edits in a separate file."
+                }
+            }
         }
         checkOriginal()
         val temp = Files.createTempFile(destination.parent, ".astra-save-", ".tmp")

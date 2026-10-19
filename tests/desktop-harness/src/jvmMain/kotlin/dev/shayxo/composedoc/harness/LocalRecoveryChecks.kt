@@ -42,9 +42,27 @@ fun crashSpecimen(tag: String): Document {
                 i + 1L,
                 c,
                 if (i == hard) UnitKind.PARAGRAPH_BREAK else UnitKind.TEXT,
-                if (i == hard) TextStyleFlags() else TextStyleFlags(i % 2 == 0, i % 2 == 1, true, true, StoredFont.GULZAR, 32, 0x174ea6),
-                if (i == hard) TextStyleFlags(true, true, strike = true, font = StoredFont.SYSTEM, size = 18, color = 0xb3261e) else TextStyleFlags(),
-                if (i == hard) ParagraphProperties(ParagraphDirection.LTR, ParagraphAlignment.END, 24, 12, 1500) else ParagraphProperties(),
+                if (i ==
+                    hard
+                ) {
+                    TextStyleFlags()
+                } else {
+                    TextStyleFlags(i % 2 == 0, i % 2 == 1, true, true, StoredFont.GULZAR, 32, 0x174ea6)
+                },
+                if (i ==
+                    hard
+                ) {
+                    TextStyleFlags(true, true, strike = true, font = StoredFont.SYSTEM, size = 18, color = 0xb3261e)
+                } else {
+                    TextStyleFlags()
+                },
+                if (i ==
+                    hard
+                ) {
+                    ParagraphProperties(ParagraphDirection.LTR, ParagraphAlignment.END, 24, 12, 1500)
+                } else {
+                    ParagraphProperties()
+                },
             )
         },
         TextStyleFlags(italic = true, underline = true, font = StoredFont.NOTO_NASTALIQ, size = 22, color = 0x146c43),
@@ -71,7 +89,11 @@ fun runLocalRecoveryChild(args: Array<String>) {
                 )
                 windows += window
                 controllers += window.rootPane.getClientProperty("editor.localRecovery") as LocalRecoveryController
-                if (tag == "window-A") checkNotNull(windowCurrentSurface(window)).viewModel.verificationEngine.inputMethod("未確定", 0, 3)
+                if (tag ==
+                    "window-A"
+                ) {
+                    checkNotNull(windowCurrentSurface(window)).viewModel.verificationEngine.inputMethod("未確定", 0, 3)
+                }
             }
         }
         val deadline = System.nanoTime() + 15_000_000_000L
@@ -79,7 +101,17 @@ fun runLocalRecoveryChild(args: Array<String>) {
             check(System.nanoTime() < deadline)
             Thread.sleep(10)
         }
-        println("MULTI_READY:" + evidenceJson(controllers.mapIndexed { i, c -> mapOf("session" to c.session, "tag" to "window-${if (i == 0) "A" else "B"}") }))
+        println(
+            "MULTI_READY:" +
+                evidenceJson(
+                    controllers.mapIndexed { i, c ->
+                        mapOf(
+                            "session" to c.session,
+                            "tag" to "window-${if (i == 0) "A" else "B"}",
+                        )
+                    },
+                ),
+        )
         System.out.flush()
         checkNotNull(readlnOrNull())
         error("Expected owned parent kill")
@@ -100,7 +132,16 @@ fun runLocalRecoveryChild(args: Array<String>) {
         val copy = store.restore(entry)
         val out = Path.of(checkNotNull(args.firstOrNull { it.startsWith("--copy-result=") }).substringAfter('='))
         Files.write(out, DocumentFiles.encode(copy.document))
-        println(evidenceJson(mapOf("sequence" to copy.sequence, "original" to copy.originalPath, "warning" to entry.warning, "session" to session)))
+        println(
+            evidenceJson(
+                mapOf(
+                    "sequence" to copy.sequence,
+                    "original" to copy.originalPath,
+                    "warning" to entry.warning,
+                    "session" to session,
+                ),
+            ),
+        )
         return
     }
     val phase = args.firstOrNull { it.startsWith("--interrupt-at=") }?.substringAfter('=')
@@ -189,7 +230,17 @@ fun runLocalRecoveryChecks(result: File) {
     checks += "Slow write plus 200 edits coalesces one pending snapshot; old completion cannot replace newest success"
     var fail = true
     val retry = owner {
-        LocalRecoveryController(LocalRecoveryStore(root) { if (it == "before-publish" && fail) throw java.io.IOException("Injected write failure") }, {}, 60000)
+        LocalRecoveryController(
+            LocalRecoveryStore(root) {
+                if (it == "before-publish" &&
+                    fail
+                ) {
+                    throw java.io.IOException("Injected write failure")
+                }
+            },
+            {},
+            60000,
+        )
             .also {
                 it.observe(newer, null)
                 it.checkpointNow()
@@ -214,7 +265,15 @@ fun runLocalRecoveryChecks(result: File) {
         lateinit var controller: LocalRecoveryController
         lateinit var files: WindowFiles
         owner {
-            window = showEditor(initial = old, initialPath = original, offscreenTest = true, fontProfile = "noto-nastaliq", paged = true, recoveryDirectory = root)
+            window =
+                showEditor(
+                    initial = old,
+                    initialPath = original,
+                    offscreenTest = true,
+                    fontProfile = "noto-nastaliq",
+                    paged = true,
+                    recoveryDirectory = root,
+                )
             windows += window
             surface = checkNotNull(windowCurrentSurface(window))
             files = checkNotNull(windowFiles(window))
@@ -222,10 +281,18 @@ fun runLocalRecoveryChecks(result: File) {
             for ((width, height) in listOf(940 to 400, 1020 to 700)) {
                 window.setSize(width, height)
                 window.validate()
-                fun all(c: java.awt.Component): List<java.awt.Component> = listOf(c) + if (c is java.awt.Container) c.components.flatMap(::all) else emptyList()
+                fun all(c: java.awt.Component): List<java.awt.Component> =
+                    listOf(c) + if (c is java.awt.Container) c.components.flatMap(::all) else emptyList()
                 val recoveryButton = all(window).filterIsInstance<JButton>().single { it.text == "Recovery Copies…" }
                 val row = recoveryButton.parent
-                check(row.components.filter { it.isVisible }.all { it.x >= 0 && it.y >= 0 && it.x + it.width <= row.width && it.y + it.height <= row.height }) { "Writing/recovery row clipped at $width x $height" }
+                check(
+                    row.components.filter { it.isVisible }.all {
+                        it.x >= 0 &&
+                            it.y >= 0 &&
+                            it.x + it.width <= row.width &&
+                            it.y + it.height <= row.height
+                    },
+                ) { "Writing/recovery row clipped at $width x $height" }
                 val bitmap = java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_RGB)
                 bitmap.createGraphics().let { g ->
                     try {
@@ -234,14 +301,24 @@ fun runLocalRecoveryChecks(result: File) {
                         g.dispose()
                     }
                 }
-                javax.imageio.ImageIO.write(bitmap, "png", File(result.parentFile, "local-recovery-ui-${width}x$height.png"))
+                javax.imageio.ImageIO.write(
+                    bitmap,
+                    "png",
+                    File(result.parentFile, "local-recovery-ui-${width}x$height.png"),
+                )
             }
             surface.viewModel.verificationEngine.move(Selection(0, 4))
             surface.viewModel.verificationEngine.inputMethod("پیش منظر", 0, 8)
         }
         // Real repeating schedule, no explicit checkpoint request here.
         await("Automatic committed checkpoint during composition") { controller.state()["completed"] == 1L }
-        owner { check(surface.viewModel.verificationEngine.snapshot().marked != null && surface.viewModel.verificationEngine.snapshot().visible != surface.viewModel.verificationEngine.snapshot().committed) }
+        owner {
+            check(
+                surface.viewModel.verificationEngine.snapshot().marked != null &&
+                    surface.viewModel.verificationEngine.snapshot().visible !=
+                    surface.viewModel.verificationEngine.snapshot().committed,
+            )
+        }
         check(DocumentFiles.read(original).same(old))
         lateinit var acceptedPartial: Document
         owner {
@@ -257,7 +334,8 @@ fun runLocalRecoveryChecks(result: File) {
         }
         await("Composition copy unlocked") { store.scan().any { it.session == controller.session } }
         check(store.restore(store.scan().single { it.session == controller.session }).document.same(acceptedPartial))
-        checks += "Actual shell timer protects initial and accepted partial committed roots while IME preedit remains visible; named original stays unchanged"
+        checks +=
+            "Actual shell timer protects initial and accepted partial committed roots while IME preedit remains visible; named original stays unchanged"
 
         lateinit var second: JFrame
         lateinit var c2: LocalRecoveryController
@@ -292,7 +370,10 @@ fun runLocalRecoveryChecks(result: File) {
             check(f2.dirty && f2.path == separate)
             c2.checkpointNow()
         }
-        await("Newer copy after save completion") { c2.state()["completed"] == c2.state()["observed"] && c2.state()["running"] == false }
+        await("Newer copy after save completion") {
+            c2.state()["completed"] == c2.state()["observed"] &&
+                c2.state()["running"] == false
+        }
         check(DocumentFiles.read(separate).same(old) && DocumentFiles.read(original).same(old))
         // Save now refuses an external change without touching that original.
         DocumentFiles.write(separate, newer)
@@ -311,15 +392,22 @@ fun runLocalRecoveryChecks(result: File) {
         await("Saved-copy lease released") { store.scan().any { it.session == c2.session } }
         val savedEntry = store.scan().single { it.session == c2.session }
         val savedCopy = store.restore(savedEntry)
-        check(savedCopy.document.same(afterSave) && savedCopy.originalPath == separate.toAbsolutePath().toString() && DocumentFiles.read(separate).same(newer))
-        checks += "Slow Save As followed by new edits retains dirty/newer recovery; external file change refuses Save and never overwrites original"
+        check(
+            savedCopy.document.same(afterSave) &&
+                savedCopy.originalPath == separate.toAbsolutePath().toString() &&
+                DocumentFiles.read(separate).same(newer),
+        )
+        checks +=
+            "Slow Save As followed by new edits retains dirty/newer recovery; external file change refuses Save and never overwrites original"
 
         lateinit var chooser: JFrame
         owner {
-            chooser = showLocalRecovery(root, "noto-nastaliq", true, offscreenTest = true, confirmDiscardForChecks = { true })
+            chooser =
+                showLocalRecovery(root, "noto-nastaliq", true, offscreenTest = true, confirmDiscardForChecks = { true })
             windows += chooser
         }
-        fun all(c: java.awt.Component): List<java.awt.Component> = listOf(c) + if (c is java.awt.Container) c.components.flatMap(::all) else emptyList()
+        fun all(c: java.awt.Component): List<java.awt.Component> =
+            listOf(c) + if (c is java.awt.Container) c.components.flatMap(::all) else emptyList()
         await("Recovery list scan") { owner { all(chooser).filterIsInstance<JList<*>>().single().model.size >= 3 } }
         var restored: JFrame? = null
         owner {
@@ -333,7 +421,11 @@ fun runLocalRecoveryChecks(result: File) {
             owner {
                 @Suppress("UNCHECKED_CAST")
                 val previous = chooser.rootPane.getClientProperty("test.previousWindows") as Set<java.awt.Frame>
-                restored = JFrame.getFrames().filterIsInstance<JFrame>().firstOrNull { it !in previous && windowFiles(it)?.dirty == true }
+                restored =
+                    JFrame.getFrames().filterIsInstance<JFrame>().firstOrNull {
+                        it !in previous &&
+                            windowFiles(it)?.dirty == true
+                    }
                 restored != null
             }
         }
@@ -345,7 +437,9 @@ fun runLocalRecoveryChecks(result: File) {
             windows += w
             val restoredFiles = checkNotNull(windowFiles(w))
             check(restoredFiles.path == null && restoredFiles.dirty)
-            check(checkNotNull(windowCurrentSurface(w)).viewModel.verificationEngine.snapshot().committed.same(afterSave))
+            check(
+                checkNotNull(windowCurrentSurface(w)).viewModel.verificationEngine.snapshot().committed.same(afterSave),
+            )
             restoredFiles.close(2)
             check(w.isDisplayable)
             restoredFiles.close(1)
@@ -364,7 +458,8 @@ fun runLocalRecoveryChecks(result: File) {
         }
         check(store.scan().none { it.session == c2.session })
         check(DocumentFiles.read(separate).same(newer))
-        checks += "Visible chooser names/timestamps and real Restore action open separate dirty content; Cancel preserves it; explicit discard leaves changed original untouched"
+        checks +=
+            "Visible chooser names/timestamps and real Restore action open separate dirty content; Cancel preserves it; explicit discard leaves changed original untouched"
         // Empty recovered deletion is still unsaved work and must prompt.
         owner {
             val empty = showEditor(offscreenTest = true, recoveryDirectory = root)
@@ -380,6 +475,16 @@ fun runLocalRecoveryChecks(result: File) {
     } finally {
         owner { windows.forEach { if (it.isDisplayable) it.dispose() } }
     }
-    result.writeText(evidenceJson(mapOf("status" to "PASS", "checks" to checks, "scope" to "Actual store/controller/offscreen shell; synthetic IME only. Process kills and OS interaction separate.")), Charsets.UTF_8)
+    result.writeText(
+        evidenceJson(
+            mapOf(
+                "status" to "PASS",
+                "checks" to checks,
+                "scope" to
+                    "Actual store/controller/offscreen shell; synthetic IME only. Process kills and OS interaction separate.",
+            ),
+        ),
+        Charsets.UTF_8,
+    )
     println("PASS local committed recovery checks")
 }

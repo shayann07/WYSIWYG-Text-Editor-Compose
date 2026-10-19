@@ -19,19 +19,37 @@ fun main(args: Array<String>) {
         when {
             source != null -> DocumentFiles.read(source)
             "--pages-sample" in args -> cloneDocument(pagesWritingSample())
-            "--workspace-sample" in args -> cloneDocument(DocumentFiles.read(Path.of("apps/desktop-workspace/samples/disposable-workspace-v8.astra")))
-            "--sample" in args -> cloneDocument(DocumentFiles.read(Path.of("apps/desktop-workspace/samples/disposable-urdu-sample-v6.astra")))
+            "--workspace-sample" in args -> cloneDocument(
+                DocumentFiles.read(Path.of("apps/desktop-workspace/samples/disposable-workspace-v8.astra")),
+            )
+            "--sample" in args -> cloneDocument(
+                DocumentFiles.read(Path.of("apps/desktop-workspace/samples/disposable-urdu-sample-v6.astra")),
+            )
             else -> Document(emptyList())
         }
     } catch (failure: Exception) {
-        SwingUtilities.invokeAndWait { JOptionPane.showMessageDialog(null, failure.message, "Document could not be opened", JOptionPane.ERROR_MESSAGE) }
+        SwingUtilities.invokeAndWait {
+            JOptionPane.showMessageDialog(
+                null,
+                failure.message,
+                "Document could not be opened",
+                JOptionPane.ERROR_MESSAGE,
+            )
+        }
         return
     }
     val recovery = value("--recovery-dir")?.let(Path::of) ?: LocalRecoveryStore.defaultRoot()
     val font = value("--font-profile") ?: "noto-nastaliq"
     SwingUtilities.invokeLater {
         runCatching { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()) }
-        val window = showEditor(initial = initial, initialPath = source, fontProfile = font, paged = true, recoveryDirectory = recovery)
+        val window =
+            showEditor(
+                initial = initial,
+                initialPath = source,
+                fontProfile = font,
+                paged = true,
+                recoveryDirectory = recovery,
+            )
         if (sample) windowFiles(window)!!.markUnsavedCopy("ComposeDoc sample")
         showLocalRecovery(recovery, font, true, onlyIfNeeded = true)
         showUnfinishedRecovery(recovery.resolve("unfinished-records"), font, true, onlyIfNeeded = true)

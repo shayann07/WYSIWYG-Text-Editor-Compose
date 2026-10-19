@@ -25,7 +25,12 @@ class LocalRecoveryController(val store: LocalRecoveryStore, val refresh: () -> 
         if (closing != null) return
         val path = original?.toAbsolutePath()?.normalize()?.toString()
         val old = observed
-        if (old != null && old.originalPath == path && (old.document === document || old.document.same(document))) return
+        if (old != null &&
+            old.originalPath == path &&
+            (old.document === document || old.document.same(document))
+        ) {
+            return
+        }
         observed = LocalCopy(session, (old?.sequence ?: 0) + 1, System.currentTimeMillis(), path, document)
     }
 
@@ -102,8 +107,11 @@ class LocalRecoveryController(val store: LocalRecoveryStore, val refresh: () -> 
         else -> "Recovery copy ${time()}"
     }
 
-    @Synchronized fun detail(): String = failure ?: "Only committed content. 2-second scheduling plus disk time; only the last completed copy is protected."
-    private fun time(): String = java.time.Instant.ofEpochMilli(completedTime).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))
+    @Synchronized fun detail(): String = failure
+        ?: "Only committed content. 2-second scheduling plus disk time; only the last completed copy is protected."
+    private fun time(): String = java.time.Instant.ofEpochMilli(
+        completedTime,
+    ).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))
 
     @Synchronized fun state(): Map<String, Any?> = mapOf(
         "session" to session,

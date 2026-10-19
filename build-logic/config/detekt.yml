@@ -16,3 +16,17 @@ complexity:
     thresholdInEnums: 20
     ignorePrivate: true
     ignoreOverridden: true
+
+# tests/desktop-harness is the qualification test consumer but lives in a jvmMain
+# source set, so Detekt's default test-source patterns miss it. Extend those patterns
+# to it only for the rules Detekt itself exempts test code from; every other rule
+# applies to the harness in full.
+exceptions:
+  TooGenericExceptionCaught:
+    excludes: ['**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**', '**/tests/desktop-harness/**']
+naming:
+  FunctionNaming:
+    excludes: ['**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**', '**/tests/desktop-harness/**']
+style:
+  MagicNumber:
+    excludes: ['**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/jsTest/**', '**/iosTest/**', '**/*.kts', '**/tests/desktop-harness/**']

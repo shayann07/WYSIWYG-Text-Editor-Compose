@@ -31,7 +31,10 @@ fun runTypographyProfileChecks(fontsDir: File): Map<String, Any> {
         val testFonts = File(isolated, "fonts").apply { mkdir() }
         File(testFonts, "NotoNastaliqUrdu[wght].ttf").writeBytes(byteArrayOf(0, 1, 2))
         val rejected = runCatching { TypographyProfile.load("noto-nastaliq", testFonts) }.exceptionOrNull()
-        check(rejected is IllegalArgumentException && rejected.message?.startsWith("Pinned font identity mismatch") == true)
+        check(
+            rejected is IllegalArgumentException &&
+                rejected.message?.startsWith("Pinned font identity mismatch") == true,
+        )
     } finally {
         isolated.deleteRecursively()
     }

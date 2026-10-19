@@ -33,13 +33,22 @@ fun workspaceNativeProbe(args: Array<String>) {
     Files.createDirectories(root)
     val recovery = root.resolve("recovery")
     System.setProperty("astra.lockRoot", root.resolve("locks").toString())
-    Files.write(root.resolve("illustration.png"), samplePng(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
+    Files.write(
+        root.resolve("illustration.png"),
+        samplePng(),
+        StandardOpenOption.CREATE,
+        StandardOpenOption.TRUNCATE_EXISTING,
+    )
     val created = java.util.concurrent.CopyOnWriteArrayList<JFrame>()
     val initial = if ("--pages-fixture" in args)pagesWritingSample() else Document(emptyList())
-    fun editors() = java.awt.Frame.getFrames().filterIsInstance<JFrame>().filter { it.isDisplayable && windowFiles(it) != null }
+    fun editors() = java.awt.Frame.getFrames().filterIsInstance<JFrame>().filter {
+        it.isDisplayable &&
+            windowFiles(it) != null
+    }
     SwingUtilities.invokeAndWait {
         UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
-        created += showEditor(initial = initial, fontProfile = "noto-nastaliq", paged = true, recoveryDirectory = recovery)
+        created +=
+            showEditor(initial = initial, fontProfile = "noto-nastaliq", paged = true, recoveryDirectory = recovery)
         if ("--pages-fixture" in args)windowFiles(created[0])!!.markUnsavedCopy("Urdu pages disposable specimen")
         if ("--resume" in args) {
             showLocalRecovery(recovery, "noto-nastaliq", true, onlyIfNeeded = true)
@@ -71,13 +80,76 @@ fun workspaceNativeProbe(args: Array<String>) {
                         val files = windowFiles(w)!!
                         val g = s.geometry()
                         mapOf(
-                            "index" to index, "title" to w.title, "path" to files.path?.toString(), "dirty" to files.dirty, "busy" to files.busy, "fileStatus" to files.status,
-                            "units" to f.committed.text.map { it.code }, "payload" to Base64.getEncoder().encodeToString(DocumentFiles.encode(f.committed)), "visiblePayload" to Base64.getEncoder().encodeToString(DocumentFiles.encode(f.visible)),
-                            "selection" to listOf(f.selection.anchor, f.selection.focus), "marked" to f.marked?.let { listOf(it.first, it.last + 1) }, "undo" to f.undoCount, "redo" to f.redoCount,
-                            "zoom" to s.view.zoom, "paged" to s.view.paged, "scroll" to s.view.scroll, "admission" to s.admissionAllowed,
-                            "committedRecovery" to (w.rootPane.getClientProperty("editor.localRecovery") as? LocalRecoveryController)?.state(), "unfinished" to (w.rootPane.getClientProperty("editor.unfinishedRecovery") as? UnfinishedController)?.state(),
-                            "imageHandles" to imageHandles(s)?.let { h -> mapOf("left" to listOf(h.left.x, h.left.y, h.left.width, h.left.height), "right" to listOf(h.right.x, h.right.y, h.right.width, h.right.height), "bounds" to listOf(h.bounds.x, h.bounds.y, h.bounds.width, h.bounds.height)) },
-                            "pages" to g?.pageCount, "pagePlan" to g?.documentPagePlan?.let { p -> mapOf("pages" to p.pageCount, "width" to p.width, "height" to p.height, "fontKey" to p.typographyKey, "fragments" to p.fragments.map { listOf(it.paragraphIndex, it.firstLine, it.lastLine, it.page, it.top, it.height) }, "running" to p.running.map { mapOf("page" to it.page, "flow" to it.flowId, "text" to it.text, "top" to it.top) }, "notices" to p.relaxations) }, "editorBounds" to listOf(s.x, s.y, s.width, s.height), "surfaceScreen" to runCatching { s.locationOnScreen.let { listOf(it.x, it.y) } }.getOrNull(),
+                            "index" to index, "title" to w.title, "path" to files.path?.toString(),
+                            "dirty" to files.dirty, "busy" to files.busy, "fileStatus" to files.status,
+                            "units" to f.committed.text.map { it.code },
+                            "payload" to Base64.getEncoder().encodeToString(DocumentFiles.encode(f.committed)),
+                            "visiblePayload" to
+                                Base64.getEncoder().encodeToString(DocumentFiles.encode(f.visible)),
+                            "selection" to listOf(f.selection.anchor, f.selection.focus),
+                            "marked" to f.marked?.let { listOf(it.first, it.last + 1) }, "undo" to f.undoCount,
+                            "redo" to f.redoCount,
+                            "zoom" to s.view.zoom, "paged" to s.view.paged, "scroll" to s.view.scroll,
+                            "admission" to s.admissionAllowed,
+                            "committedRecovery" to
+                                (
+                                    w.rootPane.getClientProperty(
+                                        "editor.localRecovery",
+                                    ) as? LocalRecoveryController
+                                    )?.state(),
+                            "unfinished" to
+                                (
+                                    w.rootPane.getClientProperty(
+                                        "editor.unfinishedRecovery",
+                                    ) as? UnfinishedController
+                                    )?.state(),
+                            "imageHandles" to
+                                imageHandles(s)?.let { h ->
+                                    mapOf(
+                                        "left" to listOf(h.left.x, h.left.y, h.left.width, h.left.height),
+                                        "right" to listOf(h.right.x, h.right.y, h.right.width, h.right.height),
+                                        "bounds" to listOf(h.bounds.x, h.bounds.y, h.bounds.width, h.bounds.height),
+                                    )
+                                },
+                            "pages" to g?.pageCount,
+                            "pagePlan" to
+                                g?.documentPagePlan?.let { p ->
+                                    mapOf(
+                                        "pages" to p.pageCount,
+                                        "width" to p.width,
+                                        "height" to p.height,
+                                        "fontKey" to p.typographyKey,
+                                        "fragments" to
+                                            p.fragments.map {
+                                                listOf(
+                                                    it.paragraphIndex,
+                                                    it.firstLine,
+                                                    it.lastLine,
+                                                    it.page,
+                                                    it.top,
+                                                    it.height,
+                                                )
+                                            },
+                                        "running" to
+                                            p.running.map {
+                                                mapOf(
+                                                    "page" to it.page,
+                                                    "flow" to it.flowId,
+                                                    "text" to it.text,
+                                                    "top" to it.top,
+                                                )
+                                            },
+                                        "notices" to p.relaxations,
+                                    )
+                                },
+                            "editorBounds" to
+                                listOf(s.x, s.y, s.width, s.height),
+                            "surfaceScreen" to
+                                runCatching {
+                                    s.locationOnScreen.let {
+                                        listOf(it.x, it.y)
+                                    }
+                                }.getOrNull(),
                         )
                     },
                 ),
@@ -114,10 +186,15 @@ fun workspaceNativeProbe(args: Array<String>) {
                         val n = e.snapshot().committed.units.size
                         e.move(Selection(n, n))
                         e.inputMethod("نامکمل کِ 👩🏽‍💻\ud800", 0, 3)
-                        s.quarantinedCallbacks += QuarantinedCallback("unverified \ud800 callback", 0, 1, s.activeImeEpoch)
+                        s.quarantinedCallbacks +=
+                            QuarantinedCallback("unverified \ud800 callback", 0, 1, s.activeImeEpoch)
                         s.statusChanged(e.snapshot())
                         (w.rootPane.getClientProperty("editor.unfinishedRecovery") as UnfinishedController).flush()
-                        (w.rootPane.getClientProperty("editor.localRecovery") as LocalRecoveryController).checkpointNow()
+                        (
+                            w.rootPane.getClientProperty(
+                                "editor.localRecovery",
+                            ) as LocalRecoveryController
+                            ).checkpointNow()
                     }
                     println("SYNTHETIC_ONLY " + snapshot())
                 }
@@ -132,7 +209,9 @@ fun workspaceNativeProbe(args: Array<String>) {
                     println("SYNTHETIC_NEW_ARRIVAL " + snapshot())
                 }
                 line == "shutdown" -> {
-                    SwingUtilities.invokeAndWait { java.awt.Window.getWindows().filter { it.isDisplayable }.forEach { it.dispose() } }
+                    SwingUtilities.invokeAndWait {
+                        java.awt.Window.getWindows().filter { it.isDisplayable }.forEach { it.dispose() }
+                    }
                     println("BYE")
                     System.out.flush()
                     kotlin.system.exitProcess(0)

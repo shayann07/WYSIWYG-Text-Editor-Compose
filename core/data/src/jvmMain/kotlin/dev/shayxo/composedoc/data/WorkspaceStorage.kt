@@ -34,7 +34,11 @@ object WorkspaceBytes {
     fun <T> unpack(b: ByteArray, magic: Int, body: (DataInputStream) -> T): T {
         require(b.size in 40..MAX + 32) { "Incomplete/oversized local record" }
         val raw = b.copyOfRange(0, b.size - 32)
-        require(MessageDigest.isEqual(MessageDigest.getInstance("SHA-256").digest(raw), b.copyOfRange(raw.size, b.size))) { "Local record checksum failed" }
+        require(
+            MessageDigest.isEqual(MessageDigest.getInstance("SHA-256").digest(raw), b.copyOfRange(raw.size, b.size)),
+        ) {
+            "Local record checksum failed"
+        }
         return DataInputStream(ByteArrayInputStream(raw)).use { i ->
             require(i.readInt() == magic && i.readInt() == 1) { "Unsupported local record version" }
             body(i).also { require(i.available() == 0) { "Trailing local record data" } }
@@ -60,7 +64,13 @@ object WorkspaceBytes {
         require(n in 0..MAX && n <= i.available())
         return i.readNBytes(n)
     }
-    fun read(p: Path, max: Int = MAX + 32) = Files.newInputStream(p).use { it.readNBytes(max + 1).also { b -> require(b.size <= max) } }
+    fun read(p: Path, max: Int = MAX + 32) = Files.newInputStream(p).use {
+        it.readNBytes(max + 1).also { b ->
+            require(
+                b.size <= max,
+            )
+        }
+    }
     fun atomic(p: Path, b: ByteArray, interruption: (String) -> Unit = {}, replace: Boolean = true) {
         check(!javax.swing.SwingUtilities.isEventDispatchThread()) { "Workspace IO on EDT" }
         Files.createDirectories(p.parent)
@@ -116,7 +126,10 @@ data class FileFingerprint(val exists: Boolean, val size: Long = 0, val sha256: 
         }
     }
 }
-class FileConflict(val destination: Path, val expected: FileFingerprint, val actual: FileFingerprint) : IOException("File conflict: $destination\nExpected: $expected\nCurrent: $actual\nKeep editing, Reload, or Save a Copy.")
+class FileConflict(val destination: Path, val expected: FileFingerprint, val actual: FileFingerprint) :
+    IOException(
+        "File conflict: $destination\nExpected: $expected\nCurrent: $actual\nKeep editing, Reload, or Save a Copy.",
+    )
 
 /** Cooperating instances serialize tests/suites/publication. Arbitrary writers can still race the final rename. */
 object SafeDocumentIO {
@@ -128,15 +141,28 @@ object SafeDocumentIO {
         opened[d] = p.toAbsolutePath().normalize() to FileFingerprint(true, b.size.toLong(), WorkspaceBytes.hash(b))
     }
 
-    @Synchronized fun basis(d: Document, p: Path) = opened[d]?.takeIf { it.first == p.toAbsolutePath().normalize() }?.second
+    @Synchronized fun basis(d: Document, p: Path) = opened[d]?.takeIf {
+        it.first == p.toAbsolutePath().normalize()
+    }?.second
     fun write(path: Path, d: Document, expected: FileFingerprint, interrupt: (String) -> Unit = {}): FileFingerprint {
         check(!javax.swing.SwingUtilities.isEventDispatchThread())
         val p = path.toAbsolutePath().normalize()
-        val key = p.toString().let { if (System.getProperty("os.name").startsWith("Windows"))it.lowercase(java.util.Locale.ROOT) else it }
-        val locks = Path.of(System.getProperty("astra.lockRoot", LocalRecoveryStore.defaultRoot().parent.resolve("file-locks").toString()))
+        val key = p.toString().let {
+            if (System.getProperty("os.name").startsWith("Windows"))it.lowercase(java.util.Locale.ROOT) else it
+        }
+        val locks = Path.of(
+            System.getProperty(
+                "astra.lockRoot",
+                LocalRecoveryStore.defaultRoot().parent.resolve("file-locks").toString(),
+            ),
+        )
         Files.createDirectories(locks)
         synchronized(monitor.computeIfAbsent(key) { Any() }) {
-            FileChannel.open(locks.resolve(WorkspaceBytes.hash(key.toByteArray()) + ".lock"), StandardOpenOption.CREATE, StandardOpenOption.WRITE).use { ch ->
+            FileChannel.open(
+                locks.resolve(WorkspaceBytes.hash(key.toByteArray()) + ".lock"),
+                StandardOpenOption.CREATE,
+                StandardOpenOption.WRITE,
+            ).use { ch ->
                 ch.lock().use {
                     fun validate() {
                         val actual = FileFingerprint.capture(p)
@@ -172,7 +198,9 @@ object ExactDocument {
         val d = DocumentFiles.decode(WorkspaceBytes.bytes(i))
         val root = if (i.readBoolean())i.readLong() else null
         require(i.readInt() == d.units.size)
-        val units = d.units.map { it.copy(id = i.readLong(), followingBlockId = if (i.readBoolean())i.readLong() else null) }
+        val units = d.units.map {
+            it.copy(id = i.readLong(), followingBlockId = if (i.readBoolean())i.readLong() else null)
+        }
         require(units.map { it.id }.distinct().size == units.size)
         d.copy(units = units, rootBlockId = root).also(::validateStructure)
     }

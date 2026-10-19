@@ -27,14 +27,27 @@ data class LocalCopy(
 data class LocalRecoveryEntry(val session: String, val copy: LocalCopy?, val warning: String?) {
     override fun toString(): String {
         val name = copy?.originalPath?.let { runCatching { Path.of(it).fileName.toString() }.getOrNull() } ?: "Untitled"
-        val time = copy?.timestamp?.let { java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("dd MMM HH:mm:ss")) } ?: "unknown time"
-        return "$name — $time" + if (warning != null) " · ${if (copy == null) "unreadable copy" else "valid fallback"}" else ""
+        val time =
+            copy?.timestamp?.let {
+                java.time.Instant.ofEpochMilli(
+                    it,
+                ).atZone(
+                    java.time.ZoneId.systemDefault(),
+                ).format(java.time.format.DateTimeFormatter.ofPattern("dd MMM HH:mm:ss"))
+            }
+                ?: "unknown time"
+        return "$name — $time" +
+            if (warning != null) " · ${if (copy == null) "unreadable copy" else "valid fallback"}" else ""
     }
 }
 
 class LocalRecoveryStore(val root: Path, val interruption: (String) -> Unit = {}) {
     companion object {
-        fun defaultRoot(): Path = Path.of(System.getenv("LOCALAPPDATA") ?: System.getProperty("user.home"), "AstraEditorPrototype", "recovery")
+        fun defaultRoot(): Path = Path.of(
+            System.getenv("LOCALAPPDATA") ?: System.getProperty("user.home"),
+            "AstraEditorPrototype",
+            "recovery",
+        )
         private const val MAGIC = 0x41535243
         private const val MAX_RECORD = 21_000_000
         fun encode(copy: LocalCopy): ByteArray {
@@ -63,7 +76,14 @@ class LocalRecoveryStore(val root: Path, val interruption: (String) -> Unit = {}
         fun decode(bytes: ByteArray): LocalCopy {
             require(bytes.size in 80..MAX_RECORD) { "Incomplete recovery record" }
             val body = bytes.copyOfRange(0, bytes.size - 32)
-            require(MessageDigest.isEqual(MessageDigest.getInstance("SHA-256").digest(body), bytes.copyOfRange(body.size, bytes.size))) { "Recovery checksum failed" }
+            require(
+                MessageDigest.isEqual(
+                    MessageDigest.getInstance("SHA-256").digest(body),
+                    bytes.copyOfRange(body.size, bytes.size),
+                ),
+            ) {
+                "Recovery checksum failed"
+            }
             return DataInputStream(ByteArrayInputStream(body)).use { input ->
                 require(input.readInt() == MAGIC && input.readInt() == 1) { "Unsupported recovery record" }
                 val session = input.readUTF()
@@ -85,7 +105,8 @@ class LocalRecoveryStore(val root: Path, val interruption: (String) -> Unit = {}
             }
         }
     }
-    class Lease(val session: String, val directory: Path, val channel: FileChannel, val lock: FileLock) : AutoCloseable {
+    class Lease(val session: String, val directory: Path, val channel: FileChannel, val lock: FileLock) :
+        AutoCloseable {
         override fun close() {
             lock.release()
             channel.close()
@@ -104,7 +125,14 @@ class LocalRecoveryStore(val root: Path, val interruption: (String) -> Unit = {}
         Files.createDirectories(dir)
         val channel = FileChannel.open(dir.resolve("active.lock"), StandardOpenOption.CREATE, StandardOpenOption.WRITE)
         try {
-            return Lease(session, dir, channel, checkNotNull(channel.tryLock()) { "Recovery copy is active in another window" })
+            return Lease(
+                session,
+                dir,
+                channel,
+                checkNotNull(channel.tryLock()) {
+                    "Recovery copy is active in another window"
+                },
+            )
         } catch (failure: Throwable) {
             channel.close()
             throw failure
@@ -126,13 +154,24 @@ class LocalRecoveryStore(val root: Path, val interruption: (String) -> Unit = {}
             }
         }
         if (Files.exists(dir.resolve("pending.tmp"))) failures += "An interrupted unpublished write was ignored"
-        return LocalRecoveryEntry(dir.fileName.toString(), valid.maxByOrNull { it.sequence }, failures.takeIf { it.isNotEmpty() }?.joinToString("; "))
+        return LocalRecoveryEntry(
+            dir.fileName.toString(),
+            valid.maxByOrNull {
+                it.sequence
+            },
+            failures.takeIf { it.isNotEmpty() }?.joinToString("; "),
+        )
     }
     fun scan(): List<LocalRecoveryEntry> {
         io()
         if (!Files.exists(root)) return emptyList()
         return Files.list(root).use { dirs ->
-            dirs.filter { Files.isDirectory(it) && runCatching { UUID.fromString(it.fileName.toString()).toString() == it.fileName.toString() }.getOrDefault(false) }
+            dirs.filter {
+                Files.isDirectory(it) &&
+                    runCatching {
+                        UUID.fromString(it.fileName.toString()).toString() == it.fileName.toString()
+                    }.getOrDefault(false)
+            }
                 .toList().mapNotNull { dir ->
                     val lease = try {
                         acquire(dir.fileName.toString())
@@ -172,7 +211,12 @@ class LocalRecoveryStore(val root: Path, val interruption: (String) -> Unit = {}
         val bytes = encode(copy)
         val temp = lease.directory.resolve("pending.tmp")
         interruption("before-write")
-        FileChannel.open(temp, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE).use { c ->
+        FileChannel.open(
+            temp,
+            StandardOpenOption.CREATE,
+            StandardOpenOption.TRUNCATE_EXISTING,
+            StandardOpenOption.WRITE,
+        ).use { c ->
             val half = bytes.size / 2
             val first = ByteBuffer.wrap(bytes, 0, half)
             while (first.hasRemaining()) c.write(first)
@@ -182,7 +226,12 @@ class LocalRecoveryStore(val root: Path, val interruption: (String) -> Unit = {}
             c.force(true)
         }
         interruption("before-publish")
-        Files.move(temp, lease.directory.resolve("copy-${copy.sequence % 2}.bin"), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+        Files.move(
+            temp,
+            lease.directory.resolve("copy-${copy.sequence % 2}.bin"),
+            StandardCopyOption.ATOMIC_MOVE,
+            StandardCopyOption.REPLACE_EXISTING,
+        )
         interruption("after-publish")
         return true
     }
@@ -190,12 +239,28 @@ class LocalRecoveryStore(val root: Path, val interruption: (String) -> Unit = {}
         io()
         check(lease.lock.isValid)
         // A forced marker makes partial cleanup unambiguous if the process dies here.
-        FileChannel.open(lease.directory.resolve("discard.tmp"), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE).use { c ->
+        FileChannel.open(
+            lease.directory.resolve("discard.tmp"),
+            StandardOpenOption.CREATE,
+            StandardOpenOption.TRUNCATE_EXISTING,
+            StandardOpenOption.WRITE,
+        ).use { c ->
             c.write(ByteBuffer.wrap(byteArrayOf(1)))
             c.force(true)
         }
-        Files.move(lease.directory.resolve("discard.tmp"), lease.directory.resolve("discarded"), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
-        for (name in listOf("copy-0.bin", "copy-1.bin", "pending.tmp")) Files.deleteIfExists(lease.directory.resolve(name))
+        Files.move(
+            lease.directory.resolve("discard.tmp"),
+            lease.directory.resolve("discarded"),
+            StandardCopyOption.ATOMIC_MOVE,
+            StandardCopyOption.REPLACE_EXISTING,
+        )
+        for (name in listOf(
+            "copy-0.bin",
+            "copy-1.bin",
+            "pending.tmp",
+        )) {
+            Files.deleteIfExists(lease.directory.resolve(name))
+        }
     }
     fun discard(entry: LocalRecoveryEntry) {
         io()

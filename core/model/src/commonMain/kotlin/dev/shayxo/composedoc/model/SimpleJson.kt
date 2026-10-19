@@ -106,7 +106,16 @@ class SimpleJson(private val src: String) {
     private fun parseNumber(): Number {
         val start = pos
         if (src[pos] == '-') pos++
-        while (pos < src.length && (src[pos].isDigit() || src[pos] == '.' || src[pos] == 'e' || src[pos] == 'E' || src[pos] == '+' || src[pos] == '-')) {
+        while (pos < src.length &&
+            (
+                src[pos].isDigit() ||
+                    src[pos] == '.' ||
+                    src[pos] == 'e' ||
+                    src[pos] == 'E' ||
+                    src[pos] == '+' ||
+                    src[pos] == '-'
+                )
+        ) {
             pos++
         }
         val s = src.substring(start, pos)

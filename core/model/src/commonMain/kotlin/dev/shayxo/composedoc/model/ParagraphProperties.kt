@@ -7,10 +7,7 @@ enum class ParagraphDirection { AUTO, RTL, LTR }
 enum class ParagraphAlignment { START, CENTER, END }
 
 /** Private prototype semantic seed; DEFAULT is resolved once to the Urdu document default. */
-data class MarkerTypography(
-    val font: StoredFont = StoredFont.NOTO_NASTALIQ,
-    val size: Int = 26,
-) {
+data class MarkerTypography(val font: StoredFont = StoredFont.NOTO_NASTALIQ, val size: Int = 26) {
     init {
         require(font != StoredFont.DEFAULT && size in 8..96)
     }
@@ -46,7 +43,9 @@ constructor(
     val pagination: PaginationRules = PaginationRules(),
 ) {
     init {
-        require(item.isNotEmpty() || markerTypography == MarkerTypography()) { "Marker typography belongs to a list item" }
+        require(item.isNotEmpty() || markerTypography == MarkerTypography()) {
+            "Marker typography belongs to a list item"
+        }
         require(
             heading in 0..6 && restart in 0..9999,
         )

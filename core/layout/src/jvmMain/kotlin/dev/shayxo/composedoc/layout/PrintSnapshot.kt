@@ -22,7 +22,8 @@ import java.awt.print.PrinterAbortException
 import java.io.ByteArrayInputStream
 
 /** Immutable Skia pictures recorded from the actual editor plan, not remeasured text. */
-class PrintSnapshot private constructor(val plan: DocumentPagePlan, private val pictures: List<Picture>) : AutoCloseable {
+class PrintSnapshot private constructor(val plan: DocumentPagePlan, private val pictures: List<Picture>) :
+    AutoCloseable {
     private var closed = false
 
     @Synchronized fun render(page: Int, dpi: Int = 120): BufferedImage {
@@ -36,7 +37,11 @@ class PrintSnapshot private constructor(val plan: DocumentPagePlan, private val 
             surface.canvas.clear(0xffffffff.toInt())
             surface.canvas.scale(factor, factor)
             pictures[page].playback(surface.canvas)
-            surface.makeImageSnapshot().use { image -> image.encodeToData(EncodedImageFormat.PNG)!!.use { data -> javax.imageio.ImageIO.read(ByteArrayInputStream(data.bytes)) } }
+            surface.makeImageSnapshot().use { image ->
+                image.encodeToData(EncodedImageFormat.PNG)!!.use { data ->
+                    javax.imageio.ImageIO.read(ByteArrayInputStream(data.bytes))
+                }
+            }
         }
     }
     fun paperFormat(): PageFormat {
@@ -49,10 +54,26 @@ class PrintSnapshot private constructor(val plan: DocumentPagePlan, private val 
         }
     }
     fun warnings(format: PageFormat): List<String> = buildList {
-        if (kotlin.math.abs(format.width - documentToPoints(plan.width)) > .25 || kotlin.math.abs(format.height - documentToPoints(plan.height)) > .25)add("Printer paper differs from the captured document; pages will not be repaginated")
-        if (format.imageableX > 0 || format.imageableY > 0 || format.imageableWidth < format.width || format.imageableHeight < format.height)add("Printer has unprintable margins; actual size may clip. Fit scales uniformly to the printable area")
+        if (kotlin.math.abs(format.width - documentToPoints(plan.width)) > .25 ||
+            kotlin.math.abs(format.height - documentToPoints(plan.height)) > .25
+        ) {
+            add("Printer paper differs from the captured document; pages will not be repaginated")
+        }
+        if (format.imageableX > 0 ||
+            format.imageableY > 0 ||
+            format.imageableWidth < format.width ||
+            format.imageableHeight < format.height
+        ) {
+            add("Printer has unprintable margins; actual size may clip. Fit scales uniformly to the printable area")
+        }
     }
-    fun pageable(first: Int = 1, last: Int = plan.pageCount, format: PageFormat = paperFormat(), fit: Boolean = false, cancelled: () -> Boolean = { false }): Pageable {
+    fun pageable(
+        first: Int = 1,
+        last: Int = plan.pageCount,
+        format: PageFormat = paperFormat(),
+        fit: Boolean = false,
+        cancelled: () -> Boolean = { false },
+    ): Pageable {
         require(first in 1..plan.pageCount && last in first..plan.pageCount)
         return object : Pageable {
             override fun getNumberOfPages() = last - first + 1
@@ -72,7 +93,14 @@ class PrintSnapshot private constructor(val plan: DocumentPagePlan, private val 
                         try {
                             val width = documentToPoints(plan.width).toDouble()
                             val height = documentToPoints(plan.height).toDouble()
-                            val factor = if (fit)minOf(actual.imageableWidth / width, actual.imageableHeight / height) else 1.0
+                            val factor = if (fit) {
+                                minOf(
+                                    actual.imageableWidth / width,
+                                    actual.imageableHeight / height,
+                                )
+                            } else {
+                                1.0
+                            }
                             if (fit)g.translate(actual.imageableX, actual.imageableY)
                             g.scale(factor * width / image.width, factor * height / image.height)
                             g.drawImage(image, 0, 0, null)
@@ -93,18 +121,25 @@ class PrintSnapshot private constructor(val plan: DocumentPagePlan, private val 
             pictures.forEach { it.close() }
         }
     }
-    class Builder(val plan: DocumentPagePlan, bitmap: (String) -> androidx.compose.ui.graphics.ImageBitmap?) : AutoCloseable {
+    class Builder(val plan: DocumentPagePlan, bitmap: (String) -> androidx.compose.ui.graphics.ImageBitmap?) :
+        AutoCloseable {
         private val pictures = ArrayList<Picture>()
         private var handedOff = false
-        private val images = plan.document.units.mapNotNull { it.image?.resource }.distinct().associateWith { requireNotNull(bitmap(it)) { "Image decoding pending; wait and retry preview" } }
+        private val images = plan.document.units.mapNotNull {
+            it.image?.resource
+        }.distinct().associateWith { requireNotNull(bitmap(it)) { "Image decoding pending; wait and retry preview" } }
         val completed get() = pictures.size
         init {
             require(plan.pageCount <= 200) { "Bounded preview/print supports at most200 pages" }
-            require(outputUnicodeIssues(plan.document).isEmpty()) { "Output refused; source unchanged. ${outputUnicodeIssues(plan.document).take(8).joinToString("; ")}" }
+            require(outputUnicodeIssues(plan.document).isEmpty()) {
+                "Output refused; source unchanged. ${outputUnicodeIssues(plan.document).take(8).joinToString("; ")}"
+            }
             plan.assertCoverage()
         }
         fun next() {
-            check(javax.swing.SwingUtilities.isEventDispatchThread()) { "Capture paragraph pictures on the editor owner thread" }
+            check(javax.swing.SwingUtilities.isEventDispatchThread()) {
+                "Capture paragraph pictures on the editor owner thread"
+            }
             check(!handedOff && completed < plan.pageCount)
             val page = completed
             PictureRecorder().use { recorder ->
@@ -114,9 +149,26 @@ class PrintSnapshot private constructor(val plan: DocumentPagePlan, private val 
                     val p = plan.paragraphs[f.paragraphIndex]
                     val y = plan.margin + f.top - page * (plan.height + plan.gap)
                     canvas.save()
-                    canvas.clipRect(Rect.makeLTRB(0f, (y - 2f).coerceAtLeast(0f), plan.width, (y + f.height + 2f).coerceAtMost(plan.height)))
+                    canvas.clipRect(
+                        Rect.makeLTRB(
+                            0f,
+                            (y - 2f).coerceAtLeast(0f),
+                            plan.width,
+                            (y + f.height + 2f).coerceAtMost(plan.height),
+                        ),
+                    )
                     if (p.image != null) {
-                        Image.makeFromBitmap(images.getValue(p.image.resource).asSkiaBitmap()).use { image -> canvas.drawImageRect(image, Rect.makeXYWH(plan.margin + p.imageLeft, y, p.imageWidth, p.height)) }
+                        Image.makeFromBitmap(images.getValue(p.image.resource).asSkiaBitmap()).use { image ->
+                            canvas.drawImageRect(
+                                image,
+                                Rect.makeXYWH(
+                                    plan.margin + p.imageLeft,
+                                    y,
+                                    p.imageWidth,
+                                    p.height,
+                                ),
+                            )
+                        }
                     } else {
                         canvas.save()
                         canvas.translate(plan.margin + p.contentLeft, y - f.sourceTop)
@@ -128,12 +180,19 @@ class PrintSnapshot private constructor(val plan: DocumentPagePlan, private val 
                             if (marker.layout != null) {
                                 canvas.save()
                                 canvas.translate(plan.margin + marker.left, y + marker.top)
-                                synchronized(marker.layout.multiParagraph) { TextPainter.paint(canvas.asComposeCanvas(), marker.layout) }
+                                synchronized(marker.layout.multiParagraph) {
+                                    TextPainter.paint(canvas.asComposeCanvas(), marker.layout)
+                                }
                                 canvas.restore()
                             } else {
                                 Paint().use { paint ->
                                     paint.color = 0xff202b3c.toInt()
-                                    canvas.drawCircle(plan.margin + marker.left + marker.bulletRadius, y + marker.opticalCenter, marker.bulletRadius, paint)
+                                    canvas.drawCircle(
+                                        plan.margin + marker.left + marker.bulletRadius,
+                                        y + marker.opticalCenter,
+                                        marker.bulletRadius,
+                                        paint,
+                                    )
                                 }
                             }
                         }
@@ -148,7 +207,11 @@ class PrintSnapshot private constructor(val plan: DocumentPagePlan, private val 
                 }
                 pictures += recorder.finishRecordingAsPicture()
             }
-            require(pictures.sumOf { it.approximateBytesUsed.toLong() } <= 64L * 1024 * 1024) { "Captured print pictures exceed64MiB" }
+            require(
+                pictures.sumOf {
+                    it.approximateBytesUsed.toLong()
+                } <= 64L * 1024 * 1024,
+            ) { "Captured print pictures exceed64MiB" }
         }
         fun finish(): PrintSnapshot {
             check(completed == plan.pageCount && !handedOff)

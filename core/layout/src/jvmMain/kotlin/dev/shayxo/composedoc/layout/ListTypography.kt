@@ -26,7 +26,9 @@ fun Document.listNominal(item: String, defaultSize: Int): ListNominal {
     return ListNominal(seed.font, seed.size)
 }
 fun Document.listRoot(item: String): String {
-    val props = paragraphs().filter { it.properties.item.isNotEmpty() }.associate { it.properties.item to it.properties }
+    val props = paragraphs().filter {
+        it.properties.item.isNotEmpty()
+    }.associate { it.properties.item to it.properties }
     var id = item
     val seen = HashSet<String>()
     while (props.getValue(id).parent.isNotEmpty()) {

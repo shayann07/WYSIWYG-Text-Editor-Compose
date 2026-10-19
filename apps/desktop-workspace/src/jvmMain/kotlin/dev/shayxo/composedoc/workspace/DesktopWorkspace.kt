@@ -52,17 +52,37 @@ import javax.swing.JTextArea
 import javax.swing.SwingUtilities
 import javax.swing.border.EmptyBorder
 fun windowFiles(window: JFrame): WindowFiles? = window.rootPane?.getClientProperty("editor.files") as? WindowFiles
-fun windowLayeredPane(window: JFrame): JLayeredPane? = window.rootPane?.getClientProperty("editor.layers") as? JLayeredPane
+fun windowLayeredPane(window: JFrame): JLayeredPane? =
+    window.rootPane?.getClientProperty("editor.layers") as? JLayeredPane
 
 @Suppress("UNCHECKED_CAST")
-fun windowCurrentSurface(window: JFrame): EditorSurface? = (window.rootPane?.getClientProperty("editor.surfaceGetter") as? (() -> EditorSurface))?.invoke()
+fun windowCurrentSurface(window: JFrame): EditorSurface? =
+    (window.rootPane?.getClientProperty("editor.surfaceGetter") as? (() -> EditorSurface))?.invoke()
 
 @JvmOverloads
-fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList()), initialPath: java.nio.file.Path? = null, trace: ImeTrace? = null, traceLanguage: String? = null, offscreenTest: Boolean = false, windowLocation: Point? = null, fontProfile: String = "system", paged: Boolean = false, recoveryDirectory: java.nio.file.Path? = null): JFrame {
+fun showEditor(
+    diagnostics: File? = null,
+    initial: Document = Document(emptyList()),
+    initialPath: java.nio.file.Path? = null,
+    trace: ImeTrace? = null,
+    traceLanguage: String? = null,
+    offscreenTest: Boolean = false,
+    windowLocation: Point? = null,
+    fontProfile: String = "system",
+    paged: Boolean = false,
+    recoveryDirectory: java.nio.file.Path? = null,
+): JFrame {
     check(SwingUtilities.isEventDispatchThread())
     val viewModel = EditorViewModel(initial)
     val state = ViewState(viewModel.snapshot())
-    var surface = EditorSurface(viewModel, state, diagnostics, trace, services = EditorPlatformServices(DocumentFiles, FragmentCodec))
+    var surface =
+        EditorSurface(
+            viewModel,
+            state,
+            diagnostics,
+            trace,
+            services = EditorPlatformServices(DocumentFiles, FragmentCodec),
+        )
     var refreshRecoveryUi: () -> Unit = {}
     var refreshFindUi: () -> Unit = {}
     var refreshParagraphUi: () -> Unit = {}
@@ -170,7 +190,12 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
         JPanel(FlowLayout(FlowLayout.LEFT)).apply {
             isOpaque = false
             add(pageToggle)
-            add(JLabel("Enter: paragraph · Shift+Enter: line break · Ctrl+S: save · Wheel: scroll").apply { font = Font("Segoe UI", Font.PLAIN, 12) })
+            add(
+                JLabel("Enter: paragraph · Shift+Enter: line break · Ctrl+S: save · Wheel: scroll").apply {
+                    font =
+                        Font("Segoe UI", Font.PLAIN, 12)
+                },
+            )
             if (recoveryDirectory != null) {
                 add(
                     JButton("Recovery Copies…").apply {
@@ -189,14 +214,40 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
         val result = JLabel("Choose an installed input method; then type test text.")
         picker.addActionListener {
             val tag = languages.getValue(picker.selectedItem as String)
-            val accepted = surface.selectInputLocale(java.util.Locale.forLanguageTag(tag), compositionEnabled = if (tag == "ja-JP") true else null)
+            val accepted = surface.selectInputLocale(
+                java.util.Locale.forLanguageTag(tag),
+                compositionEnabled = if (tag ==
+                    "ja-JP"
+                ) {
+                    true
+                } else {
+                    null
+                },
+            )
             val ctx = surface.inputContext
-            val compositionEnabled = if (accepted && tag == "ja-JP") runCatching { ctx?.isCompositionEnabled }.getOrNull() else null
+            val compositionEnabled = if (accepted &&
+                tag == "ja-JP"
+            ) {
+                runCatching { ctx?.isCompositionEnabled }.getOrNull()
+            } else {
+                null
+            }
             result.text = "Input: $tag — ${if (accepted)"selected" else "unavailable"}"
-            trace.record("select-input", "requested=$tag; accepted=$accepted; actual=${ctx?.locale}; compositionEnabled=$compositionEnabled", viewModel.snapshot())
+            trace.record(
+                "select-input",
+                "requested=$tag; accepted=$accepted; actual=${ctx?.locale}; compositionEnabled=$compositionEnabled",
+                viewModel.snapshot(),
+            )
             surface.requestFocusInWindow()
         }
-        if (traceLanguage != null) SwingUtilities.invokeLater { picker.selectedItem = languages.entries.first { it.value == traceLanguage }.key }
+        if (traceLanguage !=
+            null
+        ) {
+            SwingUtilities.invokeLater {
+                picker.selectedItem =
+                    languages.entries.first { it.value == traceLanguage }.key
+            }
+        }
         qualificationControls.add(
             JPanel(FlowLayout(FlowLayout.LEFT)).apply {
                 isOpaque = false
@@ -204,7 +255,13 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
                 add(result)
             },
         )
-        trace.record("session-start", "Live input test mode; no synthetic injection. OS=${System.getProperty("os.name")}; Java=${System.getProperty("java.version")}", viewModel.snapshot())
+        trace.record(
+            "session-start",
+            "Live input test mode; no synthetic injection. OS=${System.getProperty(
+                "os.name",
+            )}; Java=${System.getProperty("java.version")}",
+            viewModel.snapshot(),
+        )
     }
     val buttons = JPanel(FlowLayout(FlowLayout.RIGHT, 8, 0)).apply { isOpaque = false }
     fun button(label: String, tooltip: String, action: () -> Unit) = JButton(label).apply {
@@ -222,8 +279,14 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
     val saveAs = button("Save As…", "Save to another .astra file (Ctrl+Shift+S)") { files.save(asNew = true) }
     val undo = button("Undo", "Ctrl+Z") { viewModel.dispatch(EditorIntent.Command(EditAction.Undo)) }
     val redo = button("Redo", "Ctrl+Shift+Z or Ctrl+Y") { viewModel.dispatch(EditorIntent.Command(EditAction.Redo)) }
-    val bold = button("Bold", "Toggle bold (Ctrl+B)") { if (surface.admissionAllowed) viewModel.dispatch(EditorIntent.ToggleFormat(FormatKey.BOLD)) }
-    val italic = button("Italic", "Toggle italic (Ctrl+I)") { if (surface.admissionAllowed) viewModel.dispatch(EditorIntent.ToggleFormat(FormatKey.ITALIC)) }
+    val bold =
+        button("Bold", "Toggle bold (Ctrl+B)") {
+            if (surface.admissionAllowed) viewModel.dispatch(EditorIntent.ToggleFormat(FormatKey.BOLD))
+        }
+    val italic =
+        button("Italic", "Toggle italic (Ctrl+I)") {
+            if (surface.admissionAllowed) viewModel.dispatch(EditorIntent.ToggleFormat(FormatKey.ITALIC))
+        }
     button("Copy", "Copy rich + plain selected committed text (Ctrl+C)") { surface.copySelection(false) }
     button("Cut", "Publish clipboard then remove captured selection (Ctrl+X)") { surface.copySelection(true) }
     val pasteBtn = button("Paste", "Paste rich when available (Ctrl+V); plain: Ctrl+Shift+V") { surface.paste() }
@@ -242,7 +305,13 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
     recoveryBar.add(draftPicker)
     var shownDrafts: List<RetainedCompositionPreimage> = emptyList()
     var updatingDraftPicker = false
-    draftPicker.addActionListener { if (!updatingDraftPicker) shownDrafts.getOrNull(draftPicker.selectedIndex)?.let { surface.selectRetainedDraft(it) } }
+    draftPicker.addActionListener {
+        if (!updatingDraftPicker) {
+            shownDrafts.getOrNull(draftPicker.selectedIndex)?.let {
+                surface.selectRetainedDraft(it)
+            }
+        }
+    }
     fun recoveryButton(label: String, tooltip: String, action: () -> Unit) = button(label, tooltip, action).also {
         buttons.remove(it)
         recoveryBar.add(it)
@@ -255,11 +324,17 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
             wrapStyleWord = true
             caretPosition = 0
         }
-        javax.swing.JOptionPane.showMessageDialog(window, javax.swing.JScrollPane(area), "Retained draft text — export preserves formatting", javax.swing.JOptionPane.INFORMATION_MESSAGE)
+        javax.swing.JOptionPane.showMessageDialog(
+            window,
+            javax.swing.JScrollPane(area),
+            "Retained draft text — export preserves formatting",
+            javax.swing.JOptionPane.INFORMATION_MESSAGE,
+        )
     }
-    val exportDraft = recoveryButton("Export Draft", "Save the full retained document separately; keep this recovery record") {
-        surface.retainedDraftDocument()?.let { files.exportDraftDocument(it) }
-    }
+    val exportDraft =
+        recoveryButton("Export Draft", "Save the full retained document separately; keep this recovery record") {
+            surface.retainedDraftDocument()?.let { files.exportDraftDocument(it) }
+        }
     val aBtn = recoveryButton("Apply Draft", "Apply the selected draft only to its matching original basis") {
         val selected = surface.retainedPreimage
         val durable = unfinishedRecovery
@@ -268,7 +343,13 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
         } else {
             durable.resolveLive(selected.recordKey, apply = {
                 val draft = selected.recoveryDraft
-                if (draft != null && surface.viewModel.dispatch(EditorIntent.ApplyRecoveredDraft(draft)) == RecoveryApplyResult.Applied)surface.viewModel.snapshot().committed else null
+                if (draft != null &&
+                    surface.viewModel.dispatch(EditorIntent.ApplyRecoveredDraft(draft)) == RecoveryApplyResult.Applied
+                ) {
+                    surface.viewModel.snapshot().committed
+                } else {
+                    null
+                }
             }, remove = {
                 surface.recoverySession.resolveRetainedDraft(selected)
                 surface.statusChanged(viewModel.snapshot())
@@ -305,9 +386,15 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
             lineWrap = true
             caretPosition = 0
         }
-        JOptionPane.showMessageDialog(window, JScrollPane(area), "Unverified input — never applied to the document", JOptionPane.INFORMATION_MESSAGE)
+        JOptionPane.showMessageDialog(
+            window,
+            JScrollPane(area),
+            "Unverified input — never applied to the document",
+            JOptionPane.INFORMATION_MESSAGE,
+        )
     }
-    val exportInput = quarantineButton("Export Input") { files.exportQuarantinedInput(surface.quarantinedCallbacks.toList()) }
+    val exportInput =
+        quarantineButton("Export Input") { files.exportQuarantinedInput(surface.quarantinedCallbacks.toList()) }
     val discardInput = quarantineButton("Discard Input…") {
         val captured = surface.quarantinedCallbacks.toList()
         if (files.confirmQuarantineDiscard(captured.size)) {
@@ -315,7 +402,9 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
             if (durable == null) {
                 surface.discardQuarantinedCallbacks(captured)
             } else {
-                captured.forEach { entry -> durable.resolveLive(entry, remove = { surface.discardQuarantinedCallbacks(listOf(entry)) }) }
+                captured.forEach { entry ->
+                    durable.resolveLive(entry, remove = { surface.discardQuarantinedCallbacks(listOf(entry)) })
+                }
             }
         }
     }
@@ -340,7 +429,10 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
         draftPicker.isEnabled = records.isNotEmpty() && !files.busy
         inspectDraft.isEnabled = records.isNotEmpty()
         exportDraft.isEnabled = surface.retainedDraftDocument() != null && !files.busy
-        aBtn.isEnabled = surface.retainedPreimage?.recoveryDraft != null && !files.busy && unfinishedRecovery?.decisionBusy() != true
+        aBtn.isEnabled =
+            surface.retainedPreimage?.recoveryDraft != null &&
+            !files.busy &&
+            unfinishedRecovery?.decisionBusy() != true
         dBtn.isEnabled = records.isNotEmpty() && !files.busy && unfinishedRecovery?.decisionBusy() != true
         rBtn.isVisible = !surface.admissionAllowed
         rBtn.isEnabled = records.size + surface.quarantinedCallbacks.size < 16 && !files.busy
@@ -395,10 +487,21 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
         // capsule created for that abort; other/reentrant recovery work stays pending.
         host.lastRecoveryReport?.retainedPreimage?.let { host.recoverySession.resolveRetainedDraft(it) }
     }) { surface.statusChanged(viewModel.snapshot()) }
-    files.hasRetainedRecovery = { surface.recoverySession.snapshotRetainedDrafts().isNotEmpty() || surface.quarantinedCallbacks.isNotEmpty() }
-    files.pendingRecoveryDescription = { "${surface.recoverySession.snapshotRetainedDrafts().size} retained draft(s) and ${surface.quarantinedCallbacks.size} unverified input callback(s)" }
+    files.hasRetainedRecovery =
+        { surface.recoverySession.snapshotRetainedDrafts().isNotEmpty() || surface.quarantinedCallbacks.isNotEmpty() }
+    files.pendingRecoveryDescription =
+        {
+            "${surface.recoverySession.snapshotRetainedDrafts().size} retained draft(s) and ${surface.quarantinedCallbacks.size} unverified input callback(s)"
+        }
     files.openInNewWindow = { document, source ->
-        showEditor(initial = document, initialPath = source, fontProfile = state.typography.id, paged = state.paged, offscreenTest = offscreenTest, recoveryDirectory = recoveryDirectory)
+        showEditor(
+            initial = document,
+            initialPath = source,
+            fontProfile = state.typography.id,
+            paged = state.paged,
+            offscreenTest = offscreenTest,
+            recoveryDirectory = recoveryDirectory,
+        )
         Unit
     }
     files.discardRetainedRecovery = { surface.discardRecoverySession() }
@@ -418,15 +521,19 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
     surface.requestOpen = { files.open() }
     surface.statusChanged = { f ->
         val counts = writingCounts(f)
-        position.text = "${counts.words} word-like runs · ${counts.units} UTF-16 units · ${counts.selected} selected units"
-        position.toolTipText = "Committed counts; whitespace separates runs containing letters/digits/symbols. Joiners/marks stay in runs; not linguistic tokenization. Selected count is visible UTF-16 range."
+        position.text =
+            "${counts.words} word-like runs · ${counts.units} UTF-16 units · ${counts.selected} selected units"
+        position.toolTipText =
+            "Committed counts; whitespace separates runs containing letters/digits/symbols. Joiners/marks stay in runs; not linguistic tokenization. Selected count is visible UTF-16 range."
         localRecovery?.let { recovery ->
             recovery.observe(f.committed, files.path)
             unfinishedRecovery?.observe(viewModel, surface.recoverySession, files.path, surface.latestRecoveryProposal)
             localRecoveryStatus.text = recovery.status()
             localRecoveryStatus.toolTipText = recovery.detail() + " · " + (unfinishedRecovery?.status() ?: "")
         }
-        unfinishedStatus.text = (surface.recoveryCaptureFailure ?: unfinishedRecovery?.status() ?: "") + (workspaceUi?.warning?.let { " · $it" } ?: "")
+        unfinishedStatus.text =
+            (surface.recoveryCaptureFailure ?: unfinishedRecovery?.status() ?: "") +
+            (workspaceUi?.warning?.let { " · $it" } ?: "")
         unfinishedStatus.toolTipText = unfinishedStatus.text
         unfinishedStatus.foreground = if (unfinishedStatus.text.contains("Failed"))Color(0xb3261e) else Color(0x64748b)
         refreshRecoveryUi()
@@ -434,8 +541,17 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
         refreshParagraphUi()
         refreshWritingUi()
         refreshStructureUi()
-        val degradedNote = if (!surface.admissionAllowed && surface.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED) " · Input paused (degraded recovery) — Save available" else ""
-        notice.text = files.status + (if (f.notice == "Ready")"" else " · ${f.notice}") + degradedNote + (if (surface.clipboardMessage.isEmpty()) "" else " · ${surface.clipboardMessage}") + (if (StoredFonts.unavailable.isEmpty()) "" else " · Missing stored font: System fallback")
+        val degradedNote = if (!surface.admissionAllowed &&
+            surface.recoveryStatus == RecoveryStatus.DEGRADED_RECOVERY_FAILED
+        ) {
+            " · Input paused (degraded recovery) — Save available"
+        } else {
+            ""
+        }
+        notice.text =
+            files.status + (if (f.notice == "Ready")"" else " · ${f.notice}") + degradedNote +
+            (if (surface.clipboardMessage.isEmpty()) "" else " · ${surface.clipboardMessage}") +
+            (if (StoredFonts.unavailable.isEmpty()) "" else " · Missing stored font: System fallback")
         notice.toolTipText = notice.text
         title.text = files.name
         title.toolTipText = files.path?.toString()
@@ -523,7 +639,10 @@ fun showEditor(diagnostics: File? = null, initial: Document = Document(emptyList
     refreshParagraphUi = { paragraphUi.refresh() }
     window.rootPane.putClientProperty("editor.paragraphControls", paragraphUi)
     if (recoveryDirectory != null) {
-        localRecovery = LocalRecoveryController(LocalRecoveryStore(recoveryDirectory), refresh = { surface.statusChanged(viewModel.snapshot()) })
+        localRecovery =
+            LocalRecoveryController(LocalRecoveryStore(recoveryDirectory), refresh = {
+                surface.statusChanged(viewModel.snapshot())
+            })
         unfinishedRecovery = UnfinishedController(
             UnfinishedStore(LocalRecoveryStore(recoveryDirectory.resolve("unfinished-records"))),
             localRecovery!!.session,

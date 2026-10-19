@@ -55,7 +55,13 @@ fun structureDescription(d: Document): Map<String, Any> {
         "textUnits" to d.units.map { it.char.code },
         "blocks" to d.paragraphs().map { p ->
             val v = p.properties
-            listOf(p.start, p.end, v.heading, v.list.name, items.indexOf(v.item), items.indexOf(v.parent), v.restart, v.markerTypography.font.name, v.markerTypography.size)
+            listOf(
+                p.start, p.end, v.heading, v.list.name,
+                items.indexOf(
+                    v.item,
+                ),
+                items.indexOf(v.parent), v.restart, v.markerTypography.font.name, v.markerTypography.size,
+            )
         },
         "links" to d.units.map { listOf(links.indexOf(it.style.link?.id), it.style.link?.uri ?: "") },
         "images" to d.units.mapNotNull { it.image?.let { im -> listOf(im.resource, im.width, im.alt) } },
@@ -141,7 +147,10 @@ fun runStructureChecks(result: File) {
         val empty = e("")
         empty.structure(StructureCommand.ListType(ListKind.BULLET))
         empty.replace("\n", "Enter", true)
-        check(empty.snapshot().committed.units.isEmpty() && empty.snapshot().committed.startParagraph.list == ListKind.NONE)
+        check(
+            empty.snapshot().committed.units.isEmpty() &&
+                empty.snapshot().committed.startParagraph.list == ListKind.NONE,
+        )
         check(before.committed.text == "one\ntwo\nthree")
     }
     test("Link IDs distinct from URI; formatting/grapheme boundaries; exterior/interior and whitespace affinity") {
@@ -162,7 +171,10 @@ fun runStructureChecks(result: File) {
         val inherited = interior.snapshot().committed.units[0].style.link
         interior.move(Selection(2, 2))
         interior.replace("z ", "type")
-        check(interior.snapshot().committed.units[2].style.link == inherited && interior.snapshot().committed.units[3].style.link == null)
+        check(
+            interior.snapshot().committed.units[2].style.link == inherited &&
+                interior.snapshot().committed.units[3].style.link == null,
+        )
         e.selectAll()
         e.setTextStyle(TextStylePatch(underline = true, color = 0))
         check(e.snapshot().committed.units.any { it.style.link == first })
@@ -213,7 +225,9 @@ fun runStructureChecks(result: File) {
         val before = e.snapshot()
         e.structure(StructureCommand.InsertImage(ImageBlock(imported.first, 300, "test illustration"), imported.second))
         val inserted = e.snapshot()
-        check(inserted.committed.units.count { it.kind == UnitKind.IMAGE } == 1 && inserted.committed.resources.size == 1)
+        check(
+            inserted.committed.units.count { it.kind == UnitKind.IMAGE } == 1 && inserted.committed.resources.size == 1,
+        )
         val im = inserted.committed.units.indexOfFirst { it.image != null }
         check(inserted.selection == Selection(im, im + 1))
         e.structure(StructureCommand.ImageProperties(600, "updated alt"))
@@ -246,15 +260,38 @@ fun runStructureChecks(result: File) {
         val decoded = ImageDecoder.import(jpeg)
         check(decoded.second.mime == "image/jpeg" && decoded.second.width == 32 && decoded.second.height == 16)
         val owner = EditorEngine()
-        owner.structure(StructureCommand.InsertImage(ImageBlock(decoded.first, 160, "JPEG alternative"), decoded.second))
+        owner.structure(
+            StructureCommand.InsertImage(ImageBlock(decoded.first, 160, "JPEG alternative"), decoded.second),
+        )
         Files.delete(jpeg)
         val saved = root.resolve("jpeg-owned.astra")
         DocumentFiles.write(saved, owner.snapshot().committed)
         check(DocumentFiles.read(saved).same(owner.snapshot().committed))
-        val repeated = Document((0 until 1025).flatMap { n -> listOf(TextUnit(n * 2L + 1, '\ufffc', UnitKind.IMAGE, image = ImageBlock(imported.first, 240, "Repeated image")), TextUnit(n * 2L + 2, '\n', UnitKind.PARAGRAPH_BREAK)) }, resources = mapOf(imported))
+        val repeated =
+            Document(
+                (0 until 1025).flatMap { n ->
+                    listOf(
+                        TextUnit(
+                            n * 2L + 1,
+                            '\ufffc',
+                            UnitKind.IMAGE,
+                            image = ImageBlock(imported.first, 240, "Repeated image"),
+                        ),
+                        TextUnit(
+                            n * 2L + 2,
+                            '\n',
+                            UnitKind.PARAGRAPH_BREAK,
+                        ),
+                    )
+                },
+                resources = mapOf(imported),
+            )
         val encoded = DocumentFiles.encode(repeated)
         val restored = DocumentFiles.decode(encoded)
-        check(restored.same(repeated) && restored.units.count { it.kind == UnitKind.IMAGE } == 1025 && restored.resources.size == 1)
+        check(
+            restored.same(repeated) && restored.units.count { it.kind == UnitKind.IMAGE } == 1025 &&
+                restored.resources.size == 1,
+        )
         val dimensions = samplePng().copyOf()
         java.nio.ByteBuffer.wrap(dimensions).putInt(16, 9000)
         check(runCatching { ImageDecoder.validate(dimensions) }.isFailure)
@@ -265,9 +302,15 @@ fun runStructureChecks(result: File) {
         check(sample.outlineEntries().map { it.level } == listOf(1, 2, 3, 3, 2))
         check(sample.paragraphs().count { it.properties.item.isNotEmpty() } == 4)
         val listed = sample.paragraphs().filter { it.properties.item.isNotEmpty() }
-        check(listed[0].properties.item == listed[1].properties.item && listed[2].properties.parent == listed[0].properties.item)
+        check(
+            listed[0].properties.item == listed[1].properties.item &&
+                listed[2].properties.parent == listed[0].properties.item,
+        )
         check(sample.listMarkers()[listed[0].anchor] == "1." && sample.listMarkers()[listed[3].anchor] == "2.")
-        check(sample.resources.size == 1 && sample.units.count { it.image != null } == 1 && sample.units.count { it.style.link != null } == 25)
+        check(
+            sample.resources.size == 1 && sample.units.count { it.image != null } == 1 &&
+                sample.units.count { it.style.link != null } == 25,
+        )
         val bytes = DocumentFiles.encode(sample)
         check(java.nio.ByteBuffer.wrap(bytes).getInt(4) == 9)
         check(structureDescription(DocumentFiles.decode(bytes)) == description)
@@ -275,20 +318,40 @@ fun runStructureChecks(result: File) {
         source.selectAll()
         val fragment = RichFragment.capture(checkNotNull(source.clipboardCapture()))
         val target = EditorEngine()
-        check(target.clipboardApply(checkNotNull(target.clipboardCapture()), FragmentCodec.decode(FragmentCodec.encode(fragment))))
+        check(
+            target.clipboardApply(
+                checkNotNull(target.clipboardCapture()),
+                FragmentCodec.decode(FragmentCodec.encode(fragment)),
+            ),
+        )
         check(structureDescription(target.snapshot().committed) == description)
-        check(target.snapshot().committed.paragraphs().first { it.properties.item.isNotEmpty() }.properties.item != listed[0].properties.item)
-        check(target.snapshot().committed.units.first { it.style.link != null }.style.link!!.id != sample.units.first { it.style.link != null }.style.link!!.id)
+        check(
+            target.snapshot().committed.paragraphs().first { it.properties.item.isNotEmpty() }.properties.item !=
+                listed[0].properties.item,
+        )
+        check(
+            target.snapshot().committed.units.first { it.style.link != null }.style.link!!.id !=
+                sample.units.first { it.style.link != null }.style.link!!.id,
+        )
         val after = target.snapshot()
         target.perform(EditAction.Undo)
         check(target.snapshot().committed.units.isEmpty())
         target.perform(EditAction.Redo)
         check(target.snapshot().committed == after.committed)
         val plain = sample.plainText()
-        check(plain.contains("1. پہلی") && plain.contains("  • Nested") && plain.contains("[Image:") && plain.contains("<https://example.org/urdu>"))
+        check(
+            plain.contains("1. پہلی") && plain.contains("  • Nested") && plain.contains("[Image:") &&
+                plain.contains("<https://example.org/urdu>"),
+        )
         val invalid = bytes.copyOf(bytes.size - 32)
         java.nio.ByteBuffer.wrap(invalid).putInt(4, 10)
-        check(runCatching { DocumentFiles.decode(invalid + java.security.MessageDigest.getInstance("SHA-256").digest(invalid)) }.isFailure)
+        check(
+            runCatching {
+                DocumentFiles.decode(
+                    invalid + java.security.MessageDigest.getInstance("SHA-256").digest(invalid),
+                )
+            }.isFailure,
+        )
     }
     test("Image-only and closed heading rich fragments split destination text without flattening") {
         val source = EditorEngine(sample)
@@ -310,7 +373,10 @@ fun runStructureChecks(result: File) {
         val d = e("LEFTTAIL")
         d.move(Selection(4, 4))
         check(d.clipboardApply(checkNotNull(d.clipboardCapture()), heading))
-        check(d.snapshot().committed.paragraphs()[1].properties.heading == 1 && d.snapshot().committed.text.startsWith("LEFT\n"))
+        check(
+            d.snapshot().committed.paragraphs()[1].properties.heading == 1 &&
+                d.snapshot().committed.text.startsWith("LEFT\n"),
+        )
     }
     test("Cross-structure replacement and list ancestor deletion preserve surviving resources and numbering") {
         val e = EditorEngine(sample)
@@ -318,8 +384,15 @@ fun runStructureChecks(result: File) {
         val query = findLiteral(before.committed, "English notes")
         check(e.replaceFound(e.captureFindBasis(), query, "Writing notes", true) == FindReplaceResult.Applied)
         val changed = e.snapshot()
-        check(changed.committed.resources == before.committed.resources && changed.committed.paragraphs().map { it.properties } == before.committed.paragraphs().map { it.properties })
-        check(changed.committed.units.filter { it.style.link != null } == before.committed.units.filter { it.style.link != null })
+        check(
+            changed.committed.resources == before.committed.resources &&
+                changed.committed.paragraphs().map { it.properties } ==
+                before.committed.paragraphs().map { it.properties },
+        )
+        check(
+            changed.committed.units.filter { it.style.link != null } ==
+                before.committed.units.filter { it.style.link != null },
+        )
         e.perform(EditAction.Undo)
         check(e.snapshot().committed == before.committed)
         e.perform(EditAction.Redo)
@@ -355,7 +428,10 @@ fun runStructureChecks(result: File) {
         joined.delete(false)
         val after = joined.snapshot()
         check(after.committed.text == "AB\nchild")
-        check(after.committed.paragraphs()[0].properties.item == left && after.committed.paragraphs()[1].properties.parent == left) { "Sibling join lost nested item ownership" }
+        check(
+            after.committed.paragraphs()[0].properties.item == left &&
+                after.committed.paragraphs()[1].properties.parent == left,
+        ) { "Sibling join lost nested item ownership" }
         joined.perform(EditAction.Undo)
         check(joined.snapshot().committed == before.committed)
         joined.perform(EditAction.Redo)
@@ -387,7 +463,10 @@ fun runStructureChecks(result: File) {
         joined.replace("", "Join")
         val after = joined.snapshot()
         val ps = after.committed.paragraphs()
-        check(after.committed.text == "AB1\nB2\nchild" && ps.take(2).all { it.properties.item == left } && ps[2].properties.parent == left) { "Continuation item did not merge into left sibling" }
+        check(
+            after.committed.text == "AB1\nB2\nchild" && ps.take(2).all { it.properties.item == left } &&
+                ps[2].properties.parent == left,
+        ) { "Continuation item did not merge into left sibling" }
         joined.perform(EditAction.Undo)
         check(joined.snapshot().committed == before.committed)
         joined.perform(EditAction.Redo)
@@ -423,8 +502,14 @@ fun runStructureChecks(result: File) {
         val before = owner.snapshot()
         owner.structure(StructureCommand.InsertImage(ImageBlock(imported.first, 240, "Within item"), imported.second))
         val after = owner.snapshot()
-        check(after.committed.text == "ab\n\ufffc\ncd" && after.committed.paragraphs().all { it.properties.item == before.committed.startParagraph.item })
-        check(after.committed.listMarkers().size == 1 && DocumentFiles.decode(DocumentFiles.encode(after.committed)).same(after.committed))
+        check(
+            after.committed.text == "ab\n\ufffc\ncd" &&
+                after.committed.paragraphs().all { it.properties.item == before.committed.startParagraph.item },
+        )
+        check(
+            after.committed.listMarkers().size == 1 &&
+                DocumentFiles.decode(DocumentFiles.encode(after.committed)).same(after.committed),
+        )
         owner.perform(EditAction.Undo)
         check(owner.snapshot().committed == before.committed)
         owner.perform(EditAction.Redo)
@@ -443,7 +528,10 @@ fun runStructureChecks(result: File) {
             check(owner.navigateOutline(original.anchor))
             check(owner.snapshot().committed.text.substring(owner.snapshot().selection.focus).startsWith("Old heading"))
             owner.setParagraphProperties(alignment = ParagraphAlignment.END)
-            check(owner.snapshot().committed.paragraphAt(owner.snapshot().selection.focus).properties.alignment == ParagraphAlignment.END)
+            check(
+                owner.snapshot().committed.paragraphAt(owner.snapshot().selection.focus).properties.alignment ==
+                    ParagraphAlignment.END,
+            )
             owner.perform(EditAction.Undo)
             owner.perform(EditAction.Undo)
             check(owner.snapshot().committed == before.committed)
@@ -456,20 +544,33 @@ fun runStructureChecks(result: File) {
             val fragment = RichFragment.capture(checkNotNull(source.clipboardCapture()))
             check(owner.clipboardApply(checkNotNull(owner.clipboardCapture()), fragment))
             val outline = owner.outline()
-            check(outline.map { it.label } == listOf("New heading", "Old heading") && outline[1].anchor == original.anchor && outline[0].anchor != original.anchor)
+            check(
+                outline.map {
+                    it.label
+                } == listOf("New heading", "Old heading") && outline[1].anchor == original.anchor &&
+                    outline[0].anchor != original.anchor,
+            )
             check(owner.navigateOutline(original.anchor))
             owner.structure(StructureCommand.Role(3))
             check(owner.outline()[0].level == 2 && owner.outline()[1].level == 3)
             val basis = owner.captureFindBasis()
-            check(owner.replaceFound(basis, findLiteral(basis.document, "body"), "tail", true) == FindReplaceResult.Applied)
+            check(
+                owner.replaceFound(basis, findLiteral(basis.document, "body"), "tail", true) ==
+                    FindReplaceResult.Applied,
+            )
             check(owner.navigateOutline(original.anchor))
-            check(DocumentFiles.decode(DocumentFiles.encode(owner.snapshot().committed)).same(owner.snapshot().committed))
+            check(
+                DocumentFiles.decode(DocumentFiles.encode(owner.snapshot().committed)).same(owner.snapshot().committed),
+            )
         }
         val split = e("Old heading")
         split.structure(StructureCommand.Role(1))
         split.move(Selection(3, 3))
         split.structure(StructureCommand.InsertImage(image, imported.second))
-        check(split.outline().map { it.level } == listOf(1, 1) && split.outline().map { it.label } == listOf("Old", " heading".trim()))
+        check(
+            split.outline().map { it.level } == listOf(1, 1) &&
+                split.outline().map { it.label } == listOf("Old", " heading".trim()),
+        )
     }
     test("Outline navigation settles composition by stable heading identity rather than captured offsets") {
         val owner = e("aaa\nTarget")
@@ -555,7 +656,9 @@ fun runStructureChecks(result: File) {
         check(structureDescription(e.snapshot().committed) == description)
         val store = LocalRecoveryStore(root.resolve("recovery"))
         val id = freshStructureId()
-        store.acquire(id).use { store.publish(it, LocalCopy(id, 1, System.currentTimeMillis(), null, e.snapshot().committed)) }
+        store.acquire(id).use {
+            store.publish(it, LocalCopy(id, 1, System.currentTimeMillis(), null, e.snapshot().committed))
+        }
         check(structureDescription(store.restore(store.scan().single()).document) == description)
     }
     test("Bounded edit/encode/decode cost samples") {
@@ -577,10 +680,27 @@ fun runStructureChecks(result: File) {
         }
     }
     runStructureHostChecks(result, root, sample, checks, costs)
-    result.writeText(evidenceJson(mapOf("status" to "PASS", "checks" to checks, "costsMs" to costs, "scope" to "Core/independent semantic description, actual mounted shell/clipboard. IME callbacks synthetic; real native session separate.")), Charsets.UTF_8)
+    result.writeText(
+        evidenceJson(
+            mapOf(
+                "status" to "PASS",
+                "checks" to checks,
+                "costsMs" to costs,
+                "scope" to
+                    "Core/independent semantic description, actual mounted shell/clipboard. IME callbacks synthetic; real native session separate.",
+            ),
+        ),
+        Charsets.UTF_8,
+    )
     println("PASS structured document milestone checks")
 }
-fun runStructureHostChecks(result: File, root: java.nio.file.Path, sample: Document, checks: MutableList<String>, costs: MutableMap<String, Long>) {
+fun runStructureHostChecks(
+    result: File,
+    root: java.nio.file.Path,
+    sample: Document,
+    checks: MutableList<String>,
+    costs: MutableMap<String, Long>,
+) {
     fun <T> owner(f: () -> T): T {
         var r: Result<T>? = null
         SwingUtilities.invokeAndWait { r = runCatching(f) }
@@ -598,11 +718,21 @@ fun runStructureHostChecks(result: File, root: java.nio.file.Path, sample: Docum
         lateinit var surface: EditorSurface
         lateinit var controls: StructureControls
         owner {
-            w = showEditor(initial = sample, fontProfile = "noto-nastaliq", paged = true, offscreenTest = true, recoveryDirectory = root.resolve("mounted-recovery"))
+            w =
+                showEditor(
+                    initial = sample,
+                    fontProfile = "noto-nastaliq",
+                    paged = true,
+                    offscreenTest = true,
+                    recoveryDirectory = root.resolve("mounted-recovery"),
+                )
             surface = checkNotNull(windowCurrentSurface(w!!))
             controls = w!!.rootPane.getClientProperty("editor.structure") as StructureControls
         }
-        await("Mounted structure geometry") { surface.view.measure != null && sample.resources.keys.all { ImageResources.cached(it) != null } }
+        await("Mounted structure geometry") {
+            surface.view.measure != null &&
+                sample.resources.keys.all { ImageResources.cached(it) != null }
+        }
         for (paged in listOf(false, true)) {
             for (zoom in listOf(1f, .75f)) {
                 owner {
@@ -611,7 +741,11 @@ fun runStructureHostChecks(result: File, root: java.nio.file.Path, sample: Docum
                     w!!.setSize(940, 400)
                     w!!.validate()
                 }
-                await("Updated structure geometry") { surface.view.measure != null && surface.view.geometry?.typographyKey?.contains(":zoom=$zoom") == true && surface.view.geometry?.typographyKey?.endsWith(if (paged)":paged" else ":continuous") == true }
+                await("Updated structure geometry") {
+                    surface.view.measure != null &&
+                        surface.view.geometry?.typographyKey?.contains(":zoom=$zoom") == true &&
+                        surface.view.geometry?.typographyKey?.endsWith(if (paged)":paged" else ":continuous") == true
+                }
                 owner {
                     val start = System.nanoTime()
                     var g = checkNotNull(surface.geometry())
@@ -625,15 +759,41 @@ fun runStructureHostChecks(result: File, root: java.nio.file.Path, sample: Docum
                             surface.viewModel.verificationEngine.setParagraphProperties(direction, alignment)
                             val trial = checkNotNull(surface.geometry())
                             val image = trial.paragraphs.single { it.image != null }
-                            check(kotlin.math.abs(image.imageWidth / trial.scale - 240 * zoom) < 1) { "Zoomed image width uses stale density: $paged/$zoom key=${trial.typographyKey} width=${image.imageWidth} scale=${trial.scale} declared=${image.image?.width} textWidth=${trial.textWidth}" }
+                            check(kotlin.math.abs(image.imageWidth / trial.scale - 240 * zoom) < 1) {
+                                "Zoomed image width uses stale density: $paged/$zoom key=${trial.typographyKey} width=${image.imageWidth} scale=${trial.scale} declared=${image.image?.width} textWidth=${trial.textWidth}"
+                            }
                             val expected = when (alignment) {
                                 ParagraphAlignment.CENTER -> (trial.textWidth - image.imageWidth) / 2
-                                ParagraphAlignment.START -> if (direction == ParagraphDirection.RTL)trial.textWidth - image.imageWidth else 0f
-                                ParagraphAlignment.END -> if (direction == ParagraphDirection.RTL)0f else trial.textWidth - image.imageWidth
+                                ParagraphAlignment.START -> if (direction ==
+                                    ParagraphDirection.RTL
+                                ) {
+                                    trial.textWidth - image.imageWidth
+                                } else {
+                                    0f
+                                }
+                                ParagraphAlignment.END -> if (direction ==
+                                    ParagraphDirection.RTL
+                                ) {
+                                    0f
+                                } else {
+                                    trial.textWidth - image.imageWidth
+                                }
                             }
                             check(kotlin.math.abs(image.imageLeft - expected) < .01)
-                            check(kotlin.math.abs(trial.caret(image.startOffset).left - (trial.x + expected + if (direction == ParagraphDirection.RTL)image.imageWidth else 0f)) < .01)
-                            val actual = checkNotNull(surface.accessibleContext.accessibleText.getCharacterBounds(image.startOffset))
+                            check(
+                                kotlin.math.abs(
+                                    trial.caret(image.startOffset).left -
+                                        (
+                                            trial.x + expected +
+                                                if (direction == ParagraphDirection.RTL)image.imageWidth else 0f
+                                            ),
+                                ) <
+                                    .01,
+                            )
+                            val actual =
+                                checkNotNull(
+                                    surface.accessibleContext.accessibleText.getCharacterBounds(image.startOffset),
+                                )
                             check(kotlin.math.abs(actual.x - (trial.x + expected) / trial.scale) < 1)
                             surface.viewModel.verificationEngine.perform(EditAction.Undo)
                         }
@@ -647,7 +807,10 @@ fun runStructureHostChecks(result: File, root: java.nio.file.Path, sample: Docum
                     val attrs = surface.accessibleContext.accessibleText.getCharacterAttribute(at)
                     check(attrs.getAttribute("ImageAlternativeText") == sample.units[at].image!!.alt)
                     val box = checkNotNull(surface.accessibleContext.accessibleText.getCharacterBounds(at))
-                    check(box.width == (p.imageWidth / g.scale).toInt() || kotlin.math.abs(box.width - p.imageWidth / g.scale) < 2)
+                    check(
+                        box.width == (p.imageWidth / g.scale).toInt() ||
+                            kotlin.math.abs(box.width - p.imageWidth / g.scale) < 2,
+                    )
                     check(g.paragraphs.first().layout.getLineBottom(0) > g.paragraphs.first().layout.getLineTop(0))
                     val listed = sample.paragraphs().filter { it.properties.item.isNotEmpty() }
                     for (block in listed) {
@@ -682,7 +845,12 @@ fun runStructureHostChecks(result: File, root: java.nio.file.Path, sample: Docum
             w!!.setSize(1020, 740)
             w!!.validate()
         }
-        await("Final mounted render") { surface.view.geometry?.revision == surface.viewModel.verificationEngine.snapshot().documentRevision && !surface.view.ensureCaret && surface.view.geometry?.hostWidth == surface.width }
+        await("Final mounted render") {
+            surface.view.geometry?.revision ==
+                surface.viewModel.verificationEngine.snapshot().documentRevision &&
+                !surface.view.ensureCaret &&
+                surface.view.geometry?.hostWidth == surface.width
+        }
         owner {
             check(surface.view.hostWidth == surface.width && surface.width < 900)
             val g = checkNotNull(surface.view.geometry)
@@ -695,42 +863,67 @@ fun runStructureHostChecks(result: File, root: java.nio.file.Path, sample: Docum
             graphics.dispose()
             javax.imageio.ImageIO.write(bitmap, "png", File(result.parentFile, "structured-shell.png"))
         }
-        checks += "Mounted continuous/paged/zoom image aspect/AT/native bounds, list indent geometry, heading role/identity outline, minimum shell"
+        checks +=
+            "Mounted continuous/paged/zoom image aspect/AT/native bounds, list indent geometry, heading role/identity outline, minimum shell"
         owner {
             surface.viewModel.verificationEngine.move(Selection(0, 0))
             surface.viewModel.verificationEngine.setParagraphProperties(line = 0)
             surface.changeTypography(TypographyProfile.system)
             surface.view.changeZoom(1f)
         }
-        await("System heading natural metrics") { surface.view.measure != null && surface.view.geometry?.typographyKey?.startsWith(TypographyProfile.system.key) == true }
+        await("System heading natural metrics") {
+            surface.view.measure != null &&
+                surface.view.geometry?.typographyKey?.startsWith(TypographyProfile.system.key) == true
+        }
         owner {
             val g = checkNotNull(surface.geometry())
-            check(g.paragraphs.first().layout.layoutInput.style.lineHeight == androidx.compose.ui.unit.TextUnit.Unspecified)
+            check(
+                g.paragraphs.first().layout.layoutInput.style.lineHeight ==
+                    androidx.compose.ui.unit.TextUnit.Unspecified,
+            )
             surface.viewModel.verificationEngine.perform(EditAction.Undo)
             surface.changeTypography(TypographyProfile.load("noto-nastaliq"))
         }
-        await("Restored candidate profile") { surface.view.measure != null && surface.view.geometry?.typographyKey?.startsWith(surface.view.typography.key) == true }
+        await("Restored candidate profile") {
+            surface.view.measure != null &&
+                surface.view.geometry?.typographyKey?.startsWith(surface.view.typography.key) == true
+        }
         // Actual OS clipboard processes own only the sample payload; no prior clipboard read.
         val input = root.resolve("clipboard-structured.astra")
         DocumentFiles.write(input, sample)
         val javaExe = java.nio.file.Path.of(System.getProperty("java.home"), "bin", "java.exe").toString()
         val base = listOf(javaExe, "-cp", System.getProperty("java.class.path"), "editor.MainKt")
-        val publisher = ProcessBuilder(base + listOf("--clipboard-child=publish", "--clipboard-file=$input")).redirectErrorStream(true).start()
+        val publisher = ProcessBuilder(
+            base + listOf("--clipboard-child=publish", "--clipboard-file=$input"),
+        ).redirectErrorStream(true).start()
         try {
             check(publisher.inputStream.bufferedReader().readLine() == "OWNED_CLIPBOARD_READY")
             for (mode in listOf("rich", "plain")) {
                 val file = root.resolve("cross-process-$mode.astra")
-                val process = ProcessBuilder(base + listOf("--clipboard-child=$mode", "--clipboard-file=$file")).redirectErrorStream(true).start()
-                check(process.waitFor(40, java.util.concurrent.TimeUnit.SECONDS) && process.exitValue() == 0) { process.inputStream.bufferedReader().readText() }
+                val process = ProcessBuilder(
+                    base + listOf("--clipboard-child=$mode", "--clipboard-file=$file"),
+                ).redirectErrorStream(true).start()
+                check(process.waitFor(40, java.util.concurrent.TimeUnit.SECONDS) && process.exitValue() == 0) {
+                    process.inputStream.bufferedReader().readText()
+                }
                 val decoded = DocumentFiles.read(file)
-                if (mode == "rich")check(structureDescription(decoded) == structureDescription(sample)) else check(decoded.text == sample.plainText() && decoded.resources.isEmpty())
+                if (mode ==
+                    "rich"
+                ) {
+                    check(structureDescription(decoded) == structureDescription(sample))
+                } else {
+                    check(
+                        decoded.text == sample.plainText() && decoded.resources.isEmpty(),
+                    )
+                }
             }
         } finally {
             publisher.outputStream.write("done\n".toByteArray())
             publisher.outputStream.flush()
             if (!publisher.waitFor(10, java.util.concurrent.TimeUnit.SECONDS))publisher.destroyForcibly()
         }
-        checks += "Actual owned cross-process mixed heading/list/link/image clipboard and explicit semantic plain representation"
+        checks +=
+            "Actual owned cross-process mixed heading/list/link/image clipboard and explicit semantic plain representation"
         val entered = java.util.concurrent.CountDownLatch(1)
         val release = java.util.concurrent.CountDownLatch(1)
         val reads = java.util.concurrent.atomic.AtomicInteger()
@@ -744,7 +937,12 @@ fun runStructureHostChecks(result: File, root: java.nio.file.Path, sample: Docum
                 },
             )
             RichClipboard.publish(captured, localClipboard, codec = FragmentCodec)
-            surface.viewModel.verificationEngine.move(Selection(surface.viewModel.verificationEngine.snapshot().committed.units.size, surface.viewModel.verificationEngine.snapshot().committed.units.size))
+            surface.viewModel.verificationEngine.move(
+                Selection(
+                    surface.viewModel.verificationEngine.snapshot().committed.units.size,
+                    surface.viewModel.verificationEngine.snapshot().committed.units.size,
+                ),
+            )
             surface.clipboardReaderForChecks = { plain ->
                 check(!SwingUtilities.isEventDispatchThread())
                 reads.incrementAndGet()
@@ -765,9 +963,14 @@ fun runStructureHostChecks(result: File, root: java.nio.file.Path, sample: Docum
         release.countDown()
         await("Stale image clipboard decode refused") { !surface.clipboardPasteBusy }
         owner {
-            check(reads.get() == 1 && surface.viewModel.verificationEngine.snapshot().committed == intervening && surface.clipboardMessage.contains("refused"))
+            check(
+                reads.get() == 1 && surface.viewModel.verificationEngine.snapshot().committed == intervening &&
+                    surface.clipboardMessage.contains("refused"),
+            )
             surface.viewModel.verificationEngine.perform(EditAction.Undo)
-            surface.viewModel.verificationEngine.move(Selection(0, surface.viewModel.verificationEngine.snapshot().committed.units.size))
+            surface.viewModel.verificationEngine.move(
+                Selection(0, surface.viewModel.verificationEngine.snapshot().committed.units.size),
+            )
             surface.clipboardReaderForChecks = { plain ->
                 check(!SwingUtilities.isEventDispatchThread())
                 RichClipboard.read(localClipboard, plain, codec = FragmentCodec)
@@ -776,12 +979,16 @@ fun runStructureHostChecks(result: File, root: java.nio.file.Path, sample: Docum
         }
         await("Actual mounted rich image paste") { !surface.clipboardPasteBusy }
         owner {
-            check(structureDescription(surface.viewModel.verificationEngine.snapshot().committed) == structureDescription(sample))
+            check(
+                structureDescription(surface.viewModel.verificationEngine.snapshot().committed) ==
+                    structureDescription(sample),
+            )
             check(surface.clipboardMessage == "Pasted rich text")
             surface.viewModel.verificationEngine.perform(EditAction.Undo)
             surface.clipboardReaderForChecks = null
         }
-        checks += "Mounted clipboard image decode off EDT; one bounded worker, duplicate paste suppressed, stale intervening edit refused and fresh full structure/resource paste one Undo"
+        checks +=
+            "Mounted clipboard image decode off EDT; one bounded worker, duplicate paste suppressed, stale intervening edit refused and fresh full structure/resource paste one Undo"
         owner {
             val intent = EditorEngine()
             intent.replace("abc", "fixture")
@@ -795,7 +1002,8 @@ fun runStructureHostChecks(result: File, root: java.nio.file.Path, sample: Docum
             intent.move(Selection(0, 0))
             check(!intent.clipboardApply(selection, null, "paste"))
         }
-        checks += "Async clipboard/dialog captures reject changed typing intent and selection-away/back without requiring a text change"
+        checks +=
+            "Async clipboard/dialog captures reject changed typing intent and selection-away/back without requiring a text change"
         owner {
             val at = surface.viewModel.verificationEngine.snapshot().committed.units.size
             surface.viewModel.verificationEngine.move(Selection(at, at))
@@ -805,7 +1013,12 @@ fun runStructureHostChecks(result: File, root: java.nio.file.Path, sample: Docum
         }
         val expected = owner { surface.viewModel.verificationEngine.snapshot().committed }
         val controller = owner { w!!.rootPane.getClientProperty("editor.localRecovery") as LocalRecoveryController }
-        await("Expanded structured committed checkpoint") { controller.state().let { it["observed"] == it["completed"] && (it["completed"] as Long) > 1L } }
+        await("Expanded structured committed checkpoint") {
+            controller.state().let {
+                it["observed"] == it["completed"] &&
+                    (it["completed"] as Long) > 1L
+            }
+        }
         owner { controller.finish(false) }
         val store = LocalRecoveryStore(root.resolve("mounted-recovery"))
         val end = System.nanoTime() + 10_000_000_000
@@ -819,28 +1032,54 @@ fun runStructureHostChecks(result: File, root: java.nio.file.Path, sample: Docum
         checks += "Actual controller checkpoint preserves all structure/resources and excludes provisional candidate"
         owner {
             surface.viewModel.verificationEngine.abortComposition()
-            val image = surface.viewModel.verificationEngine.snapshot().committed.units.indexOfFirst { it.kind == UnitKind.IMAGE }
+            val image = surface.viewModel.verificationEngine.snapshot().committed.units.indexOfFirst {
+                it.kind ==
+                    UnitKind.IMAGE
+            }
             surface.viewModel.verificationEngine.move(Selection(image, image))
             val before = surface.viewModel.verificationEngine.snapshot()
             fun native(text: String) {
-                val event = java.awt.event.InputMethodEvent(surface, java.awt.event.InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, java.text.AttributedString(text).iterator, text.length, null, null)
+                val event = java.awt.event.InputMethodEvent(
+                    surface,
+                    java.awt.event.InputMethodEvent.INPUT_METHOD_TEXT_CHANGED,
+                    java.text.AttributedString(text).iterator,
+                    text.length,
+                    null,
+                    null,
+                )
                 surface.dispatchEvent(event)
             }
             native("seam")
-            check(!surface.admissionAllowed && surface.quarantinedCallbacks.size == 1 && surface.viewModel.verificationEngine.snapshot().committed == before.committed)
+            check(
+                !surface.admissionAllowed && surface.quarantinedCallbacks.size == 1 &&
+                    surface.viewModel.verificationEngine.snapshot().committed == before.committed,
+            )
             surface.viewModel.verificationEngine.move(Selection(0, 0))
             native("late")
-            check(surface.quarantinedCallbacks.size == 2 && surface.viewModel.verificationEngine.snapshot().committed == before.committed)
+            check(
+                surface.quarantinedCallbacks.size == 2 &&
+                    surface.viewModel.verificationEngine.snapshot().committed == before.committed,
+            )
             val retired = surface
             check(surface.recoverExplicitly())
             surface = checkNotNull(windowCurrentSurface(w!!))
-            check(retired.retired && surface !== retired && surface.admissionAllowed && surface.quarantinedCallbacks.size == 2)
+            check(
+                retired.retired && surface !== retired && surface.admissionAllowed &&
+                    surface.quarantinedCallbacks.size == 2,
+            )
             native("safe")
-            check(surface.viewModel.verificationEngine.snapshot().committed.text.startsWith("safe") && surface.quarantinedCallbacks.size == 2)
+            check(
+                surface.viewModel.verificationEngine.snapshot().committed.text.startsWith("safe") &&
+                    surface.quarantinedCallbacks.size == 2,
+            )
         }
-        checks += "Synthetic noncancelable image-seam input pauses admission, retains subsequent callbacks, explicit existing host recovery never replays and admits only new input"
+        checks +=
+            "Synthetic noncancelable image-seam input pauses admission, retains subsequent callbacks, explicit existing host recovery never replays and admits only new input"
         owner {
-            val image = surface.viewModel.verificationEngine.snapshot().committed.units.indexOfFirst { it.kind == UnitKind.IMAGE }
+            val image = surface.viewModel.verificationEngine.snapshot().committed.units.indexOfFirst {
+                it.kind ==
+                    UnitKind.IMAGE
+            }
             for (direction in listOf(ParagraphDirection.RTL, ParagraphDirection.LTR)) {
                 surface.viewModel.verificationEngine.move(Selection(image, image + 1))
                 surface.viewModel.verificationEngine.setParagraphProperties(direction = direction)
@@ -849,14 +1088,22 @@ fun runStructureHostChecks(result: File, root: java.nio.file.Path, sample: Docum
                 for (offset in 0..1) {
                     val forward = checkNotNull(surface.getTextLocation(java.awt.font.TextHitInfo.leading(offset)))
                     val physicalRight = (offset == 0) == (direction == ParagraphDirection.RTL)
-                    val reverse = checkNotNull(surface.getLocationOffset(forward.x + if (physicalRight)-1 else 1, forward.y + forward.height / 2))
-                    check(reverse.insertionIndex == offset) { "Atomic image native offset $offset became ${reverse.insertionIndex}" }
+                    val reverse = checkNotNull(
+                        surface.getLocationOffset(
+                            forward.x + if (physicalRight)-1 else 1,
+                            forward.y + forward.height / 2,
+                        ),
+                    )
+                    check(reverse.insertionIndex == offset) {
+                        "Atomic image native offset $offset became ${reverse.insertionIndex}"
+                    }
                 }
                 surface.viewModel.verificationEngine.abortComposition()
                 surface.viewModel.verificationEngine.perform(EditAction.Undo)
             }
         }
-        checks += "Synthetic retained-image composition forward/reverse native queries preserve raw before/after offsets in RTL and LTR"
+        checks +=
+            "Synthetic retained-image composition forward/reverse native queries preserve raw before/after offsets in RTL and LTR"
     } finally {
         owner { w?.dispose() }
     }

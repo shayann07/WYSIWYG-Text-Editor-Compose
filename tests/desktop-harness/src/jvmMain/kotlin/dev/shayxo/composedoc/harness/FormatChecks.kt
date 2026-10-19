@@ -26,7 +26,8 @@ fun runFormatChecks() {
     }
     val bold = TextStyleFlags(bold = true)
     val italic = TextStyleFlags(italic = true)
-    fun doc(text: String, styles: List<TextStyleFlags>) = Document(text.mapIndexed { i, c -> TextUnit(i.toLong(), c, style = styles[i]) })
+    fun doc(text: String, styles: List<TextStyleFlags>) =
+        Document(text.mapIndexed { i, c -> TextUnit(i.toLong(), c, style = styles[i]) })
     test("collapsed toggle changes intent only; inserted style and intent restore through Undo") {
         val e = EditorEngine()
         val rev = e.snapshot().documentRevision
@@ -74,7 +75,10 @@ fun runFormatChecks() {
             e.replace("paste", "Paste")
             check(e.snapshot().visible.units.all { it.style == bold })
             e.perform(EditAction.Undo)
-            check(e.snapshot().selection == selection && e.snapshot().visible.units.map { it.style } == listOf(bold, italic))
+            check(
+                e.snapshot().selection == selection &&
+                    e.snapshot().visible.units.map { it.style } == listOf(bold, italic),
+            )
         }
     }
     test("mixed selection toggle patches only chosen property and restores exact history") {
@@ -112,7 +116,15 @@ fun runFormatChecks() {
         check(displayedStyles(e.snapshot().visible).map { it.style } == listOf(bold, italic))
     }
     test("format expands to cluster edges but skips paragraph separator") {
-        val initial = Document(listOf(TextUnit(1, 'a'), TextUnit(2, '\u0301'), TextUnit(3, '\n', UnitKind.PARAGRAPH_BREAK), TextUnit(4, 'b')))
+        val initial =
+            Document(
+                listOf(
+                    TextUnit(1, 'a'),
+                    TextUnit(2, '\u0301'),
+                    TextUnit(3, '\n', UnitKind.PARAGRAPH_BREAK),
+                    TextUnit(4, 'b'),
+                ),
+            )
         val e = EditorEngine(initial)
         e.move(Selection(1, 4))
         e.toggleFormat(FormatKey.BOLD)
@@ -256,7 +268,18 @@ fun runFormatChecks() {
         check(oldV2.units[1].style == TextStyleFlags()) { "v2 break style must be normalized to unstyled inline style" }
         check(oldV2.units[1].paragraphStyle == italic) { "v2 break style must migrate to paragraphStyle" }
 
-        val styled = Document(oldV1.units.map { if (it.kind == UnitKind.PARAGRAPH_BREAK) it.copy(style = TextStyleFlags(), paragraphStyle = bold) else it.copy(style = bold) }, italic)
+        val styled = Document(
+            oldV1.units.map {
+                if (it.kind ==
+                    UnitKind.PARAGRAPH_BREAK
+                ) {
+                    it.copy(style = TextStyleFlags(), paragraphStyle = bold)
+                } else {
+                    it.copy(style = bold)
+                }
+            },
+            italic,
+        )
         check(DocumentFiles.decode(DocumentFiles.encode(styled)).same(styled))
         val e = EditorEngine(styled)
         val point = SavePoint(styled)

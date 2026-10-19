@@ -112,9 +112,17 @@ fun runUrduEngineHarness(
         var styleSteps = 0
         val done = ArrayList<String>()
         fun verifyUnits() {
-            check(engine.snapshot().visible.units.map { it.char.code } == f.utf16CodeUnits) { "${f.id}: UTF-16 code units mismatch" }
-            val scalarCount = engine.snapshot().visible.text.codePoints().filter { it !in 0xD800..0xDFFF }.count().toInt()
-            check(scalarCount == f.scalarCount) { "${f.id}: Unicode scalar metadata mismatch; raw surrogate units must remain preserved" }
+            check(
+                engine.snapshot().visible.units.map {
+                    it.char.code
+                } == f.utf16CodeUnits,
+            ) { "${f.id}: UTF-16 code units mismatch" }
+            val scalarCount = engine.snapshot().visible.text.codePoints().filter {
+                it !in 0xD800..0xDFFF
+            }.count().toInt()
+            check(scalarCount == f.scalarCount) {
+                "${f.id}: Unicode scalar metadata mismatch; raw surrogate units must remain preserved"
+            }
         }
         fun verifySpans() {
             for (span in f.formattingSpans) {
@@ -137,7 +145,9 @@ fun runUrduEngineHarness(
                 "verify_no_crash" -> check(engine.snapshot().notice == "Ready") { "${f.id}: Engine rejected edit" }
                 "save_load_roundtrip" -> {
                     val document = engine.snapshot().visible
-                    check(DocumentFiles.decode(DocumentFiles.encode(document)).same(document)) { "${f.id}: Attributed save/load mismatch" }
+                    check(DocumentFiles.decode(DocumentFiles.encode(document)).same(document)) {
+                        "${f.id}: Attributed save/load mismatch"
+                    }
                 }
                 "apply_formatting" -> {
                     for (span in f.formattingSpans) {
@@ -155,10 +165,14 @@ fun runUrduEngineHarness(
                 }
                 "verify_spans" -> verifySpans()
                 "undo" -> repeat(styleSteps) { engine.perform(EditAction.Undo) }
-                "verify_baseline" -> check(engine.snapshot().visible.same(checkNotNull(unformatted).visible)) { "${f.id}: Undo failed to restore unstyled baseline" }
+                "verify_baseline" -> check(engine.snapshot().visible.same(checkNotNull(unformatted).visible)) {
+                    "${f.id}: Undo failed to restore unstyled baseline"
+                }
                 "redo" -> {
                     repeat(styleSteps) { engine.perform(EditAction.Redo) }
-                    check(engine.snapshot().visible.same(checkNotNull(formatted).visible)) { "${f.id}: Redo formatting mismatch" }
+                    check(engine.snapshot().visible.same(checkNotNull(formatted).visible)) {
+                        "${f.id}: Redo formatting mismatch"
+                    }
                 }
                 "ime_preedit" -> {
                     engine.inputMethod(f.text, 0, f.text.length)
@@ -171,25 +185,37 @@ fun runUrduEngineHarness(
                     check(engine.snapshot().committed.text == f.text.take(1)) { "${f.id}: Partial commit mismatch" }
                     check(engine.snapshot().visible.text == f.text)
                     check(engine.snapshot().selection == Selection(f.text.length, f.text.length))
-                    check(engine.snapshot().undoCount == baseline.undoCount) { "${f.id}: Session split before settlement" }
+                    check(engine.snapshot().undoCount == baseline.undoCount) {
+                        "${f.id}: Session split before settlement"
+                    }
                 }
                 "ime_commit_remaining" -> {
                     val remaining = f.text.substring(1)
                     engine.inputMethod(remaining, remaining.length, null)
                     val frame = engine.snapshot()
-                    check(frame.committed.text == f.text && frame.visible.text == f.text) { "${f.id}: Accepted prefix lost or duplicated" }
+                    check(frame.committed.text == f.text && frame.visible.text == f.text) {
+                        "${f.id}: Accepted prefix lost or duplicated"
+                    }
                     check(frame.visible.units.all { it.style == seed }) { "${f.id}: Composition attributes lost" }
                     check(frame.selection == Selection(f.text.length, f.text.length) && frame.marked == null)
-                    check(frame.undoCount == baseline.undoCount + 1) { "${f.id}: One session must produce one undo group" }
+                    check(frame.undoCount == baseline.undoCount + 1) {
+                        "${f.id}: One session must produce one undo group"
+                    }
                     formatted = frame
                 }
                 "ime_undo_session" -> {
                     engine.perform(EditAction.Undo)
-                    check(engine.snapshot().committed.same(baseline.committed) && engine.snapshot().selection == baseline.selection) { "${f.id}: Session Undo mismatch" }
+                    check(
+                        engine.snapshot().committed.same(baseline.committed) &&
+                            engine.snapshot().selection == baseline.selection,
+                    ) { "${f.id}: Session Undo mismatch" }
                 }
                 "ime_redo_session" -> {
                     engine.perform(EditAction.Redo)
-                    check(engine.snapshot().committed == checkNotNull(formatted).committed && engine.snapshot().selection == formatted.selection) { "${f.id}: Session Redo mismatch" }
+                    check(
+                        engine.snapshot().committed == checkNotNull(formatted).committed &&
+                            engine.snapshot().selection == formatted.selection,
+                    ) { "${f.id}: Session Redo mismatch" }
                 }
                 else -> error("${f.id}: Unsupported fixture operation: $op")
             }
@@ -282,8 +308,10 @@ fun runUrduComposeLayoutProbe(fontsDir: File, outputDir: File): Map<String, Any>
                     "lineCount" to lineCount,
                     "minIntrinsicWidth" to minIntr,
                     "maxIntrinsicWidth" to maxIntr,
-                    "cursorAt0" to mapOf("left" to startCursor.left, "top" to startCursor.top, "bottom" to startCursor.bottom),
-                    "cursorAtEnd" to mapOf("left" to endCursor.left, "top" to endCursor.top, "bottom" to endCursor.bottom),
+                    "cursorAt0" to
+                        mapOf("left" to startCursor.left, "top" to startCursor.top, "bottom" to startCursor.bottom),
+                    "cursorAtEnd" to
+                        mapOf("left" to endCursor.left, "top" to endCursor.top, "bottom" to endCursor.bottom),
                     "lines" to linesInfo,
                 ),
             )
@@ -331,7 +359,8 @@ fun runUrduComposeLayoutProbe(fontsDir: File, outputDir: File): Map<String, Any>
 }
 
 fun runUrduChecks(args: Array<String>) {
-    fun option(name: String, fallback: String) = args.firstOrNull { it.startsWith("--$name=") }?.substringAfter('=') ?: fallback
+    fun option(name: String, fallback: String) =
+        args.firstOrNull { it.startsWith("--$name=") }?.substringAfter('=') ?: fallback
     val fixtures = parseUrduFixtures(File(option("urdu-fixtures", "tests/suites/urdu/u0/fixtures.json")))
     val output = File(option("urdu-output", "tests/local-evidence/desktop/urdu-u0"))
     output.mkdirs()
@@ -343,7 +372,8 @@ fun runUrduChecks(args: Array<String>) {
     )
     result["typographyProfiles"] = runTypographyProfileChecks(File(option("urdu-fonts", "tests/suites/urdu/u0/fonts")))
     if ("--urdu-engine-only" !in args) {
-        result["composeLayoutProbe"] = runUrduComposeLayoutProbe(File(option("urdu-fonts", "tests/suites/urdu/u0/fonts")), output)
+        result["composeLayoutProbe"] =
+            runUrduComposeLayoutProbe(File(option("urdu-fonts", "tests/suites/urdu/u0/fonts")), output)
     }
     result["implementationMutationTesting"] = "Separate source-mutant runner; see mutation-results.json"
     result["status"] = "PASS"
@@ -360,7 +390,9 @@ fun runUrduChecks(args: Array<String>) {
         null -> "null"
         is Number, is Boolean -> value.toString()
         is String -> "\"${escape(value)}\""
-        is Map<*, *> -> value.entries.joinToString(prefix = "{", postfix = "}") { "${json(it.key.toString())}:${json(it.value)}" }
+        is Map<*, *> -> value.entries.joinToString(prefix = "{", postfix = "}") {
+            "${json(it.key.toString())}:${json(it.value)}"
+        }
         is List<*> -> value.joinToString(prefix = "[", postfix = "]") { json(it) }
         else -> error("Unsupported JSON value")
     }

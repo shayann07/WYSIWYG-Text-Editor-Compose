@@ -65,11 +65,15 @@ fun runNativeAccessibilityProbe() {
             val config = if (fallback.bounds.contains(rect.x, rect.y)) {
                 fallback
             } else {
-                environment.screenDevices.map { it.defaultConfiguration }.firstOrNull { it.bounds.contains(rect.x, rect.y) } ?: fallback
+                environment.screenDevices.map {
+                    it.defaultConfiguration
+                }.firstOrNull { it.bounds.contains(rect.x, rect.y) }
+                    ?: fallback
             }
             val screen = config.bounds
             val transform = config.defaultTransform
-            fun round(value: Double) = kotlin.math.ceil(value - .5).coerceIn(Int.MIN_VALUE.toDouble(), Int.MAX_VALUE.toDouble()).toInt()
+            fun round(value: Double) =
+                kotlin.math.ceil(value - .5).coerceIn(Int.MIN_VALUE.toDouble(), Int.MAX_VALUE.toDouble()).toInt()
             return java.awt.Rectangle(
                 screen.x + round((rect.x - screen.x) * transform.scaleX),
                 screen.y + round((rect.y - screen.y) * transform.scaleY),
@@ -86,12 +90,22 @@ fun runNativeAccessibilityProbe() {
             }
         }
         return mapOf(
-            "text" to f.visible.text, "units" to f.visible.units.map { listOf(it.id, it.char.code, it.kind.ordinal, it.style.bits, it.paragraphStyle.bits) },
+            "text" to f.visible.text,
+            "units" to
+                f.visible.units.map {
+                    listOf(it.id, it.char.code, it.kind.ordinal, it.style.bits, it.paragraphStyle.bits)
+                },
             "selection" to listOf(f.selection.anchor, f.selection.focus), "undo" to f.undoCount, "redo" to f.redoCount,
             "revision" to f.documentRevision, "pageCount" to geometry?.pageCount, "geometryIndex" to index,
-            "screenCharacterBounds" to bounds?.let { listOf(it.x + location.x, it.y + location.y, it.width, it.height) },
+            "screenCharacterBounds" to bounds?.let {
+                listOf(it.x + location.x, it.y + location.y, it.width, it.height)
+            },
             "nativeBridgeDeviceCharacterBounds" to deviceBounds?.let { listOf(it.x, it.y, it.width, it.height) },
-            "deviceScale" to listOf(surface.graphicsConfiguration.defaultTransform.scaleX, surface.graphicsConfiguration.defaultTransform.scaleY),
+            "deviceScale" to
+                listOf(
+                    surface.graphicsConfiguration.defaultTransform.scaleX,
+                    surface.graphicsConfiguration.defaultTransform.scaleY,
+                ),
         )
     }
     try {

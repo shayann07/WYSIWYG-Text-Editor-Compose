@@ -26,7 +26,14 @@ class ParagraphControls(private val surface: () -> EditorSurface, private val fi
         alignment.toolTipText = "Start/End follow resolved paragraph direction; no justification"
         direction.addActionListener {
             if (!refreshing && direction.selectedIndex > 0 && surface().admissionAllowed && !fileBusy()) {
-                surface().viewModel.dispatch(EditorIntent.SetParagraphProperties(direction = ParagraphDirection.entries[direction.selectedIndex - 1]))
+                surface().viewModel.dispatch(
+                    EditorIntent.SetParagraphProperties(
+                        direction = ParagraphDirection.entries[
+                            direction.selectedIndex -
+                                1,
+                        ],
+                    ),
+                )
                 surface().requestFocusInWindow()
             } else if (!refreshing && direction.selectedIndex == 0) {
                 refresh()
@@ -34,7 +41,14 @@ class ParagraphControls(private val surface: () -> EditorSurface, private val fi
         }
         alignment.addActionListener {
             if (!refreshing && alignment.selectedIndex > 0 && surface().admissionAllowed && !fileBusy()) {
-                surface().viewModel.dispatch(EditorIntent.SetParagraphProperties(alignment = ParagraphAlignment.entries[alignment.selectedIndex - 1]))
+                surface().viewModel.dispatch(
+                    EditorIntent.SetParagraphProperties(
+                        alignment = ParagraphAlignment.entries[
+                            alignment.selectedIndex -
+                                1,
+                        ],
+                    ),
+                )
                 surface().requestFocusInWindow()
             } else if (!refreshing && alignment.selectedIndex == 0) {
                 refresh()

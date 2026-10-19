@@ -18,7 +18,10 @@ import javax.swing.JPanel
 import javax.swing.ListCellRenderer
 /** Explicit font fallback for Swing labels; canonical heading text is never changed. */
 object OutlineFonts {
-    private val primary = Font.createFont(Font.TRUETYPE_FONT, java.io.File("tests/suites/urdu/u0/fonts/NotoNastaliqUrdu[wght].ttf")).deriveFont(19f)
+    private val primary = Font.createFont(
+        Font.TRUETYPE_FONT,
+        java.io.File("tests/suites/urdu/u0/fonts/NotoNastaliqUrdu[wght].ttf"),
+    ).deriveFont(19f)
     private val logical = Font("Dialog", Font.PLAIN, 19)
     val choices = java.util.concurrent.ConcurrentHashMap<Int, Font>()
     fun font(cp: Int): Font = choices.computeIfAbsent(cp) { if (primary.canDisplay(cp))primary else logical }
@@ -33,7 +36,13 @@ object OutlineFonts {
     }
 }
 class OutlineLabelRenderer(private val isCurrent: (Long?) -> Boolean) : ListCellRenderer<OutlineEntry> {
-    override fun getListCellRendererComponent(list: JList<out OutlineEntry>, entry: OutlineEntry, index: Int, selected: Boolean, focused: Boolean): Component = object : JPanel() {
+    override fun getListCellRendererComponent(
+        list: JList<out OutlineEntry>,
+        entry: OutlineEntry,
+        index: Int,
+        selected: Boolean,
+        focused: Boolean,
+    ): Component = object : JPanel() {
         val indent = (entry.level - 1) * 12
         val available = (list.width.takeIf { it > 0 } ?: 320) - indent - 58
         val frc = FontRenderContext(null, true, true)
@@ -41,8 +50,21 @@ class OutlineLabelRenderer(private val isCurrent: (Long?) -> Boolean) : ListCell
         init {
             val iterator = OutlineFonts.attributed(entry.label).iterator
             val breaker = LineBreakMeasurer(iterator, frc)
-            while (breaker.position < iterator.endIndex)lines += breaker.nextLayout(available.coerceAtLeast(80).toFloat())
-            preferredSize = Dimension(list.width.takeIf { it > 0 } ?: 320, (lines.sumOf { (it.ascent + it.descent + it.leading).toDouble() } + 20).toInt().coerceAtLeast(44))
+            while (breaker.position <
+                iterator.endIndex
+            ) {
+                lines += breaker.nextLayout(available.coerceAtLeast(80).toFloat())
+            }
+            preferredSize =
+                Dimension(
+                    list.width.takeIf {
+                        it > 0
+                    } ?: 320,
+                    (
+                        lines.sumOf { (it.ascent + it.descent + it.leading).toDouble() } +
+                            20
+                        ).toInt().coerceAtLeast(44),
+                )
             background = if (selected && list.hasFocus()) {
                 list.selectionBackground
             } else if (isCurrent(entry.anchor)) {
@@ -50,7 +72,8 @@ class OutlineLabelRenderer(private val isCurrent: (Long?) -> Boolean) : ListCell
             } else {
                 list.background
             }
-            getAccessibleContext().accessibleName = "${if (isCurrent(entry.anchor))"Current section. " else ""}Heading ${entry.level}: ${entry.label}"
+            getAccessibleContext().accessibleName =
+                "${if (isCurrent(entry.anchor))"Current section. " else ""}Heading ${entry.level}: ${entry.label}"
             toolTipText = getAccessibleContext().accessibleName
         }
         override fun paintComponent(graphics: Graphics) {

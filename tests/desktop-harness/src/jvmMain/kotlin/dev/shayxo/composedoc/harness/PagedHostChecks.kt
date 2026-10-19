@@ -28,16 +28,26 @@ fun runPagedHostChecks(surface: EditorSurface, resultFile: File) {
     val geometry = checkNotNull(surface.geometry())
     check(geometry.pageCount >= 3)
     for (paragraph in geometry.paragraphs) {
-        val sourceHeight = geometry.fragments.filter { it.paragraphIndex == paragraph.index }.sumOf { it.height.toDouble() }
+        val sourceHeight = geometry.fragments.filter {
+            it.paragraphIndex == paragraph.index
+        }.sumOf { it.height.toDouble() }
         val extent = paragraph.height - paragraph.layout.getLineTop(0)
         check(abs(sourceHeight - extent) < .1) { "Pagination changed paragraph line advance/leading" }
     }
-    check(geometry.fragments.size <= geometry.paragraphs.size + geometry.pageCount - 1) { "Paragraph painting was unnecessarily repeated per line" }
+    check(geometry.fragments.size <= geometry.paragraphs.size + geometry.pageCount - 1) {
+        "Paragraph painting was unnecessarily repeated per line"
+    }
     val coverage = IntArray(text.length)
     for (f in geometry.fragments) {
         val p = geometry.paragraphs[f.paragraphIndex]
         val start = p.startOffset + p.layout.getLineStart(f.firstLine)
-        val end = if (f.lastLine == p.lineCount - 1 && p.hasBreak) p.endOffset + 1 else p.startOffset + p.layout.getLineEnd(f.lastLine)
+        val end = if (f.lastLine == p.lineCount - 1 &&
+            p.hasBreak
+        ) {
+            p.endOffset + 1
+        } else {
+            p.startOffset + p.layout.getLineEnd(f.lastLine)
+        }
         for (i in start until end) coverage[i]++
     }
     check(coverage.all { it == 1 }) { "Paged mapping must account for each unit exactly once" }
@@ -52,7 +62,15 @@ fun runPagedHostChecks(surface: EditorSurface, resultFile: File) {
     val nearest = geometry.fragmentAtY(gapY)
     check(nearest.page in 0..1)
     val access = surface.accessibleContext.accessibleText
-    val gapHit = access.getIndexAtPoint(Point((downstream.left / geometry.scale).roundToInt(), ((gapY + geometry.y) / geometry.scale).roundToInt()))
+    val gapHit = access.getIndexAtPoint(
+        Point(
+            (downstream.left / geometry.scale).roundToInt(),
+            (
+                (gapY + geometry.y) /
+                    geometry.scale
+                ).roundToInt(),
+        ),
+    )
     check(gapHit in 0..text.length)
     e.move(Selection(boundary - 3, boundary + 3))
     check(access.selectedText == text.substring(boundary - 3, boundary + 3)) { "Page gap leaked into selection" }
@@ -99,8 +117,10 @@ fun runPagedHostChecks(surface: EditorSurface, resultFile: File) {
     resultFile.writeText(
         evidenceJson(
             mapOf(
-                "status" to "PASS", "scope" to "Mounted AWT + Compose; synthetic IME callbacks; not native OS qualification",
-                "pages" to geometry.pageCount, "paintFragments" to geometry.fragments.size, "lines" to geometry.totalLineCount, "fontKey" to geometry.typographyKey,
+                "status" to "PASS",
+                "scope" to "Mounted AWT + Compose; synthetic IME callbacks; not native OS qualification",
+                "pages" to geometry.pageCount, "paintFragments" to geometry.fragments.size,
+                "lines" to geometry.totalLineCount, "fontKey" to geometry.typographyKey,
                 "densityScale" to geometry.scale, "textWidthPx" to geometry.textWidth,
                 "viewportLogical" to listOf(geometry.hostWidth, geometry.hostHeight),
                 "pageHeightPx" to geometry.pageHeight, "pageGapPx" to geometry.pageGap,

@@ -38,7 +38,11 @@ object RichClipboard {
         var fallback = false
         if (!plainOnly && data.isDataFlavorSupported(flavor)) {
             try {
-                val bytes = (data.getTransferData(flavor) as InputStream).use { it.readNBytes(codec.maximumEncodedBytes + 1) }
+                val bytes = (data.getTransferData(flavor) as InputStream).use {
+                    it.readNBytes(
+                        codec.maximumEncodedBytes + 1,
+                    )
+                }
                 return Read(codec.decode(bytes), null)
             } catch (e: Exception) {
                 fallback = true

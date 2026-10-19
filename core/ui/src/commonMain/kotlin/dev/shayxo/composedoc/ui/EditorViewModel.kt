@@ -95,12 +95,8 @@ sealed interface EditorIntent<out R> {
 
     data class NavigateOutline(val anchor: Long?) : EditorIntent<Boolean>
 
-    data class ReplaceFound(
-        val basis: FindBasis,
-        val matches: List<FindMatch>,
-        val text: String,
-        val all: Boolean,
-    ) : EditorIntent<FindReplaceResult>
+    data class ReplaceFound(val basis: FindBasis, val matches: List<FindMatch>, val text: String, val all: Boolean) :
+        EditorIntent<FindReplaceResult>
 
     data class ApplyRecoveredDraft(val draft: RecoveredDraft) : EditorIntent<RecoveryApplyResult>
 
@@ -155,7 +151,12 @@ class EditorViewModel(private val engine: EditorEngine) : ViewModel() {
         is EditorIntent.Select -> engine.move(intent.selection, intent.primary, intent.side, intent.wrapAffinity)
         EditorIntent.SelectAll -> engine.selectAll()
         is EditorIntent.Type -> type(intent)
-        is EditorIntent.ReplaceExact -> engine.replaceExact(intent.text, intent.kind, intent.range, intent.paragraphBreaks)
+        is EditorIntent.ReplaceExact -> engine.replaceExact(
+            intent.text,
+            intent.kind,
+            intent.range,
+            intent.paragraphBreaks,
+        )
         is EditorIntent.Delete -> engine.delete(intent.backward)
         is EditorIntent.NativeText -> engine.inputMethod(intent.text, intent.committedCount, intent.caret)
         is EditorIntent.NativeCaret -> engine.inputMethodCaret(intent.offset)
@@ -166,7 +167,12 @@ class EditorViewModel(private val engine: EditorEngine) : ViewModel() {
             engine.setParagraphProperties(intent.direction, intent.alignment, intent.before, intent.after, intent.line)
         is EditorIntent.Structure -> engine.structure(intent.command)
         is EditorIntent.ApplyStructure -> engine.applyStructure(intent.capture, intent.command)
-        is EditorIntent.ApplyClipboard -> engine.clipboardApply(intent.capture, intent.fragment, intent.plain, intent.cut)
+        is EditorIntent.ApplyClipboard -> engine.clipboardApply(
+            intent.capture,
+            intent.fragment,
+            intent.plain,
+            intent.cut,
+        )
         is EditorIntent.NavigateOutline -> engine.navigateOutline(intent.anchor)
         is EditorIntent.ReplaceFound -> engine.replaceFound(intent.basis, intent.matches, intent.text, intent.all)
         is EditorIntent.ApplyRecoveredDraft -> engine.applyRecoveredDraft(intent.draft)

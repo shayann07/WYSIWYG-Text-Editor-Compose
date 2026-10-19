@@ -46,7 +46,13 @@ fun structuredWritingSample(): Document {
     e.dispatch(EditorIntent.Select(Selection(at, at + "Disposable writing sample".length)))
     e.dispatch(EditorIntent.Structure(StructureCommand.Link("https://example.org/urdu")))
     e.dispatch(EditorIntent.Select(Selection(text.length, text.length)))
-    e.dispatch(EditorIntent.Type("\nساختی نمونہ — Structured sample\nپہلی فہرست کی شق\nاس شق کا دوسرا پیراگراف\nNested English item\nدوسری شق\n\n", "sample", true))
+    e.dispatch(
+        EditorIntent.Type(
+            "\nساختی نمونہ — Structured sample\nپہلی فہرست کی شق\nاس شق کا دوسرا پیراگراف\nNested English item\nدوسری شق\n\n",
+            "sample",
+            true,
+        ),
+    )
     val d = e.snapshot().committed
     val title = d.text.indexOf("ساختی نمونہ")
     e.dispatch(EditorIntent.Select(Selection(title, title)))
@@ -58,19 +64,56 @@ fun structuredWritingSample(): Document {
     val continuation = e.snapshot().committed.text.indexOf("اس شق کا")
     val block = e.snapshot().committed.paragraphAt(continuation)
     // Shared sample fixture consumes semantic properties, not inserted marker characters.
-    var sample = e.snapshot().committed.patchParagraphs(mapOf(block.anchor to block.properties.copy(item = item.item, list = item.list)))
+    var sample = e.snapshot().committed.patchParagraphs(
+        mapOf(
+            block.anchor to block.properties.copy(item = item.item, list = item.list),
+        ),
+    )
     val nested = sample.text.indexOf("Nested English")
     val second = sample.text.indexOf("دوسری شق")
     val n = sample.paragraphAt(nested)
     val s = sample.paragraphAt(second)
-    sample = sample.patchParagraphs(mapOf(n.anchor to n.properties.copy(item = freshStructureId(), parent = item.item, list = ListKind.BULLET, direction = ParagraphDirection.LTR), s.anchor to s.properties.copy(item = freshStructureId(), list = ListKind.NUMBER)))
+    sample =
+        sample.patchParagraphs(
+            mapOf(
+                n.anchor to
+                    n.properties.copy(
+                        item = freshStructureId(),
+                        parent = item.item,
+                        list = ListKind.BULLET,
+                        direction = ParagraphDirection.LTR,
+                    ),
+                s.anchor to s.properties.copy(item = freshStructureId(), list = ListKind.NUMBER),
+            ),
+        )
     val image = ImageDecoder.validate(samplePng())
     val owner = EditorViewModel(sample)
     val end = owner.snapshot().committed.units.size
     owner.dispatch(EditorIntent.Select(Selection(end, end)))
-    owner.dispatch(EditorIntent.Structure(StructureCommand.InsertImage(ImageBlock(image.first, 240, "مقامی نمونہ: نیلا دائرہ اور دو لکیریں — blue circle and lines"), image.second)))
+    owner.dispatch(
+        EditorIntent.Structure(
+            StructureCommand.InsertImage(
+                ImageBlock(image.first, 240, "مقامی نمونہ: نیلا دائرہ اور دو لکیریں — blue circle and lines"),
+                image.second,
+            ),
+        ),
+    )
     val result = owner.snapshot().committed
-    val ids = result.paragraphs().map { it.properties.item }.filter { it.isNotEmpty() }.distinct().withIndex().associate { it.value to "sample-item-${it.index + 1}" }
-    val remapped = result.patchParagraphs(result.paragraphs().associate { p -> p.anchor to p.properties.copy(item = ids[p.properties.item] ?: "", parent = ids[p.properties.parent] ?: "") })
-    return remapped.copy(units = remapped.units.map { u -> u.copy(style = u.style.copy(link = u.style.link?.copy(id = "sample-link-1"))) })
+    val ids = result.paragraphs().map {
+        it.properties.item
+    }.filter { it.isNotEmpty() }.distinct().withIndex().associate {
+        it.value to
+            "sample-item-${it.index + 1}"
+    }
+    val remapped = result.patchParagraphs(
+        result.paragraphs().associate { p ->
+            p.anchor to
+                p.properties.copy(item = ids[p.properties.item] ?: "", parent = ids[p.properties.parent] ?: "")
+        },
+    )
+    return remapped.copy(
+        units = remapped.units.map { u ->
+            u.copy(style = u.style.copy(link = u.style.link?.copy(id = "sample-link-1")))
+        },
+    )
 }

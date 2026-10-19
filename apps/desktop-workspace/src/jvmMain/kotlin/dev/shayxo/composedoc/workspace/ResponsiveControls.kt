@@ -33,7 +33,10 @@ class WrappingControls : FlowLayout(LEFT, 4, 2) {
                 rowHeight = maxOf(rowHeight, d.height)
             }
         }
-        Dimension(maxOf(width, rowWidth) + insets.left + insets.right + hgap * 2, height + rowHeight + insets.top + insets.bottom + vgap * 2)
+        Dimension(
+            maxOf(width, rowWidth) + insets.left + insets.right + hgap * 2,
+            height + rowHeight + insets.top + insets.bottom + vgap * 2,
+        )
     }
     override fun minimumLayoutSize(target: Container) = preferredLayoutSize(target)
 }
@@ -41,12 +44,16 @@ class WritingTabs : JTabbedPane() {
     override fun getPreferredSize(): Dimension {
         val original = super.getPreferredSize()
         val active = selectedComponent ?: return original
-        return Dimension(original.width, active.preferredSize.height + getFontMetrics(font).height + insets.top + insets.bottom + 12)
+        return Dimension(
+            original.width,
+            active.preferredSize.height + getFontMetrics(font).height + insets.top + insets.bottom + 12,
+        )
     }
 }
 
 /** Keep the editing surface reachable when Find and live recovery rows are both expanded. */
-class WritingHeaderScroll(header: JComponent, private val window: JFrame) : JScrollPane(header, VERTICAL_SCROLLBAR_AS_NEEDED, HORIZONTAL_SCROLLBAR_NEVER) {
+class WritingHeaderScroll(header: JComponent, private val window: JFrame) :
+    JScrollPane(header, VERTICAL_SCROLLBAR_AS_NEEDED, HORIZONTAL_SCROLLBAR_NEVER) {
     init {
         border = null
         viewport.background = header.background
