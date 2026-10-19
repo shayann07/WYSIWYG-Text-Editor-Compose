@@ -24,6 +24,8 @@ updates:
       # Major upgrades (for example Gradle 9) are planned deliberately, not bot-driven.
       - dependency-name: '*'
         update-types: ['version-update:semver-major']
+      # Skiko is binary-coupled to Compose; set it to the version Compose itself requests.
+      - dependency-name: 'org.jetbrains.skiko*'
   - package-ecosystem: github-actions
     directory: /
     schedule:
