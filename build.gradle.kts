@@ -39,7 +39,7 @@ val writeArchitectureModel by tasks.registering {
     doLast {
         val graph = subprojects.associate { project ->
             project.path to project.configurations.flatMap { configuration ->
-                configuration.dependencies.withType<ProjectDependency>().map { it.dependencyProject.path }
+                configuration.dependencies.withType<ProjectDependency>().map { it.path }
             }.distinct().filter { it != project.path }.sorted()
         }
         destination.get().asFile.apply {

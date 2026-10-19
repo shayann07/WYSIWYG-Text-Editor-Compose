@@ -70,7 +70,7 @@ fun workspaceNativeProbe(args: Array<String>) {
     }
     println("READY " + snapshot())
     System.out.flush()
-    for (line in generateSequence(::readLine)) {
+    for (line in generateSequence(::readlnOrNull)) {
         try {
             when {
                 line == "snapshot" -> println(snapshot())

@@ -18,7 +18,7 @@ kotlin {
         withHostTestBuilder {}.configure {}
     }
     jvm()
-    js(IR) { nodejs() }
+    js { nodejs() }
     // Apple compilation/qualification is deliberately hosted on macOS.
     if (System.getProperty("os.name").contains("Mac")) {
         iosArm64()
