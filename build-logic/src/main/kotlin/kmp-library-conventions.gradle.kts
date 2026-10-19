@@ -18,7 +18,12 @@ kotlin {
         withHostTestBuilder {}.configure {}
     }
     jvm()
-    js { nodejs() }
+    js {
+        nodejs {
+            // Mocha's 2 s default is too tight for the 1,093-case Unicode suite on cold CI runners.
+            testTask { useMocha { timeout = "30s" } }
+        }
+    }
     // Apple compilation/qualification is deliberately hosted on macOS.
     if (System.getProperty("os.name").contains("Mac")) {
         iosArm64()
