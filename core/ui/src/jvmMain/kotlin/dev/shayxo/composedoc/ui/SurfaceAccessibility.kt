@@ -125,6 +125,9 @@ internal fun EditorSurface.publishAccessibleChange(old: EditorFrame, current: Ed
     }
     if (before == after && paragraphPropertiesChanged(old, current)) {
         fireParagraphChanges(context, old, current)
+    } else if (pageOrRunningContentChanged(old, current)) {
+        // Paper/margins and header/footer flows change what is visible without changing body text.
+        context.firePropertyChange(AccessibleContext.ACCESSIBLE_VISIBLE_DATA_PROPERTY, null, current.documentRevision)
     }
     context.firePropertyChange(
         AccessibleContext.ACCESSIBLE_CARET_PROPERTY,
@@ -132,6 +135,9 @@ internal fun EditorSurface.publishAccessibleChange(old: EditorFrame, current: Ed
         current.selection.focus,
     )
 }
+
+internal fun pageOrRunningContentChanged(old: EditorFrame, current: EditorFrame): Boolean =
+    old.visible.pageSettings != current.visible.pageSettings || old.visible.running != current.visible.running
 
 private fun paragraphPropertiesChanged(old: EditorFrame, current: EditorFrame): Boolean =
     old.visible.paragraphs().map { it.properties } != current.visible.paragraphs().map { it.properties }

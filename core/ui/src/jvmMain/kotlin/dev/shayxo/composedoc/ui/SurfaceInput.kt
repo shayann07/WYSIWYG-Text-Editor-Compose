@@ -247,6 +247,8 @@ private fun EditorSurface.onKeyPressed(e: KeyEvent) {
 /** Runs the key binding for [e]; false when the key is not an editor binding. */
 private fun EditorSurface.handleKeyPressed(e: KeyEvent): Boolean {
     val command = (e.isControlDown || e.isMetaDown) && !e.isAltGraphDown
+    // Ctrl/Cmd+Enter stays unconsumed so window-level bindings (explicit page break) receive it.
+    if (command && e.keyCode == KeyEvent.VK_ENTER) return false
     return (command && handleCommandKey(e)) || handleEditingKey(e, command)
 }
 

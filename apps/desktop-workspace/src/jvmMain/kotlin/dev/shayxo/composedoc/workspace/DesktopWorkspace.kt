@@ -594,9 +594,10 @@ private class EditorWindow(private val launch: EditorLaunch) {
     private fun onStatusChanged(f: EditorFrame) {
         val counts = writingCounts(f)
         position.text =
-            "${counts.words} word-like runs · ${counts.units} UTF-16 units · ${counts.selected} selected units"
+            "Body: ${counts.words} word-like runs · ${counts.units} UTF-16 units · ${counts.selected} selected units"
         position.toolTipText =
-            "Committed counts; whitespace separates runs containing letters/digits/symbols. " +
+            "Committed body counts; headers, footers and page-number fields are not counted. " +
+            "Whitespace separates runs containing letters/digits/symbols. " +
             "Joiners/marks stay in runs; not linguistic tokenization. Selected count is visible UTF-16 range."
         localRecovery?.let { recovery ->
             recovery.observe(f.committed, files.path)
@@ -942,7 +943,8 @@ private class RecoveryRows(
         dBtn.isEnabled = records.isNotEmpty() && !files().busy && unfinished()?.decisionBusy() != true
         rBtn.isVisible = !surface().admissionAllowed
         rBtn.isEnabled =
-            records.size + surface().quarantinedCallbacks.size < UNRESOLVED_RECOVERY_CAPACITY && !files().busy
+            records.size + surface().quarantinedCallbacks.size < UNRESOLVED_RECOVERY_CAPACITY &&
+            !files().busy
         rBtn.toolTipText = "Recover paused input; at capacity export/discard unresolved work first"
     }
 }

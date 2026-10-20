@@ -20,6 +20,9 @@ import java.awt.event.KeyEvent
 import java.awt.event.MouseEvent
 import java.awt.font.TextHitInfo
 import java.nio.file.Files
+import javax.swing.JComponent
+import javax.swing.KeyStroke
+import javax.swing.SwingUtilities
 
 /** Real Compose geometry and AWT dispatch, with generated fixtures rather than an OS keyboard. */
 fun runRtlHostChecks(surface: EditorSurface) {
@@ -52,6 +55,7 @@ fun runRtlHostChecks(surface: EditorSurface) {
     checks.checkDirectionalIsolates()
     checks.checkBreakAndEmptySelection()
     checks.checkResizeAndSoftWrapEnd()
+    checks.checkCtrlEnterReachesWindowBindings()
     printRtlHostSummary(navigationChecks, multiDurationMs, longDurationMs)
 }
 
@@ -74,6 +78,40 @@ private class RtlHostChecks(val surface: EditorSurface) {
         MouseEvent(surface, id, System.currentTimeMillis(), 0, x, y, 1, false, MouseEvent.BUTTON1),
     )
 }
+
+/**
+ * Ctrl+Enter must not be handled as a plain Enter by the editor. Inside a window that binds it to
+ * "explicit page break" it inserts exactly one page break; without that binding it stays unconsumed.
+ */
+private fun RtlHostChecks.checkCtrlEnterReachesWindowBindings() {
+    val before = e.snapshot()
+    val bound = SwingUtilities.getRootPane(surface)
+        ?.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+        ?.get(KeyStroke.getKeyStroke("control ENTER")) != null
+    val event = KeyEvent(
+        surface,
+        KeyEvent.KEY_PRESSED,
+        System.currentTimeMillis(),
+        KeyEvent.CTRL_DOWN_MASK,
+        KeyEvent.VK_ENTER,
+        KeyEvent.CHAR_UNDEFINED,
+    )
+    surface.dispatchEvent(event)
+    val after = e.snapshot().committed.text
+    val pageBreaks = after.count { it == PAGE_BREAK } - before.committed.text.count { it == PAGE_BREAK }
+    val paragraphs = after.count { it == '\n' } - before.committed.text.count { it == '\n' }
+    check(paragraphs == 0) { "Ctrl+Enter must not insert a paragraph break" }
+    if (bound) {
+        check(pageBreaks == 1) { "Ctrl+Enter must reach the window's explicit page-break binding" }
+        e.perform(EditAction.Undo)
+        check(e.snapshot().committed == before.committed) { "Undo must remove the page break" }
+    } else {
+        check(!event.isConsumed && pageBreaks == 0) { "Unbound Ctrl+Enter must stay unconsumed" }
+    }
+    println("PASS Ctrl+Enter reaches window bindings (explicit page break bound=$bound), never a plain Enter")
+}
+
+private const val PAGE_BREAK = '\u000c'
 
 private fun RtlHostChecks.checkBasicRtlParagraphs() {
     // 1. Basic RTL paragraph alignment, visual selection collapse, Shift+Left, format/Undo

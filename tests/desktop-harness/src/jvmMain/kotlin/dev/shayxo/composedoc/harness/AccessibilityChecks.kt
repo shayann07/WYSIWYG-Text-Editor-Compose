@@ -2,21 +2,26 @@ package dev.shayxo.composedoc.harness
 
 import dev.shayxo.composedoc.domain.EditAction
 import dev.shayxo.composedoc.domain.EditorEngine
+import dev.shayxo.composedoc.domain.StructureCommand
 import dev.shayxo.composedoc.layout.TypographyProfile
 import dev.shayxo.composedoc.model.Selection
 import dev.shayxo.composedoc.model.TextStyleFlags
 import dev.shayxo.composedoc.model.UnitKind
 import dev.shayxo.composedoc.model.evidenceJson
+import dev.shayxo.composedoc.ui.EditorIntent
 import dev.shayxo.composedoc.ui.EditorSurface
 import dev.shayxo.composedoc.ui.findSurface
 import dev.shayxo.composedoc.workspace.showEditor
 import java.awt.event.InputMethodEvent
 import java.awt.font.TextHitInfo
+import java.beans.PropertyChangeEvent
+import java.beans.PropertyChangeListener
 import java.io.File
 import java.text.AttributedString
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
+import javax.accessibility.AccessibleContext
 import javax.accessibility.AccessibleEditableText
 import javax.swing.SwingUtilities
 import javax.swing.text.SimpleAttributeSet
@@ -31,10 +36,35 @@ fun runAccessibilityHostChecks(surface: EditorSurface) {
     checkAccessibleProtocolRanges(editable, e)
     checkAccessibleCompositionCapture(surface, editable, e)
     checkAccessiblePendingAttributes(surface, editable, e, attributes)
+    checkAccessibleVisibleDataOnPageChange(surface, e)
     println(
         "PASS editable accessibility: exact UTF-16, target capture, attributes, structure and composition " +
             "history; OS AT NOT RUN",
     )
+}
+
+/** Paper changes alter what is visible without changing body text, so AT must hear about them. */
+private fun checkAccessibleVisibleDataOnPageChange(surface: EditorSurface, e: EditorEngine) {
+    val before = e.snapshot()
+    val events = ArrayList<PropertyChangeEvent>()
+    val listener = PropertyChangeListener { event ->
+        if (event.propertyName == AccessibleContext.ACCESSIBLE_VISIBLE_DATA_PROPERTY) events += event
+    }
+    surface.accessibleContext.addPropertyChangeListener(listener)
+    try {
+        val settings = before.committed.pageSettings
+        surface.viewModel.dispatch(
+            EditorIntent.Structure(StructureCommand.Pages(settings.copy(landscape = !settings.landscape))),
+        )
+    } finally {
+        surface.accessibleContext.removePropertyChangeListener(listener)
+    }
+    check(e.snapshot().committed.pageSettings.landscape != before.committed.pageSettings.landscape) {
+        "Page orientation command was not applied"
+    }
+    check(events.size == 1) { "Expected one visible-data notification for a page change, saw ${events.size}" }
+    e.perform(EditAction.Undo)
+    check(e.snapshot().committed == before.committed) { "Undo must restore the original page settings" }
 }
 
 private fun checkAccessibleTextInsertion(surface: EditorSurface, editable: AccessibleEditableText, e: EditorEngine) {
