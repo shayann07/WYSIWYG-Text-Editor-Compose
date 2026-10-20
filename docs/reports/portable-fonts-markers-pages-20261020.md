@@ -114,7 +114,8 @@ JDK21, Compose1.12.2 and Skiko0.150.2; no runtime dependency or public API chang
 
 ## Native sessions and exact persistence
 
-First owned JDK21 process12844 used that identified build and isolated recovery directory.
+First owned JDK21 process12844 used `batch-20261020-144701-34520/build`, manifest
+`6cc1e46f1debc0878ffb01aa4db5bcab2a29e81b275438cded7ddf0f3a732c05`, and an isolated recovery directory.
 Ordinary controls and screenshot-coordinate modal Cancel delivered actual events. Physical
 Ctrl+Enter created an explicit page separator and11pages; mixed Unicode was pasted through the
 tool (not OS IME qualification). Physical selection/Undo/Redo restored exact original/edited roots.
