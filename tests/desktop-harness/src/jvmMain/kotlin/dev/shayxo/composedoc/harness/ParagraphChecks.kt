@@ -201,8 +201,8 @@ private fun checkParagraphDirectionResolution(checks: MutableList<String>) {
             resolveFixtureDirection("", fallback = ParagraphDirection.RTL) == ParagraphDirection.RTL,
     )
     check(
-        resolveFixtureDirection("⁧اردو⁩ English") == ParagraphDirection.LTR &&
-            resolveFixtureDirection("⁦English⁩ اردو") == ParagraphDirection.RTL,
+        resolveFixtureDirection("\u2067اردو\u2069 English") == ParagraphDirection.LTR &&
+            resolveFixtureDirection("\u2066English\u2069 اردو") == ParagraphDirection.RTL,
     )
     check(
         resolveFixtureDirection("English", ParagraphProperties(ParagraphDirection.RTL)) == ParagraphDirection.RTL &&

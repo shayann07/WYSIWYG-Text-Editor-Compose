@@ -210,7 +210,7 @@ private fun RecoveryUiRun.checkSaveAndRecordCopies() {
 private fun RecoveryUiRun.exportRichDraft() {
     val surface = checkNotNull(findSurface(window))
     val e = surface.viewModel.verificationEngine
-    val text = "کِ\nتاب\n\uD800￿"
+    val text = "کِ\nتاب\n\uD800\uffff"
     desired = Document(
         text.mapIndexed { index, char ->
             val hard = index == 2
@@ -359,7 +359,7 @@ private fun RecoveryUiRun.openQuarantineWindow() {
     )
     val paused = checkNotNull(old.abortAndRetireComposition(true))
     check(!paused.admissionAllowed)
-    recoveryUiInput(paused, "محفوظ\uD800\u0000￿")
+    recoveryUiInput(paused, "محفوظ\uD800\u0000\uffff")
     check(
         paused.quarantinedCallbacks.size == 1 &&
             paused.viewModel.verificationEngine.snapshot().committed.text.isEmpty(),
@@ -395,7 +395,7 @@ private fun RecoveryUiRun.exportQuarantinedInput() {
     check(window.isDisplayable && !files.dirty && surface.quarantinedCallbacks.size == 1)
     callback = surface.quarantinedCallbacks.single()
     check(
-        callback.text == "محفوظ\uD800\u0000￿" &&
+        callback.text == "محفوظ\uD800\u0000\uffff" &&
             callback.committed == 0 &&
             callback.caret == callback.text.length,
     )

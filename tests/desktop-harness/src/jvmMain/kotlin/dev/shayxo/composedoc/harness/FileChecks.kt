@@ -32,7 +32,7 @@ private fun fileCheckDocument(text: String) = Document(text.mapIndexed { i, c ->
 fun runFileChecks() {
     val run = FileCheckRun()
     val fixture = Document(
-        fileCheckDocument("A😀𐏿￿\u0000\n\nZ").units.mapIndexed { i, u ->
+        fileCheckDocument("A😀\ud800\udfff\uffff\u0000\n\nZ").units.mapIndexed { i, u ->
             if (i == 8) u.copy(kind = UnitKind.PARAGRAPH_BREAK) else u
         },
     )

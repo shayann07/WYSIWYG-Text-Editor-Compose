@@ -24,11 +24,11 @@ fun typographySheet(output: File) {
         "01 Common Urdu" to "یہ ایک اردو دستاویز ہے۔ پاکستان میں تعلیم اور تحقیق۔",
         "02 Letter distinctions" to "ک ك، ی ي، ے، ں، ھ، ہ — کتاب اور قلم۔",
         "03 Stacked and leading marks" to "َّ مُحَمَّد، قُرآن، نَستَعلیق، تحقیق۔",
-        "04 Joining controls" to "ک‍تاب ک‌تاب، می‌روم، لا لام الف۔",
+        "04 Joining controls" to "ک\u200dتاب ک\u200cتاب، می\u200cروم، لا لام الف۔",
         "05 Mixed text" to "قیمت ۱۲۳ روپے — English 12.5, (۲۰۲۶), mail@example.org / https://example.org",
-        "06 Other scripts" to "العربية لَا، فارسی می‌روم، שָׁלוֹם، é café, क्षि ক্ষি ก้",
-        "07 Isolates as authored content" to "اردو ⁦English (123)⁩ کتاب، ⁧عربی⁩ end",
-        "08 Supplementary and emoji" to "Urdu اردو — 👩🏽‍💻 🇵🇰 漢字 が 한글",
+        "06 Other scripts" to "العربية لَا، فارسی می\u200cروم، שָׁלוֹם، é café, क्षि ক্ষি ก้",
+        "07 Isolates as authored content" to "اردو \u2066English (123)\u2069 کتاب، \u2067عربی\u2069 end",
+        "08 Supplementary and emoji" to "Urdu اردو — 👩🏽\u200d💻 🇵🇰 漢字 が 한글",
     )
     val document = buildSpecimenDocument(cases)
     File(output, "specimen.astra").writeBytes(DocumentFiles.encode(document))

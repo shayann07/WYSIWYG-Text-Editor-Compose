@@ -51,7 +51,7 @@ private val v6Targets = listOf(
     ClusterTarget("kana combining", "か\u3099", listOf(0, 2)),
     ClusterTarget("Hangul jamo", "한", listOf(0, 3)),
     ClusterTarget("supplementary scalar", "𐐀", listOf(0, 2)),
-    ClusterTarget("emoji modifier ZWJ", "👩🏽‍💻", listOf(0, 7)),
+    ClusterTarget("emoji modifier ZWJ", "👩🏽\u200d💻", listOf(0, 7)),
     ClusterTarget("regional flag", "🇵🇰", listOf(0, 4)),
     ClusterTarget("variation selector", "✈️", listOf(0, 2)),
     ClusterTarget("bidi isolate", "\u2067اردو\u2069", listOf(0, 1, 2, 3, 4, 5, 6)),

@@ -73,9 +73,9 @@ private fun checkFindLiteralMatching(checks: MutableList<String>) {
     check(findFixturePositions("ک ك ک ی ي ے", "ي") == listOf(8))
     check(findFixturePositions("A a Aa", "A") == listOf(0, 4))
     check(findFixturePositions("aaaaa", "aa") == listOf(0, 2))
-    check(findFixturePositions("ک‌تاب کتاب", "کتاب") == listOf(6))
+    check(findFixturePositions("ک\u200cتاب کتاب", "کتاب") == listOf(6))
     checks += "Exact case-sensitive Urdu/Arabic distinctions; left-to-right logical non-overlapping matches"
-    val refused = listOf("کِ ک" to "ک", "کِ" to "ِ", "👩‍💻 👩" to "👩", "a‍b" to "a", "😀" to "\uD83D")
+    val refused = listOf("کِ ک" to "ک", "کِ" to "ِ", "👩\u200d💻 👩" to "👩", "a\u200db" to "a", "😀" to "\uD83D")
     for ((text, query) in refused) {
         val e = EditorEngine(findFixtureDoc(text))
         val before = e.snapshot()
@@ -84,8 +84,8 @@ private fun checkFindLiteralMatching(checks: MutableList<String>) {
         check(e.replaceFound(e.captureFindBasis(), m, "x", true) == FindReplaceResult.Invalid)
         check(e.snapshot() == before)
     }
-    val emoji = EditorEngine(findFixtureDoc("👩‍💻 👩‍💻"))
-    val em = findLiteral(emoji.snapshot().committed, "👩‍💻")
+    val emoji = EditorEngine(findFixtureDoc("👩\u200d💻 👩\u200d💻"))
+    val em = findLiteral(emoji.snapshot().committed, "👩\u200d💻")
     check(em.size == 2 && em.all { it.editable })
     check(emoji.replaceFound(emoji.captureFindBasis(), em, "🙂", true) == FindReplaceResult.Applied)
     check(emoji.snapshot().committed.text == "🙂 🙂")
