@@ -1,3 +1,13 @@
+# Overnight 20 October 2026 — migration finished, Detekt zero, pages/output resumed
+
+See `docs/reports/overnight-20261020.md`. CodeQL and ios-build are required on main; UI/app
+code reaches the engine only through EditorViewModel intents; Detekt has zero findings and no
+baselines. Pages/output: Ctrl+Enter, AT page notifications and body counts fixed;
+`verify.py --pages-output-milestone` 21/21 PASS with the 50-page case at 265 ms. Semantic PDF
+remains BLOCKED (no Skiko glyph-run/PDF binding); native desktop checks NOT RUN; Gulzar list
+markers sit low (logged for owner review).
+
+---
 # ComposeDoc migration — local gates PASS, 20 October 2026
 
 Resumed the Gradle multi-module migration after the interrupted Codex session.
