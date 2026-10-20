@@ -409,3 +409,28 @@ Final packaged source hashes still match; existing API dump entries are all pres
 only. JVM distribution52 files exactly match the native-tested desktop distribution, permitting
 exact binary reuse of that walkthrough. Android-only corrections require no desktop raster change.
 Final clean-commit gates and exact remote CI status remain pending until the final receipt says PASS.
+
+## Clean-commit gate correction (before push)
+
+Local implementation commit b9d2322 passed five clean-commit gates: docs/frozen hashes,
+V6 witnesses, full Gradle/API, verification contracts and complete workspace integration.
+The sixth gate did not execute its intended mutant assertion: its temporary clone omitted
+the newly configured Android/consumer projects and failed compilation. It remains FAIL;
+no unrelated compilation error is counted as a mutation kill. The final-gates wrapper/receipt
+are retained at `desktop/android-consumer-clean-final-gates.log` and the copied delivery receipt.
+
+The mutant clone now includes both sample project trees alongside the existing core/workspace/
+harness; no editor implementation or gate expectation changes. The final runner now retains
+mutation evidence under ignored tests/local-evidence/desktop instead of deleting its temporary
+clone even on failure. A fresh build and actual four-mutant preflight are required, followed by
+all six gates on a new clean exact commit. Earlier18 pages/output groups and all10 approved
+rasters additionally passed against the b9d2322 exact build at
+`desktop/android-consumer-final-pages-20261020/results.json`.
+
+The actual corrected mutation preflight **PASS4/4 intended assertion kills**:
+`tests/local-evidence/desktop/android-mutant-copies-after-20261020/mutation-results.json`.
+Every mutant compiled successfully before its test; substitute-keheh, undo-leaves-bold,
+mangle-lone-surrogate and white-probe-raster each failed the required discriminating assertion.
+No compile error is accepted as a kill. New clean-commit six-gate run follows this tooling correction.
+The first preflight identity guard also refused a build while its runner source changed;
+that non-current build was discarded as evidence and a fresh stable preflight was used.

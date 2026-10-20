@@ -40,6 +40,12 @@ main push. Then verify CI, ios-build, all4 CodeQL and Android packaged adapter e
 Retain raw failures. If remote CI fails fix cause and repeat exact clean gates. Final report should
 include commands/APK/sample, ten-minute walk, evidence/matrix, limitations and exact Git/CI status.
 
+Gate correction after local commit b9d2322: first5 exact gates PASS, mutation clone omitted new
+sample projects and failed compilation (not an assertion kill). Added both project trees to
+mutation copy; runner now retains all mutation logs/copies instead of deleting on failure.
+Fresh stable preflight PASS4/4 intended defects: desktop/android-mutant-copies-after-20261020/.
+No app/API/source binary changes. New tooling/docs commit and all6 clean gates required next.
+
 ---
 
 # Portable fonts, marker positioning and native pages — 20 October 2026

@@ -10,10 +10,9 @@ import json
 import os
 from pathlib import Path
 import re
-import shutil
 import subprocess
 import sys
-import tempfile
+import time
 
 ROOT = Path(__file__).resolve().parents[2]
 RECEIPT = ROOT / 'tooling/local/final-verification.json'
@@ -65,12 +64,10 @@ def main():
     if code == 0 and evidence:
         build = Path(evidence.group(1).strip()) / 'build'
         receipt['workspaceEvidence'] = str(Path(evidence.group(1).strip()).relative_to(ROOT))
-        mutations = Path(tempfile.mkdtemp(prefix='composedoc-mutations-')) / 'run'
-        try:
-            gate('implementation-mutations', [sys.executable, 'tooling/verification/mutation_checks.py',
-                                              '--build-dir', str(build), '--output-dir', str(mutations)])
-        finally:
-            shutil.rmtree(mutations.parent, ignore_errors=True)
+        mutations = ROOT / 'tests/local-evidence/desktop' / ('mutations-' + commit[:12] + '-' + str(time.time_ns()))
+        receipt['mutationEvidence'] = str(mutations.relative_to(ROOT))
+        gate('implementation-mutations', [sys.executable, 'tooling/verification/mutation_checks.py',
+                                          '--build-dir', str(build), '--output-dir', str(mutations)])
     else:
         receipt['gates'].append({'name': 'implementation-mutations', 'exitCode': None, 'skipped': 'workspace-milestone failed'})
     if git('rev-parse', 'HEAD') != commit or git('status', '--porcelain'):

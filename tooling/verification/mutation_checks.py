@@ -71,7 +71,7 @@ def main():
             project.mkdir()
             for name_to_copy in ('settings.gradle.kts', 'build.gradle.kts', 'gradle.properties', 'gradlew', 'gradlew.bat'):
                 shutil.copy2(ROOT / name_to_copy, project / name_to_copy)
-            for directory in ('gradle', 'build-logic', 'core', 'apps/desktop-workspace', 'tests/desktop-harness'):
+            for directory in ('gradle', 'build-logic', 'core', 'apps/desktop-workspace', 'apps/android-sample', 'apps/independent-consumer', 'tests/desktop-harness'):
                 shutil.copytree(ROOT / directory, project / directory,
                                 ignore=shutil.ignore_patterns('build', '.gradle', 'target', 'local-evidence'))
             changed = project / relative
