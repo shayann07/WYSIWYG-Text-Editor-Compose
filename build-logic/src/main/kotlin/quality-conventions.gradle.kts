@@ -26,8 +26,7 @@ extensions.configure<SpotlessExtension> {
 extensions.configure<DetektExtension> {
     toolVersion = versions.findVersion("detekt").get().requiredVersion
     buildUponDefaultConfig = true
-    // Pre-migration prototype findings are recorded per module; new findings fail the build.
-    baseline = file("detekt-baseline.xml")
+    // No finding baseline is allowed; architectureCheck rejects baseline files/configuration.
     config.setFrom(rootProject.file("build-logic/config/detekt.yml"))
     // Generated sources (Unicode tables and the pinned conformance test) keep generator output.
     source.setFrom(fileTree("src") { include("**/*.kt"); exclude("**/generated/**", "**/Unicode16ConformanceTest.kt") })

@@ -86,6 +86,7 @@ private val mainHarnessRoutes: List<MainHarnessRoute> =
             exitAfterCheck { typographySheet(File(value.substringAfter('='))) }
         },
         guardedHostResultRoute("--pages-output-check", ::runPagesOutputChecks),
+        guardedHostResultRoute("--focus-restoration-check", ::runFocusRestorationChecks),
         prefixRoute("--create-pages-sample=") { value ->
             val path = java.nio.file.Path.of(value.substringAfter('=')).toAbsolutePath().normalize()
             java.nio.file.Files.createDirectories(path.parent)

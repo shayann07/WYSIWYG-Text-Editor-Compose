@@ -36,7 +36,8 @@ private const val ZOOM_FULL = 1f
 private val ZOOM_LEVELS = listOf(ZOOM_HALF, ZOOM_THREE_QUARTERS, ZOOM_FULL)
 
 /** File operations and scans run off EDT. Restore always makes a separate, dirty, untitled window. */
-@Suppress("LongParameterList") // Reason: public entry point used by the desktop harness; parameters are API.
+// Reason: the desktop harness consumes this public entry point; grouping parameters would change callers.
+@Suppress("LongParameterList")
 fun showLocalRecovery(
     directory: Path,
     fontProfile: String,

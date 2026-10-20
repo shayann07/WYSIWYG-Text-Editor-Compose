@@ -275,7 +275,8 @@ class UnfinishedController(
      * UI disposal is delayed until its exact generation is durably resolved. No failed write consumes memory
      * evidence.
      */
-    @Suppress("TooGenericExceptionCaught") // Reason: background decision boundary; failures keep the record.
+    // Reason: background decision boundary; every failure must keep the record and report the rejected decision.
+    @Suppress("TooGenericExceptionCaught")
     fun resolveLive(key: Any, apply: (() -> Document?)? = null, remove: () -> Unit) {
         check(SwingUtilities.isEventDispatchThread())
         val id = keys[key] ?: run {

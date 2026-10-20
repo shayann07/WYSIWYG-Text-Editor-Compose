@@ -579,8 +579,7 @@ private fun restoreChooserCopy(chooser: JFrame, c2: LocalRecoveryController): JF
     }
     recoveryAwait("Actual Restore action") {
         recoveryOwner {
-            @Suppress("UNCHECKED_CAST")
-            val previous = chooser.rootPane.getClientProperty("test.previousWindows") as Set<java.awt.Frame>
+            val previous = chooser.rootPane.getClientProperty("test.previousWindows") as Set<*>
             restored =
                 JFrame.getFrames().filterIsInstance<JFrame>().firstOrNull {
                     it !in previous &&

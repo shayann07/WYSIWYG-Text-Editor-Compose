@@ -130,7 +130,12 @@ class EditorViewModel(private val engine: EditorEngine) : ViewModel() {
         engine.onChange = publish
     }
 
-    /** Qualification-harness access to the owner; UI and application code must dispatch intents. */
+    /**
+     * Compatibility escape hatch for the qualification harness, not an application integration port.
+     * It remains public to preserve the recorded API. UI and app callers must use [dispatch] and
+     * read-only queries; `architectureCheck` rejects both this property and direct engine access
+     * outside this implementation. Tests may exercise the owner to inject fault/composition traces.
+     */
     val verificationEngine: EditorEngine get() = engine
 
     var onEngineEvent: (String) -> Unit
@@ -145,6 +150,7 @@ class EditorViewModel(private val engine: EditorEngine) : ViewModel() {
             engine.onSettlementRequested = value
         }
 
+    // Reason: sealed intents determine R, but Kotlin cannot express the per-branch return type of this public API.
     @Suppress("UNCHECKED_CAST")
     fun <R> dispatch(intent: EditorIntent<R>): R = when (intent) {
         is EditorIntent.Command -> engine.perform(intent.action)

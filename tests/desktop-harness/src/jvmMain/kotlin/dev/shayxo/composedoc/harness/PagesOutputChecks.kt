@@ -41,9 +41,11 @@ import dev.shayxo.composedoc.workspace.showEditor
 import java.io.File
 import java.nio.file.Files
 import javax.swing.JButton
+import javax.swing.JComboBox
 import javax.swing.JDialog
 import javax.swing.JFrame
 import javax.swing.JLabel
+import javax.swing.JSpinner
 import javax.swing.SwingUtilities
 import javax.swing.Timer
 fun runPagesOutputChecks(result: File) {
@@ -149,11 +151,20 @@ private class PagesOutputRun(private val result: File) {
         test(
             "preview capture yields owner thread and Cancel preserves canonical state/history",
         ) { checkPreviewCancel() }
+        test("preview page navigation and screen zoom preserve captured document and print geometry") {
+            checkPreviewNavigation()
+        }
         test(
             "page fields stabilize at9-10 and99-100 without a content/history entry",
         ) { checkPageFieldStabilization() }
         test("bounded50page workload thresholds declared before measurement") { checkFiftyPageWorkload() }
         edt { window.dispose() }
+        test("independent multilingual marker ink alignment in six view/zoom states") {
+            metrics["markerPositionRows"] = MarkerPositionChecks.run(File(result.parentFile, "marker-positions")).size
+        }
+        test("file worker and chooser completion restores only missing active document focus") {
+            runFocusRestorationChecks(File(result.parentFile, "file-focus.json"))
+        }
     }
 
     private fun checkDocumentUnits() {
@@ -463,6 +474,59 @@ private class PagesOutputRun(private val result: File) {
         metrics["previewCaptureHeartbeat"] =
             mapOf("ticks" to ticks, "maxGapMs" to longest / 1e6, "declaredLimitMs" to 250)
         check(ticks > 0 && longest < 250_000_000L)
+    }
+
+    private fun checkPreviewNavigation() {
+        val prior = surface.viewModel.snapshot()
+        fun children(c: java.awt.Component): List<java.awt.Component> =
+            listOf(c) + (if (c is java.awt.Container)c.components.flatMap(::children) else emptyList())
+        val ui = window.rootPane.getClientProperty("editor.pageOutput") as PageOutputUi
+        edt { children(ui.panel).filterIsInstance<JButton>().single { it.name == "print-preview" }.doClick() }
+        lateinit var dialog: JDialog
+        lateinit var image: JLabel
+        waitFor("preview rendered") {
+            dialog = java.awt.Window.getWindows().filterIsInstance<JDialog>().single {
+                it.isVisible && it.title.startsWith("Captured print preview")
+            }
+            val candidate = children(dialog).filterIsInstance<JLabel>().singleOrNull { it.icon != null }
+            if (candidate == null) {
+                false
+            } else {
+                image = candidate
+                true
+            }
+        }
+        lateinit var zoom: JComboBox<*>
+        lateinit var page: JSpinner
+        edt {
+            zoom = children(dialog).filterIsInstance<JComboBox<*>>().single { it.name == "preview-zoom" }
+            page = children(dialog).filterIsInstance<JSpinner>().single()
+            val nativeArrow = javax.swing.UIManager.getInt("ScrollBar.width")
+            val available = zoom.width - zoom.insets.left - zoom.insets.right - nativeArrow
+            check(available >= zoom.getFontMetrics(zoom.font).stringWidth("100%")) {
+                "Closed preview zoom must show the complete value beside the native arrow"
+            }
+            checkClosedPreviewZoomInk(zoom, result.parentFile)
+        }
+        val width = kotlin.math.ceil(mmToDocument(specimen.pageSettings.widthMm)).toInt()
+        for (percentage in listOf(50, 75, 100)) {
+            edt { zoom.selectedItem = "$percentage%" }
+            waitFor("preview $percentage percent") {
+                zoom.isEnabled && image.icon.iconWidth == width * percentage / 100
+            }
+        }
+        var previousIcon: javax.swing.Icon? = null
+        edt {
+            previousIcon = image.icon
+            page.value = 2
+        }
+        waitFor("preview second page") { page.isEnabled && image.icon !== previousIcon }
+        edt {
+            children(dialog).filterIsInstance<JButton>().single { it.text == "Cancel / Close" }.doClick()
+            check(!dialog.isDisplayable)
+            check(surface.viewModel.snapshot() == prior)
+        }
+        metrics["previewZoomPercentages"] = listOf(50, 75, 100)
     }
 
     private fun fixedPages(count: Int): Document {

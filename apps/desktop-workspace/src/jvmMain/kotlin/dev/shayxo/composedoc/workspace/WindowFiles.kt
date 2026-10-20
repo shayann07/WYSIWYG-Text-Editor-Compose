@@ -10,7 +10,10 @@ import dev.shayxo.composedoc.model.Document
 import dev.shayxo.composedoc.ui.EditorIntent
 import dev.shayxo.composedoc.ui.EditorViewModel
 import dev.shayxo.composedoc.ui.QuarantinedCallback
+import dev.shayxo.composedoc.ui.findSurface
 import dev.shayxo.composedoc.ui.quarantineDiagnostic
+import java.awt.Dialog
+import java.awt.KeyboardFocusManager
 import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
 import java.nio.file.Files
@@ -18,6 +21,7 @@ import java.nio.file.Path
 import javax.swing.JFileChooser
 import javax.swing.JFrame
 import javax.swing.JOptionPane
+import javax.swing.SwingUtilities
 import javax.swing.SwingWorker
 import javax.swing.filechooser.FileNameExtensionFilter
 
@@ -204,9 +208,22 @@ class WindowFiles(
                     error(failure)
                 } finally {
                     refresh()
+                    restoreDocumentFocusIfVacant()
                 }
             }
         }.execute()
+    }
+
+    /** Chooser disposal can leave an active frame with no native key-event target. */
+    private fun restoreDocumentFocusIfVacant() {
+        SwingUtilities.invokeLater {
+            if (busy || !window.isDisplayable || !window.isActive) return@invokeLater
+            val occupied = KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner != null
+            val modal = window.ownedWindows.any { it is Dialog && it.isModal && it.isVisible }
+            if (!occupied && !modal) {
+                (windowCurrentSurface(window) ?: findSurface(window))?.requestFocusInWindow()
+            }
+        }
     }
 
     private fun chooser(): JFileChooser = JFileChooser(path?.parent?.toFile()).apply {
@@ -223,7 +240,12 @@ class WindowFiles(
     fun open() {
         if (busy) return
         val picker = chooser()
-        if (picker.showOpenDialog(window) != JFileChooser.APPROVE_OPTION) return
+        val choice = try {
+            picker.showOpenDialog(window)
+        } finally {
+            restoreDocumentFocusIfVacant()
+        }
+        if (choice != JFileChooser.APPROVE_OPTION) return
         val selected = picker.selectedFile.toPath().toAbsolutePath().normalize()
         work({ DocumentFiles.read(selected) }) { loaded -> openInNewWindow(loaded, selected) }
     }
@@ -253,10 +275,14 @@ class WindowFiles(
 
     private fun saveDestination(asNew: Boolean): Path? {
         val current = path
-        return when {
-            !asNew && current != null -> current
-            saveDestinationPicker != null -> saveDestinationPicker!!.invoke()
-            else -> chooseSaveFile()
+        return try {
+            when {
+                !asNew && current != null -> current
+                saveDestinationPicker != null -> saveDestinationPicker!!.invoke()
+                else -> chooseSaveFile()
+            }
+        } finally {
+            restoreDocumentFocusIfVacant()
         }
     }
 

@@ -6,6 +6,7 @@ import dev.shayxo.composedoc.model.SimpleJson
 import dev.shayxo.composedoc.model.StoredFont
 import dev.shayxo.composedoc.model.TextStyleFlags
 import java.io.File
+import java.io.InputStream
 import java.security.MessageDigest
 
 /** Text size used by the pinned candidate font profiles. */
@@ -16,6 +17,11 @@ private const val LINK_COLOR = 0xff174ea6
 
 /** Opaque alpha channel combined with a stored RGB colour. */
 private const val OPAQUE_ALPHA = 0xff000000L
+
+private const val FONT_RESOURCE_ROOT = "/dev/shayxo/composedoc/layout/fonts/"
+private const val FONT_MANIFEST_LIMIT = 64_000
+private const val FONT_BYTES_LIMIT = 2_000_000
+private const val FONT_MANIFEST_SHA256 = "60c6f496fad4805dfdf6889b59e037d31a7d3287f5a6fc483f7dca4808bb372c"
 
 /** Candidate profiles for the desktop qualification harness; no production font decision. */
 data class TypographyProfile(
@@ -35,7 +41,8 @@ data class TypographyProfile(
             "naskh" to "Naskh (fallback specimen)",
         )
 
-        fun load(id: String, fontsDir: File = File("tests/suites/urdu/u0/fonts")): TypographyProfile {
+        /** Omitted/empty directory uses bundled resources; a supplied directory is a strict override. */
+        fun load(id: String, fontsDir: File = File("")): TypographyProfile {
             if (id == "system") return system
             val filename = when (id) {
                 "noto-nastaliq" -> "NotoNastaliqUrdu[wght].ttf"
@@ -43,23 +50,27 @@ data class TypographyProfile(
                 "naskh" -> "NotoSansArabic[wdth,wght].ttf"
                 else -> error("Unknown typography profile: $id")
             }
-            val manifestText = File(fontsDir.parentFile, "fonts.json").readText(Charsets.UTF_8)
-            val manifest = SimpleJson(manifestText).parse() as Map<*, *>
+            val manifestBytes = typographyBytes(fontsDir, "fonts.json", FONT_MANIFEST_LIMIT)
+            require(sha256(manifestBytes) == FONT_MANIFEST_SHA256) {
+                "Pinned font manifest identity mismatch; current profile retained"
+            }
+            val manifest = SimpleJson(manifestBytes.toString(Charsets.UTF_8)).parse() as Map<*, *>
             val entries = (manifest["candidateFonts"] as List<*>) + (manifest["fallbackFonts"] as List<*>)
             val entry = entries.map { it as Map<*, *> }.single { it["fileName"] == filename }
-            val file = File(fontsDir, filename)
-            val bytes = file.readBytes()
-            val hash = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+            val bytes = typographyBytes(fontsDir, filename, FONT_BYTES_LIMIT)
+            val hash = sha256(bytes)
             require(bytes.size.toLong() == (entry["sizeBytes"] as Number).toLong() && hash == entry["sha256"]) {
                 "Pinned font identity mismatch: $filename; current profile retained"
             }
-            val requestedFamily = checkNotNull(org.jetbrains.skia.FontMgr.default.makeFromFile(file.path)).use {
-                it.familyName
+            val requestedFamily = org.jetbrains.skia.Data.makeFromBytes(bytes).use { data ->
+                checkNotNull(org.jetbrains.skia.FontMgr.default.makeFromData(data)) {
+                    "Pinned font could not be decoded: $filename; current profile retained"
+                }.use { it.familyName }
             }
             return TypographyProfile(
                 id,
                 labels.getValue(id),
-                FontFamily(Font(file)),
+                FontFamily(Font("composedoc:$hash", bytes)),
                 CANDIDATE_PROFILE_SIZE_SP,
                 "$id:$hash",
                 requestedFamily,
@@ -67,6 +78,29 @@ data class TypographyProfile(
         }
     }
 }
+
+private fun sha256(bytes: ByteArray): String =
+    MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+
+private fun typographyBytes(directory: File, filename: String, limit: Int): ByteArray {
+    val input = if (directory.path.isEmpty()) {
+        checkNotNull(TypographyProfile::class.java.getResourceAsStream(FONT_RESOURCE_ROOT + filename)) {
+            "Pinned typography resource unavailable: $filename; current profile retained"
+        }
+    } else {
+        val file = if (filename == "fonts.json") File(directory.parentFile, filename) else File(directory, filename)
+        require(file.isFile) { "Pinned typography file unavailable: $file; current profile retained" }
+        file.inputStream()
+    }
+    return input.use { boundedTypographyBytes(it, filename, limit) }
+}
+
+private fun boundedTypographyBytes(input: InputStream, filename: String, limit: Int): ByteArray =
+    input.readNBytes(limit + 1).also {
+        require(it.size <= limit) {
+            "Pinned typography resource exceeds size limit: $filename; current profile retained"
+        }
+    }
 
 object StoredFonts {
     private val cache = HashMap<StoredFont, TypographyProfile>()

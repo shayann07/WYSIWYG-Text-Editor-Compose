@@ -1,16 +1,16 @@
 # Writing with the local Urdu workspace
 
-Current implementation: 19 October 2026. Qualification, exact build and open checks are recorded in [the workspace batch report](../reports/v6-local-writing-workspace-batch.md). This is the Windows desktop consumer of the reusable editor foundation, not whole-product or cross-platform qualification.
+Current implementation: 20 October 2026, ComposeDoc's multilingual desktop example. Urdu/Nastaliq remains a primary qualification workload. Current changes, exact evidence and remaining native/PDF limits are in [the portable-font, marker and pages report](../reports/portable-fonts-markers-pages-20261020.md). Previous workspace evidence remains dated in [the workspace continuation report](../reports/v6-workspace-native-finish-20261019.md); this batch does not retroactively close its unrelated cleanup checks.
 
-Current verification: build202031 passes20 integrated stages and fixes two reproduced races where asynchronous Discard/Remove Recent completion removed a newly selected UI row. Both captured-target regressions pass. The native core writing → conflict → owned process kill → recovery → Save/fresh Open sequence remains separately dated192824 evidence. A two-approach retry confirmed tool cache/targeting errors before the dialog received selection input; final native discard/new-arrival, Locate/cleanup, Reload/ordinary close and full window/image-transform coverage remain BLOCKED / NOT RUN. Computer control is stopped. See [the continuation report and manual checklist](../reports/v6-workspace-native-finish-20261019.md); automated success does not close native qualification.
+Pinned candidate fonts now load from the layout jar, so consumer font loading does not require a checkout or a `tests/` working directory. Exact original bytes, hashes and OFL notice are bundled. `TypographyProfile.load(id, fontsDir)` still accepts a strict explicit directory override. Missing/corrupt resources fail validation; stored choices are never rewritten. The existing visible unavailable-font status remains the fallback disclosure, not proof of a physically resolved fallback run.
 
 From `D:\Work\WYSIWYG-Text-Editor-Compose`:
 
 ```powershell
-.\desktop-prototype\write-urdu.cmd --workspace-sample
+.\apps\desktop-workspace\write-urdu.cmd --workspace-sample
 ```
 
-The new disposable sample is `desktop-prototype/samples/disposable-workspace-v8.astra`; it opens as an independent unsaved copy. Historical v3/v5/v6 samples are preserved. `--sample` still opens the preceding structured exercise. Generate a new sample into an unused path with `desktop-prototype\run.cmd --create-workspace-sample=D:\YourTestFolder\sample.astra`.
+The new disposable sample is `apps/desktop-workspace/samples/disposable-workspace-v8.astra`; it opens as an independent unsaved copy. Historical v3/v5/v6 samples are preserved. `--sample` still opens the preceding structured exercise. Generate a new sample into an unused path with `python tooling/launch.py --create-workspace-sample=D:\YourTestFolder\sample.astra`.
 
 ## Start and resume work
 
@@ -46,7 +46,17 @@ Enter, empty-item Enter, Item paragraph and Backspace retain the established str
 
 ## Pages and images
 
-Page settings offers A4/Letter, portrait/landscape and uniform 5–40 mm margins, as one undoable document command. It reflows the existing page planner. There are no section-specific margins or PDF/print qualification in this batch. The page planner retains whole-paragraph shaping/bidi across fragments. Oversized images fit proportionally to content/page bounds.
+The self-authored ten-chapter pages specimen opens as an unsaved copy with `apps\desktop-workspace\write-urdu.cmd --pages-sample`. Its checked-in editable equivalent is `apps/desktop-workspace/samples/disposable-pages-v9.astra`; historical samples are preserved. Page measurements use 96 document units/inch; fit-width and zoom change presentation, not stored paper dimensions or wrapping.
+
+Ctrl+Enter inserts an explicit semantic page break (plain-text U+000C), distinct from ordinary hard paragraphs and soft LF. Pages / Output provides break-before, keep-with-next, keep-lines and widow/orphan controls under the existing half-open paragraph targeting rules. Header / Footer edits separate document-owned flows with uniform style, direction/alignment and optional page/page-total fields. Different-first-page hides running content while retaining reserved space. Body counts exclude running flows and fields.
+
+Print preview captures the actual immutable editor page plan. Its page selector and 50/75/100% magnification change the view only. Cancel / Close stops pending preview/print work and returns to writing. Print opens the installed driver dialog; cancellation submits no job. Actual-size and printable-area fit do not repaginate. Driver settings, physical output and searchable semantic PDF remain separately qualified; the PDF status control explains the open bridge gate.
+
+The 20 October bounded native checks covered physical Ctrl+Enter, selection/Undo/Redo, running-content editing, preview navigation/zoom, Print cancellation and exact fresh-process reopening. Save As now restores a vacant document focus so Ctrl+O works without an extra click; it does not steal focus from another control or modal. Advanced driver paper controls and usable Narrator speech remain unqualified; see the linked report for exact build identities and evidence. Computer control is off after verification.
+
+Markers use semantic stored typography and shared sibling gutters. Positive first-fragment leading is removed consistently from text/marker projection; negative rounded ink bleed retains the approved marker origin. Noto specimen pages remain byte-identical; Gulzar markers are corrected without changing text, numbering or direction-aware sides. Per-language marker direction/digit/punctuation configuration is deferred.
+
+Page settings offers A4/Letter, portrait/landscape and uniform 5–40 mm margins, as one undoable document command. It reflows the existing page planner. There are no section-specific margins; native dialog cancellation does not establish physical print fidelity or semantic PDF qualification. The page planner retains whole-paragraph shaping/bidi across fragments. Oversized images fit proportionally to content/page bounds.
 
 In Structure, Insert image embeds a local PNG/JPEG after bounded worker signature/dimension/decoder validation. Select the image to use Replace image, Delete image and Image properties. Text landing paragraphs remain before/after the block. The original source can be moved/deleted after insertion without breaking the document.
 

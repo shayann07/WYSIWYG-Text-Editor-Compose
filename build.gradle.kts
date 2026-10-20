@@ -48,8 +48,12 @@ val writeArchitectureModel by tasks.registering {
         }
     }
 }
+val architecturePolicySelfTest by tasks.registering(Exec::class) {
+    commandLine("python", "-m", "unittest", "discover", "-s", "tooling/architecture", "-p", "test_*.py")
+}
+
 tasks.register<Exec>("architectureCheck") {
-    dependsOn(writeArchitectureModel)
+    dependsOn(writeArchitectureModel, architecturePolicySelfTest)
     commandLine("python", "tooling/architecture/check_boundaries.py")
 }
 tasks.register("detekt") { dependsOn(coreModules.map { ":core:$it:detekt" }, ":apps:desktop-workspace:detekt", ":tests:desktop-harness:detekt") }

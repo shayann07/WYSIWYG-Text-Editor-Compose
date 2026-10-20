@@ -120,21 +120,19 @@ private const val SCROLLBAR_COLOR = 0xffb1bac8
 /** The canvas renders at density 1, so a dp is one document unit. */
 private fun Dp.toDocumentPx(): Float = value
 
-// Reason: public API (see apiCheck) and the Compose convention for @Composable Unit functions.
 @Composable
+// Reason: public API (see apiCheck) and the Compose convention for @Composable Unit functions.
 @Suppress("ktlint:standard:function-naming", "FunctionNaming") // Compose UI functions use PascalCase.
 fun DocumentCanvas(state: ViewState) {
     val baseDensity = androidx.compose.ui.platform.LocalDensity.current
     val renderZoom = state.zoom
     CompositionLocalProvider(
         androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(1f, 1f),
-    ) { ZoomedDocumentCanvas(state, renderZoom, baseDensity.density) }
+    ) { zoomedDocumentCanvas(state, renderZoom, baseDensity.density) }
 }
 
 @Composable
-@Suppress("ktlint:standard:function-naming", "FunctionNaming") // Compose UI functions use PascalCase.
-// Reason: the Compose convention names @Composable Unit functions in PascalCase.
-private fun ZoomedDocumentCanvas(state: ViewState, renderZoom: Float, deviceDensity: Float) {
+private fun zoomedDocumentCanvas(state: ViewState, renderZoom: Float, deviceDensity: Float) {
     val measurer = rememberTextMeasurer()
     val fontFamilyResolver = androidx.compose.ui.platform.LocalFontFamilyResolver.current
     val densityObj = androidx.compose.ui.platform.LocalDensity.current
@@ -869,16 +867,20 @@ private fun DrawScope.drawImageBlock(
 }
 
 private fun DrawScope.drawMarker(geo: Geometry, fragment: ParagraphFragment, marker: ListMarkerLayout) {
+    // Marker metrics, like text/caret/selection metrics, use the original paragraph origin.
+    // Subtract removed positive leading. A negative rounded first-line top denotes ink/rounding
+    // bleed, not leading: retain the approved paragraph-origin marker alignment in that case.
+    val paragraphY = geo.y + fragment.top - fragment.sourceTop.coerceAtLeast(0f)
     val markerLayout = marker.layout
     if (markerLayout != null) {
         synchronized(markerLayout.multiParagraph) {
-            drawText(markerLayout, topLeft = Offset(geo.x + marker.left, geo.y + fragment.top + marker.top))
+            drawText(markerLayout, topLeft = Offset(geo.x + marker.left, paragraphY + marker.top))
         }
     } else {
         drawCircle(
             ComposeColor(INK_COLOR),
             marker.bulletRadius,
-            Offset(geo.x + marker.left + marker.bulletRadius, geo.y + fragment.top + marker.opticalCenter),
+            Offset(geo.x + marker.left + marker.bulletRadius, paragraphY + marker.opticalCenter),
         )
     }
 }

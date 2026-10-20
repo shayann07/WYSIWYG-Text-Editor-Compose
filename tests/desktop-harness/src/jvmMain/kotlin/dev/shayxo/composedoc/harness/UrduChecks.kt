@@ -47,8 +47,7 @@ fun parseUrduFixtures(file: File): List<UrduFixture> {
     val jsonText = Files.readString(file.toPath(), StandardCharsets.UTF_8)
     val parsed = SimpleJson(jsonText).parse() as? List<*> ?: error("Expected JSON array of fixtures")
     return parsed.map { raw ->
-        @Suppress("UNCHECKED_CAST")
-        val map = raw as Map<String, Any?>
+        val map = raw as Map<*, *>
         val id = map["id"] as String
         val category = map["category"] as String
         val title = map["title"] as String
@@ -60,13 +59,11 @@ fun parseUrduFixtures(file: File): List<UrduFixture> {
         val executionScope = map["executionScope"] as String
         val operations = (map["operations"] as? List<*>)?.map { it.toString() } ?: emptyList()
 
-        @Suppress("UNCHECKED_CAST")
-        val expected = map["expectedOutcome"] as? Map<String, Any?>
+        val expected = map["expectedOutcome"] as? Map<*, *>
         val forbidden = (expected?.get("forbiddenInCanonical") as? List<*>)?.map { it.toString() } ?: emptyList()
         val spansRaw = (expected?.get("formattingSpans") as? List<*>) ?: emptyList<Any?>()
         val spans = spansRaw.map { sRaw ->
-            @Suppress("UNCHECKED_CAST")
-            val sMap = sRaw as Map<String, Any?>
+            val sMap = sRaw as Map<*, *>
             UrduFormattingSpan(
                 start = (sMap["start"] as Number).toInt(),
                 end = (sMap["end"] as Number).toInt(),

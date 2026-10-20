@@ -1,0 +1,20 @@
+// Read-only diagnostic: report the actual Binary Compatibility Validator compare inputs.
+// Invoke with: ./gradlew -I tooling/architecture/api_inputs.init.gradle reportApiCheckInputs
+gradle.projectsEvaluated {
+    def inspectedRoot = rootProject
+    rootProject.tasks.register('reportApiCheckInputs') {
+        doLast {
+            inspectedRoot.allprojects.each { checkedProject ->
+                checkedProject.tasks.matching { it.name.endsWith('ApiCheck') }.each { task ->
+                    if (task.hasProperty('projectApiFile') && task.hasProperty('generatedApiFile')) {
+                        println groovy.json.JsonOutput.toJson([
+                            task: task.path,
+                            expected: task.projectApiFile.get().asFile.absolutePath,
+                            generated: task.generatedApiFile.get().asFile.absolutePath
+                        ])
+                    }
+                }
+            }
+        }
+    }
+}

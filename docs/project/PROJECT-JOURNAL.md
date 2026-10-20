@@ -17,8 +17,9 @@ is not evidence of completed migration, platform qualification or GitHub activat
 
 **20 October 2026:** the migration passes every required local gate (docs/hashes,
 V6 witnesses, `./gradlew check apiCheck`, verification contract, 20/20 workspace
-stages and 4/4 mutants). Pre-migration Detekt findings are recorded as baseline
-debt. Native platform, IME, AT, PDF and print qualification remain open.
+stages and 4/4 mutants). Subsequent overnight repair removed the pre-migration
+Detekt debt: zero findings, no baselines. The earlier baseline is historical
+evidence only. Native platform, IME, AT, PDF and print qualification remain open.
 
 
 **Owner-confirmed mission, recorded 17 October 2026. Read this before making product or architecture decisions.**

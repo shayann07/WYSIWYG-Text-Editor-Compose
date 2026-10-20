@@ -54,6 +54,8 @@ private const val PREVIEW_HEIGHT_PX = 700
 private const val OFFSCREEN_OWNER_X_PX = -10000
 private const val OFFSCREEN_COORDINATE_PX = -16000
 private const val PREVIEW_DPI = 96
+private const val PERCENT_SCALE = 100f
+private const val PREVIEW_COMBO_CHROME_HEIGHTS = 3
 private const val CAPTURE_TICK_MS = 10
 
 /** Editors for one running flow (header or footer) inside the running-content dialog. */
@@ -173,8 +175,10 @@ class PageOutputUi(
                     val w = widows.text.toIntOrNull()
                     val o = orphans.text.toIntOrNull()
                     when {
-                        w == null || o == null ||
-                            w !in 1..MAX_WIDOW_ORPHAN_LINES || o !in 1..MAX_WIDOW_ORPHAN_LINES ->
+                        w == null ||
+                            o == null ||
+                            w !in 1..MAX_WIDOW_ORPHAN_LINES ||
+                            o !in 1..MAX_WIDOW_ORPHAN_LINES ->
                             "Enter whole widow/orphan counts1-5"
                         s.viewModel.clipboardCapture() != capture -> "Document/selection changed; reopen controls"
                         else -> {
@@ -356,6 +360,18 @@ private class PrintPreview(
     private val note =
         JLabel("Captured revision${plan.revision};${plan.pageCount} pages; ${plan.document.pageSettings.paper}")
     private val index = JSpinner(SpinnerNumberModel(1, 1, plan.pageCount, 1))
+    private val zoom = JComboBox(arrayOf("50%", "75%", "100%")).apply {
+        name = "preview-zoom"
+        selectedItem = "100%"
+        // Reserve label ink plus an arrow and both side gutters, each one UI font height.
+        // Some Windows LAFs otherwise ellipsize the closed value as "10...".
+        val metrics = getFontMetrics(font)
+        preferredSize = java.awt.Dimension(
+            metrics.stringWidth("100%") + metrics.height * PREVIEW_COMBO_CHROME_HEIGHTS,
+            preferredSize.height,
+        )
+        toolTipText = "Preview magnification only; captured page and print size stay unchanged"
+    }
     private val first = JTextField("1", SHORT_FIELD_COLUMNS)
     private val last = JTextField(plan.pageCount.toString(), SHORT_FIELD_COLUMNS)
     private val fit = JCheckBox("Fit to printer printable area (scales, never repaginates)")
@@ -372,6 +388,8 @@ private class PrintPreview(
         val controls = JPanel(WrappingControls()).apply {
             add(JLabel("Preview page"))
             add(index)
+            add(JLabel("Zoom"))
+            add(zoom)
             add(JLabel("Print range"))
             add(first)
             add(last)
@@ -396,6 +414,7 @@ private class PrintPreview(
         timer = Timer(CAPTURE_TICK_MS, null)
         timer.addActionListener { captureNext() }
         index.addChangeListener { render() }
+        zoom.addActionListener { render() }
         print.addActionListener { printSelectedRange() }
         close.addActionListener { cancel() }
         dialog.addWindowListener(object : WindowAdapter() {
@@ -415,10 +434,32 @@ private class PrintPreview(
         if (workerBusy || closed)return
         workerBusy = true
         index.isEnabled = false
+        zoom.isEnabled = false
         print.isEnabled = false
         val page = (index.value as Int) - 1
+        val factor = zoom.selectedItem.toString().removeSuffix("%").toInt() / PERCENT_SCALE
         object : SwingWorker<java.awt.image.BufferedImage, Unit>() {
-            override fun doInBackground() = captured.render(page, PREVIEW_DPI)
+            override fun doInBackground(): java.awt.image.BufferedImage {
+                val original = captured.render(page, PREVIEW_DPI)
+                if (factor == 1f) return original
+                val scaled = java.awt.image.BufferedImage(
+                    (original.width * factor).toInt().coerceAtLeast(1),
+                    (original.height * factor).toInt().coerceAtLeast(1),
+                    java.awt.image.BufferedImage.TYPE_INT_RGB,
+                )
+                val graphics = scaled.createGraphics()
+                try {
+                    graphics.setRenderingHint(
+                        java.awt.RenderingHints.KEY_INTERPOLATION,
+                        java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC,
+                    )
+                    graphics.drawImage(original, 0, 0, scaled.width, scaled.height, null)
+                } finally {
+                    graphics.dispose()
+                    original.flush()
+                }
+                return scaled
+            }
 
             // Reason: preview boundary; any render failure becomes a note and the dialog stays usable.
             @Suppress("TooGenericExceptionCaught")
@@ -439,6 +480,7 @@ private class PrintPreview(
                     captured.close()
                 } else {
                     index.isEnabled = true
+                    zoom.isEnabled = true
                     print.isEnabled = true
                 }
             }
@@ -524,6 +566,7 @@ private class PrintPreview(
         workerBusy = true
         print.isEnabled = false
         index.isEnabled = false
+        zoom.isEnabled = false
         object : SwingWorker<Unit, Unit>() {
             override fun doInBackground() {
                 printer.print()
@@ -544,6 +587,7 @@ private class PrintPreview(
                 } else {
                     print.isEnabled = true
                     index.isEnabled = true
+                    zoom.isEnabled = true
                 }
             }
         }.execute()

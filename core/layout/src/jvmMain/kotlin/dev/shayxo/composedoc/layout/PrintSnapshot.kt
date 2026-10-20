@@ -230,7 +230,8 @@ class PrintSnapshot private constructor(val plan: DocumentPagePlan, private val 
                 canvas.restore()
             }
             if (f.firstLine == 0) {
-                p.marker?.let { marker -> drawMarker(canvas, marker, y) }
+                // Match editor marker projection: positive removed leading only, not negative ink bleed.
+                p.marker?.let { marker -> drawMarker(canvas, marker, y - f.sourceTop.coerceAtLeast(0f)) }
             }
             canvas.restore()
         }

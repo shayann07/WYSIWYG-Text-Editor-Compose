@@ -1,3 +1,56 @@
+# Portable fonts, marker positioning and native pages — 20 October 2026
+
+Bounded implementation and desktop verification delivered; do not start another feature batch.
+Full report: `docs/reports/portable-fonts-markers-pages-20261020.md`; independent visual/API
+inspection: `docs/reports/portable-font-marker-independent-20261020.md`. Starting clean HEAD was
+`9874ed52e71f3db2a05436ef902be69680f787c5`. Final clean-commit gate status is authoritative only
+when `tooling/local/final-verification.json` says PASS and names HEAD; push/CI receipt is
+`tests/local-evidence/desktop/portable-product-delivery-20261020.json`. Preserve all earlier receipts.
+
+Delivered packaged pinned fonts/licenses and strict failure handling, shared editor/preview/print
+marker projection repair, measured preview zoom width and guarded asynchronous document focus
+restoration after Save/Open. Numbering/digits/punctuation unchanged; each item's direction owns
+its marker side. Owner approved corrected geometry for push conditional on green final gates.
+Noto pages1–5 remain PNG-byte/RGB exact; Gulzar6–10 change216 marker pixels each, zero elsewhere.
+Removed obsolete baseline setting/stale unconsumed API dumps; adjacent suppression reasons and
+mechanical no-baseline enforcement/self-tests are in place. No API/dependency/frozen-plan change.
+`verificationEngine` remains a documented public escape hatch; UI/app access remains prohibited.
+
+Latest full pages/output campaign **21/21 PASS**,18 output groups,432 marker memberships and
+eight mounted file-focus groups: `tests/local-evidence/desktop/batch-20261020-154842-11676/`.
+Build manifest **c86ea5a1245aba87267cec28a085acc8c900bc475c85f6b341fa5483a78a79b7**.
+Final actual-jar external-working-directory font tests PASS12 exact comparisons plus strict override
+and corrupt-resource cases (`font-portability-final-20261020`). Windows LAF18groups PASS;
+old truncated production control fails the same final ink oracle. Architecture/policy12 and
+governance5 self-tests PASS; `check apiCheck` PASS, Detekt0, hashes48+33 intact.
+
+Native evidence is separated by build. `portable-marker-native-20261020` process12844 exercised
+Ctrl+Enter, selection/history, running text, paper, preview/Print cancellation and Save. It exposed
+truncated100% and vacant SaveAs focus. Both fixed/regressed; `portable-marker-native-final-20261020`
+process2080 (manifest51e97e91...) retested full preview label,50/75/100%, PrintCancel, actual
+fresh-process Open, save/focus/physicalCtrlO/Cancel and actual clean document Close. Independent
+audits verify3996 exact units, formatting/page/running properties/resources and file hashes.
+Only a private composable rename followed; unchanged IO/controller binary identity is documented.
+Final affected renderer live check on c86ea5a1 process27816 PASS: Gulzar/Noto, CtrlEnd/Home,
+exact3970 units/ten pages/history0/0 (`final-renderer-native-20261020/renderer-audit.json`).
+All owned processes exited0; computer control OFF. Unicode text was pasted, not OS IME qualified.
+
+BLOCKED/NOT RUN: advanced printer-driver paper pane targeting, usable Narrator speech, physical
+printing, genuine composing IME, other DPI/native platforms, expert Urdu/full accessibility.
+Compose1.12.2/Skiko0.150.2 is the newest inspected matching stable pair; actual artifacts still lack
+the required Paragraph glyph/cluster/font bridge and PDF binding. Semantic PDF remains BLOCKED;
+no speculative pipeline/upgrade or raster-as-semantic claim. Earlier unrelated workspace native
+cleanup/image/window-matrix gaps remain dated and open, not retroactively passed by this batch.
+
+Launch: `apps\desktop-workspace\write-urdu.cmd --pages-sample` with JDK21/Python3.12.
+Editable checked-in sample: `apps/desktop-workspace/samples/disposable-pages-v9.astra`, SHA256
+`8e5830af21bf81ce4ba8ee93e6479fe8761ed298e80bf4475144fec04c4124f6`; fresh unsaved copy,
+independent oracle PASS incl seven negative controls. Ten-minute walkthrough and exact repeatable
+commands are in the report/WRITING. No further implementation restart is required. For the open
+manual gates follow the report's short checklist; do not rerun the historical campaign or enable
+computer control while coding. No physical job, package release, tag or OS setting change.
+
+---
 # Overnight 20 October 2026 — migration finished, Detekt zero, pages/output resumed
 
 See `docs/reports/overnight-20261020.md`. CodeQL and ios-build are required on main; UI/app

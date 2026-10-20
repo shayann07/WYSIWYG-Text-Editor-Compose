@@ -95,12 +95,14 @@ fun windowFiles(window: JFrame): WindowFiles? = window.rootPane?.getClientProper
 fun windowLayeredPane(window: JFrame): JLayeredPane? =
     window.rootPane?.getClientProperty("editor.layers") as? JLayeredPane
 
+// Reason: Swing stores the typed surface getter in an untyped property; changing this lookup changes its contract.
 @Suppress("UNCHECKED_CAST")
 fun windowCurrentSurface(window: JFrame): EditorSurface? =
     (window.rootPane?.getClientProperty("editor.surfaceGetter") as? (() -> EditorSurface))?.invoke()
 
 @JvmOverloads
-@Suppress("LongParameterList") // Reason: public entry point used by the desktop harness; parameters are API.
+// Reason: the desktop harness consumes this public entry point; grouping parameters would change callers.
+@Suppress("LongParameterList")
 fun showEditor(
     diagnostics: File? = null,
     initial: Document = Document(emptyList()),

@@ -138,6 +138,7 @@ private const val MAX_PENDING_ACTIONS = 256
 
 /** Plain-text vertical slice: one owner, Dc + provisional replacement, independent history.
  * Array snapshots are intentional for this prototype, NOT the production persistent index. */
+// Reason: the existing public owner commands are API; splitting this facade would change caller signatures.
 @Suppress("TooManyFunctions")
 class EditorEngine @JvmOverloads constructor(
     initial: Document = Document(emptyList()),

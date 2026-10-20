@@ -184,8 +184,8 @@ internal val NOOP_SURFACE: (EditorSurface) -> Unit = {}
 private const val BLINK_INTERVAL_MS = 500
 
 /** The transparent AWT root owns input; the Compose surface underneath only renders. */
-// Reason (LongParameterList): public constructor; grouping its parameters would change the published API.
-// Reason (TooManyFunctions): every remaining non-private function is published API (see apiCheck).
+// Reason: LongParameterList preserves the public constructor; grouping parameters would change the API.
+// Reason: TooManyFunctions preserves the remaining non-private published API (see apiCheck).
 @Suppress("LongParameterList", "TooManyFunctions")
 open class EditorSurface @JvmOverloads constructor(
     val viewModel: EditorViewModel,

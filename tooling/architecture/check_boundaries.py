@@ -2,6 +2,7 @@
 from pathlib import Path
 import json
 import re
+from check_quality_policy import check_quality_policy
 
 ROOT = Path(__file__).resolve().parents[2]
 ALLOWED = {
@@ -52,7 +53,7 @@ def check_source(module, source, file_name=""):
 def main():
     graph_path = ROOT / "build/verification/architecture.json"
     assert graph_path.is_file(), "Run Gradle architectureCheck to generate the resolved project graph"
-    errors = check_graph(json.loads(graph_path.read_text(encoding="utf-8")))
+    errors = check_graph(json.loads(graph_path.read_text(encoding="utf-8"))) + check_quality_policy(ROOT)
     files = 0
     for module in ALLOWED:
         directory = ROOT / module.strip(":").replace(":", "/") / "src"
@@ -66,7 +67,7 @@ def main():
     for error in errors:
         print(error)
     assert files > 0 and not errors, "Architecture boundaries failed"
-    print(f"PASS resolved Gradle graph and {files} Kotlin source boundary checks")
+    print(f"PASS resolved Gradle graph, {files} Kotlin source boundaries and baseline/suppression policy")
 
 
 if __name__ == "__main__":

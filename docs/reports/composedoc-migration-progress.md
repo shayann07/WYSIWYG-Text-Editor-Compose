@@ -10,7 +10,44 @@ a primary early qualification workload; the future commercial/cloud product
 is separately licensed. The owner selected eight root directories: core,
 apps, build-logic, gradle, tooling, tests, docs and .github.
 
-## Migration completion checkpoint (20 October 2026)
+## Governance cleanup checkpoint (20 October 2026)
+
+This checkpoint supersedes stale present-tense descriptions below; earlier
+receipts remain historical evidence. Starting revision for this repair batch:
+`9874ed52e71f3db2a05436ef902be69680f787c5`.
+
+- Removed the obsolete `baseline = file("detekt-baseline.xml")` convention. No
+  active Detekt baseline files existed at this starting revision. Current policy
+  is zero findings with no baseline; the 3,303-finding description below records
+  the earlier migration state, not current debt.
+- `architectureCheck` now enforces baseline-free active configuration/files and
+  adjacent `// Reason:` explanations for Kotlin suppressions. Its self-tests
+  cover missing/inline/separated reasons, multiline/qualified/file annotations,
+  literal/nested-comment false positives, baseline assignment/set/convention,
+  and exclusion of generated/archive/build evidence. Twelve combined architecture/policy tests pass (four boundary and eight policy tests).
+  Baseline-file/Gradle-configuration discovery uses Git's tracked plus nonignored
+  untracked inventory across the repository, including root and tooling paths;
+  suppression checks remain limited to active code. Ignored build/runtime data
+  and preserved archive/evidence trees are not traversed.
+- Four unnecessary qualification-harness unchecked casts now use star
+  projections instead of suppressions. Remaining suppressions were reviewed for
+  preserved API signatures or transaction/platform/failure-boundary behavior;
+  comments describe their actual reason rather than exempting a whole file.
+- Read-only Gradle task inspection proves `jvmApiCheck` consumes each module's
+  `api/jvm/<module>.api`. Removed five obsolete flat `api/<module>.api` files:
+  four duplicates and the stale UI dump. The five consumed JVM API dumps remain
+  byte-for-byte unchanged. Reproduce the input inspection with
+  `./gradlew -I tooling/architecture/api_inputs.init.gradle reportApiCheckInputs`.
+- `EditorViewModel.verificationEngine` remains a public compatibility escape
+  hatch for qualification traces; it is not an application port. Existing
+  `architectureCheck` rejects its use and direct `EditorEngine` access from UI
+  or app code outside the ViewModel. There is no API removal in this cleanup.
+
+The serialized full Gradle and integration checks for this repair batch are
+recorded by its final handoff; focused Python checks are not a substitute for
+those gates. No new native/platform, PDF, print, IME or AT claim is made here.
+
+## Migration completion checkpoint (20 October 2026; historical receipt)
 
 The Gradle multi-module migration builds and passes every required local gate
 on the reorganized tree. Run `python tooling/verification/final_gates.py` on a
@@ -37,7 +74,7 @@ Changes made to reach green after the interrupted session:
 - API dumps generated for data/domain/layout/ui; Spotless formatting applied.
 - `gradlew` normalized to LF for Unix CI (`.gitattributes` disables conversion).
 
-**Detekt baseline.** 3,303 pre-migration prototype findings are recorded in each
+**Historical Detekt baseline (superseded above).** 3,303 pre-migration prototype findings are recorded in each
 module's `detekt-baseline.xml` (mostly MaxLineLength 1,554, MagicNumber 920 and
 WildcardImport 482; also 83 CyclomaticComplexMethod and 62 LongMethod, e.g. the
 489-line `showEditor`). New findings fail the build. This is recorded debt, not a
@@ -110,7 +147,7 @@ Wrapper bootstrap succeeded in `%TEMP%/composedoc-wrapper-bootstrap`; it has
 not yet been installed into the project. JDK23 is locally installed; final CI
 and local compatibility must also be checked with the requested JDK21.
 
-## Required remaining work
+## Historical remaining work at the earlier checkpoint
 
 Finish baseline repairs and verify performance; relocate with a new resolver
 and explicit immutable-original ledger (docs/relocations.json and
