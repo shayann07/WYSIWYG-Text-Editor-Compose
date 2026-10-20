@@ -434,3 +434,18 @@ mangle-lone-surrogate and white-probe-raster each failed the required discrimina
 No compile error is accepted as a kill. New clean-commit six-gate run follows this tooling correction.
 The first preflight identity guard also refused a build while its runner source changed;
 that non-current build was discarded as evidence and a fresh stable preflight was used.
+
+## Hosted CI bootstrap correction
+
+All six final gates PASS on27410fa; authorized linear push completed. Hosted CI's Android
+job then failed exit127 before compiling: sdkmanager and adb are absent from the Ubuntu26
+runner PATH. Raw completed-job log is preserved at
+`desktop/android-ci-sdk-path-failure-raw.log`. This is a CI setup failure, not a native pass.
+
+CI now bootstraps Android SDK tools explicitly with SHA-pinned android-actions/setup-android
+v4.0.4 (`be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd`), verified from its actual action metadata.
+It installs the same required platform37/build-tools36; the emulator job requests its emulator
+package explicitly. Windows/quality/Apple/Java-CodeQL use the same independent SDK bootstrap,
+so no job relies on a runner image's PATH. This is build tooling on disposable hosted runners;
+no library runtime pins, app code, API, fonts, desktop geometry or local OS setup changes.
+New clean-commit gates and exact CI must pass before claiming remote completion.
