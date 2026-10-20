@@ -54,11 +54,13 @@ flowchart TD
 ```
 
 The domain engine owns the document, composition and attributed history.
-Immutable `EditorUiState` flows out; `EditorIntent` commands flow inward. Data
+Immutable `EditorUiState` flows out; typed `EditorIntent`s flow inward through
+`EditorViewModel.dispatch`, the only route UI and app code have to the engine. Data
 implements domain ports. The workspace shell supplies concrete services;
 reusable UI does not import its dialogs or persistence implementations.
 `architectureCheck` checks the real Gradle dependency graph and Kotlin imports.
-Spotless/Ktlint, Detekt and checked-in public API dumps form separate gates.
+Spotless/Ktlint (120 columns), Detekt with zero findings and no baselines, and checked-in
+public API dumps form separate gates.
 
 | Directory | Contents |
 |---|---|

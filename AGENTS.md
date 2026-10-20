@@ -65,8 +65,10 @@ native host originated on JVM/Desktop; report mobile/web gaps explicitly.
   composition settlement, Urdu/Nastaliq and mixed-script bidi contracts.
 - Use one document owner and immutable published state; dispatch user intents inward.
 - Mechanically check module boundaries, formatting, static analysis and public API dumps.
-- Treat each module's `detekt-baseline.xml` as recorded pre-migration prototype debt.
-  Fix new findings instead of regenerating a baseline; shrink baselines when refactoring.
+- Keep Detekt at zero findings with no baselines. A `@Suppress` is allowed only where a
+  fix would change behaviour or public API, with a `// Reason:` comment directly above it.
+- UI and app code mutate documents only through `EditorViewModel.dispatch(EditorIntent)` and
+  read through its queries; `architectureCheck` rejects `EditorEngine` access outside it.
 - Run `python tooling/docs/validate_docs.py` and `./gradlew check` before completing work,
   plus relevant integration checks. Report failures and unrun gates honestly.
 - Distinguish models, synthetic mounted handlers, real native input, AT and print evidence.
