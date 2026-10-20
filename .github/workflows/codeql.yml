@@ -49,12 +49,15 @@ jobs:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
           config-file: ./.github/codeql/codeql-config.yml
-      # CodeQL extracts Kotlin while it compiles, so every JVM compilation must run here.
+      - if: matrix.language == 'java-kotlin'
+        run: sdkmanager "platforms;android-37" "build-tools;36.0.0"
+      # CodeQL extracts Kotlin while it compiles, including the Android adapter/sample.
       - if: matrix.language == 'java-kotlin'
         run: >-
           ./gradlew --no-daemon --no-build-cache --console=plain
           -Pkotlin.compiler.execution.strategy=in-process
           compileKotlinJvm :apps:desktop-workspace:compileKotlin :tests:desktop-harness:compileKotlin
+          :apps:android-sample:compileDebugKotlin
       - uses: github/codeql-action/analyze@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
         with:
           category: /language:${{ matrix.language }}

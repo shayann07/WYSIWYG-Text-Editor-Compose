@@ -9,6 +9,7 @@ import dev.shayxo.composedoc.domain.EditorFrame
 import dev.shayxo.composedoc.domain.FindBasis
 import dev.shayxo.composedoc.domain.FindMatch
 import dev.shayxo.composedoc.domain.FindReplaceResult
+import dev.shayxo.composedoc.domain.NativeEdit
 import dev.shayxo.composedoc.domain.RecoveredDraft
 import dev.shayxo.composedoc.domain.RecoveryApplyResult
 import dev.shayxo.composedoc.domain.RichFragment
@@ -63,6 +64,8 @@ sealed interface EditorIntent<out R> {
     ) : EditorIntent<Unit>
 
     data class Delete(val backward: Boolean) : EditorIntent<Unit>
+
+    data class Native(val edit: NativeEdit, val expectedRevision: Long? = null) : EditorIntent<Boolean>
 
     data class NativeText(val text: String, val committedCount: Int, val caret: Int?) : EditorIntent<Unit>
 
@@ -164,6 +167,7 @@ class EditorViewModel(private val engine: EditorEngine) : ViewModel() {
             intent.paragraphBreaks,
         )
         is EditorIntent.Delete -> engine.delete(intent.backward)
+        is EditorIntent.Native -> engine.nativeEdit(intent.edit, intent.expectedRevision)
         is EditorIntent.NativeText -> engine.inputMethod(intent.text, intent.committedCount, intent.caret)
         is EditorIntent.NativeCaret -> engine.inputMethodCaret(intent.offset)
         EditorIntent.AbortComposition -> engine.abortComposition()

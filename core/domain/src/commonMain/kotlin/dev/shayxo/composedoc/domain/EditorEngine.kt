@@ -675,8 +675,22 @@ class EditorEngine @JvmOverloads constructor(
         if (postSelection != null)dispatch("Native post selection") { selection = postSelection }
     }
 
-    /** One AWT INPUT_METHOD_TEXT_CHANGED event: accepted prefix + complete replacement preedit. */
+    /** One strict native operation; all proposals still pass the transactional owner boundary. */
+    fun nativeEdit(edit: NativeEdit, expectedRevision: Long? = null): Boolean {
+        check(ownerThreadToken() === owner) { "Editing must run on the owner thread" }
+        if (busy || (expectedRevision != null && expectedRevision != snapshot().sessionRevision)) return false
+        val revision = snapshot().sessionRevision
+        return if (edit == NativeEdit.Finish && composition == null) {
+            true
+        } else {
+            applyNativeEdit(edit)
+            snapshot().sessionRevision != revision
+        }
+    }
+
     fun nativeStructureAdmission(text: String): Boolean = admitsNativeText(text)
+
+    /** One AWT INPUT_METHOD_TEXT_CHANGED event: accepted prefix + complete replacement preedit. */
     fun inputMethod(text: String, committedCount: Int, caret: Int?) {
         require(committedCount in 0..text.length)
         require(caret == null || caret in 0..text.length - committedCount)
@@ -690,11 +704,10 @@ class EditorEngine @JvmOverloads constructor(
                 combined,
                 accepted,
                 if (caret == null)null else c.markedStart + caret + committedCount - accepted,
-                c.markedStart,
-                c.markedStart + text.length,
+                Selection(c.markedStart, c.markedStart + text.length),
             )
         } else {
-            applyInputMethod(text, committedCount, caret, 0, text.length)
+            applyInputMethod(text, committedCount, caret, Selection(0, text.length))
         }
     }
     fun inputMethodCaret(offset: Int) {

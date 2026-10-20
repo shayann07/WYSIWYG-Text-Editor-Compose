@@ -11,10 +11,11 @@ ALLOWED = {
     ":core:data": {":core:model", ":core:domain"},
     ":core:layout": {":core:model", ":core:domain"},
     ":core:ui": {":core:model", ":core:domain", ":core:layout"},
+    ":apps:android-sample": {":core:" + n for n in ("model", "domain", "data", "layout", "ui")},
     ":apps:desktop-workspace": {":core:" + n for n in ("model", "domain", "data", "layout", "ui")},
 }
 
-UDF_MODULES = (":core:ui", ":apps:desktop-workspace")
+UDF_MODULES = (":core:ui", ":apps:desktop-workspace", ":apps:android-sample", ":consumer:standalone")
 
 
 def check_graph(graph):
@@ -40,9 +41,13 @@ def check_source(module, source, file_name=""):
         forbidden += ["dev.shayxo.composedoc.workspace.", "dev.shayxo.composedoc.harness."]
         allowed_names = {p.rsplit(":", 1)[-1] for p in ALLOWED[module]} | {module.rsplit(":", 1)[-1]}
         forbidden += ["dev.shayxo.composedoc." + n + "." for n in ("model", "domain", "data", "layout", "ui") if n not in allowed_names]
+    if module == ":apps:android-sample" or (module in UDF_MODULES and file_name and ("androidMain" in file_name or "Android" in file_name)):
+        forbidden += ["java.awt.", "javax.swing.", "androidx.compose.ui.awt.", "org.jetbrains.skia."]
     for prefix in forbidden:
         if prefix in code:
             errors.append("Forbidden dependency " + prefix)
+    if module in (":consumer:standalone", ":apps:android-sample") and re.search(r"java\.lang\.reflect|kotlin\.reflect|getDeclared(?:Field|Method|Constructor)|Class\.forName", code):
+        errors.append("Consumers must use public integration APIs, not reflection")
     # Unidirectional data flow: UI and application code reach the single document
     # owner only through EditorViewModel intents and read-only queries.
     if module in UDF_MODULES and file_name not in (None, "EditorViewModel.kt") and re.search(r"\b(EditorEngine|verificationEngine)\b", code):
@@ -64,6 +69,16 @@ def main():
             if module in (":core:model", ":core:domain") and "commonMain" in file.parts:
                 if re.search(r"(?m)^import (?:java|javax|android|androidx)\.", source):
                     errors.append(str(file.relative_to(ROOT)) + ": platform/framework import in pure common code")
+    consumer = ROOT / "apps/independent-consumer/src"
+    for file in consumer.rglob("*.kt"):
+        files += 1
+        errors += [str(file.relative_to(ROOT)) + ": " + e for e in check_source(":consumer:standalone", file.read_text(encoding="utf-8"), file.name)]
+    # All Android/shared-JVM production source must remain free of desktop host facilities.
+    for file in (ROOT / "core").rglob("*.kt"):
+        if any(part in ("androidMain", "javaMain") for part in file.parts):
+            code = file.read_text(encoding="utf-8")
+            for marker in ("java.awt.", "javax.swing.", "javax.imageio.", "org.jetbrains.skia.", "dev.shayxo.composedoc.workspace.", "dev.shayxo.composedoc.harness."):
+                if marker in code: errors.append(str(file.relative_to(ROOT)) + ": Android/Java-shared desktop leakage " + marker)
     for error in errors:
         print(error)
     assert files > 0 and not errors, "Architecture boundaries failed"

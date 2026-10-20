@@ -154,3 +154,16 @@ The owner supplied separate chatbot and Antigravity Argon reviews and explicitly
 A zero-partial-commit reference bug was reproduced and corrected in a separate validation-only model; the 16 new witness groups and 25 inherited groups passed. Real Yjs transport/naive-Undo hazards were tested, while browser/FFI/PDF/native qualification remains open. Wrong recommendations to discard durable provisional drafts, force caret-map bijections, reject all SDK-clipped Android ranges or change intentional Undo/reconversion behavior were not adopted. Stable marker semantics replace the provisional vote policy but are not implemented by this documentation task.
 
 The next bounded implementation assignment is [v6-next-session.md](../prompts/v6-next-session.md). No production code, dependency, license, Git tag or publication was changed here. Final specification hashes are sealed in `docs/plans/v6/v6-freeze-record.json`; future material changes require a versioned amendment, not silent regeneration.
+
+
+## Independent consumer and Android slice — 20 October 2026
+
+The owner authorized a separately built binary consumer and an Android Compose editing slice,
+using the shared authoritative engine. Additive integration APIs and the minimum required
+AGP9.1.1/Gradle9.3.1/compileSDK37 tooling correction were explicitly approved; runtime pins,
+approved desktop marker geometry and direction-aware numbering remain unchanged. No package
+publication is authorized. Actual results, source/build identity, native versus instrumented
+coverage and remaining gates are in
+[the dated integration report](../reports/android-consumer-integration-20261020.md), with
+[consumer integration instructions](../guides/BINARY-CONSUMER-ANDROID.md). Inspect the newest
+handoff and current receipts before treating any checkpoint as completion.

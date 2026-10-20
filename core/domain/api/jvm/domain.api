@@ -112,6 +112,10 @@ public final class dev/shayxo/composedoc/domain/ClipboardCapture {
 	public fun toString ()Ljava/lang/String;
 }
 
+public abstract interface class dev/shayxo/composedoc/domain/DocumentCatalog : dev/shayxo/composedoc/domain/DocumentRepository {
+	public abstract fun locations ()Ljava/util/List;
+}
+
 public abstract interface class dev/shayxo/composedoc/domain/DocumentCodec {
 	public abstract fun decode ([B)Ldev/shayxo/composedoc/model/Document;
 	public abstract fun encode (Ldev/shayxo/composedoc/model/Document;)[B
@@ -311,6 +315,8 @@ public final class dev/shayxo/composedoc/domain/EditorEngine {
 	public final fun installCanonicalProbeHistory (Lkotlin/jvm/functions/Function1;)V
 	public final fun move (Ldev/shayxo/composedoc/model/Selection;ZLdev/shayxo/composedoc/model/TypingSide;Ldev/shayxo/composedoc/model/WrapAffinity;)V
 	public static synthetic fun move$default (Ldev/shayxo/composedoc/domain/EditorEngine;Ldev/shayxo/composedoc/model/Selection;ZLdev/shayxo/composedoc/model/TypingSide;Ldev/shayxo/composedoc/model/WrapAffinity;ILjava/lang/Object;)V
+	public final fun nativeEdit (Ldev/shayxo/composedoc/domain/NativeEdit;Ljava/lang/Long;)Z
+	public static synthetic fun nativeEdit$default (Ldev/shayxo/composedoc/domain/EditorEngine;Ldev/shayxo/composedoc/domain/NativeEdit;Ljava/lang/Long;ILjava/lang/Object;)Z
 	public final fun nativeStructureAdmission (Ljava/lang/String;)Z
 	public final fun navigateOutline (Ljava/lang/Long;)Z
 	public final fun outline ()Ljava/util/List;
@@ -421,6 +427,80 @@ public final class dev/shayxo/composedoc/domain/FindReplaceResult : java/lang/En
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Ldev/shayxo/composedoc/domain/FindReplaceResult;
 	public static fun values ()[Ldev/shayxo/composedoc/domain/FindReplaceResult;
+}
+
+public abstract interface class dev/shayxo/composedoc/domain/NativeEdit {
+}
+
+public final class dev/shayxo/composedoc/domain/NativeEdit$DeleteSurrounding : dev/shayxo/composedoc/domain/NativeEdit {
+	public fun <init> (II)V
+	public final fun component1 ()I
+	public final fun component2 ()I
+	public final fun copy (II)Ldev/shayxo/composedoc/domain/NativeEdit$DeleteSurrounding;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/NativeEdit$DeleteSurrounding;IIILjava/lang/Object;)Ldev/shayxo/composedoc/domain/NativeEdit$DeleteSurrounding;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAfter ()I
+	public final fun getBefore ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/NativeEdit$Finish : dev/shayxo/composedoc/domain/NativeEdit {
+	public static final field INSTANCE Ldev/shayxo/composedoc/domain/NativeEdit$Finish;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/NativeEdit$Mark : dev/shayxo/composedoc/domain/NativeEdit {
+	public fun <init> (Ldev/shayxo/composedoc/model/Selection;)V
+	public final fun component1 ()Ldev/shayxo/composedoc/model/Selection;
+	public final fun copy (Ldev/shayxo/composedoc/model/Selection;)Ldev/shayxo/composedoc/domain/NativeEdit$Mark;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/NativeEdit$Mark;Ldev/shayxo/composedoc/model/Selection;ILjava/lang/Object;)Ldev/shayxo/composedoc/domain/NativeEdit$Mark;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getRange ()Ldev/shayxo/composedoc/model/Selection;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/NativeEdit$Partial : dev/shayxo/composedoc/domain/NativeEdit {
+	public fun <init> (ILdev/shayxo/composedoc/model/Selection;)V
+	public synthetic fun <init> (ILdev/shayxo/composedoc/model/Selection;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()I
+	public final fun component2 ()Ldev/shayxo/composedoc/model/Selection;
+	public final fun copy (ILdev/shayxo/composedoc/model/Selection;)Ldev/shayxo/composedoc/domain/NativeEdit$Partial;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/NativeEdit$Partial;ILdev/shayxo/composedoc/model/Selection;ILjava/lang/Object;)Ldev/shayxo/composedoc/domain/NativeEdit$Partial;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCount ()I
+	public final fun getSelection ()Ldev/shayxo/composedoc/model/Selection;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/NativeEdit$Select : dev/shayxo/composedoc/domain/NativeEdit {
+	public fun <init> (Ldev/shayxo/composedoc/model/Selection;)V
+	public final fun component1 ()Ldev/shayxo/composedoc/model/Selection;
+	public final fun copy (Ldev/shayxo/composedoc/model/Selection;)Ldev/shayxo/composedoc/domain/NativeEdit$Select;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/NativeEdit$Select;Ldev/shayxo/composedoc/model/Selection;ILjava/lang/Object;)Ldev/shayxo/composedoc/domain/NativeEdit$Select;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getSelection ()Ldev/shayxo/composedoc/model/Selection;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/domain/NativeEdit$Text : dev/shayxo/composedoc/domain/NativeEdit {
+	public fun <init> (Ljava/lang/String;ZLdev/shayxo/composedoc/model/Selection;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Z
+	public final fun component3 ()Ldev/shayxo/composedoc/model/Selection;
+	public final fun copy (Ljava/lang/String;ZLdev/shayxo/composedoc/model/Selection;)Ldev/shayxo/composedoc/domain/NativeEdit$Text;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/domain/NativeEdit$Text;Ljava/lang/String;ZLdev/shayxo/composedoc/model/Selection;ILjava/lang/Object;)Ldev/shayxo/composedoc/domain/NativeEdit$Text;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCommit ()Z
+	public final fun getSelection ()Ldev/shayxo/composedoc/model/Selection;
+	public final fun getText ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class dev/shayxo/composedoc/domain/RecoveredDraft {

@@ -86,3 +86,14 @@ On restart, Recovery Copies restores accepted content as a separate unsaved docu
 10. Close/reopen the saved result; fresh Undo is empty. Do not infer exact text from a screenshot alone.
 
 Previous guide snapshots are preserved in [the pre-workspace writing guide](../archive/writing-through-v6-desktop-20261019.md). Their old codec/memory-only statements are historical, superseded by this guide. Candidate IME, full AT, expert Urdu typography, other DPI/platforms and print/PDF remain separate qualification gates.
+
+## Independent library consumers and Android slice
+
+The [binary-consumer/Android guide](BINARY-CONSUMER-ANDROID.md) supplies separate Gradle
+consumer builds and the minimal Android Compose sample. Their document owner, attributed
+history and snapshot codec are shared with this workspace. The Android surface currently
+supports continuous body-text editing and paragraph direction/alignment; it explicitly
+refuses unsupported rich blocks. Completed explicit Android saves survive process death;
+unsaved content and retained composition proposals are memory-only. This does not change
+the desktop recovery protections described above. Native evidence and current limitations
+are listed in the [dated integration report](../reports/android-consumer-integration-20261020.md).

@@ -1,18 +1,18 @@
-import com.android.build.api.dsl.androidLibrary
 
 plugins {
     id("org.jetbrains.kotlin.multiplatform")
     id("com.android.kotlin.multiplatform.library")
     id("quality-conventions")
+    id("maven-publish")
 }
 
 group = "dev.shayxo.composedoc"
 version = "0.1.0-SNAPSHOT"
 
 kotlin {
-    androidLibrary {
+    android {
         namespace = "dev.shayxo.composedoc.${project.name}"
-        compileSdk = 35
+        compileSdk = 37
         minSdk = 24
         compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) }
         withHostTestBuilder {}.configure {}
@@ -31,4 +31,15 @@ kotlin {
     }
     jvmToolchain(21)
     sourceSets.commonTest.dependencies { implementation(kotlin("test")) }
+}
+
+// Verification-only repository. Never publish these snapshots remotely or into normal Maven local.
+publishing.repositories.maven {
+    name = "ConsumerVerification"
+    url = uri(providers.gradleProperty("consumerRepository").getOrElse(
+        rootProject.layout.buildDirectory.dir("consumer-artifacts").get().asFile.absolutePath,
+    ))
+}
+tasks.matching { it.name == "publishToMavenLocal" || it.name.endsWith("ToMavenLocal") }.configureEach {
+    enabled = false
 }

@@ -17,11 +17,20 @@ class BoundaryChecks(unittest.TestCase):
         self.assertTrue(check_source(":core:layout", "import dev.shayxo.composedoc.ui.EditorViewModel"))
 
     def test_ui_and_app_code_cannot_bypass_view_model(self):
-        for module in (":core:ui", ":apps:desktop-workspace"):
+        for module in (":core:ui", ":apps:desktop-workspace", ":apps:android-sample", ":consumer:standalone"):
             self.assertTrue(check_source(module, "val e = EditorEngine(document)", "WorkspaceUi.kt"))
             self.assertTrue(check_source(module, "surface.viewModel.verificationEngine.move(s)", "EditorSurface.kt"))
             self.assertFalse(check_source(module, "viewModel.dispatch(EditorIntent.SelectAll)", "EditorSurface.kt"))
         self.assertFalse(check_source(":core:ui", "class EditorViewModel(private val engine: EditorEngine)", "EditorViewModel.kt"))
+
+    def test_android_sources_cannot_import_desktop_geometry_or_hosts(self):
+        for text in ("import java.awt.Point", "val x = org.jetbrains.skia.Bitmap()", "import javax.swing.JFrame"):
+            self.assertTrue(check_source(":core:ui", text, "AndroidEditor.kt"))
+
+    def test_consumers_cannot_reflect_into_an_owner(self):
+        for module in (":consumer:standalone", ":apps:android-sample"):
+            for text in ("import java.lang.reflect.Field", "type.getDeclaredField(name)", "Class.forName(name)"):
+                self.assertTrue(check_source(module, text, "Sample.kt"))
 
     def test_diagnostic_text_not_a_dependency(self):
         self.assertFalse(check_source(":core:model", 'val diagnostic = "java.awt is forbidden" // javax.swing.JFrame'))

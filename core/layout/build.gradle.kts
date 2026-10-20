@@ -1,3 +1,5 @@
+import com.android.build.api.variant.KotlinMultiplatformAndroidComponentsExtension
+
 plugins { id("compose-multiplatform-conventions") }
 kotlin.sourceSets {
     getByName("commonMain").dependencies {
@@ -18,5 +20,18 @@ tasks.named<ProcessResources>("jvmProcessResources") {
     from(rootProject.file("tests/suites/urdu/u0/fonts")) {
         include("*.ttf", "OFL.txt")
         into(target)
+    }
+}
+
+kotlin { android { androidResources.enable = true } }
+kotlin.sourceSets.getByName("androidMain").dependencies { api(libs.compose.ui) }
+val packageAndroidFonts by tasks.registering(PinnedAndroidFontsTask::class) {
+    sourceFiles.from(rootProject.file("tests/suites/urdu/u0/fonts.json"))
+    sourceFiles.from(rootProject.fileTree("tests/suites/urdu/u0/fonts") { include("*.ttf", "OFL.txt") })
+    assetDirectory.set(layout.buildDirectory.dir("generated/pinned-font-assets"))
+}
+extensions.configure<KotlinMultiplatformAndroidComponentsExtension> {
+    onVariants { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(packageAndroidFonts) { it.assetDirectory }
     }
 }

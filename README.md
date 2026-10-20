@@ -65,7 +65,7 @@ public API dumps form separate gates.
 | Directory | Contents |
 |---|---|
 | `core/` | Model, domain, data, layout and reusable UI modules |
-| `apps/` | Desktop example workspace |
+| `apps/` | Desktop workspace, independent binary consumer and Android sample |
 | `build-logic/`, `gradle/` | Convention plugins, version catalogue and wrapper |
 | `tooling/` | Verification, launch, documentation and governance automation |
 | `tests/` | Harness, suites, external reviews and historical research |
@@ -81,10 +81,14 @@ public API dumps form separate gates.
 | Workspace, recovery, lists, links and images | Implemented with automated and separately recorded desktop evidence; some native dialog checks remain open |
 | Urdu/Nastaliq and multilingual layout | Pinned-font fixtures and visual samples; expert typography qualification remains open |
 | Pages, PDF and printing | Active page/output work; full native output fidelity remains unqualified |
-| Android, iOS and Web native integration | Shared modules build for Android, JS and iOS (CI, iOS on macOS); shared tests run on each. Native editing on those platforms is not yet qualified |
+| Independent packaged application | Own Gradle settings, isolated binary repository, installed JVM launcher outside the checkout; editing/history/persistence/fonts tested |
+| Android integration | Compose body-text surface and native InputConnection over the same owner; API37 instrumented adapter checks pass. Final native qualification is tracked separately |
+| iOS and Web native integration | Shared modules/tests build; native editor surfaces/input remain unqualified |
 | Accessibility and large documents | Explicit qualification gates remain open; prototype size limits still apply |
 
-See [the writing guide](docs/guides/WRITING.md),
+See [binary consumer and Android integration](docs/guides/BINARY-CONSUMER-ANDROID.md),
+[the dated integration report](docs/reports/android-consumer-integration-20261020.md),
+[the writing guide](docs/guides/WRITING.md),
 [the documentation index](docs/README.md), and
 [the frozen V6 specification](docs/plans/v6/editor-v6-standalone.md).
 Historical evidence remains byte-verifiable through a versioned relocation ledger.

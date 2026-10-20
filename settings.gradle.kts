@@ -39,3 +39,5 @@ dependencyResolutionManagement {
 rootProject.name = "ComposeDoc"
 include(":core:model", ":core:domain", ":core:data", ":core:layout", ":core:ui")
 include(":apps:desktop-workspace", ":tests:desktop-harness")
+
+include(":apps:android-sample")

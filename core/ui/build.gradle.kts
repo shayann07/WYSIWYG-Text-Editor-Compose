@@ -12,3 +12,8 @@ kotlin.sourceSets {
         api(libs.compose.ui.awt)
     }
 }
+
+kotlin.sourceSets.getByName("androidMain").dependencies {
+    implementation(libs.compose.foundation)
+    api(libs.compose.ui)
+}

@@ -76,15 +76,20 @@ internal fun EditorEngine.retargetOverlay(range: Selection) {
     selection = range
 }
 
+internal data class NativeInputOutcome(val selection: Selection, val fullyCommitted: Boolean)
+
 internal fun EditorEngine.applyInputMethod(
     text: String,
     committedCount: Int,
     caret: Int?,
-    newMarkedStart: Int,
-    newMarkedEnd: Int,
+    markedRange: Selection,
+    outcome: NativeInputOutcome? = null,
 ) {
+    val postSelection = outcome?.selection
+    val fullyCommitted = outcome?.fullyCommitted ?: (committedCount == text.length)
     val idle = composition == null && text.isEmpty()
-    if (idle && committedCount == 0 && selection.collapsed) return
+    val unchangedIdle = idle && committedCount == 0 && selection.collapsed
+    if (unchangedIdle && postSelection == null) return
     dispatch("IME text: committed=$committedCount composed=${text.length - committedCount}") {
         require(nativeStructureAdmission(text)) { "Native image seam is not editable text" }
         val existing = composition != null
@@ -97,21 +102,33 @@ internal fun EditorEngine.applyInputMethod(
         } else {
             session.segments = newSegments
         }
-        session.markedStart = (newMarkedStart - committedCount).coerceAtLeast(0)
-        session.markedEnd = if (newMarkedStart == 0 && newMarkedEnd == text.length) {
-            null
-        } else {
-            (newMarkedEnd - committedCount).coerceAtLeast(0)
-        }
+        session.updateNativeMark(markedRange, text.length, committedCount)
         val sc = session.segments.first().dcStart
         val remUnits = session.segments.sumOf { it.units.size }
         selection = Selection(sc + (caret ?: remUnits), sc + (caret ?: remUnits))
+        applyNativeSelection(postSelection)
         val kind = if (existing || text.length != committedCount) "Composition" else "Typing"
-        settleInputMethodText(session, sc, kind, committedCount == text.length)
+        settleInputMethodText(session, sc, kind, fullyCommitted, postSelection)
     }
 }
 
-private fun EditorEngine.startComposition(): Composition {
+private fun Composition.updateNativeMark(range: Selection, textSize: Int, committedCount: Int) {
+    markedStart = (range.start - committedCount).coerceAtLeast(0)
+    markedEnd = if (range.start == 0 && range.end == textSize) {
+        null
+    } else {
+        (range.end - committedCount).coerceAtLeast(0)
+    }
+}
+
+private fun EditorEngine.applyNativeSelection(value: Selection?) {
+    value?.let {
+        require(it.start >= 0 && it.end <= visible().units.size)
+        selection = it
+    }
+}
+
+private fun EditorEngine.startComposition(beforeState: Saved = saved()): Composition {
     val initialSegments = if (selection.start == selection.end) {
         listOf(OverlaySegment(selection.start, selection.start, emptyList(), SegmentOrigin.REPLACEMENT))
     } else {
@@ -120,20 +137,26 @@ private fun EditorEngine.startComposition(): Composition {
         }
     }
     return Composition(
-        before = saved(),
+        before = beforeState,
         segments = initialSegments,
         epochBaseSegments = initialSegments,
         seed = replacementStyle(selection),
     ).also { composition = it }
 }
 
-private fun EditorEngine.settleInputMethodText(session: Composition, sc: Int, kind: String, fullyCommitted: Boolean) {
+private fun EditorEngine.settleInputMethodText(
+    session: Composition,
+    sc: Int,
+    kind: String,
+    fullyCommitted: Boolean,
+    postSelection: Selection?,
+) {
     if (fullyCommitted) {
         val ec = session.segments.last().dcEnd
         if (ec > sc) {
             dc = dc.splice(sc, ec, emptyList())
         }
-        selection = Selection(sc, sc)
+        selection = postSelection ?: Selection(sc, sc)
         finish(session, kind)
     } else if (pending.isEmpty()) {
         settlementRequestedAt = null
@@ -485,4 +508,17 @@ private fun occupiesHistorySlot(action: EditAction) = when (action) {
     is EditAction.Structure,
     -> true
     else -> false
+}
+
+/** Mark existing raw units without changing accepted content or the logical selection. */
+internal fun EditorEngine.markNativeRange(range: Selection) {
+    require(range.start >= 0 && range.end <= visible().units.size && !range.collapsed)
+    val original = selection
+    if (composition == null) {
+        val before = saved()
+        selection = range
+        startComposition(before)
+    }
+    retargetOverlay(range)
+    selection = original
 }

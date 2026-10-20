@@ -64,9 +64,54 @@ jobs:
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
       - run: npm ci --ignore-scripts --prefix tests/suites/integration/c0
       - run: python -m pip install -r tooling/verification/requirements.txt
+      - run: sdkmanager "platforms;android-37" "build-tools;36.0.0"
       - run: .\gradlew.bat --no-daemon check apiCheck
       - run: python tooling/verification/test_verification.py
       - run: python tooling/verification/verify.py --workspace-milestone
+      - run: python tooling/verification/consumer_check.py --android --output-dir tests/local-evidence/consumer/ci
+  android:
+    name: android-packaged-adapter
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - run: sdkmanager "platforms;android-37" "build-tools;36.0.0"
+      - name: Build outside-checkout consumers from binary metadata
+        run: xvfb-run -a python tooling/verification/consumer_check.py --android --output-dir tests/local-evidence/consumer/android-ci
+      - name: Create a disposable emulator
+        shell: bash
+        run: |
+          sdkmanager 'system-images;android-37.1;google_apis_playstore_ps16k;x86_64'
+          echo no | avdmanager create avd --name composedoc_ci --package 'system-images;android-37.1;google_apis_playstore_ps16k;x86_64'
+          sudo chmod a+rw /dev/kvm
+          "$ANDROID_HOME/emulator/emulator" -avd composedoc_ci -port 5580 -no-window -no-audio -no-snapshot -no-netsim -gpu swiftshader_indirect -feature -Vulkan > emulator.log 2>&1 &
+          adb -s emulator-5580 wait-for-device
+          for attempt in $(seq 1 150); do
+            if [ "$(adb -s emulator-5580 shell getprop sys.boot_completed | tr -d '\r')" = 1 ]; then
+              adb -s emulator-5580 shell settings put secure show_ime_with_hard_keyboard 1
+              exit 0
+            fi
+            sleep 2
+          done
+          cat emulator.log
+          exit 1
+      - name: Verify the independently packaged APK
+        shell: bash
+        run: |
+          python tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/consumer/android-ci/results.json --output-dir tests/local-evidence/android/ci
+      - name: Stop only the disposable emulator
+        if: always()
+        run: adb -s emulator-5580 emu kill || true
   ios:
     name: ios-build
     runs-on: macos-latest

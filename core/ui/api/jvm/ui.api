@@ -1,3 +1,23 @@
+public final class dev/shayxo/composedoc/ui/AndroidSliceCapabilitiesKt {
+	public static final fun androidTextSliceLimitation (Ldev/shayxo/composedoc/model/Document;)Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/ui/DesktopEditor : javax/swing/JLayeredPane, java/lang/AutoCloseable {
+	public static final field $stable I
+	public fun <init> (Ldev/shayxo/composedoc/ui/EditorViewModel;Ldev/shayxo/composedoc/layout/TypographyProfile;Ldev/shayxo/composedoc/ui/EditorPlatformServices;)V
+	public synthetic fun <init> (Ldev/shayxo/composedoc/ui/EditorViewModel;Ldev/shayxo/composedoc/layout/TypographyProfile;Ldev/shayxo/composedoc/ui/EditorPlatformServices;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun close ()V
+	public fun doLayout ()V
+	public final fun getHasUnfinishedInput ()Z
+	public final fun getInputSurface ()Ldev/shayxo/composedoc/ui/EditorSurface;
+	public final fun getModel ()Ldev/shayxo/composedoc/ui/EditorViewModel;
+	public final fun getOnFrame ()Lkotlin/jvm/functions/Function1;
+	public fun getPreferredSize ()Ljava/awt/Dimension;
+	public final fun getViewState ()Ldev/shayxo/composedoc/ui/ViewState;
+	public final fun requestEditorFocus ()Z
+	public final fun setOnFrame (Lkotlin/jvm/functions/Function1;)V
+}
+
 public final class dev/shayxo/composedoc/ui/EditorCanvasKt {
 	public static final fun DocumentCanvas (Ldev/shayxo/composedoc/ui/ViewState;Landroidx/compose/runtime/Composer;I)V
 }
@@ -106,6 +126,21 @@ public final class dev/shayxo/composedoc/ui/EditorIntent$Delete : dev/shayxo/com
 	public static synthetic fun copy$default (Ldev/shayxo/composedoc/ui/EditorIntent$Delete;ZILjava/lang/Object;)Ldev/shayxo/composedoc/ui/EditorIntent$Delete;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBackward ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/ui/EditorIntent$Native : dev/shayxo/composedoc/ui/EditorIntent {
+	public static final field $stable I
+	public fun <init> (Ldev/shayxo/composedoc/domain/NativeEdit;Ljava/lang/Long;)V
+	public synthetic fun <init> (Ldev/shayxo/composedoc/domain/NativeEdit;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ldev/shayxo/composedoc/domain/NativeEdit;
+	public final fun component2 ()Ljava/lang/Long;
+	public final fun copy (Ldev/shayxo/composedoc/domain/NativeEdit;Ljava/lang/Long;)Ldev/shayxo/composedoc/ui/EditorIntent$Native;
+	public static synthetic fun copy$default (Ldev/shayxo/composedoc/ui/EditorIntent$Native;Ldev/shayxo/composedoc/domain/NativeEdit;Ljava/lang/Long;ILjava/lang/Object;)Ldev/shayxo/composedoc/ui/EditorIntent$Native;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEdit ()Ldev/shayxo/composedoc/domain/NativeEdit;
+	public final fun getExpectedRevision ()Ljava/lang/Long;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -643,6 +678,34 @@ public final class dev/shayxo/composedoc/ui/ImeTrace {
 	public fun <init> (Ljava/io/File;)V
 	public final fun getDirectory ()Ljava/io/File;
 	public final fun record (Ljava/lang/String;Ljava/lang/String;Ldev/shayxo/composedoc/domain/EditorFrame;)V
+}
+
+public final class dev/shayxo/composedoc/ui/NativeTextInputSession {
+	public static final field $stable I
+	public static final field Companion Ldev/shayxo/composedoc/ui/NativeTextInputSession$Companion;
+	public fun <init> (Ldev/shayxo/composedoc/ui/EditorViewModel;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;)V
+	public synthetic fun <init> (Ldev/shayxo/composedoc/ui/EditorViewModel;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun allText ()Ljava/lang/String;
+	public final fun beginBatch ()Z
+	public final fun close ()V
+	public final fun commitText (Ljava/lang/String;I)Z
+	public final fun deleteSurrounding (IIZ)Z
+	public static synthetic fun deleteSurrounding$default (Ldev/shayxo/composedoc/ui/NativeTextInputSession;IIZILjava/lang/Object;)Z
+	public final fun endBatch ()Z
+	public final fun finishComposingText ()Z
+	public final fun getActive ()Z
+	public final fun getOnNotify ()Lkotlin/jvm/functions/Function0;
+	public final fun published ()V
+	public final fun selectedText ()Ljava/lang/String;
+	public final fun setComposingRegion (II)Z
+	public final fun setComposingText (Ljava/lang/String;I)Z
+	public final fun setOnNotify (Lkotlin/jvm/functions/Function0;)V
+	public final fun setSelection (II)Z
+	public final fun textAfter (I)Ljava/lang/String;
+	public final fun textBefore (I)Ljava/lang/String;
+}
+
+public final class dev/shayxo/composedoc/ui/NativeTextInputSession$Companion {
 }
 
 public final class dev/shayxo/composedoc/ui/QuarantinedCallback {

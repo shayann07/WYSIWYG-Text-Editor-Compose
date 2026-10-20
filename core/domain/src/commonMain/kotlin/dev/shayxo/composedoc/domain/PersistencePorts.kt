@@ -13,6 +13,11 @@ interface DocumentRepository {
     fun save(location: String, document: Document)
 }
 
+/** Optional app-private catalog; listing never mutates a document or chooses an editing owner. */
+interface DocumentCatalog : DocumentRepository {
+    fun locations(): List<String>
+}
+
 interface RichFragmentCodec {
     val maximumEncodedBytes: Int
     fun encode(fragment: RichFragment): ByteArray

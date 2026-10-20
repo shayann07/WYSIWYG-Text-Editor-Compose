@@ -1,3 +1,47 @@
+# Android and independent binary consumer — final local checkpoint, 20 October 2026
+
+Implementation/native local verification complete to the stated slice; clean-commit gates/CI pending.
+HEAD baseline5aa9ce6272e60cef4eb019322b9788b061c80f0a; current changes uncommitted.
+Read docs/reports/android-consumer-integration-20261020.md and guides/BINARY-CONSUMER-ANDROID.md.
+No new feature batch. No package publication/tags. User-approved direct linear main push only after gates.
+
+Final consumer PASS: tests/local-evidence/consumer/D-adoption-blink-20261020/results.json.
+Independent root D:\Temp\composedoc-20261020\composedoc-binary-consumer-b8cuyt_y.
+Final packaged Android APK1dd29f850699e4ef903e95ec6e17b2647f7e6f14ece8dac13a0dd5ec5f885a77.
+PASS27/27: android/packaged-adoption-blink-docked-20261020/results.json.
+Read-only final native exact files/assertions: android/native-adoption-blink-20261020/.
+Actual Gboard H→He preedit, Space commit; UndoRedo exact, Bold/RTL/Center, Save/reopen,
+independent owner, forced sample-process death and exact formatted explicit-save reopen PASS.
+TalkBack owner-enabled focus observed; speech NOT RUN (audio stream0frames). Owner turned it off.
+Urdu/Arabic keyboard layout typing, Japanese/Korean conversion, final visual rotation remain NOT RUN;
+synthetic multilingual/lifecycle results are separate. Never claim full Android rich parity.
+
+Final full quality/API PASS353 tasks: desktop/android-adoption-blink-final-quality.log.
+Earlier pages/output suite21/21 PASS batch-20261020-223514-2088, all10 approved pages exact.
+Desktop final52 distribution files identical to native-tested D-delivery-20261020 distribution;
+actual desktop type/select/Bold/UndoRedo/save/reopen+independent second owner PASS, exact file asserts.
+Screenshots docs/reports/assets/android-consumer-20261020. Both owned consumer processes exited0.
+
+Connection fixes include first-callback adoption (unused Android probe does not retire served
+client), stale/lifecycle/reentrant fences, retained proposal on actual close. Caret now blinks500ms
+only focused/collapsed and hides/cancels on blur/disposal; PixelCopy FAIL before/PASS after.
+Other integration corrections: merged equal-style runs preserve shaping, longpress MOVE selection,
+packaged fonts/shared codec, public DesktopEditor SwingGraphics, Gradle9 export in harness owner.
+No frozen48+33 modifications; existing API entries preserved, additive interfaces authorized.
+
+Computer control OFF; owned emulator exited0. Isolated show_ime_with_hard_keyboard precondition1
+needed for docked suite, restored0 and verified; accessibility0. AVD config was already hw.keyboard=no,
+not changed. No physical-device/native input settings modified. C cleanup alreadyPASS5.288GiB;
+don't repeat. All dev commands prefix ignored D dev-environment.ps1; normal D caches remain active.
+
+Exact restart: validate docs/frozen/selftests, inspect/stage intended changes, local commit; run
+python tooling/verification/final_gates.py on clean exact commit; all6 must pass before authorized
+main push. Then verify CI, ios-build, all4 CodeQL and Android packaged adapter exact commit.
+Retain raw failures. If remote CI fails fix cause and repeat exact clean gates. Final report should
+include commands/APK/sample, ten-minute walk, evidence/matrix, limitations and exact Git/CI status.
+
+---
+
 # Portable fonts, marker positioning and native pages — 20 October 2026
 
 Bounded implementation and desktop verification delivered; do not start another feature batch.

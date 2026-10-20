@@ -20,7 +20,6 @@ import dev.shayxo.composedoc.model.ParagraphProperties
 import dev.shayxo.composedoc.model.Selection
 import dev.shayxo.composedoc.model.TextUnit
 import dev.shayxo.composedoc.model.WrapAffinity
-import dev.shayxo.composedoc.model.displayedStyles
 import dev.shayxo.composedoc.model.paragraphs
 import dev.shayxo.composedoc.model.resolveParagraphDirection
 fun displayText(text: String): String = buildString {
@@ -40,28 +39,12 @@ fun displayText(text: String): String = buildString {
 fun paragraphAttributedDisplay(units: List<TextUnit>): AnnotatedString = buildAnnotatedString {
     val doc = Document(units)
     append(displayText(doc.text))
-    val runs = displayedStyles(doc)
-    var start = 0
-    while (start < runs.size) {
-        var end = start + 1
-        while (end < runs.size && runs[end].start == runs[end - 1].end && runs[end].style == runs[start].style) end++
-        val style = runs[start].style
-        addStyle(storedSpan(style), runs[start].start, runs[end - 1].end)
-        start = end
-    }
+    renderedStyleRuns(doc).forEach { run -> addStyle(storedSpan(run.style), run.start, run.end) }
 }
 
 fun attributedDisplay(document: Document): AnnotatedString = buildAnnotatedString {
     append(displayText(document.text))
-    val runs = displayedStyles(document)
-    var start = 0
-    while (start < runs.size) {
-        var end = start + 1
-        while (end < runs.size && runs[end].start == runs[end - 1].end && runs[end].style == runs[start].style) end++
-        val style = runs[start].style
-        addStyle(storedSpan(style), runs[start].start, runs[end - 1].end)
-        start = end
-    }
+    renderedStyleRuns(document).forEach { run -> addStyle(storedSpan(run.style), run.start, run.end) }
 }
 
 /** Width of the strip that marks a selected paragraph break or empty paragraph, before scaling. */

@@ -1,7 +1,10 @@
 plugins {
     base
+    id("quality-conventions")
     alias(libs.plugins.kotlin.multiplatform) apply false
     alias(libs.plugins.kotlin.jvm) apply false
+    alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.compose.compiler) apply false
     alias(libs.plugins.binary.compatibility)
 }
@@ -28,7 +31,7 @@ plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin> {
 }
 
 apiValidation {
-    ignoredProjects.addAll(listOf("desktop-workspace", "desktop-harness"))
+    ignoredProjects.addAll(listOf("desktop-workspace", "desktop-harness", "android-sample"))
 }
 
 val coreModules = listOf("model", "domain", "data", "layout", "ui")
@@ -51,52 +54,53 @@ val writeArchitectureModel by tasks.registering {
 val architecturePolicySelfTest by tasks.registering(Exec::class) {
     commandLine("python", "-m", "unittest", "discover", "-s", "tooling/architecture", "-p", "test_*.py")
 }
+val androidEvidenceSelfTest by tasks.registering(Exec::class) {
+    commandLine("python", "-m", "unittest", "discover", "-s", "tooling/verification", "-p", "test_android_check.py")
+}
 
 tasks.register<Exec>("architectureCheck") {
     dependsOn(writeArchitectureModel, architecturePolicySelfTest)
     commandLine("python", "tooling/architecture/check_boundaries.py")
 }
-tasks.register("detekt") { dependsOn(coreModules.map { ":core:$it:detekt" }, ":apps:desktop-workspace:detekt", ":tests:desktop-harness:detekt") }
-tasks.register("ktlintCheck") { dependsOn(coreModules.map { ":core:$it:ktlintCheck" }, ":apps:desktop-workspace:ktlintCheck", ":tests:desktop-harness:ktlintCheck") }
+tasks.named("detekt") {
+    dependsOn(
+        coreModules.map { ":core:$it:detekt" },
+        ":apps:desktop-workspace:detekt",
+        ":tests:desktop-harness:detekt",
+        ":apps:android-sample:detekt",
+    )
+}
+tasks.named("ktlintCheck") {
+    dependsOn(
+        coreModules.map {
+            ":core:$it:ktlintCheck"
+        },
+        ":apps:desktop-workspace:ktlintCheck",
+        ":tests:desktop-harness:ktlintCheck",
+        ":apps:android-sample:ktlintCheck",
+    )
+}
 tasks.named("check") {
-    dependsOn("architectureCheck", "detekt", "ktlintCheck")
+    dependsOn("architectureCheck", "detekt", "ktlintCheck", androidEvidenceSelfTest)
     dependsOn(coreModules.map { ":core:$it:apiCheck" })
     dependsOn(coreModules.map { ":core:$it:check" })
-    dependsOn(":apps:desktop-workspace:check", ":tests:desktop-harness:check")
+    dependsOn(
+        ":apps:desktop-workspace:check",
+        ":tests:desktop-harness:check",
+        ":apps:android-sample:check",
+        ":apps:android-sample:assembleDebug",
+    )
 }
 
 tasks.register("exportVerificationRuntime") {
-    dependsOn(":tests:desktop-harness:jar")
-    dependsOn(coreModules.map { ":core:$it:jvmJar" })
-    dependsOn(":apps:desktop-workspace:jar")
-    doLast {
-        val destination = providers.gradleProperty("verificationOutput").orNull
-            ?.let(::file) ?: layout.buildDirectory.dir("verification/runtime").get().asFile
-        require(!destination.exists()) { "Use a new verification output directory: $destination" }
-        val classes = destination.resolve("classes").apply { mkdirs() }
-        val libraries = destination.resolve("lib").apply { mkdirs() }
-        val runtime = project(":tests:desktop-harness").configurations.getByName("runtimeClasspath")
-        val projectArtifacts = runtime.incoming.artifactView {
-            componentFilter { it is org.gradle.api.artifacts.component.ProjectComponentIdentifier }
-        }.files.files + project(":tests:desktop-harness").tasks.named<Jar>("jar").get().archiveFile.get().asFile
-        projectArtifacts.forEach { artifact ->
-            java.util.zip.ZipFile(artifact).use { zip ->
-                zip.entries().asSequence().filter { !it.isDirectory && it.name != "META-INF/MANIFEST.MF" }.forEach { entry ->
-                    val target = classes.resolve(entry.name).canonicalFile
-                    require(target.toPath().startsWith(classes.canonicalFile.toPath()))
-                    val bytes = zip.getInputStream(entry).use { it.readBytes() }
-                    require(!target.exists() || target.readBytes().contentEquals(bytes)) { "Conflicting runtime entry: ${entry.name}" }
-                    target.parentFile.mkdirs()
-                    target.writeBytes(bytes)
-                }
-            }
-        }
-        runtime.incoming.artifactView {
-            componentFilter { it is org.gradle.api.artifacts.component.ModuleComponentIdentifier }
-        }.artifacts.artifacts.forEach { artifact ->
-            val id = artifact.id.componentIdentifier as org.gradle.api.artifacts.component.ModuleComponentIdentifier
-            artifact.file.copyTo(libraries.resolve("${id.group}.${artifact.file.name}"))
-        }
-        println("Exported identified Gradle runtime to $destination")
-    }
+    dependsOn(":tests:desktop-harness:exportVerificationRuntime")
+}
+
+// The independent application keeps its own settings; verify its sources without joining the root build.
+extensions.configure<com.diffplug.gradle.spotless.SpotlessExtension> {
+    kotlin { target("apps/independent-consumer/src/**/*.kt") }
+    kotlinGradle { target("*.gradle.kts", "apps/independent-consumer/*.gradle.kts") }
+}
+extensions.configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
+    source.setFrom(fileTree("apps/independent-consumer/src") { include("**/*.kt") })
 }
