@@ -449,3 +449,12 @@ package explicitly. Windows/quality/Apple/Java-CodeQL use the same independent S
 so no job relies on a runner image's PATH. This is build tooling on disposable hosted runners;
 no library runtime pins, app code, API, fonts, desktop geometry or local OS setup changes.
 New clean-commit gates and exact CI must pass before claiming remote completion.
+
+The first SDK-bootstrap CI correctly found sdkmanager, then exposed a package-ID error:
+`platforms;android-37` does not exist. The locally validated platform is
+`platforms;android-37.0` revision2 (ApiLevel37.0, PreviewSdkInt0); AGP's compileSdk37
+resolves that package. Google package-list output confirms37.0/37.1/37.2 IDs. Workflows now
+request37.0 explicitly; app/runtime configuration remains unchanged. Raw hosted logs
+`desktop/ci-bootstrap-*.log` and read-only SDK package listing
+`desktop/android-sdk-available-channels.log` preserve the evidence. Obsolete runs are cancelled
+where still active; final gates/CI must repeat on the corrected exact commit.
