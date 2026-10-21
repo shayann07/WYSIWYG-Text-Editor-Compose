@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFontFamilyResolver
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.viewinterop.AndroidView
@@ -44,6 +45,12 @@ private data class AndroidSurfaceCallbacks(
     val inputView: (AndroidEditorView) -> Unit,
     val unfinished: (RecoveredDraft) -> Unit,
     val focus: (Boolean) -> Unit = {},
+)
+
+private data class AndroidSurfaceContent(
+    val frame: EditorFrame,
+    val geometry: AndroidEditorGeometry,
+    val images: Map<String, androidx.compose.ui.graphics.ImageBitmap>,
 )
 
 /** Continuous Android Compose renderer with a buffer-free native input/accessibility host. */
@@ -76,24 +83,28 @@ private fun androidOwnerEditor(
     }
     val density = LocalDensity.current
     val measurer = rememberTextMeasurer()
+    val resolver = LocalFontFamilyResolver.current
+    val images = rememberAndroidImages(frame.visible.resources)
     BoxWithConstraints(modifier) {
         val width = with(density) { maxWidth.toPx() }
         val height = with(density) { maxHeight.toPx() }
         val geometry = remember(frame.visible, frame.typingStyle, width, typography, density) {
-            androidTextGeometry(AndroidLayoutRequest(frame, typography, width, density), measurer)
+            androidTextGeometry(AndroidLayoutRequest(frame, typography, width, density, resolver), measurer)
         }
-        androidViewport(model, frame, geometry, callbacks, height)
+        androidViewport(model, AndroidSurfaceContent(frame, geometry, images.images), callbacks, height)
+        if (images.errors.isNotEmpty()) BasicText(images.errors.joinToString("; "))
     }
 }
 
 @Composable
 private fun androidViewport(
     model: EditorViewModel,
-    frame: EditorFrame,
-    geometry: AndroidEditorGeometry,
+    content: AndroidSurfaceContent,
     callbacks: AndroidSurfaceCallbacks,
     height: Float,
 ) {
+    val frame = content.frame
+    val geometry = content.geometry
     val density = LocalDensity.current.density
     val inset = ANDROID_INSET_DP * density
     var scroll by remember { mutableFloatStateOf(0f) }
@@ -120,7 +131,9 @@ private fun androidViewport(
             scroll > maximum -> scrollTo(maximum)
         }
     }
-    Canvas(Modifier.fillMaxSize()) { paintAndroidDocument(geometry, frame, scroll, density, focused && caretOn) }
+    Canvas(Modifier.fillMaxSize()) {
+        paintAndroidDocument(content, scroll, density, focused && caretOn)
+    }
     androidNativeHost(model, geometry, scroll, callbacks.copy(focus = { focused = it })) { delta ->
         scrollTo(
             scroll + delta,
@@ -154,7 +167,10 @@ private fun androidNativeHost(
             it.geometry = geometry
             it.scrollOffset = scroll
             it.scrollBy = scrollBy
-            it.post { it.notifyCursor() }
+            it.post {
+                it.notifyCursor()
+                it.invalidate()
+            }
         },
     )
     DisposableEffect(model, input) {
@@ -169,16 +185,18 @@ private fun androidNativeHost(
 }
 
 private fun DrawScope.paintAndroidDocument(
-    geometry: AndroidEditorGeometry,
-    frame: EditorFrame,
+    content: AndroidSurfaceContent,
     scroll: Float,
     scale: Float,
     caretVisible: Boolean,
 ) {
+    val geometry = content.geometry
+    val frame = content.frame
+    val images = content.images
     drawRect(Color.White)
     clipRect {
         translate(top = -scroll) {
-            geometry.paragraphs.forEach { paintAndroidParagraph(it, frame) }
+            geometry.paragraphs.forEach { paintAndroidParagraph(it, frame, images) }
             val selected = frame.selection
             val caret = geometry.caret(selected.focus)
             if (selected.collapsed && caretVisible) {
@@ -199,12 +217,52 @@ private fun DrawScope.paintAndroidDocument(
     }
 }
 
-private fun DrawScope.paintAndroidParagraph(paragraph: AndroidParagraph, frame: EditorFrame) {
-    paintAndroidRange(paragraph, frame.selection.start, frame.selection.end, SELECTION_COLOR)
-    drawText(paragraph.layout, topLeft = Offset(paragraph.left, paragraph.top))
-    frame.marked?.let { paintAndroidRange(paragraph, it.first, it.last + 1, COMPOSITION_COLOR) }
+private fun DrawScope.paintAndroidParagraph(
+    paragraph: AndroidParagraph,
+    frame: EditorFrame,
+    images: Map<String, androidx.compose.ui.graphics.ImageBitmap>,
+) {
+    val image = paragraph.image
+    if (image != null) {
+        val bitmap = images[image.resource]
+        if (bitmap !=
+            null
+        ) {
+            drawImage(
+                bitmap,
+                dstOffset = androidx.compose.ui.unit.IntOffset(paragraph.left.toInt(), paragraph.top.toInt()),
+                dstSize = androidx.compose.ui.unit.IntSize(
+                    paragraph.imageWidth.toInt().coerceAtLeast(1),
+                    paragraph.height.toInt().coerceAtLeast(1),
+                ),
+            )
+        } else {
+            drawRect(
+                Color.LightGray,
+                Offset(paragraph.left, paragraph.top),
+                androidx.compose.ui.geometry.Size(paragraph.imageWidth, paragraph.height),
+            )
+        }
+        if (frame.selection.start <= paragraph.block.start && frame.selection.end > paragraph.block.start) {
+            drawRect(
+                SELECTION_COLOR.copy(alpha = .35f),
+                Offset(paragraph.left, paragraph.top),
+                androidx.compose.ui.geometry.Size(paragraph.imageWidth, paragraph.height),
+            )
+        }
+    } else {
+        paintAndroidRange(paragraph, frame.selection.start, frame.selection.end, SELECTION_COLOR)
+        drawText(paragraph.layout, topLeft = Offset(paragraph.left, paragraph.top))
+        frame.marked?.let { paintAndroidRange(paragraph, it.first, it.last + 1, COMPOSITION_COLOR) }
+    }
+    paragraph.marker?.let { marker ->
+        if (marker.layout != null) {
+            drawText(marker.layout, topLeft = Offset(marker.left, paragraph.top + marker.top))
+        } else {
+            drawCircle(Color.Black, marker.radius, Offset(marker.left + marker.radius, paragraph.top + marker.center))
+        }
+    }
 }
-
 private fun DrawScope.paintAndroidRange(paragraph: AndroidParagraph, from: Int, until: Int, color: Color) {
     val start = maxOf(from, paragraph.block.start) - paragraph.block.start
     val end = minOf(until, paragraph.block.end) - paragraph.block.start

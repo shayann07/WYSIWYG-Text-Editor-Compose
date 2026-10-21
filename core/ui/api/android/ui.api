@@ -1,0 +1,59 @@
+public final class dev.shayxo.composedoc.ui.AndroidEditorKt {
+  public static final void composeDocEditor(dev.shayxo.composedoc.ui.EditorViewModel, dev.shayxo.composedoc.layout.AndroidTypography, androidx.compose.ui.Modifier, kotlin.jvm.functions.Function1<? super dev.shayxo.composedoc.ui.AndroidEditorView, kotlin.Unit>, kotlin.jvm.functions.Function1<? super dev.shayxo.composedoc.domain.RecoveredDraft, kotlin.Unit>, androidx.compose.runtime.Composer, int, int);
+    descriptor: (Ldev/shayxo/composedoc/ui/EditorViewModel;Ldev/shayxo/composedoc/layout/AndroidTypography;Landroidx/compose/ui/Modifier;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Landroidx/compose/runtime/Composer;II)V
+}
+
+public final class dev.shayxo.composedoc.ui.AndroidEditorView extends android.view.View {
+  public dev.shayxo.composedoc.ui.AndroidEditorView(android.content.Context, dev.shayxo.composedoc.ui.EditorViewModel);
+    descriptor: (Landroid/content/Context;Ldev/shayxo/composedoc/ui/EditorViewModel;)V
+  public final dev.shayxo.composedoc.ui.EditorViewModel getModel();
+    descriptor: ()Ldev/shayxo/composedoc/ui/EditorViewModel;
+  public final dev.shayxo.composedoc.domain.RichFragmentCodec getFragmentCodec();
+    descriptor: ()Ldev/shayxo/composedoc/domain/RichFragmentCodec;
+  public final void setFragmentCodec(dev.shayxo.composedoc.domain.RichFragmentCodec);
+    descriptor: (Ldev/shayxo/composedoc/domain/RichFragmentCodec;)V
+  public final kotlin.jvm.functions.Function1<byte[], android.net.Uri> getPublishRichClipboard();
+    descriptor: ()Lkotlin/jvm/functions/Function1;
+  public final void setPublishRichClipboard(kotlin.jvm.functions.Function1<? super byte[], ? extends android.net.Uri>);
+    descriptor: (Lkotlin/jvm/functions/Function1;)V
+  public final void showSearch(dev.shayxo.composedoc.domain.FindBasis, java.util.List<dev.shayxo.composedoc.domain.FindMatch>, int);
+    descriptor: (Ldev/shayxo/composedoc/domain/FindBasis;Ljava/util/List;I)V
+  public final void reveal(dev.shayxo.composedoc.model.Selection);
+    descriptor: (Ldev/shayxo/composedoc/model/Selection;)V
+  public final kotlin.jvm.functions.Function1<java.lang.String, kotlin.Unit> getOnNativeEvent();
+    descriptor: ()Lkotlin/jvm/functions/Function1;
+  public final void setOnNativeEvent(kotlin.jvm.functions.Function1<? super java.lang.String, kotlin.Unit>);
+    descriptor: (Lkotlin/jvm/functions/Function1;)V
+  public final kotlin.jvm.functions.Function1<dev.shayxo.composedoc.domain.RecoveredDraft, kotlin.Unit> getOnUnfinishedInput();
+    descriptor: ()Lkotlin/jvm/functions/Function1;
+  public final void setOnUnfinishedInput(kotlin.jvm.functions.Function1<? super dev.shayxo.composedoc.domain.RecoveredDraft, kotlin.Unit>);
+    descriptor: (Lkotlin/jvm/functions/Function1;)V
+  public boolean onCheckIsTextEditor();
+    descriptor: ()Z
+  public android.view.inputmethod.InputConnection onCreateInputConnection(android.view.inputmethod.EditorInfo);
+    descriptor: (Landroid/view/inputmethod/EditorInfo;)Landroid/view/inputmethod/InputConnection;
+  public boolean onTouchEvent(android.view.MotionEvent);
+    descriptor: (Landroid/view/MotionEvent;)Z
+  public boolean performClick();
+    descriptor: ()Z
+  public final void showKeyboard();
+    descriptor: ()V
+  public final void cancelProvisionalInput();
+    descriptor: ()V
+  public final void retireNativeSession();
+    descriptor: ()V
+  public void onWindowFocusChanged(boolean);
+    descriptor: (Z)V
+  public final void ownerPublished();
+    descriptor: ()V
+  public boolean onKeyDown(int, android.view.KeyEvent);
+    descriptor: (ILandroid/view/KeyEvent;)Z
+  public final android.graphics.RectF caretRectangle();
+    descriptor: ()Landroid/graphics/RectF;
+  public void addExtraDataToAccessibilityNodeInfo(android.view.accessibility.AccessibilityNodeInfo, java.lang.String, android.os.Bundle);
+    descriptor: (Landroid/view/accessibility/AccessibilityNodeInfo;Ljava/lang/String;Landroid/os/Bundle;)V
+  public void onInitializeAccessibilityNodeInfo(android.view.accessibility.AccessibilityNodeInfo);
+    descriptor: (Landroid/view/accessibility/AccessibilityNodeInfo;)V
+  public boolean performAccessibilityAction(int, android.os.Bundle);
+    descriptor: (ILandroid/os/Bundle;)Z
+}

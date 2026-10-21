@@ -90,9 +90,13 @@ class NativeTextInputSessionTest {
         v.dispatch(EditorIntent.Command(EditAction.Undo))
         s.setSelection(3, 3)
         assertTrue(s.deleteSurrounding(1, 0))
-        assertEquals("A\ud83dB", v.snapshot().committed.text)
+        // The JS compiler emits a lone-surrogate string literal as '?'. Assert
+        // numeric UTF-16 units so this oracle stays exact on every runtime.
+        val rawUnits = listOf(0x41, 0xd83d, 0x42)
+        assertEquals(rawUnits, v.snapshot().committed.text.map { it.code })
+        assertEquals(rawUnits, v.snapshot().committed.units.map { it.char.code })
         assertFalse(s.deleteSurrounding(1, 0, true))
-        assertEquals("A\ud83dB", v.snapshot().committed.text)
+        assertEquals(rawUnits, v.snapshot().committed.text.map { it.code })
     }
 
     @Test fun surroundingDeletionPreservesSelectedAttributesAndIsOneUndo() {

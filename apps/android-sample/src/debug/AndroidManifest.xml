@@ -1,3 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"><application>
     <receiver android:name=".EvidenceReceiver" android:exported="true" />
+    <provider android:name=".ProviderFixture" android:authorities="${applicationId}.fixture"
+        android:exported="false" />
+    <activity android:name=".ClipboardTransportActivity" android:process=":transport"
+        android:exported="true" android:permission="android.permission.DUMP"
+        android:taskAffinity="${applicationId}.transport" />
+    <activity android:name=".ClipboardPublishActivity" android:process=":clipboardwitness"
+        android:exported="true" android:permission="android.permission.DUMP"
+        android:taskAffinity="${applicationId}.clipboardwitness" />
+    <activity android:name=".RecoveryWitnessActivity" android:process=":recoverywitness"
+        android:exported="true" android:permission="android.permission.DUMP"
+        android:taskAffinity="${applicationId}.recoverywitness" />
 </application></manifest>

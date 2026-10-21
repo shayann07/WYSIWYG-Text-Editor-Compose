@@ -1,0 +1,15 @@
+public final class dev.shayxo.composedoc.layout.AndroidTypography {
+  public static final dev.shayxo.composedoc.layout.AndroidTypography$Companion Companion;
+    descriptor: Ldev/shayxo/composedoc/layout/AndroidTypography$Companion;
+  public final java.lang.String getStatus();
+    descriptor: ()Ljava/lang/String;
+  public final java.util.Set<dev.shayxo.composedoc.model.StoredFont> getUnavailable();
+    descriptor: ()Ljava/util/Set;
+  public final androidx.compose.ui.text.font.FontFamily family(dev.shayxo.composedoc.model.StoredFont);
+    descriptor: (Ldev/shayxo/composedoc/model/StoredFont;)Landroidx/compose/ui/text/font/FontFamily;
+}
+
+public final class dev.shayxo.composedoc.layout.AndroidTypography$Companion {
+  public final dev.shayxo.composedoc.layout.AndroidTypography load(android.content.Context, kotlin.jvm.functions.Function1<? super java.lang.String, ? extends java.io.InputStream>);
+    descriptor: (Landroid/content/Context;Lkotlin/jvm/functions/Function1;)Ldev/shayxo/composedoc/layout/AndroidTypography;
+}

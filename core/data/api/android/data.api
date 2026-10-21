@@ -1,0 +1,192 @@
+public final class dev.shayxo.composedoc.data.AndroidClipboardFiles {
+  public dev.shayxo.composedoc.data.AndroidClipboardFiles(android.content.Context, java.lang.String);
+    descriptor: (Landroid/content/Context;Ljava/lang/String;)V
+  public final android.net.Uri publish(byte[]);
+    descriptor: ([B)Landroid/net/Uri;
+  public final void clear();
+    descriptor: ()V
+}
+
+public final class dev.shayxo.composedoc.data.AndroidClipboardProvider extends android.content.ContentProvider {
+  public dev.shayxo.composedoc.data.AndroidClipboardProvider();
+    descriptor: ()V
+  public boolean onCreate();
+    descriptor: ()Z
+  public java.lang.String getType(android.net.Uri);
+    descriptor: (Landroid/net/Uri;)Ljava/lang/String;
+  public android.os.ParcelFileDescriptor openFile(android.net.Uri, java.lang.String);
+    descriptor: (Landroid/net/Uri;Ljava/lang/String;)Landroid/os/ParcelFileDescriptor;
+  public android.database.Cursor query(android.net.Uri, java.lang.String[], java.lang.String, java.lang.String[], java.lang.String);
+    descriptor: (Landroid/net/Uri;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;)Landroid/database/Cursor;
+  public android.net.Uri insert(android.net.Uri, android.content.ContentValues);
+    descriptor: (Landroid/net/Uri;Landroid/content/ContentValues;)Landroid/net/Uri;
+  public int delete(android.net.Uri, java.lang.String, java.lang.String[]);
+    descriptor: (Landroid/net/Uri;Ljava/lang/String;[Ljava/lang/String;)I
+  public int update(android.net.Uri, android.content.ContentValues, java.lang.String, java.lang.String[]);
+    descriptor: (Landroid/net/Uri;Landroid/content/ContentValues;Ljava/lang/String;[Ljava/lang/String;)I
+}
+
+public final class dev.shayxo.composedoc.data.AndroidDocumentCodec implements dev.shayxo.composedoc.domain.DocumentCodec {
+  public static final dev.shayxo.composedoc.data.AndroidDocumentCodec INSTANCE;
+    descriptor: Ldev/shayxo/composedoc/data/AndroidDocumentCodec;
+  public byte[] encode(dev.shayxo.composedoc.model.Document);
+    descriptor: (Ldev/shayxo/composedoc/model/Document;)[B
+  public dev.shayxo.composedoc.model.Document decode(byte[]);
+    descriptor: ([B)Ldev/shayxo/composedoc/model/Document;
+}
+
+public final class dev.shayxo.composedoc.data.AndroidDocumentRead {
+  public dev.shayxo.composedoc.data.AndroidDocumentRead(dev.shayxo.composedoc.model.Document, java.lang.String);
+    descriptor: (Ldev/shayxo/composedoc/model/Document;Ljava/lang/String;)V
+  public final dev.shayxo.composedoc.model.Document getDocument();
+    descriptor: ()Ldev/shayxo/composedoc/model/Document;
+  public final java.lang.String getSha256();
+    descriptor: ()Ljava/lang/String;
+  public final dev.shayxo.composedoc.model.Document component1();
+    descriptor: ()Ldev/shayxo/composedoc/model/Document;
+  public final java.lang.String component2();
+    descriptor: ()Ljava/lang/String;
+  public final dev.shayxo.composedoc.data.AndroidDocumentRead copy(dev.shayxo.composedoc.model.Document, java.lang.String);
+    descriptor: (Ldev/shayxo/composedoc/model/Document;Ljava/lang/String;)Ldev/shayxo/composedoc/data/AndroidDocumentRead;
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+  public int hashCode();
+    descriptor: ()I
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+}
+
+public final class dev.shayxo.composedoc.data.AndroidDocumentRepository implements dev.shayxo.composedoc.domain.DocumentCatalog {
+  public dev.shayxo.composedoc.data.AndroidDocumentRepository(java.io.File);
+    descriptor: (Ljava/io/File;)V
+  public java.util.List<java.lang.String> locations();
+    descriptor: ()Ljava/util/List;
+  public dev.shayxo.composedoc.model.Document load(java.lang.String);
+    descriptor: (Ljava/lang/String;)Ldev/shayxo/composedoc/model/Document;
+  public void save(java.lang.String, dev.shayxo.composedoc.model.Document);
+    descriptor: (Ljava/lang/String;Ldev/shayxo/composedoc/model/Document;)V
+}
+
+public final class dev.shayxo.composedoc.data.AndroidRecoveryEntry {
+  public dev.shayxo.composedoc.data.AndroidRecoveryEntry(java.lang.String, long, long, java.lang.String, boolean, long, java.lang.String);
+    descriptor: (Ljava/lang/String;JJLjava/lang/String;ZJLjava/lang/String;)V
+  public final java.lang.String getOwner();
+    descriptor: ()Ljava/lang/String;
+  public final long getSequence();
+    descriptor: ()J
+  public final long getTimestamp();
+    descriptor: ()J
+  public final java.lang.String getName();
+    descriptor: ()Ljava/lang/String;
+  public final boolean getHasProposal();
+    descriptor: ()Z
+  public final long getByteCount();
+    descriptor: ()J
+  public final java.lang.String getWarning();
+    descriptor: ()Ljava/lang/String;
+  public final java.lang.String component1();
+    descriptor: ()Ljava/lang/String;
+  public final long component2();
+    descriptor: ()J
+  public final long component3();
+    descriptor: ()J
+  public final java.lang.String component4();
+    descriptor: ()Ljava/lang/String;
+  public final boolean component5();
+    descriptor: ()Z
+  public final long component6();
+    descriptor: ()J
+  public final java.lang.String component7();
+    descriptor: ()Ljava/lang/String;
+  public final dev.shayxo.composedoc.data.AndroidRecoveryEntry copy(java.lang.String, long, long, java.lang.String, boolean, long, java.lang.String);
+    descriptor: (Ljava/lang/String;JJLjava/lang/String;ZJLjava/lang/String;)Ldev/shayxo/composedoc/data/AndroidRecoveryEntry;
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+  public int hashCode();
+    descriptor: ()I
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+}
+
+public final class dev.shayxo.composedoc.data.AndroidRecoveryRecord {
+  public dev.shayxo.composedoc.data.AndroidRecoveryRecord(dev.shayxo.composedoc.data.AndroidRecoveryEntry, dev.shayxo.composedoc.model.Document, dev.shayxo.composedoc.model.Document, java.lang.String);
+    descriptor: (Ldev/shayxo/composedoc/data/AndroidRecoveryEntry;Ldev/shayxo/composedoc/model/Document;Ldev/shayxo/composedoc/model/Document;Ljava/lang/String;)V
+  public final dev.shayxo.composedoc.data.AndroidRecoveryEntry getEntry();
+    descriptor: ()Ldev/shayxo/composedoc/data/AndroidRecoveryEntry;
+  public final dev.shayxo.composedoc.model.Document getDocument();
+    descriptor: ()Ldev/shayxo/composedoc/model/Document;
+  public final dev.shayxo.composedoc.model.Document getProposal();
+    descriptor: ()Ldev/shayxo/composedoc/model/Document;
+  public final java.lang.String getEvidence();
+    descriptor: ()Ljava/lang/String;
+  public final dev.shayxo.composedoc.data.AndroidRecoveryEntry component1();
+    descriptor: ()Ldev/shayxo/composedoc/data/AndroidRecoveryEntry;
+  public final dev.shayxo.composedoc.model.Document component2();
+    descriptor: ()Ldev/shayxo/composedoc/model/Document;
+  public final dev.shayxo.composedoc.model.Document component3();
+    descriptor: ()Ldev/shayxo/composedoc/model/Document;
+  public final java.lang.String component4();
+    descriptor: ()Ljava/lang/String;
+  public final dev.shayxo.composedoc.data.AndroidRecoveryRecord copy(dev.shayxo.composedoc.data.AndroidRecoveryEntry, dev.shayxo.composedoc.model.Document, dev.shayxo.composedoc.model.Document, java.lang.String);
+    descriptor: (Ldev/shayxo/composedoc/data/AndroidRecoveryEntry;Ldev/shayxo/composedoc/model/Document;Ldev/shayxo/composedoc/model/Document;Ljava/lang/String;)Ldev/shayxo/composedoc/data/AndroidRecoveryRecord;
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+  public int hashCode();
+    descriptor: ()I
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+}
+
+public final class dev.shayxo.composedoc.data.AndroidRecoveryStore {
+  public dev.shayxo.composedoc.data.AndroidRecoveryStore(java.io.File, long);
+    descriptor: (Ljava/io/File;J)V
+  public final boolean checkpoint(java.lang.String, long, java.lang.String, dev.shayxo.composedoc.model.Document, dev.shayxo.composedoc.model.Document, java.lang.String);
+    descriptor: (Ljava/lang/String;JLjava/lang/String;Ldev/shayxo/composedoc/model/Document;Ldev/shayxo/composedoc/model/Document;Ljava/lang/String;)Z
+  public final java.util.List<dev.shayxo.composedoc.data.AndroidRecoveryEntry> entries();
+    descriptor: ()Ljava/util/List;
+  public final dev.shayxo.composedoc.data.AndroidRecoveryRecord read(java.lang.String, long);
+    descriptor: (Ljava/lang/String;J)Ldev/shayxo/composedoc/data/AndroidRecoveryRecord;
+  public final boolean discard(java.lang.String, long);
+    descriptor: (Ljava/lang/String;J)Z
+  public final byte[] export(java.lang.String, long);
+    descriptor: (Ljava/lang/String;J)[B
+}
+
+public final class dev.shayxo.composedoc.data.AndroidUriRepository implements dev.shayxo.composedoc.domain.DocumentRepository {
+  public dev.shayxo.composedoc.data.AndroidUriRepository(android.content.Context, java.io.File);
+    descriptor: (Landroid/content/Context;Ljava/io/File;)V
+  public dev.shayxo.composedoc.model.Document load(java.lang.String);
+    descriptor: (Ljava/lang/String;)Ldev/shayxo/composedoc/model/Document;
+  public void save(java.lang.String, dev.shayxo.composedoc.model.Document);
+    descriptor: (Ljava/lang/String;Ldev/shayxo/composedoc/model/Document;)V
+  public final dev.shayxo.composedoc.data.AndroidDocumentRead read(java.lang.String);
+    descriptor: (Ljava/lang/String;)Ldev/shayxo/composedoc/data/AndroidDocumentRead;
+  public final java.lang.String write(java.lang.String, dev.shayxo.composedoc.model.Document, java.lang.String);
+    descriptor: (Ljava/lang/String;Ldev/shayxo/composedoc/model/Document;Ljava/lang/String;)Ljava/lang/String;
+  public final byte[] readBytes(java.lang.String, int);
+    descriptor: (Ljava/lang/String;I)[B
+  public final void writeBytes(java.lang.String, byte[]);
+    descriptor: (Ljava/lang/String;[B)V
+}
+
+public final class dev.shayxo.composedoc.data.FragmentCodec implements dev.shayxo.composedoc.domain.RichFragmentCodec {
+  public static final dev.shayxo.composedoc.data.FragmentCodec INSTANCE;
+    descriptor: Ldev/shayxo/composedoc/data/FragmentCodec;
+  public static final int MAX_BYTES;
+    descriptor: I
+  public int getMaximumEncodedBytes();
+    descriptor: ()I
+  public byte[] encode(dev.shayxo.composedoc.domain.RichFragment);
+    descriptor: (Ldev/shayxo/composedoc/domain/RichFragment;)[B
+  public dev.shayxo.composedoc.domain.RichFragment decode(byte[]);
+    descriptor: ([B)Ldev/shayxo/composedoc/domain/RichFragment;
+}
+
+public final class dev.shayxo.composedoc.data.ImageDecoder {
+  public static final dev.shayxo.composedoc.data.ImageDecoder INSTANCE;
+    descriptor: Ldev/shayxo/composedoc/data/ImageDecoder;
+  public static final int MAX_BYTES;
+    descriptor: I
+  public final kotlin.Pair<java.lang.String, dev.shayxo.composedoc.model.ImageResource> validate(byte[]);
+    descriptor: ([B)Lkotlin/Pair;
+}

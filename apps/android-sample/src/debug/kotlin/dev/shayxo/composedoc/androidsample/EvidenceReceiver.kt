@@ -9,6 +9,7 @@ import android.util.Log
 import android.view.WindowInsets
 import dev.shayxo.composedoc.data.AndroidDocumentCodec
 import dev.shayxo.composedoc.domain.EditorFrame
+import dev.shayxo.composedoc.model.paragraphs
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -64,6 +65,16 @@ private fun captureState(activity: MainActivity, frames: List<EditorFrame>): JSO
     return JSONObject().put("active", activity.owners.active).put("status", activity.owners.status)
         .put("nativeEvents", JSONArray(activity.owners.nativeEvents.toList()))
         .put("api", Build.VERSION.SDK_INT).put("fingerprint", Build.FINGERPRINT)
+        .put("pid", android.os.Process.myPid()).put("fontScale", activity.resources.configuration.fontScale)
+        .put(
+            "tabs",
+            JSONArray(
+                activity.owners.tabs.map {
+                    JSONObject().put("id", it.id).put("name", it.name).put("dirty", it.dirty)
+                        .put("sourceDigest", it.sourceHash).put("sequence", it.sequence).put("recovery", it.recovery)
+                },
+            ),
+        )
         .put("viewSize", JSONArray(listOf(view?.width, view?.height)))
         .put("caret", caret?.let { JSONArray(listOf(it.left, it.top, it.right, it.bottom)) })
         .put("imeBottom", ime).put("owners", JSONArray(frames.map(::ownerRecord)))
@@ -76,6 +87,27 @@ private fun ownerRecord(frame: EditorFrame) = JSONObject()
     .put("marked", frame.marked?.let { JSONArray(listOf(it.first, it.last + 1)) })
     .put("undo", frame.undoCount).put("redo", frame.redoCount)
     .put("waiting", frame.waiting).put("notice", frame.notice)
+    .put(
+        "paragraphs",
+        JSONArray(
+            frame.committed.paragraphs().map {
+                JSONObject().put("start", it.start).put("end", it.end).put("heading", it.properties.heading)
+                    .put("list", it.properties.list.name)
+                    .put("item", it.properties.item).put("parent", it.properties.parent)
+                    .put("direction", it.properties.direction.name).put("alignment", it.properties.alignment.name)
+                    .put("before", it.properties.spaceBefore).put("after", it.properties.spaceAfter)
+                    .put("linePermille", it.properties.linePermille)
+            },
+        ),
+    )
+    .put(
+        "resources",
+        JSONArray(
+            frame.committed.resources.map { (id, image) ->
+                JSONObject().put("id", id).put("width", image.width).put("height", image.height).put("mime", image.mime)
+            },
+        ),
+    )
 
 private fun writeEvidence(
     context: Context,

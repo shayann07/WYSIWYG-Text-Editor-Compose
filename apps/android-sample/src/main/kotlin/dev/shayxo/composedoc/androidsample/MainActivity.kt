@@ -3,13 +3,14 @@ package dev.shayxo.composedoc.androidsample
 import android.app.Activity
 import android.os.Bundle
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -26,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,14 +39,9 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
-import dev.shayxo.composedoc.domain.EditAction
 import dev.shayxo.composedoc.domain.EditorFrame
 import dev.shayxo.composedoc.layout.AndroidTypography
-import dev.shayxo.composedoc.model.FormatKey
-import dev.shayxo.composedoc.model.ParagraphAlignment
-import dev.shayxo.composedoc.model.ParagraphDirection
 import dev.shayxo.composedoc.ui.AndroidEditorView
-import dev.shayxo.composedoc.ui.EditorIntent
 import dev.shayxo.composedoc.ui.composeDocEditor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -52,11 +49,11 @@ import java.io.File
 
 private const val COMPACT_HEIGHT_DP = 500
 private const val SHELL_BACKGROUND_ARGB = 0xffeef1f5
-private const val ACTION_BACKGROUND_ARGB = 0xffdbe4f0
+private const val COMPACT_FONT_SCALE = 1.3f
 private const val STATUS_FONT_SP = 12
 private const val PROPOSAL_LABEL_UNITS = 50
 
-class MainActivity :
+open class MainActivity :
     Activity(),
     LifecycleOwner,
     SavedStateRegistryOwner {
@@ -68,6 +65,7 @@ class MainActivity :
         private set
     var inputView: AndroidEditorView? = null
         private set
+    internal var typography: AndroidTypography? = null
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
         saved.performAttach()
@@ -75,12 +73,22 @@ class MainActivity :
         life.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
         owners =
             (lastNonConfigurationInstance as? AndroidOwners)
-                ?: AndroidOwners(File(filesDir, "documents"), intent.getBooleanExtra("blank", false))
+                ?: AndroidOwners(documentDirectory(), intent.getBooleanExtra("blank", false))
         val root = ComposeView(this)
         root.setViewTreeLifecycleOwner(this)
         root.setViewTreeSavedStateRegistryOwner(this)
         setContentView(root)
+        owners.attach(applicationContext)
         root.setContent { writingScreen() }
+    }
+    private fun documentDirectory(): File {
+        val test = intent.getStringExtra("qualification-root")
+        val debug = applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0
+        return if (debug && test != null && test.matches(Regex("[a-zA-Z0-9_-]{1,80}"))) {
+            File(filesDir, "qualification/$test/documents")
+        } else {
+            File(filesDir, "documents")
+        }
     }
 
     @Composable
@@ -89,10 +97,19 @@ class MainActivity :
         var fontError by remember { mutableStateOf("") }
         LaunchedEffect(Unit) {
             runCatching { withContext(Dispatchers.IO) { AndroidTypography.load(applicationContext) } }
-                .onSuccess { fonts = it }.onFailure { fontError = "Pinned fonts unavailable: ${it.message}" }
+                .onSuccess {
+                    fonts = it
+                    typography = it
+                }
+                .onFailure { fontError = "Pinned fonts unavailable: ${it.message}" }
         }
         val current by owners.current.uiState.collectAsState()
-        val compact = LocalConfiguration.current.screenHeightDp < COMPACT_HEIGHT_DP
+        val configuration = LocalConfiguration.current
+        val keyboard = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+        val compact =
+            keyboard ||
+                configuration.screenHeightDp < COMPACT_HEIGHT_DP ||
+                configuration.fontScale > COMPACT_FONT_SCALE
         Column(Modifier.fillMaxSize().background(Color(SHELL_BACKGROUND_ARGB)).systemBarsPadding().imePadding()) {
             val label = "ComposeDoc · editor ${owners.active + 1}/${owners.models.size} · " +
                 "${current.frame.committed.units.size} UTF-16 units"
@@ -106,24 +123,14 @@ class MainActivity :
 
     @Composable
     private fun toolbarRows(compact: Boolean) {
-        if (compact) {
-            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
-                fileActions(owners, inputView)
-                textActions(owners, inputView)
-                paragraphActions(owners)
-            }
-        } else {
-            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) { fileActions(owners, inputView) }
-            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) { textActions(owners, inputView) }
-            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) { paragraphActions(owners) }
-        }
+        writingControls(this, owners, inputView, compact)
     }
 
     @Composable
     private fun statusRows(frame: EditorFrame, fonts: AndroidTypography?, error: String, compact: Boolean) {
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
             BasicText(
-                "${frame.notice} · ${owners.status}",
+                "${frame.notice} · ${owners.tab.notice.ifEmpty { owners.status }} · ${owners.tab.recovery}",
                 Modifier.padding(horizontal = 6.dp),
                 style = TextStyle(fontSize = STATUS_FONT_SP.sp),
             )
@@ -140,7 +147,7 @@ class MainActivity :
     @Composable
     private fun unfinishedControl() {
         if (owners.unfinished.isNotEmpty()) {
-            action("Unfinished ${owners.unfinished.size} · memory only") {
+            writingAction("Unfinished ${owners.unfinished.size} · check Recovery status") {
                 owners.retainUnfinished()
                 inputView?.retireNativeSession()
                 val labels = owners.unfinished.mapIndexed { index, draft ->
@@ -163,7 +170,14 @@ class MainActivity :
                 modifier,
                 onInputView = {
                     inputView = it
-                    it.onNativeEvent = { event -> owners.nativeEvent(event) }
+                    it.fragmentCodec = dev.shayxo.composedoc.data.FragmentCodec
+                    it.publishRichClipboard = { bytes -> checkNotNull(owners.clipboardFiles).publish(bytes) }
+                    val owner = it.model
+                    it.onNativeEvent = { event ->
+                        val userMessage = listOf("Clipboard", "Rich ", "Plain ", "Paste ", "Cut ")
+                            .any(event::startsWith)
+                        if (userMessage) owners.note(owner, event) else owners.nativeEvent(event)
+                    }
                     it.post { it.requestFocus() }
                 },
                 onUnfinishedInput = { owners.retainDraft(it) },
@@ -171,6 +185,27 @@ class MainActivity :
         } else {
             Spacer(modifier)
         }
+    }
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        owners.pickerResult(this, requestCode, resultCode, data)
+    }
+    override fun onBackPressed() {
+        if (!owners.tab.dirty &&
+            owners.unfinished.isEmpty() &&
+            owners.current.compositionCaptureToken() == null
+        ) {
+            super.onBackPressed()
+            return
+        }
+        android.app.AlertDialog.Builder(this).setTitle("Keep this writing safe")
+            .setMessage("Save explicitly, or finish a local recovery checkpoint before leaving. Cancel keeps editing.")
+            .setPositiveButton("Keep recovery & leave") { _, _ ->
+                owners.retainUnfinished()
+                owners.checkpoints.flush { finish() }
+            }.setNeutralButton("Save") { _, _ ->
+                if (!owners.saveBound()) owners.launchPicker(this, AndroidPickerKind.SAVE_AS)
+            }.setNegativeButton("Cancel", null).show()
     }
     override fun onStart() {
         super.onStart()
@@ -209,62 +244,5 @@ class MainActivity :
     }
 }
 
-@Composable
-private fun fileActions(owners: AndroidOwners, input: AndroidEditorView?) {
-    action("Keyboard") { input?.showKeyboard() }
-    action("Next editor") {
-        owners.retainUnfinished()
-        input?.retireNativeSession()
-        owners.active =
-            (owners.active + 1) % owners.models.size
-    }
-    action("Save") { owners.save() }
-    action("Open latest saved") { owners.reopen() }
-}
-
-@Composable
-private fun textActions(owners: AndroidOwners, input: AndroidEditorView?) {
-    action(
-        if (owners.current.formatState(FormatKey.BOLD) ==
-            true
-        ) {
-            "Bold ✓"
-        } else {
-            "Bold"
-        },
-    ) { owners.current.dispatch(EditorIntent.ToggleFormat(FormatKey.BOLD)) }
-    action(
-        if (owners.current.formatState(FormatKey.ITALIC) ==
-            true
-        ) {
-            "Italic ✓"
-        } else {
-            "Italic"
-        },
-    ) { owners.current.dispatch(EditorIntent.ToggleFormat(FormatKey.ITALIC)) }
-    action("Undo") { owners.current.dispatch(EditorIntent.Command(EditAction.Undo)) }
-    action("Redo") { owners.current.dispatch(EditorIntent.Command(EditAction.Redo)) }
-    action("Select all") { owners.current.dispatch(EditorIntent.SelectAll) }
-    action("Cancel input") {
-        owners.retainUnfinished()
-        input?.cancelProvisionalInput()
-    }
-}
-
-@Composable
-private fun paragraphActions(owners: AndroidOwners) {
-    ParagraphDirection.entries.forEach { direction ->
-        action(direction.name) { owners.current.dispatch(EditorIntent.SetParagraphProperties(direction = direction)) }
-    }
-    ParagraphAlignment.entries.forEach { align ->
-        action(align.name) { owners.current.dispatch(EditorIntent.SetParagraphProperties(alignment = align)) }
-    }
-}
-
-@Composable
-private fun action(label: String, run: () -> Unit) {
-    BasicText(
-        label,
-        Modifier.padding(3.dp).background(Color(ACTION_BACKGROUND_ARGB)).clickable(onClick = run).padding(8.dp),
-    )
-}
+/** Independent process consumer of the same packaged surface, not a second engine in one view. */
+class PeerActivity : MainActivity()

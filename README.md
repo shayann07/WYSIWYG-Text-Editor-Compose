@@ -82,12 +82,12 @@ public API dumps form separate gates.
 | Urdu/Nastaliq and multilingual layout | Pinned-font fixtures and visual samples; expert typography qualification remains open |
 | Pages, PDF and printing | Active page/output work; full native output fidelity remains unqualified |
 | Independent packaged application | Own Gradle settings, isolated binary repository, installed JVM launcher outside the checkout; editing/history/persistence/fonts tested |
-| Android integration | Compose body-text surface and native InputConnection over the same owner; API37 instrumented adapter checks pass. Final native qualification is tracked separately |
+| Android integration | Rich continuous Compose surface: formatting, spacing, headings/lists, owned images, clipboard/search, content-URI saves and private recovery. API37 packaged54-group/interruption checks pass; new native walkthrough is blocked, not qualified |
 | iOS and Web native integration | Shared modules/tests build; native editor surfaces/input remain unqualified |
 | Accessibility and large documents | Explicit qualification gates remain open; prototype size limits still apply |
 
 See [binary consumer and Android integration](docs/guides/BINARY-CONSUMER-ANDROID.md),
-[the dated integration report](docs/reports/android-consumer-integration-20261020.md),
+[the current Android rich-writing report](docs/reports/android-rich-writing-20261021.md),
 [the writing guide](docs/guides/WRITING.md),
 [the documentation index](docs/README.md), and
 [the frozen V6 specification](docs/plans/v6/editor-v6-standalone.md).

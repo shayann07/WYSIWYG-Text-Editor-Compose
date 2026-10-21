@@ -4,8 +4,6 @@ import android.content.Context
 import android.graphics.Matrix
 import android.os.Bundle
 import android.text.InputType
-import android.view.ActionMode
-import android.view.GestureDetector
 import android.view.KeyCharacterMap
 import android.view.KeyEvent
 import android.view.MotionEvent
@@ -16,11 +14,32 @@ import android.view.inputmethod.CursorAnchorInfo
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import dev.shayxo.composedoc.domain.EditAction
+import dev.shayxo.composedoc.domain.StructureCommand
+import dev.shayxo.composedoc.model.FormatKey
 import dev.shayxo.composedoc.model.Graphemes
+import dev.shayxo.composedoc.model.ListKind
 import dev.shayxo.composedoc.model.Selection
+import dev.shayxo.composedoc.model.paragraphAt
 
 /** Transparent Android input/AT host. Compose draws the document; this View never owns editable text. */
 class AndroidEditorView(context: Context, val model: EditorViewModel) : View(context) {
+    var fragmentCodec: dev.shayxo.composedoc.domain.RichFragmentCodec? = null
+    var publishRichClipboard: ((ByteArray) -> android.net.Uri)? = null
+    private val search = AndroidSearchPresentation(this)
+    fun showSearch(
+        basis: dev.shayxo.composedoc.domain.FindBasis?,
+        matches: List<dev.shayxo.composedoc.domain.FindMatch>,
+        active: Int,
+    ) {
+        search.show(basis, matches, active)
+    }
+    fun reveal(range: Selection) {
+        search.reveal(range)
+    }
+    override fun onDraw(canvas: android.graphics.Canvas) {
+        super.onDraw(canvas)
+        search.draw(canvas)
+    }
     var onNativeEvent: (String) -> Unit = {}
     internal var onEditorFocusChanged: (Boolean) -> Unit = {}
     var onUnfinishedInput: (dev.shayxo.composedoc.domain.RecoveredDraft) -> Unit = {}
@@ -34,86 +53,11 @@ class AndroidEditorView(context: Context, val model: EditorViewModel) : View(con
     internal var geometry: AndroidEditorGeometry? = null
     internal var scrollOffset: Float = 0f
     internal var scrollBy: (Float) -> Unit = {}
-    private var selecting = false
-    private var anchor = 0
     private var lastKey: String? = null
     private var lastRevision = -1L
     private var lastCommitted = model.snapshot().committed
     private val manager get() = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-    private val gestures = GestureDetector(
-        context,
-        object : GestureDetector.SimpleOnGestureListener() {
-            override fun onDown(e: MotionEvent) = true
-            override fun onSingleTapUp(e: MotionEvent): Boolean {
-                val at = hit(
-                    e.x,
-                    e.y,
-                )
-                model.dispatch(
-                    EditorIntent.Select(
-                        Selection(
-                            at,
-                            at,
-                        ),
-                    ),
-                )
-                showKeyboard()
-                return true
-            }
-            override fun onLongPress(e: MotionEvent) {
-                val at = hit(
-                    e.x,
-                    e.y,
-                )
-                val text = model.snapshot().visible.text
-                var a = at
-                var b = at
-                while (a > 0 &&
-                    !text[a - 1].isWhitespace()
-                ) {
-                    a--
-                }
-                while (b < text.length &&
-                    !text[b].isWhitespace()
-                ) {
-                    b++
-                }
-                a = Graphemes.snap(
-                    text,
-                    a,
-                    after = false,
-                )
-                b = Graphemes.snap(
-                    text,
-                    b,
-                    after = true,
-                )
-                anchor = a
-                selecting = true
-                model.dispatch(
-                    EditorIntent.Select(
-                        Selection(
-                            a,
-                            b,
-                        ),
-                    ),
-                )
-                startActionMode(
-                    AndroidSelectionActions(this@AndroidEditorView),
-                    ActionMode.TYPE_FLOATING,
-                )
-            }
-            override fun onScroll(
-                first: MotionEvent?,
-                current: MotionEvent,
-                distanceX: Float,
-                distanceY: Float,
-            ): Boolean {
-                if (!selecting) scrollBy(distanceY)
-                return true
-            }
-        },
-    )
+    private val touch = AndroidTouchSelection(this)
     init {
         isFocusable = true
         isFocusableInTouchMode = true
@@ -169,26 +113,14 @@ class AndroidEditorView(context: Context, val model: EditorViewModel) : View(con
     }
     override fun onTouchEvent(event: MotionEvent): Boolean {
         requestFocus()
-        val handled = gestures.onTouchEvent(event)
-        // GestureDetector suppresses onScroll after onLongPress; route selection moves here.
-        val selectionMove = event.actionMasked == MotionEvent.ACTION_MOVE && selecting
-        if (selectionMove) {
-            model.dispatch(EditorIntent.Select(Selection(anchor, hit(event.x, event.y))))
-        }
-        if (event.actionMasked == MotionEvent.ACTION_UP) {
-            selecting = false
-            performClick()
-        }
-        if (event.actionMasked == MotionEvent.ACTION_CANCEL) selecting = false
-        return handled ||
-            selectionMove ||
-            event.actionMasked == MotionEvent.ACTION_UP
+        return touch.event(event)
     }
+
     override fun performClick(): Boolean {
         super.performClick()
         return true
     }
-    private fun hit(x: Float, y: Float): Int {
+    internal fun hit(x: Float, y: Float): Int {
         val g = geometry?.takeIf { it.basisRevision == model.snapshot().documentRevision }
             ?: return model.snapshot().selection.focus
         val at = g.hit(
@@ -235,15 +167,22 @@ class AndroidEditorView(context: Context, val model: EditorViewModel) : View(con
     override fun onFocusChanged(gainFocus: Boolean, direction: Int, previouslyFocusedRect: android.graphics.Rect?) {
         super.onFocusChanged(gainFocus, direction, previouslyFocusedRect)
         onEditorFocusChanged(gainFocus && hasWindowFocus() && isShown)
-        if (!gainFocus) retireNativeSession()
+        if (!gainFocus) {
+            touch.stop()
+            retireNativeSession()
+        }
     }
     override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
         super.onWindowFocusChanged(hasWindowFocus)
         onNativeEvent("windowFocus=$hasWindowFocus retired=$retired generation=$generation")
         onEditorFocusChanged(hasWindowFocus && hasFocus() && isShown)
-        if (!hasWindowFocus) retireNativeSession()
+        if (!hasWindowFocus) {
+            touch.stop()
+            retireNativeSession()
+        }
     }
     override fun onDetachedFromWindow() {
+        touch.stop()
         onEditorFocusChanged(false)
         retireNativeSession()
         super.onDetachedFromWindow()
@@ -264,6 +203,7 @@ class AndroidEditorView(context: Context, val model: EditorViewModel) : View(con
             lastRevision = model.snapshot().documentRevision
             sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED)
         }
+        search.refresh()
         invalidate()
     }
 
@@ -353,13 +293,13 @@ class AndroidEditorView(context: Context, val model: EditorViewModel) : View(con
         )
     }
     internal fun enter() {
-        model.dispatch(
-            EditorIntent.Type(
-                "\n",
-                "Enter",
-                paragraphBreaks = true,
-            ),
-        )
+        val frame = model.snapshot()
+        val p = frame.committed.paragraphAt(frame.selection.start)
+        if (p.properties.heading != 0 || p.properties.list != ListKind.NONE) {
+            model.dispatch(EditorIntent.Structure(StructureCommand.Enter(false)))
+        } else {
+            model.dispatch(EditorIntent.Type("\n", "Enter", paragraphBreaks = true))
+        }
     }
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean = handleKey(event) ||
         super.onKeyDown(
@@ -371,7 +311,34 @@ class AndroidEditorView(context: Context, val model: EditorViewModel) : View(con
         val identity = "${event.deviceId}:${event.eventTime}:${event.keyCode}:${event.repeatCount}"
         val duplicate = lastKey == identity
         lastKey = identity
-        return duplicate || dispatchKeyDown(event)
+        return duplicate || navigate(event) || shortcut(event) || dispatchKeyDown(event)
+    }
+    private fun shortcut(event: KeyEvent): Boolean {
+        if (!event.isCtrlPressed) return false
+        val key = when (event.keyCode) {
+            KeyEvent.KEYCODE_B -> FormatKey.BOLD
+            KeyEvent.KEYCODE_I -> FormatKey.ITALIC
+            KeyEvent.KEYCODE_U -> FormatKey.UNDERLINE
+            else -> null
+        }
+        return if (key != null) {
+            model.dispatch(EditorIntent.ToggleFormat(key))
+            true
+        } else {
+            clipboardShortcut(event)
+        }
+    }
+    private fun clipboardShortcut(event: KeyEvent): Boolean = when (event.keyCode) {
+        KeyEvent.KEYCODE_A -> {
+            model.dispatch(EditorIntent.SelectAll)
+            true
+        }
+        KeyEvent.KEYCODE_C -> contextAction(android.R.id.copy)
+        KeyEvent.KEYCODE_X -> contextAction(android.R.id.cut)
+        KeyEvent.KEYCODE_V -> contextAction(
+            if (event.isShiftPressed) android.R.id.pasteAsPlainText else android.R.id.paste,
+        )
+        else -> false
     }
     private fun dispatchKeyDown(event: KeyEvent): Boolean = when (event.keyCode) {
         KeyEvent.KEYCODE_DEL -> {
@@ -383,7 +350,7 @@ class AndroidEditorView(context: Context, val model: EditorViewModel) : View(con
             true
         }
         KeyEvent.KEYCODE_ENTER -> {
-            enter()
+            if (event.isShiftPressed) model.dispatch(EditorIntent.Type("\n", "Soft break")) else enter()
             true
         }
         KeyEvent.KEYCODE_Z -> if (event.isCtrlPressed) {
@@ -445,7 +412,7 @@ class AndroidEditorView(context: Context, val model: EditorViewModel) : View(con
         val coordinatesValid = start >= 0 &&
             count >= 0 &&
             start.toLong() + count <= model.snapshot().visible.units.size
-        if (current && coordinatesValid && g != null) populateCharacterBounds(info, g, start, count)
+        if (current && coordinatesValid) populateCharacterBounds(info, checkNotNull(g), start, count)
     }
     private fun populateCharacterBounds(info: AccessibilityNodeInfo, g: AndroidEditorGeometry, start: Int, count: Int) {
         val location = IntArray(2)
@@ -477,7 +444,7 @@ class AndroidEditorView(context: Context, val model: EditorViewModel) : View(con
         info.className = "android.widget.EditText"
         info.isEditable = true
         info.isMultiLine = true
-        info.text = s.visible.text
+        info.text = accessibleDocumentText(s.visible)
         info.setTextSelection(
             s.selection.anchor,
             s.selection.focus,
@@ -487,6 +454,7 @@ class AndroidEditorView(context: Context, val model: EditorViewModel) : View(con
         info.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_COPY)
         info.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_CUT)
         info.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_PASTE)
+        info.addAction(AccessibilityNodeInfo.AccessibilityAction(android.R.id.pasteAsPlainText, "Paste plain"))
     }
     override fun performAccessibilityAction(action: Int, arguments: Bundle?): Boolean {
         return when (action) {
@@ -534,10 +502,28 @@ class AndroidEditorView(context: Context, val model: EditorViewModel) : View(con
             AccessibilityNodeInfo.ACTION_COPY -> contextAction(android.R.id.copy)
             AccessibilityNodeInfo.ACTION_CUT -> contextAction(android.R.id.cut)
             AccessibilityNodeInfo.ACTION_PASTE -> contextAction(android.R.id.paste)
+            android.R.id.pasteAsPlainText -> contextAction(android.R.id.pasteAsPlainText)
             else -> super.performAccessibilityAction(
                 action,
                 arguments,
             )
         }
     }
+}
+
+/** Spoken image labels are spans on the atomic cell, never characters inserted into accepted text. */
+private fun accessibleDocumentText(document: dev.shayxo.composedoc.model.Document): CharSequence {
+    val value = android.text.SpannableString(document.text)
+    document.units.forEachIndexed { index, unit ->
+        unit.image?.let { image ->
+            val description = image.alt.ifBlank { "Image; alternative text has not been provided" }
+            value.setSpan(
+                android.text.style.TtsSpan.TextBuilder(description).build(),
+                index,
+                index + 1,
+                android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+            )
+        }
+    }
+    return value
 }

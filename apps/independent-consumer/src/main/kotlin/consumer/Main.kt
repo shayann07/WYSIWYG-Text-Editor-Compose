@@ -12,18 +12,21 @@ fun main(args: Array<String>) {
         val examples = prepareExamples(root)
         if (args.contains("--check-only")) {
             checkHostLifecycle(examples)
+            checkRichPublicIntents(root)
         } else {
             openWindow(examples.restored, examples.profile, "Independent ComposeDoc — first editor")
             openWindow(examples.other, examples.profile, "Independent ComposeDoc — second editor")
+            return@invokeAndWait
         }
         val proof = """
             {"status":"PASS","groups":[
               "public owner/state/intents", "exact multilingual input", "selection/formatting",
               "attributed UndoRedo", "two independent instances", "persistence port",
-              "disposal/recreation", "packaged pinned font"
+              "disposal/recreation", "packaged pinned font",
+              "public rich structure/search/formatting", "owned resources/rich fragment/persistence"
             ],"fontKey":"${examples.profile.key}","units":${examples.document.units.size}}
         """.trimIndent()
         Files.writeString(root.resolve("results.json"), proof)
-        if (args.contains("--check-only")) println("PASS independent binary consumer 8 groups")
+        if (args.contains("--check-only")) println("PASS independent binary consumer 10 groups")
     }
 }

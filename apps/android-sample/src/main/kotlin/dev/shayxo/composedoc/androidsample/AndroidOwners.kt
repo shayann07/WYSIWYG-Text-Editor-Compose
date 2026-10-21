@@ -1,5 +1,6 @@
 package dev.shayxo.composedoc.androidsample
 
+import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import androidx.compose.runtime.getValue
@@ -7,42 +8,65 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import dev.shayxo.composedoc.data.AndroidClipboardFiles
 import dev.shayxo.composedoc.data.AndroidDocumentRepository
+import dev.shayxo.composedoc.data.AndroidRecoveryStore
+import dev.shayxo.composedoc.data.AndroidUriRepository
 import dev.shayxo.composedoc.domain.RecoveredDraft
+import dev.shayxo.composedoc.model.Document
 import dev.shayxo.composedoc.ui.EditorIntent
 import dev.shayxo.composedoc.ui.EditorViewModel
 import dev.shayxo.composedoc.ui.androidTextSliceLimitation
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import java.io.File
+import java.util.UUID
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
-private const val MAX_NATIVE_EVENTS = 256
-private const val DOCUMENT_IO_QUEUE_CAPACITY = 4
+internal class AndroidTab(val model: EditorViewModel, val id: String = UUID.randomUUID().toString()) {
+    var name by mutableStateOf("Untitled")
+    var uri: String? = null
+    var sourceHash: String? = null
+    var saved by mutableStateOf<Document?>(null)
+    var operation = 0L
+    var saveGeneration = 0L
+    var saveInFlight by mutableStateOf(false)
+    var notice by mutableStateOf("")
+    var sequence = 0L
+    var recovery by mutableStateOf("Recovery pending")
+    val dirty get() = saved?.same(model.snapshot().committed) != true
+}
 
-/** Retained application controller: two independent library owners, never a second text authority. */
-class AndroidOwners(directory: File, blank: Boolean = false) {
-    val models = mutableStateListOf(EditorViewModel(), EditorViewModel())
-    private val locations = mutableListOf(freshLocation(), freshLocation())
+/** Application controller. Captures survive Activity recreation; models own document state. */
+class AndroidOwners(val directory: File, blank: Boolean = false) {
+    val models = mutableStateListOf<EditorViewModel>()
+    internal val tabs = mutableStateListOf<AndroidTab>()
     var active by mutableIntStateOf(0)
-    var status by mutableStateOf("Unsaved; process death retains completed explicit saves only")
+    var status by mutableStateOf("New/Open keep existing drafts in independent tabs")
     val unfinished = mutableStateListOf<RecoveredDraft>()
     val nativeEvents = ArrayDeque<String>()
-    fun nativeEvent(value: String) {
-        if (nativeEvents.size == MAX_NATIVE_EVENTS) nativeEvents.removeFirst()
-        nativeEvents.addLast(value)
-    }
-    private val repository = AndroidDocumentRepository(directory)
-    private val main = Handler(Looper.getMainLooper())
-    private var disposed = false
-    private val io = ThreadPoolExecutor(
-        1,
-        1,
-        0,
-        TimeUnit.MILLISECONDS,
-        ArrayBlockingQueue(DOCUMENT_IO_QUEUE_CAPACITY),
-    )
+    internal val main = Handler(Looper.getMainLooper())
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val observers = HashMap<String, Job>()
+    internal var recoverableCount by mutableIntStateOf(0)
+    private val io = ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, ArrayBlockingQueue<Runnable>(IO_QUEUE))
+    internal val safetyRoot = File(directory.parentFile, "save-safety")
+    internal val recoveryStore = AndroidRecoveryStore(File(directory.parentFile, "rich-recovery"))
+    internal val checkpoints = AndroidCheckpoints(this, recoveryStore)
+    internal var uriRepository: AndroidUriRepository? = null
+    internal var clipboardFiles: AndroidClipboardFiles? = null
+    internal var disposed = false
+    internal val pickers = HashMap<Int, AndroidPickerRequest>()
+    internal var nextRequest = FIRST_REQUEST
     init {
+        add(Document(emptyList()))
+        add(Document(emptyList()))
         if (!blank) {
             models[0].dispatch(
                 EditorIntent.Type(
@@ -55,93 +79,227 @@ class AndroidOwners(directory: File, blank: Boolean = false) {
         }
     }
     val current: EditorViewModel get() = models[active]
-    fun retainUnfinished() {
-        current.captureRecoveryDraft()?.let(::retainDraft)
-    }
-    fun retainDraft(draft: RecoveredDraft) {
-        if (unfinished.none { sameDraft(it, draft) }) {
-            unfinished += draft
+    internal val tab: AndroidTab get() = tabs[active]
+    internal fun attach(context: Context) {
+        uriRepository = AndroidUriRepository(context, safetyRoot)
+        clipboardFiles = AndroidClipboardFiles(context, "${context.packageName}.clipboard")
+        work({ recoveryStore.entries().size }) { count ->
+            recoverableCount = count
+            if (count > 0) status = "$count local recovery drafts available in Recovery; restore opens an unsaved copy"
         }
     }
-    private fun sameDraft(existing: RecoveredDraft, proposed: RecoveredDraft): Boolean {
-        if (existing.ownerScope !== proposed.ownerScope) return false
-        return existing.basis.same(proposed.basis) &&
-            existing.document.same(proposed.document) &&
-            existing.selection == proposed.selection
+    internal fun add(
+        document: Document,
+        name: String = "Untitled",
+        uri: String? = null,
+        hash: String? = null,
+        activate: Boolean = false,
+    ): AndroidTab {
+        check(tabs.size < MAX_TABS) { "Eight editing tabs are open. Save/close a tab before opening another." }
+        check(androidTextSliceLimitation(document) == null) { androidTextSliceLimitation(document).orEmpty() }
+        val entry = AndroidTab(EditorViewModel(document)).also {
+            it.name = name
+            it.uri = uri
+            it.sourceHash = hash
+            it.saved =
+                if (uri != null) document else null
+        }
+        tabs += entry
+        models += entry.model
+        observers[entry.id] = scope.launch { entry.model.uiState.collect { checkpoints.changed(entry) } }
+        if (activate) active = tabs.lastIndex
+        return entry
+    }
+    internal fun newDocument() {
+        retainUnfinished()
+        runCatching { add(Document(emptyList()), activate = true) }.fold(
+            onSuccess = { status = "New unsaved document; previous draft retained" },
+            onFailure = {
+                status =
+                    it.message.orEmpty()
+            },
+        )
+    }
+    internal fun closeDocument(entry: AndroidTab) {
+        val captured = entry.model.snapshot()
+        entry.model.captureRecoveryDraft()?.let(::retainDraft)
+        checkpoints.changed(entry)
+        checkpoints.flush {
+            val index = tabs.indexOfFirst { it === entry }
+            if (index >= 0 && entry.model.snapshot().sessionRevision == captured.sessionRevision) {
+                observers.remove(entry.id)?.cancel()
+                checkpoints.closedOwner(entry.id)
+                entry.model.dispatch(EditorIntent.AbortComposition)
+                entry.model.dispatch(EditorIntent.CancelPendingOnTeardown)
+                entry.model.detach()
+                tabs.removeAt(index)
+                models.removeAt(index)
+                if (tabs.isEmpty()) add(Document(emptyList()))
+                active = active.coerceAtMost(tabs.lastIndex)
+                status = "Tab closed after checkpoint; its recovery remains available"
+            } else {
+                note(entry.model, "Close cancelled: writing changed while checkpointing; draft retained")
+            }
+        }
+    }
+    fun nativeEvent(value: String) {
+        if (nativeEvents.size == MAX_NATIVE_EVENTS) nativeEvents.removeFirst()
+        nativeEvents.addLast(value)
+    }
+    internal fun note(owner: EditorViewModel, value: String) {
+        nativeEvent(value)
+        tabs.firstOrNull { it.model === owner }?.notice =
+            value
+        if (current === owner) status = value
+    }
+    fun retainUnfinished() {
+        current.captureRecoveryDraft()?.let(::retainDraft)
+        checkpoints.changed(tab)
+    }
+    fun retainDraft(draft: RecoveredDraft) {
+        if (unfinished.none {
+                val content = it.ownerScope === draft.ownerScope &&
+                    it.basis.same(draft.basis) &&
+                    it.document.same(draft.document)
+                content && it.selection == draft.selection
+            }
+        ) {
+            unfinished += draft
+            checkpoints.retained(
+                draft,
+                tabs.firstOrNull { it.model.captureFindBasis().owner === draft.ownerScope }?.name ?: "Unfinished input",
+            )
+        }
     }
     fun openUnfinishedCopy(index: Int) {
         retainUnfinished()
-        models += EditorViewModel(unfinished[index].document)
-        locations += freshLocation()
-        active = models.lastIndex
-        status = "Opened proposal as a separate unsaved copy; original/memory record retained"
+        add(unfinished[index].document, "Recovered proposal (unsaved)", activate = true)
+        status = "Separate proposal copy opened; original evidence retained"
     }
-    fun save() {
-        val frame = current.snapshot()
-        if (current.compositionCaptureToken() != null ||
-            frame.waiting
+    internal fun saveBound(): Boolean {
+        val entry = tab
+        val uri = entry.uri ?: return false
+        saveTo(entry, uri, entry.sourceHash)
+        return true
+    }
+    internal fun saveTo(
+        entry: AndroidTab,
+        uri: String,
+        expected: String?,
+        captured: Document? = null,
+        complete: (() -> Unit)? = null,
+    ) {
+        val frame = entry.model.snapshot()
+        if (captured == null &&
+            (entry.model.compositionCaptureToken() != null || frame.waiting)
         ) {
-            status = "Finish or explicitly cancel composing input before Save"
+            note(entry.model, "Finish the keyboard candidate before Save; proposal remains recoverable")
             return
         }
-        val owner = current
-        val location = locations[active]
-        status = "Saving captured committed content…"
-        work({ repository.save(location, frame.committed) }) {
-            status =
-                if (owner.snapshot().committed.same(
-                        frame.committed,
-                    )
-                ) {
-                    "Saved $location"
-                } else {
-                    "Captured version saved; newer edits remain unsaved"
-                }
+        if (entry.saveInFlight) {
+            note(entry.model, "A captured save is already running; newer edits remain recoverable")
+            return
         }
+        val operation = ++entry.saveGeneration
+        val accepted = captured ?: frame.committed
+        entry.saveInFlight = true
+        val repository = checkNotNull(uriRepository)
+        note(entry.model, "Saving captured document; later edits remain independent…")
+        val queued = work({
+            runCatching { repository.write(uri, accepted, expected) }
+        }, entry.model) { result ->
+            if (tabs.none { it === entry } || entry.saveGeneration != operation) return@work
+            entry.saveInFlight = false
+            val digest = result.getOrElse {
+                note(entry.model, "Save failed: ${it.message}; safety copies and draft retained")
+                return@work
+            }
+            entry.uri = uri
+            entry.sourceHash = digest
+            entry.saved = accepted
+            note(
+                entry.model,
+                if (entry.dirty) {
+                    "Captured save verified; newer edits remain dirty"
+                } else {
+                    "Saved and verified provider bytes"
+                },
+            )
+            complete?.invoke()
+        }
+        if (!queued) entry.saveInFlight = false
+    }
+
+    /** Private-copy compatibility action for executable integration callers; UI Save uses SAF. */
+    fun save() {
+        if (saveBound()) return
+        val entry = tab
+        val frame = entry.model.snapshot()
+        if (entry.model.compositionCaptureToken() != null ||
+            frame.waiting
+        ) {
+            status = "Finish composing before Save"
+            return
+        }
+        val location = "document-${UUID.randomUUID()}.astra"
+        work({
+            AndroidDocumentRepository(directory).save(location, frame.committed)
+        }) { note(entry.model, "Private copy saved; use Save As for a provider document") }
     }
     fun reopen() {
         work({
-            val location = repository.locations().firstOrNull() ?: error("No saved document yet")
-            repository.load(location)
-        }) { document ->
-            val limitation = androidTextSliceLimitation(document)
-            if (limitation != null) {
-                status = "$limitation; saved file/current document retained"
-                return@work
-            }
-            retainUnfinished()
-            models += EditorViewModel(document)
-            locations += freshLocation()
-            active = models.lastIndex
-            status = "Opened latest saved content as an unsaved independent copy; previous draft retained"
+            val repository = AndroidDocumentRepository(directory)
+            repository.load(
+                repository.locations().firstOrNull() ?: error("No private copy yet"),
+            )
+        }) {
+            add(it, "Private copy (unsaved)", activate = true)
         }
     }
-    private fun freshLocation() = "document-${java.util.UUID.randomUUID()}.astra"
-    private fun <T> work(read: () -> T, complete: (T) -> Unit) {
+    internal fun <T> work(read: () -> T, owner: EditorViewModel = current, complete: (T) -> Unit): Boolean {
+        val capturedOwner = owner
         try {
             io.execute {
                 val result = runCatching(read)
                 main.post {
                     if (!disposed) {
-                        result.fold(complete) {
-                            status =
-                                "IO failed: ${it.message}; current document retained"
-                        }
+                        result.fold(
+                            onSuccess = {
+                                runCatching { complete(it) }.onFailure { failure ->
+                                    status = "Result refused; work retained: ${failure.message}"
+                                }
+                            },
+                            onFailure = {
+                                note(capturedOwner, "IO failed: ${it.message}; drafts and recovery retained")
+                            },
+                        )
                     }
                 }
             }
+            return true
         } catch (_: java.util.concurrent.RejectedExecutionException) {
             status =
-                "IO queue full; retry after current work finishes"
+                "Document IO queue full; retry after pending work"
+            return false
         }
     }
     fun dispose() {
+        retainUnfinished()
+        tabs.forEach { checkpoints.changed(it) }
+        checkpoints.close()
         disposed = true
+        scope.cancel()
         models.forEach {
             it.dispatch(EditorIntent.AbortComposition)
             it.dispatch(EditorIntent.CancelPendingOnTeardown)
             it.detach()
         }
         io.shutdown()
+    }
+    companion object {
+        private const val MAX_NATIVE_EVENTS = 256
+        private const val MAX_TABS = 8
+        private const val IO_QUEUE = 4
+        private const val FIRST_REQUEST = 1000
     }
 }

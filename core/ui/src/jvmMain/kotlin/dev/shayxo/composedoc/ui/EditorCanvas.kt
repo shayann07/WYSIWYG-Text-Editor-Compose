@@ -82,7 +82,6 @@ private const val MAX_LIST_DEPTH = 8
 /** Bullet advance, marker gap and nesting step, as fractions of the marker em. */
 private const val BULLET_ADVANCE_EM = .24f
 private const val MARKER_GAP_EM = .35f
-private const val LIST_STEP_EM = 1.5f
 
 /** Bullet radius and fallback x-height, as fractions of the marker em. */
 private const val BULLET_RADIUS_EM = .12f
@@ -289,7 +288,6 @@ private class ListGeometry(
     private val items = blocks.filter { it.properties.item.isNotEmpty() }.distinctBy { it.properties.item }
     private val itemById = items.associateBy { it.properties.item }
     private val ancestry = items.associate { item -> item.properties.item to ancestorChain(item.properties.item) }
-    private val maximumDepth = ancestry.values.maxOfOrNull { it.size } ?: 1
     private val nominal = items.associate {
         it.properties.item to ListNominal(it.properties.markerTypography.font, it.properties.markerTypography.size)
     }
@@ -297,10 +295,6 @@ private class ListGeometry(
     private val markerKeys = HashMap<String, String>()
     private val groupWidths = HashMap<String, Float>()
     private val groupEm = HashMap<String, Float>()
-    private val oppositeGroups = items
-        .filter { (directions[it.index] == ResolvedTextDirection.Rtl) != rootRtl(it.properties.item) }
-        .map { group(it.properties.item) }
-        .toSet()
     init {
         for (block in items) {
             measureMarker(block)
@@ -353,22 +347,26 @@ private class ListGeometry(
         groupEm[key] = maxOf(groupEm[key] ?: 0f, em)
     }
 
-    fun listColumn(item: String): ListColumn? {
-        if (item.isEmpty())return null
-        val chain = ancestry.getValue(item)
-        val gutter = chain.maxOf { groupWidths.getValue(group(it)) }
-        val nominalStep = chain.maxOf { groupEm.getValue(group(it)) * LIST_STEP_EM }
-        // Marker width is reserved once, not multiplied at every ancestor.
-        // Reduce nesting step uniformly in narrow viewports, retaining the gutter.
-        val step = minOf(nominalStep, ((textWidth - gutter - 40.dp.toDocumentPx()) / maximumDepth).coerceAtLeast(0f))
-        val indent = maxOf(gutter, step) + step * (chain.size - 1)
-        val rootSide = rootRtl(item)
-        val opposite = group(item) in oppositeGroups
-        val oppositeGutter = if (opposite)groupWidths.getValue(group(item)) else 0f
-        val available = (textWidth - indent - oppositeGutter).coerceAtLeast(1f)
-        val width = available
-        val left = if (rootSide)textWidth - indent - width else indent
-        return ListColumn(left, width, rootSide, groupWidths.getValue(group(item)))
+    private val sharedColumns by lazy {
+        SharedListColumns(
+            blocks,
+            directions.map {
+                if (it ==
+                    ResolvedTextDirection.Rtl
+                ) {
+                    ParagraphDirection.RTL
+                } else {
+                    ParagraphDirection.LTR
+                }
+            },
+            textWidth.toFloat(),
+            groupWidths,
+            groupEm,
+            40.dp.toDocumentPx(),
+        )
+    }
+    fun listColumn(item: String): ListColumn? = sharedColumns.column(item)?.let {
+        ListColumn(it.left, it.width, it.rootRtl, it.gutter)
     }
 
     fun markerFor(

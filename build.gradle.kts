@@ -55,7 +55,15 @@ val architecturePolicySelfTest by tasks.registering(Exec::class) {
     commandLine("python", "-m", "unittest", "discover", "-s", "tooling/architecture", "-p", "test_*.py")
 }
 val androidEvidenceSelfTest by tasks.registering(Exec::class) {
-    commandLine("python", "-m", "unittest", "discover", "-s", "tooling/verification", "-p", "test_android_check.py")
+    commandLine("python", "-m", "unittest", "discover", "-s", "tooling/verification", "-p", "test_android*.py")
+}
+val androidApiCheck by tasks.registering(Exec::class) {
+    dependsOn(
+        ":core:data:bundleAndroidMainClassesToCompileJar",
+        ":core:layout:bundleAndroidMainClassesToCompileJar",
+        ":core:ui:bundleAndroidMainClassesToCompileJar",
+    )
+    commandLine("python", "tooling/verification/android_api.py")
 }
 
 tasks.register<Exec>("architectureCheck") {
@@ -81,7 +89,7 @@ tasks.named("ktlintCheck") {
     )
 }
 tasks.named("check") {
-    dependsOn("architectureCheck", "detekt", "ktlintCheck", androidEvidenceSelfTest)
+    dependsOn("architectureCheck", "detekt", "ktlintCheck", androidEvidenceSelfTest, androidApiCheck)
     dependsOn(coreModules.map { ":core:$it:apiCheck" })
     dependsOn(coreModules.map { ":core:$it:check" })
     dependsOn(
@@ -98,8 +106,21 @@ tasks.register("exportVerificationRuntime") {
 
 // The independent application keeps its own settings; verify its sources without joining the root build.
 extensions.configure<com.diffplug.gradle.spotless.SpotlessExtension> {
-    kotlin { target("apps/independent-consumer/src/**/*.kt") }
-    kotlinGradle { target("*.gradle.kts", "apps/independent-consumer/*.gradle.kts") }
+    // Rooted trees retain the same checks without walking machine-local emulator/evidence directories.
+    kotlin {
+        target(fileTree("apps/independent-consumer/src") { include("**/*.kt") })
+        targetExclude(
+            fileTree("apps/independent-consumer/src") {
+                include("**/generated/**", "**/Unicode16ConformanceTest.kt")
+            },
+        )
+    }
+    kotlinGradle {
+        target(
+            fileTree(rootDir) { include("*.gradle.kts") },
+            fileTree("apps/independent-consumer") { include("*.gradle.kts") },
+        )
+    }
 }
 extensions.configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
     source.setFrom(fileTree("apps/independent-consumer/src") { include("**/*.kt") })

@@ -1,3 +1,33 @@
+# Android rich-document writing — active, 22 October 2026
+
+Owner assignment supersedes the completed prior batch stop condition. Read
+[the active checklist/policies](android-rich-writing-20261021.md) and
+[the additive API proposal](android-rich-writing-api-proposal-20261021.md).
+Starting baseline b513870 is clean/pushed/all9 checks green, verified live.
+Current: additive APIs approved; touch, rich layout, clipboard/search, URI/recovery adapters and
+sample controls integrated. Focused new19 groups pass on their identified development APKs;
+RTL word-edge gesture, nonlinear font-scale marker alignment and stale shell-control values repaired.
+Packaged53 groups + real owned-process interruption pass at font scale1.3; cross-UID clipboard
+after publisher death and fresh-process cache revocation preserve the independently checked document.
+Shell-control regression fails before the fix and passes after it, using actual accessibility clicks.
+Final packaged54 groups + actual interruption + cross-UID cleanup PASS on APK6d0a40d50678e84874c33fec694e35aa5bacc9d7d1a9acf9e4f4d8dcd104455d.
+Independent binary consumer10 runtime groups + Android/peer builds PASS; check/api/zero Detekt PASS
+after the shell repair. Desktop21 stages PASS, all ten approved page PNGs byte-identical,432 marker
+checks PASS. All raw failed checkpoints remain retained. No more feature work.
+Computer-use BLOCKED before initialization: failed to write kernel assets (os error3), same after
+supported kernel reset/retry. Zero desktop inputs sent; control OFF. Native walkthrough, genuine
+new language/IME/AT and rotation qualification remain unrun; a ten-minute manual checklist is in
+the active report. Finish only exact clean gates and authorized push/CI if the delivery receipt
+tests/local-evidence/android/rich-writing-delivery-20261022.json still reports them pending.
+If its source/CI delivery is green, stop; native qualification remains blocked, not complete.
+API28 disposable boot blocked by the installed emulator's missing legacy image capability;
+two raw attempts retained, minSdk24 unchanged. See the active report for exact restart/evidence.
+The owner's checkpoint reminder was satisfied by freshly confirming local/origin b513870 and
+successful CI39587733610/CodeQL39587733875; current source/CI authority is the new delivery receipt.
+Computer control OFF. Do not repeat prior CI investigation. No subagents are in use.
+
+---
+
 # Packaged consumer and Android — final handoff, 21 October 2026
 
 The independent binary consumer and bounded Android body-text integration are implemented.

@@ -3,5 +3,7 @@
         <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:windowSoftInputMode="adjustResize">
             <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
         </activity>
+        <activity android:name=".PeerActivity" android:exported="false" android:process=":peer" android:taskAffinity="${applicationId}.peer" android:windowSoftInputMode="adjustResize"/>
+        <provider android:name="dev.shayxo.composedoc.data.AndroidClipboardProvider" android:authorities="${applicationId}.clipboard" android:exported="false" android:grantUriPermissions="true"/>
     </application>
 </manifest>

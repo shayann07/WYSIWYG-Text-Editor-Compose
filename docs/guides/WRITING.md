@@ -90,10 +90,14 @@ Previous guide snapshots are preserved in [the pre-workspace writing guide](../a
 ## Independent library consumers and Android slice
 
 The [binary-consumer/Android guide](BINARY-CONSUMER-ANDROID.md) supplies separate Gradle
-consumer builds and the minimal Android Compose sample. Their document owner, attributed
-history and snapshot codec are shared with this workspace. The Android surface currently
-supports continuous body-text editing and paragraph direction/alignment; it explicitly
-refuses unsupported rich blocks. Completed explicit Android saves survive process death;
-unsaved content and retained composition proposals are memory-only. This does not change
-the desktop recovery protections described above. Native evidence and current limitations
-are listed in the [dated integration report](../reports/android-consumer-integration-20261020.md).
+consumer builds and the Android Compose sample. Their owner, attributed history and snapshot
+codec are shared with this workspace. Android now supports continuous rich text, paragraph
+direction/alignment/spacing, headings/outline, nested lists, owned PNG/JPEG, clipboard/search
+and content-URI Open/Save. Running content and page semantics remain explicitly refused.
+Completed private checkpoints protect committed Android content separately from user saves;
+unfinished proposals are separate durable evidence, never replayed native sessions. Edits
+after the last completed checkpoint can still be lost. This changes no desktop protection.
+Packaged API37 tests and actual process-interruption checks pass. The new native walkthrough
+is BLOCKED by computer-use initialization, not qualified by those tests. Exact results,
+the manual checklist and limitations are in the
+[current rich-writing report](../reports/android-rich-writing-20261021.md).

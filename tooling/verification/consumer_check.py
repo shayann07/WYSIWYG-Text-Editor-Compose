@@ -31,7 +31,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--android", action="store_true")
+    parser.add_argument("--android-peer", action="store_true", help="Also package an independent UID for clipboard qualification")
     args = parser.parse_args()
+    if args.android_peer:
+        args.android = True
     initial_inputs = source_inputs()
     output = args.output_dir.resolve(); output.mkdir(parents=True, exist_ok=False)
     outside = Path(tempfile.mkdtemp(prefix="composedoc-binary-consumer-"))
@@ -92,7 +95,7 @@ def main():
         receipt["launchCommand"] = str(launcher)
         run("outside-runtime", [str(launcher), "--check-only", "--evidence=" + str(evidence)], outside)
         observed = json.loads((evidence / "results.json").read_text(encoding="utf-8"))
-        assert observed["status"] == "PASS" and len(observed["groups"]) == 8
+        assert observed["status"] == "PASS" and len(observed["groups"]) == 10
         receipt["runtime"] = observed
         if args.android:
             android = outside / "android"; android.mkdir()
@@ -128,6 +131,24 @@ def main():
             receipt["androidArtifacts"] = {str(p): hashlib.sha256(p.read_bytes()).hexdigest()
                                             for p in android.glob("build/outputs/apk/**/*.apk")}
             assert receipt["androidArtifacts"]
+            if args.android_peer:
+                peer = outside / "android-peer"
+                shutil.copytree(android, peer, ignore=shutil.ignore_patterns("build", ".gradle", ".kotlin"))
+                peer_id = "dev.shayxo.composedoc.androidsample.peerconsumer"
+                peer_build = build.replace('applicationId = "dev.shayxo.composedoc.androidsample"',
+                                           'applicationId = "' + peer_id + '"')
+                assert peer_build != build
+                (peer / "build.gradle.kts").write_text(peer_build, encoding="utf-8")
+                manifest = peer / "src/main/AndroidManifest.xml"
+                manifest.write_text(manifest.read_text(encoding="utf-8").replace('android:label="ComposeDoc Android slice"',
+                                    'android:label="ComposeDoc peer (disposable)"'), encoding="utf-8")
+                peer_wrapper = peer / ("gradlew.bat" if os.name == "nt" else "gradlew")
+                run("independent-android-peer", [str(peer_wrapper), "--no-daemon", "--console=plain", prop,
+                                                "assembleDebug"], peer)
+                receipt["androidPeer"] = dict(applicationId=peer_id, project=str(peer),
+                    artifacts={str(p): hashlib.sha256(p.read_bytes()).hexdigest()
+                               for p in peer.glob("build/outputs/apk/debug/*.apk")},
+                    differences="Application ID and sample label only; identical packaged library artifacts")
         assert receipt["sourceInputs"] == source_inputs(), "Compilation inputs changed during binary consumer verification"
         receipt["status"] = "PASS"; save()
     except Exception as failure:

@@ -12,17 +12,19 @@ from pathlib import Path
 import subprocess
 import time
 import zipfile
+from android_process import run_witness
 
 ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = "dev.shayxo.composedoc.androidsample"
 ASSETS = "assets/dev/shayxo/composedoc/layout/fonts/"
+EXPECTED_GROUPS = 54
 
 
 def sha(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def validate_result(result, apk_hash, expected_groups=27):
+def validate_result(result, apk_hash, expected_groups=EXPECTED_GROUPS):
     groups = result.get("groups", [])
     names = [g.get("name") for g in groups]
     if (result.get("status") != "PASS" or result.get("fatal") is not None
@@ -179,7 +181,12 @@ def main():
                   "files/qualification/" + run_id + "/results.json")
         result = json.loads(raw)
         receipt["instrumented"] = result
+        archive = run("device-files", "exec-out", "run-as", PACKAGE, "tar", "-cf", "-", "-C",
+                      "files/qualification/" + run_id, ".")
+        (output / "device-files.tar").write_bytes(archive)
+        receipt["deviceArchiveSha256"] = sha(archive)
         validate_result(result, receipt["apkSha256"])
+        receipt["processInterruption"] = run_witness(run, output)
         receipt["status"] = "PASS"
     except Exception as failure:
         receipt.update(status="FAIL", error=str(failure))
@@ -199,7 +206,7 @@ def main():
         save()
         raise
     save()
-    print("PASS 27 instrumented groups and exact packaged fonts; evidence " + str(output))
+    print(f"PASS {EXPECTED_GROUPS} instrumented groups and exact packaged fonts; evidence " + str(output))
 
 
 if __name__ == "__main__":

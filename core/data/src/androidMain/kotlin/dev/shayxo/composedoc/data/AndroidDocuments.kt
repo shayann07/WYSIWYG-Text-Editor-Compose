@@ -14,7 +14,19 @@ import java.security.MessageDigest
 /** Same versioned snapshot bytes as desktop; decode/save must run on an IO worker. */
 object AndroidDocumentCodec : DocumentCodec {
     override fun encode(document: Document) = SnapshotFormat.encode(document)
-    override fun decode(bytes: ByteArray) = SnapshotFormat.decode(bytes)
+    override fun decode(bytes: ByteArray) = SnapshotFormat.decode(bytes).also { document ->
+        document.resources.forEach { (id, resource) ->
+            val verified = ImageDecoder.validate(resource.bytes())
+            require(
+                verified.first == id &&
+                    verified.second.width == resource.width &&
+                    verified.second.height == resource.height &&
+                    verified.second.mime == resource.mime,
+            ) {
+                "Embedded image identity or dimensions do not match its owned bytes"
+            }
+        }
+    }
 }
 
 /** App-owned directory only; AtomicFile retains its last complete value on interrupted replacement. */
@@ -41,14 +53,7 @@ class AndroidDocumentRepository(private val directory: File) : DocumentCatalog {
         check(Looper.myLooper() != Looper.getMainLooper()) { "Document IO must run off the UI thread" }
         val bytes = AndroidDocumentCodec.encode(document)
         val file = target(location)
-        val output = file.startWrite()
-        try {
-            output.write(bytes)
-            file.finishWrite(output)
-        } catch (e: java.io.IOException) {
-            file.failWrite(output)
-            throw e
-        }
+        atomicBytes(file.baseFile, bytes)
     }
 }
 

@@ -167,3 +167,15 @@ coverage and remaining gates are in
 [the dated integration report](../reports/android-consumer-integration-20261020.md), with
 [consumer integration instructions](../guides/BINARY-CONSUMER-ANDROID.md). Inspect the newest
 handoff and current receipts before treating any checkpoint as completion.
+
+## Android rich writing — 21–22 October 2026
+
+The owner authorized expanding the existing Android surface and independent binary consumer into
+a connected rich-writing workflow: touch editing, formatting/spacing, headings/lists, clipboard,
+Find/Replace, content-URI storage, private committed-content recovery and owned images. The additive
+Android APIs in the dated proposal and their API dumps were approved with explicit stale-result,
+provider-conflict, bounded-resource and recovery-retention requirements; established signatures and
+runtime dependencies remain compatible. Running content/pagination stay protected and unsupported
+on Android. Desktop geometry and direction-aware numbering remain unchanged. Actual implementation,
+native versus instrumented results and remaining gates belong to
+[the current report](../reports/android-rich-writing-20261021.md), not this intent record.

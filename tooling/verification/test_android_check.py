@@ -2,19 +2,19 @@
 
 import unittest
 
-from android_check import validate_result, wait_for_services, wait_for_owned_emulator
+from android_check import EXPECTED_GROUPS, validate_result, wait_for_services, wait_for_owned_emulator
 
 
 class AndroidEvidenceContract(unittest.TestCase):
     def valid(self):
         return {"status": "PASS", "fatal": None, "api": 37, "apkSha256": "current",
-                "groups": [{"name": str(i), "status": "PASS"} for i in range(27)]}
+                "groups": [{"name": str(i), "status": "PASS"} for i in range(EXPECTED_GROUPS)]}
 
     def test_current_complete_run(self):
         validate_result(self.valid(), "current")
 
     def test_missing_child_checks_cannot_pass(self):
-        for size in (0, 25, 26):
+        for size in (0, 27, EXPECTED_GROUPS - 1):
             result = self.valid()
             result["groups"] = result["groups"][:size]
             with self.assertRaises(ValueError):

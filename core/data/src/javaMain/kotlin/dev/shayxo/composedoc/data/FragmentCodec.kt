@@ -10,12 +10,12 @@ import java.io.DataOutputStream
 /** Bounded, versioned fragment; never native serialization of Kotlin/Java objects. */
 object FragmentCodec : RichFragmentCodec {
     override val maximumEncodedBytes get() = MAX_BYTES
-    const val MAX_BYTES = DocumentFiles.MAX_ENCODED_BYTES + DocumentFiles.MAX_UNITS + 32
+    const val MAX_BYTES = SnapshotFormat.MAX_ENCODED_BYTES + SnapshotFormat.MAX_UNITS + 32
     private const val MAGIC = 0x41534652 // ASFR
     private const val VERSION = 5
     private const val MIN_ENCODED_BYTES = 17
     override fun encode(f: RichFragment): ByteArray {
-        val bytes = DocumentFiles.encode(f.document)
+        val bytes = SnapshotFormat.encode(f.document)
         val out = ByteArrayOutputStream()
         DataOutputStream(out).use {
             it.writeInt(MAGIC)
@@ -32,15 +32,25 @@ object FragmentCodec : RichFragmentCodec {
         return DataInputStream(ByteArrayInputStream(bytes)).use { i ->
             require(i.readInt() == MAGIC && i.readInt() in 1..VERSION) { "Unsupported rich fragment" }
             val n = i.readInt()
-            require(n in 1..DocumentFiles.MAX_UNITS + 1 && n <= i.available() - Int.SIZE_BYTES)
+            require(n in 1..SnapshotFormat.MAX_UNITS + 1 && n <= i.available() - Int.SIZE_BYTES)
             val flags = List(n) {
                 val v = i.readUnsignedByte()
                 require(v in 0..1)
                 v == 1
             }
             val size = i.readInt()
-            require(size == i.available() && size <= DocumentFiles.MAX_ENCODED_BYTES)
-            RichFragment(DocumentFiles.decode(i.readNBytes(size)), flags)
+            require(size == i.available() && size <= SnapshotFormat.MAX_ENCODED_BYTES)
+            val document = SnapshotFormat.decode(ByteArray(size).also { i.readFully(it) })
+            document.resources.forEach { (id, resource) ->
+                val verified = ImageDecoder.validate(resource.bytes())
+                require(
+                    verified.first == id &&
+                        verified.second.width == resource.width &&
+                        verified.second.height == resource.height &&
+                        verified.second.mime == resource.mime,
+                )
+            }
+            RichFragment(document, flags)
         }
     }
 }

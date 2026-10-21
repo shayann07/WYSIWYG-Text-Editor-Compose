@@ -159,6 +159,12 @@ private fun AdapterInstrumentation.persistenceChecksCase3() {
         val bad = bytes.copyOf()
         bad[20] = (bad[20].toInt() xor 1).toByte()
         check(runCatching { ImageDecoder.validate(bad) }.isFailure)
-        check(androidTextSliceLimitation(read) != null)
+        check(androidTextSliceLimitation(read) == null)
+        val unsupported = read.copy(
+            running = dev.shayxo.composedoc.model.RunningContent(
+                header = dev.shayxo.composedoc.model.RunningFlow(text = "Unsupported running content"),
+            ),
+        )
+        check(androidTextSliceLimitation(unsupported) != null)
     }
 }

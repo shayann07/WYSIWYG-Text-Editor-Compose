@@ -64,9 +64,26 @@ class AdapterInstrumentation : Instrumentation() {
     private fun runChecks(root: File) {
         val intent = Intent(targetContext, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK).putExtra("blank", true)
+            .putExtra("qualification-root", root.name)
         activity = startActivitySync(intent) as MainActivity
         waitUntil { main { activity.inputView != null } }
-        if (arguments.getString("focus") == "caret") {
+        if (arguments.getString("focus") == "rich-layout") {
+            richLayoutChecks(root)
+        } else if (arguments.getString("focus") == "rich-lifecycle") {
+            richLifecycleChecks()
+        } else if (arguments.getString("focus") == "shell") {
+            richShellChecks()
+        } else if (arguments.getString("focus") == "touch") {
+            richTouchChecks(root)
+        } else if (arguments.getString("focus") == "clipboard") {
+            richClipboardChecks()
+        } else if (arguments.getString("focus") == "uri") {
+            richUriChecks(root)
+        } else if (arguments.getString("focus") == "rich-structure") {
+            richStructureChecks(root)
+        } else if (arguments.getString("focus") == "recovery") {
+            richRecoveryChecks(root)
+        } else if (arguments.getString("focus") == "caret") {
             caretChecks()
         } else if (arguments.getString("focus") == "connection-probe") {
             speculativeConnectionCheck()
@@ -81,6 +98,14 @@ class AdapterInstrumentation : Instrumentation() {
             shapingChecks()
             mountedChecks()
             caretChecks()
+            richRecoveryChecks(root)
+            richStructureChecks(root)
+            richUriChecks(root)
+            richClipboardChecks()
+            richTouchChecks(root)
+            richLifecycleChecks()
+            richLayoutChecks(root)
+            richShellChecks()
         }
     }
     private fun resultFor(fatal: Throwable?): JSONObject {
@@ -88,6 +113,7 @@ class AdapterInstrumentation : Instrumentation() {
             (if (fatal == null) 0 else 1)
         return JSONObject().put("status", if (failed == 0 && outcomes.length() > 0) "PASS" else "FAIL")
             .put("groups", outcomes).put("failures", failed).put("fatal", fatal?.stackTraceToString())
+            .put("nativeEvents", JSONArray(main { activity.owners.nativeEvents.toList() }))
             .put("api", android.os.Build.VERSION.SDK_INT).put("fingerprint", android.os.Build.FINGERPRINT)
             .put("fontScale", targetContext.resources.configuration.fontScale)
             .put("densityDpi", targetContext.resources.displayMetrics.densityDpi)
