@@ -188,6 +188,9 @@ def main():
                 ("failure-logcat", ("logcat", "-d", "-t", "1500")),
                 ("failure-data-space", ("shell", "df", "/data")),
                 ("failure-memory", ("shell", "dumpsys", "meminfo")),
+                ("failure-input-method", ("shell", "dumpsys", "input_method")),
+                ("failure-power", ("shell", "dumpsys", "power")),
+                ("failure-window-policy", ("shell", "dumpsys", "window", "policy")),
             ):
                 try:
                     run(label, *command, timeout=10)

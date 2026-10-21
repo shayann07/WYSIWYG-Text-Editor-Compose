@@ -114,7 +114,17 @@ jobs:
           adb -s emulator-5580 shell svc wifi disable
           adb -s emulator-5580 shell svc data disable
           adb -s emulator-5580 shell dumpsys meminfo > pre-test-memory.txt
+          # Credential-unlocked storage is distinct from an interactive, unlocked display.
+          adb -s emulator-5580 shell settings put system screen_off_timeout 1800000
+          adb -s emulator-5580 shell input keyevent KEYCODE_WAKEUP
+          adb -s emulator-5580 shell wm dismiss-keyguard
+          adb -s emulator-5580 shell ime list -s > pre-test-ime-list.txt
+          adb -s emulator-5580 shell ime enable com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME
+          adb -s emulator-5580 shell ime set com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME
           adb -s emulator-5580 shell settings put secure show_ime_with_hard_keyboard 1
+          adb -s emulator-5580 shell dumpsys input_method > pre-test-input-method.txt
+          adb -s emulator-5580 shell dumpsys power > pre-test-power.txt
+          adb -s emulator-5580 shell dumpsys window policy > pre-test-window-policy.txt
           python tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/consumer/android-ci/results.json --output-dir tests/local-evidence/android/ci
       - name: Stop only the disposable emulator
         if: always()
@@ -135,7 +145,7 @@ jobs:
             tests/local-evidence/android/ci
             tests/local-evidence/android/preflight
             emulator.log
-            pre-test-memory.txt
+            pre-test-*.txt
           if-no-files-found: warn
   ios:
     name: ios-build

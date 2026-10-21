@@ -17,8 +17,11 @@ are verification/CI/docs only. Final desktop classes/libraries also match583 fil
 The local adapter suite passes27/27; hosted7c91e13 also executed27/27. The code-identical
 6e1ff31 hosted attempt was killed by Android LMK during first-boot provisioning (111220KiB RSS,
 min watermark breached), before it produced a result. Raw android/hosted-6e1ff31 remains FAIL.
-Current CI-only correction gives its disposable guest6GiB and disables unused guest networking;
-pre-test memory is retained. Final exact hosted checks must still pass in the receipt.
+The6GiB/offline ffeb5aa run executes26/27; keyboard activation has no positive IME inset, before
+reveal assertions. Current CI fixture explicitly wakes/dismisses its non-credential keyguard,
+sets a30min screen timeout and selects installed Gboard. IME/power/window state is retained
+before testing/on failure. The cause is not yet proven; no app assertion or focus code changes.
+Final exact hosted checks must still pass in the receipt.
 
 External installed launcher:
 D:\Temp\composedoc-20261020\composedoc-binary-consumer-b8cuyt_y\desktop\build\install\IndependentComposeDocConsumer\bin\IndependentComposeDocConsumer.bat

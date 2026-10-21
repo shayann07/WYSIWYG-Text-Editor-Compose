@@ -180,3 +180,10 @@ to separate editor checks from Play Store first-boot provisioning pressure. Its 
 and failures are retained. This does not establish a minimum device requirement: the separate
 local native/adapter configuration used2GiB. No OOM priority override or application assertion
 retry is used. Actual device memory/keyboard/IME qualification always names its configuration.
+
+
+For the headless IME/reveal lane, credential-unlocked storage alone is insufficient: CI also
+keeps its test display awake, dismisses the default non-credential keyguard and explicitly
+selects the image's already installed Gboard LatinIME. Before/failure dumps identify actual
+IME, power and window policy. These disposable-fixture defaults do not change the owner's
+normal AVD or physical-device keyboard, and are not evidence of genuine keyboard interaction.

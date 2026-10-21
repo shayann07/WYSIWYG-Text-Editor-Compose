@@ -557,3 +557,19 @@ resolution is unaffected. Retain pre-test memory alongside any failure diagnosti
 adjust process OOM scores, skip checks, retry assertions or weaken the driver. Native2GiB
 local evidence stays separately qualified; the CI fixture is not a minimum-device requirement.
 No application source, API, font or approved geometry changes.
+
+
+The ffeb5aa hosted run executes all27 groups:26 PASS, one FAIL while waiting for a visible IME
+inset (AdapterMountedChecks.kt159), before caret-reveal geometry assertions. No process kill.
+Raw android/hosted-ffeb5aa records the complete failed group and all successes; it is not27/27.
+Its emulator also reports that automatic screen-off-timeout setup failed while ADB was offline.
+The raw tail does not prove whether display/keyguard/default-IME state caused the timeout.
+
+The fresh headless fixture had not explicitly established those prerequisites. After owned,
+credential-unlocked readiness, wake the disposable display, dismiss its non-credential keyguard,
+set a bounded30-minute test timeout, and explicitly enable/select the preinstalled Gboard LatinIME
+(the same component used in local native evidence). No keyboard/language installation or normal
+user input default changes. Capture pre-test IME, power and window policy plus those diagnostics
+on failure. Keep the positive-inset and independent reveal assertions unchanged. Do not alter
+application focus behavior or replay input to hide a fixture failure. A further exact run is
+required to distinguish missing interactive setup from a product fault.
