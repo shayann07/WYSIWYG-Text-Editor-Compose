@@ -1,9 +1,19 @@
 # Packaged consumer and Android integration — 20 October 2026
 
-Starting clean main: `5aa9ce6272e60cef4eb019322b9788b061c80f0a`. Implementation complete; final packaged/native qualification in progress.
+Starting clean main: `5aa9ce6272e60cef4eb019322b9788b061c80f0a`. Independent consumer and bounded Android slice implemented/native-tested. Exact final gate/hosted status is recorded separately below.
 Approved desktop marker geometry/numbering is preserved. No remote artifact publication.
 
-## Delivery disposition (latest checkpoint)
+## Final evidence authority — 21 October 2026
+
+The chronological checkpoints below retain failures and their then-pending work. For final
+completion use `tests/local-evidence/android/integration-delivery-20261020.json` and
+`tooling/local/final-verification.json`: require matching HEAD/origin-main, six local gates,
+five hosted CI jobs and all four CodeQL jobs. The Android hosted receipt must contain all27
+executed checks; setup READY and a zero instrumentation exit code are insufficient.
+The newest overnight handoff specifies the stop condition and exact artifacts. Do not infer
+current completion or failure from a historical checkpoint's pending wording.
+
+## Delivery disposition (application/native checkpoint)
 
 | Delivery/gate | Result |
 |---|---|
@@ -15,8 +25,8 @@ Approved desktop marker geometry/numbering is preserved. No remote artifact publ
 | Complete final Android adapter suite | PASS27/27 on final packaged APK; isolated visibility precondition recorded |
 | TalkBack focus/activation | Observed in live service; speech NOT RUN (no usable audio capture) |
 | Native Urdu/Arabic keyboard layouts, Japanese/Korean conversion | NOT RUN; installed layout coverage unavailable |
-| Full quality/API and earlier pages/output preservation | PASS; exact clean-commit final gates pending |
-| Local commit, clean-commit gates, push and exact CI/iOS/CodeQL | PENDING |
+| Full quality/API and earlier pages/output preservation | PASS; exact-commit result in final receipt |
+| Local commit, clean-commit gates, push and exact CI/iOS/CodeQL | Require complete exact-commit delivery receipt above |
 
 ## Command and lifecycle policy settled before implementation
 

@@ -1,3 +1,46 @@
+# Packaged consumer and Android — final handoff, 21 October 2026
+
+The independent binary consumer and bounded Android body-text integration are implemented.
+Start with docs/reports/android-consumer-integration-20261020.md and
+[the integration guide](../guides/BINARY-CONSUMER-ANDROID.md).
+
+**Completion authority:** inspect `tests/local-evidence/android/integration-delivery-20261020.json`
+and `tooling/local/final-verification.json`, then compare their commit with HEAD and origin/main.
+The delivery is complete only when all six local gates and all nine exact-commit hosted checks
+(five CI jobs including Android, four CodeQL jobs) pass. Once that receipt says complete, stop;
+do not repeat the campaign or begin another feature batch. Older pending/failed checkpoints
+below preserve chronology and are not the final status. The final receipt retains their paths.
+
+Native-tested APK SHA2561dd29f850699e4ef903e95ec6e17b2647f7e6f14ece8dac13a0dd5ec5f885a77.
+All125 recorded application inputs match that packaged consumer/native build; later changes
+are verification/CI/docs only. Final desktop classes/libraries also match583 files exactly.
+The local adapter suite passes27/27; hosted results must independently pass27/27 in the receipt.
+
+External installed launcher:
+D:\Temp\composedoc-20261020\composedoc-binary-consumer-b8cuyt_y\desktop\build\install\IndependentComposeDocConsumer\bin\IndependentComposeDocConsumer.bat
+APK/evidence: tests/local-evidence/android/native-adoption-blink-20261020/.
+Screenshots: docs/reports/assets/android-consumer-20261020/.
+
+Native Gboard English preedit/commit, exact attributed Undo/Redo, Bold/RTL/Center,
+Save/reopen, independent owners and explicit-save reopen after owned app-process death pass.
+Urdu/Arabic fixture rendering and protocol traces are distinct from physical layout typing.
+TalkBack focus observed; audible speech, Urdu/Arabic keyboard layouts, Japanese/Korean conversion
+and final native rotation remain NOT RUN. Instrumented recreation/background/touch/reveal pass.
+No Android automatic crash-recovery service is claimed: only completed explicit saves survive
+process death. Retained unfinished proposals remain memory-only; live sessions are never saved.
+Android surface supports continuous body text and explicitly refuses unsupported rich structures.
+
+Computer control is OFF, owned local emulator/windows stopped, test visibility preference restored0
+and accessibility0 after owner-disabled TalkBack. No physical device/global input default changed.
+D setup and verified5.288GiB C-cache relocation are complete; do not repeat that cleanup.
+
+Exact restart if the receipt is incomplete: address only its failed/unrun gate, preserving all
+raw evidence. CI startup now uses direct SDK tools, bounded owned identity + unlocked-user/service
+readiness, then keyboard visibility and actual qualification. READY is never a test PASS.
+Thirteen driver self-tests cover setup and result integrity. No package publication or tags.
+
+---
+
 # Android and independent binary consumer — final local checkpoint, 20 October 2026
 
 Implementation/native local verification complete to the stated slice. All six exact clean gates

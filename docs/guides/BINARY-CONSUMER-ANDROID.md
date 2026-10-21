@@ -1,8 +1,8 @@
 # Binary consumer and Android integration
 
 20 October 2026. Implemented and locally verified to the bounded slice; exact gate results are in
-[the dated report](../reports/android-consumer-integration-20261020.md). These examples do not
-qualify full Android rich-document parity, native IMEs or accessibility by themselves.
+[the dated report](../reports/android-consumer-integration-20261020.md). Final exact-commit outcomes are in `tests/local-evidence/android/integration-delivery-20261020.json`.
+These examples do not qualify full Android rich-document parity, native IMEs or accessibility by themselves.
 
 ## Independent binary application
 
@@ -156,3 +156,20 @@ edit near the keyboard, switch owners, rotate/recreate, Save and reopen. Exercis
 candidate conversion only where an installed IME permits it. Do not install keyboards or
 change global input defaults without owner permission. TalkBack and unavailable languages,
 platforms/DPI, expert Urdu review and desktop PDF/printing limitations remain separate gates.
+
+
+## Hosted startup versus qualification
+
+Fresh emulators can report boot completion before package/activity services and user0 credential
+encrypted storage are ready. CI starts only its disposable SDK emulator, validates the observed
+AVD identity, and waits for three responsive service probes with user0 RUNNING_UNLOCKED before
+changing its keyboard-visibility preference or installing anything. Device registration and
+service readiness share a bounded deadline. No normal AVD or physical device is admitted.
+
+`android_check.py --wait-only` with the normal artifact/serial/AVD arguments emits READY and
+explicitly executes zero adapter checks. It is setup evidence, never qualification PASS. The
+full separate invocation must validate all27 unique groups and the actual installed APK hash.
+Raw startup, preflight, instrumentation and failure diagnostics are uploaded even on failure.
+Thirteen driver self-tests cover setup races, wrong identities, deadline failure and misleading
+results. Local manual preference changes must still record/restore their prior value; the CI
+AVD is newly created and removed with its hosted job. Computer control is unnecessary for CI.
