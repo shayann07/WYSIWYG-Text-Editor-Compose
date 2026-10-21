@@ -25,6 +25,9 @@ Noto Sans Arabic: Copyright 2022 The Noto Project Authors.
 Gulzar: Copyright 2021 The Gulzar Project Authors.
 Kotlin, Compose Multiplatform, Skiko and Skia: retain applicable upstream
 Apache-2.0/BSD and transitive notices in any redistribution.
+Archived Skia research snapshot (reference only, not a runtime dependency):
+tests/archive/research/native-layout-source/skia-release/LICENSE (BSD-3-Clause);
+its bundled ICU 74.2 sources: third_party/externals/icu/LICENSE (Unicode License V3).
 Upstream reference snapshots in the test/research archive retain their
 co-located licenses, source URLs and revision/hash ledgers. Inspection of a
 reference does not imply incorporation into the runtime.
