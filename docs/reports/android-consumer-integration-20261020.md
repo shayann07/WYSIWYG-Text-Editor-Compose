@@ -495,3 +495,17 @@ Installation and application assertions are never retried or weakened. Capture g
 /data space and memory on failure, only after the supplied disposable AVD identity is validated.
 CI uses4GiB guest RAM/2GiB disposable data as startup headroom; the previous failure does not
 prove a memory or disk cause. Local native2GiB evidence is unchanged and separately identified.
+
+
+The5bf41eb hosted run passes service-readiness after6 probes and installs both APKs, but user0
+is still locked. Guest logcat explicitly records User0 not ready and direct boot locked state;
+the instrumentation cannot create its credential-encrypted files directory (onStart line44),
+so zero checks execute. The strict driver correctly refuses missing results despite am instrument
+returning code0. Raw guest logs/space/memory and all outputs are retained in android/hosted-5bf41eb.
+/data has5GiB available, so this is not evidence of storage exhaustion.
+
+Extend the same bounded readiness gate to require current user0 RUNNING_UNLOCKED via
+cmd activity get-started-user-state0. Actual AOSP ActivityManagerShellCommand and service sources
+confirm this read-only command and state string. A new fixed trace proves that responsive
+package/activity services with a locked user never start installation. Nine driver self-tests
+pass. No app assertions or installation retries, APK/source changes, credentials or permissions.

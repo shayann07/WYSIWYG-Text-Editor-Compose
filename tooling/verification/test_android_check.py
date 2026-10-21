@@ -55,6 +55,10 @@ class AndroidServiceReadiness(unittest.TestCase):
             state = states[min(index, len(states) - 1)]
             if isinstance(state, Exception):
                 raise state
+            unlocked = state[1] if isinstance(state, tuple) else True
+            state = state[0] if isinstance(state, tuple) else state
+            if command[3] == "get-started-user-state":
+                return b"RUNNING_UNLOCKED" if unlocked else b"RUNNING_LOCKED"
             if command[2] == "package":
                 return b"package:/system/framework/framework-res.apk" if state else b"Error: service unavailable"
             return b"0"
@@ -66,12 +70,17 @@ class AndroidServiceReadiness(unittest.TestCase):
     def test_boot_flag_does_not_replace_service_response(self):
         result, seen = self.run_trace([False, True, True, True])
         self.assertEqual(result["attempts"], 4)
-        self.assertEqual(len(seen), 8)
+        self.assertEqual(len(seen), 12)
 
     def test_broken_pipe_resets_consecutive_readiness(self):
         result, _ = self.run_trace([True, RuntimeError("Broken pipe (32)"), True, True, True])
         self.assertEqual(result["attempts"], 5)
         self.assertEqual(result["consecutiveResponsiveProbes"], 3)
+
+    def test_responsive_services_with_locked_user_cannot_start_install(self):
+        result, _ = self.run_trace([(True, False), (True, False), True, True, True])
+        self.assertEqual(result["attempts"], 5)
+        self.assertEqual(result["unlockedUser"], 0)
 
     def test_unavailable_service_fails_with_deadline(self):
         with self.assertRaisesRegex(TimeoutError, "services"):

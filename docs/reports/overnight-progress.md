@@ -11,7 +11,11 @@ Raw log: desktop/android-ci-emulator-bounded-failure.log; hosted adapter tests d
 c8b64b5 boots Linux in45s; install then hits package-service Broken pipe(32) before tests.
 Current verification correction: require three responsive package/activity probes within120s,
 retain guest logcat/data-space/memory on failure; use4GiB RAM/2GiB disposable data for CI.
-Readiness regressions cover false-success output, service restart and bounded failure.
+5bf41eb readiness passes after6 probes; install succeeds but Android user0 remains locked.
+Instrumentation cannot create its credential-encrypted evidence folder, so zero checks execute.
+Guest logcat explicitly says User0 not ready/locked; retained under android/hosted-5bf41eb.
+Current correction also requires get-started-user-state0 RUNNING_UNLOCKED (actual AOSP command),
+with a regression proving responsive package/activity services alone are insufficient.
 No application/runtime/API changes; previous native APK remains exact. Remote Android is pending.
 Read docs/reports/android-consumer-integration-20261020.md and guides/BINARY-CONSUMER-ANDROID.md.
 No new feature batch. No package publication/tags. User-approved direct linear main push only after gates.

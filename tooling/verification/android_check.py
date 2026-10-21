@@ -55,7 +55,8 @@ def packaged_fonts(apk):
 def wait_for_services(probe, *, clock=time.monotonic, sleep=time.sleep, timeout=120):
     """Boot completion alone does not guarantee responsive package/activity services.
 
-    Require three consecutive read-only responses before installing anything. A
+    Require user 0 unlocked and three consecutive read-only service responses
+    before installing anything. A
     transient failure is setup evidence, never an application assertion retry.
     """
     deadline = clock() + timeout
@@ -66,12 +67,14 @@ def wait_for_services(probe, *, clock=time.monotonic, sleep=time.sleep, timeout=
         try:
             package = probe(f"ready-{attempt}-package", "shell", "cmd", "package", "path", "android", timeout=5)
             activity = probe(f"ready-{attempt}-activity", "shell", "cmd", "activity", "get-current-user", timeout=5)
-            ready = any(line.startswith(b"package:") for line in package.splitlines()) and activity.strip().isdigit()
+            user = probe(f"ready-{attempt}-user", "shell", "cmd", "activity", "get-started-user-state", "0", timeout=5)
+            ready = (any(line.startswith(b"package:") for line in package.splitlines())
+                     and activity.strip() == b"0" and user.strip() == b"RUNNING_UNLOCKED")
         except (RuntimeError, subprocess.TimeoutExpired):
             ready = False
         stable = stable + 1 if ready else 0
         if stable == 3:
-            return {"attempts": attempt, "consecutiveResponsiveProbes": stable}
+            return {"attempts": attempt, "consecutiveResponsiveProbes": stable, "unlockedUser": 0}
         sleep(max(0, min(2, deadline - clock())))
     raise TimeoutError("Android package/activity services did not become stably responsive")
 
