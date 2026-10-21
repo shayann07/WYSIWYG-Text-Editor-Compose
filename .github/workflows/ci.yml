@@ -126,8 +126,8 @@ jobs:
           adb -s emulator-5580 shell dumpsys power > pre-test-power.txt
           adb -s emulator-5580 shell dumpsys window policy > pre-test-window-policy.txt
           python tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/consumer/android-ci/results.json --output-dir tests/local-evidence/android/ci
-        - name: Verify cross-UID clipboard after publisher process death
-          run: python tooling/verification/android_clipboard.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/consumer/android-ci/results.json --output-dir tests/local-evidence/android/clipboard-ci
+      - name: Verify cross-UID clipboard after publisher process death
+        run: python tooling/verification/android_clipboard.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/consumer/android-ci/results.json --output-dir tests/local-evidence/android/clipboard-ci
       - name: Stop only the disposable emulator
         if: always()
         shell: bash
@@ -145,6 +145,7 @@ jobs:
           path: |
             tests/local-evidence/consumer/android-ci
             tests/local-evidence/android/ci
+            tests/local-evidence/android/clipboard-ci
             tests/local-evidence/android/preflight
             emulator.log
             pre-test-*.txt

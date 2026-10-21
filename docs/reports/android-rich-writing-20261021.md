@@ -172,6 +172,15 @@ No public signature, document semantics or desktop geometry changes in this repa
 The earlier image placeholder was asynchronous loading: `render-after-settle/rich-source.png`
 shows the actual decoded blue image. The raw early frame is retained, not labelled a render failure.
 
+The first source push f01d53b passed all six local gates but GitHub rejected CI before creating
+jobs: the added clipboard step was indented inside the preceding step. The raw failed workflow
+receipt is retained. A three-case structural guard reproduces that error at line129, covers a
+valid step after a shell block and literal shell-list text, then passes after correction. It is
+explicitly a narrow indentation guard, not a full YAML/workflow parser. Clipboard CI evidence is
+also included in artifact retention. This follow-up changes CI/docs/tests only; application and
+library input hashes, the APK and all54 packaged/interruption/clipboard results remain identical.
+The final exact-commit gates and hosted results in the delivery receipt supersede that failed push.
+
 ## Delivered build and evidence authority
 
 - Runnable APK: `tests/local-evidence/android/rich-writing-delivery-20261022/ComposeDoc.apk`.

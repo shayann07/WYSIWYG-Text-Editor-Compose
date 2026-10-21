@@ -14,6 +14,10 @@ Final packaged54 groups + actual interruption + cross-UID cleanup PASS on APK6d0
 Independent binary consumer10 runtime groups + Android/peer builds PASS; check/api/zero Detekt PASS
 after the shell repair. Desktop21 stages PASS, all ten approved page PNGs byte-identical,432 marker
 checks PASS. All raw failed checkpoints remain retained. No more feature work.
+f01d53b passed all six clean local gates and was pushed, but CI rejected an indentation error
+before starting jobs. CI-only follow-up fixes the step and retains cross-UID artifacts; a new
+three-case guard fails on the original and passes after repair (all8 governance self-tests PASS).
+Application/library inputs and APK are unchanged. Finish the follow-up exact gates and hosted CI.
 Computer-use BLOCKED before initialization: failed to write kernel assets (os error3), same after
 supported kernel reset/retry. Zero desktop inputs sent; control OFF. Native walkthrough, genuine
 new language/IME/AT and rotation qualification remain unrun; a ten-minute manual checklist is in
