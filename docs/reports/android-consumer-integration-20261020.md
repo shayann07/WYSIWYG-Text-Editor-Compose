@@ -476,3 +476,11 @@ Pixel7 AVD has explicit2GiB RAM/1GiB data partition and software GPU, with hw.ke
 visible virtual keyboard. Upload raw consumer/adapter evidence even on failure. This is hosted
 build tooling only; no library runtime dependency or APK/source geometry changes. A successful
 boot and all27 actual adapter checks are still required on the new exact commit.
+
+
+The bounded4888ead run exposed the exact cause previously hidden: hosted Linux emulator
+37.2.12 exits immediately with unknown option: -no-netsim. Windows37.1.11 accepted that local
+workaround; it is not portable. Remove only that option from hosted startup. Preserve the raw
+failed log desktop/android-ci-emulator-bounded-failure.log and uploaded consumer receipt.
+All other hosted checks and all six local gates passed4888ead; Android tests did not execute.
+No APK, source API, engine semantics, font bytes or approved desktop geometry changed.

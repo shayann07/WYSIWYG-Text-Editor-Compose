@@ -4,8 +4,10 @@ Implementation/native local verification complete to the stated slice. All six e
 PASS and pushed through29299b04ed3a54b4108de53113bfb473152c64d5. Windows full integration,
 quality, docs, iOS and all4 CodeQL PASS on that commit. Android hosted emulator startup stalled
 before tests; obsolete CI run39481249183 cancelled after retaining raw logs.
-Current change: replace unbounded adb wait with SHA-pinned emulator runner (300s boot limit,
-visible startup diagnostics,2GiB RAM/1GiB disposable data partition, supported software GPU).
+4888ead passes all6 clean gates, Windows/iOS/quality/docs and all4 CodeQL. Bounded startup
+now exposes the actual Linux emulator error:37.2.12 rejects -no-netsim. Current CI-only fix
+removes that Windows-local option, retaining the300s deadline/diagnostics and disposable AVD.
+Raw log: desktop/android-ci-emulator-bounded-failure.log; hosted adapter tests did not run.
 No application/runtime/API changes; previous native APK remains exact. Remote Android is pending.
 Read docs/reports/android-consumer-integration-20261020.md and guides/BINARY-CONSUMER-ANDROID.md.
 No new feature batch. No package publication/tags. User-approved direct linear main push only after gates.

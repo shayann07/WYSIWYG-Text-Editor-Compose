@@ -108,7 +108,7 @@ jobs:
           disk-size: 1024M
           emulator-boot-timeout: 300
           # API 37's emulator supports software; retain startup output in the job log.
-          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -no-netsim -gpu software -feature -Vulkan
+          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu software -feature -Vulkan
           pre-emulator-launch-script: sed -i 's/^hw.keyboard=.*/hw.keyboard=no/' "$ANDROID_AVD_HOME/composedoc_ci.avd/config.ini"
           script: |
             adb -s emulator-5580 shell settings put secure show_ime_with_hard_keyboard 1
