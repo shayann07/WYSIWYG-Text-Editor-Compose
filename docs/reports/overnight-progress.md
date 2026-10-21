@@ -8,6 +8,10 @@ before tests; obsolete CI run39481249183 cancelled after retaining raw logs.
 now exposes the actual Linux emulator error:37.2.12 rejects -no-netsim. Current CI-only fix
 removes that Windows-local option, retaining the300s deadline/diagnostics and disposable AVD.
 Raw log: desktop/android-ci-emulator-bounded-failure.log; hosted adapter tests did not run.
+c8b64b5 boots Linux in45s; install then hits package-service Broken pipe(32) before tests.
+Current verification correction: require three responsive package/activity probes within120s,
+retain guest logcat/data-space/memory on failure; use4GiB RAM/2GiB disposable data for CI.
+Readiness regressions cover false-success output, service restart and bounded failure.
 No application/runtime/API changes; previous native APK remains exact. Remote Android is pending.
 Read docs/reports/android-consumer-integration-20261020.md and guides/BINARY-CONSUMER-ANDROID.md.
 No new feature batch. No package publication/tags. User-approved direct linear main push only after gates.

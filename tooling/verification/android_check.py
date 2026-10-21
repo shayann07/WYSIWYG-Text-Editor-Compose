@@ -52,6 +52,30 @@ def packaged_fonts(apk):
     return {name: sha(data) for name, data in expected.items()}
 
 
+def wait_for_services(probe, *, clock=time.monotonic, sleep=time.sleep, timeout=120):
+    """Boot completion alone does not guarantee responsive package/activity services.
+
+    Require three consecutive read-only responses before installing anything. A
+    transient failure is setup evidence, never an application assertion retry.
+    """
+    deadline = clock() + timeout
+    stable = 0
+    attempt = 0
+    while clock() < deadline:
+        attempt += 1
+        try:
+            package = probe(f"ready-{attempt}-package", "shell", "cmd", "package", "path", "android", timeout=5)
+            activity = probe(f"ready-{attempt}-activity", "shell", "cmd", "activity", "get-current-user", timeout=5)
+            ready = any(line.startswith(b"package:") for line in package.splitlines()) and activity.strip().isdigit()
+        except (RuntimeError, subprocess.TimeoutExpired):
+            ready = False
+        stable = stable + 1 if ready else 0
+        if stable == 3:
+            return {"attempts": attempt, "consecutiveResponsiveProbes": stable}
+        sleep(max(0, min(2, deadline - clock())))
+    raise TimeoutError("Android package/activity services did not become stably responsive")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--serial", required=True)
@@ -92,18 +116,27 @@ def main():
         (output / "results.json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
 
     def run(label, *command, timeout=180):
-        result = subprocess.run([adb, "-s", args.serial, *command], capture_output=True, timeout=timeout)
+        try:
+            result = subprocess.run([adb, "-s", args.serial, *command], capture_output=True, timeout=timeout)
+        except subprocess.TimeoutExpired as failure:
+            (output / (label + ".stdout")).write_bytes(failure.stdout or b"")
+            (output / (label + ".stderr")).write_bytes(failure.stderr or b"")
+            (output / (label + ".timeout")).write_text(str(failure), encoding="utf-8")
+            raise
         (output / (label + ".stdout")).write_bytes(result.stdout)
         (output / (label + ".stderr")).write_bytes(result.stderr)
         if result.returncode:
             raise RuntimeError(label + " failed: " + result.stderr.decode("utf-8", "replace"))
         return result.stdout
 
+    owned_identified = False
     save()
     try:
         observed = run("identity", "emu", "avd", "name").decode().splitlines()
         if not observed or observed[0].strip() != args.avd_name:
             raise ValueError("Emulator identity does not match the authorized disposable AVD")
+        owned_identified = True
+        receipt["serviceReadiness"] = wait_for_services(run)
         receipt["apkSha256"] = sha(args.apk.read_bytes())
         receipt["testApkSha256"] = sha(args.test_apk.read_bytes())
         receipt["packagedFonts"] = packaged_fonts(args.apk)
@@ -122,6 +155,16 @@ def main():
         receipt["status"] = "PASS"
     except Exception as failure:
         receipt.update(status="FAIL", error=str(failure))
+        if owned_identified:
+            for label, command in (
+                ("failure-logcat", ("logcat", "-d", "-t", "1500")),
+                ("failure-data-space", ("shell", "df", "/data")),
+                ("failure-memory", ("shell", "dumpsys", "meminfo")),
+            ):
+                try:
+                    run(label, *command, timeout=10)
+                except Exception as diagnostic_failure:
+                    receipt.setdefault("diagnosticErrors", {})[label] = str(diagnostic_failure)
         save()
         raise
     save()

@@ -484,3 +484,14 @@ workaround; it is not portable. Remove only that option from hosted startup. Pre
 failed log desktop/android-ci-emulator-bounded-failure.log and uploaded consumer receipt.
 All other hosted checks and all six local gates passed4888ead; Android tests did not execute.
 No APK, source API, engine semantics, font bytes or approved desktop geometry changed.
+
+
+Linux c8b64b5 now boots successfully in45 seconds, proving the option correction. The next
+failure is before installation: package service Broken pipe(32) immediately after boot flag1.
+Raw log desktop/android-ci-linux-option-result.log and hosted-c8b64b5 artifacts retain it.
+The driver now requires three consecutive responsive package/activity queries within120 seconds,
+with fixed-trace regressions for false-success output, service restart and bounded failure.
+Installation and application assertions are never retried or weakened. Capture guest logcat,
+/data space and memory on failure, only after the supplied disposable AVD identity is validated.
+CI uses4GiB guest RAM/2GiB disposable data as startup headroom; the previous failure does not
+prove a memory or disk cause. Local native2GiB evidence is unchanged and separately identified.

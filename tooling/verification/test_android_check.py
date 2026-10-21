@@ -2,7 +2,7 @@
 
 import unittest
 
-from android_check import validate_result
+from android_check import validate_result, wait_for_services
 
 
 class AndroidEvidenceContract(unittest.TestCase):
@@ -43,6 +43,39 @@ class AndroidEvidenceContract(unittest.TestCase):
         result.pop("api")
         with self.assertRaises(ValueError):
             validate_result(result, "current")
+
+
+class AndroidServiceReadiness(unittest.TestCase):
+    def run_trace(self, states, timeout=20):
+        now = [0]
+        seen = []
+        def probe(label, *command, timeout):
+            index = int(label.split("-")[1]) - 1
+            seen.append(label)
+            state = states[min(index, len(states) - 1)]
+            if isinstance(state, Exception):
+                raise state
+            if command[2] == "package":
+                return b"package:/system/framework/framework-res.apk" if state else b"Error: service unavailable"
+            return b"0"
+        def sleep(seconds):
+            now[0] += seconds
+        result = wait_for_services(probe, clock=lambda: now[0], sleep=sleep, timeout=timeout)
+        return result, seen
+
+    def test_boot_flag_does_not_replace_service_response(self):
+        result, seen = self.run_trace([False, True, True, True])
+        self.assertEqual(result["attempts"], 4)
+        self.assertEqual(len(seen), 8)
+
+    def test_broken_pipe_resets_consecutive_readiness(self):
+        result, _ = self.run_trace([True, RuntimeError("Broken pipe (32)"), True, True, True])
+        self.assertEqual(result["attempts"], 5)
+        self.assertEqual(result["consecutiveResponsiveProbes"], 3)
+
+    def test_unavailable_service_fails_with_deadline(self):
+        with self.assertRaisesRegex(TimeoutError, "services"):
+            self.run_trace([RuntimeError("Broken pipe (32)")], timeout=6)
 
 
 if __name__ == "__main__":
