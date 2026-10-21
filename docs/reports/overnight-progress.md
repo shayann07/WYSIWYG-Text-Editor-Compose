@@ -1,7 +1,12 @@
 # Android and independent binary consumer — final local checkpoint, 20 October 2026
 
-Implementation/native local verification complete to the stated slice; clean-commit gates/CI pending.
-HEAD baseline5aa9ce6272e60cef4eb019322b9788b061c80f0a; current changes uncommitted.
+Implementation/native local verification complete to the stated slice. All six exact clean gates
+PASS and pushed through29299b04ed3a54b4108de53113bfb473152c64d5. Windows full integration,
+quality, docs, iOS and all4 CodeQL PASS on that commit. Android hosted emulator startup stalled
+before tests; obsolete CI run39481249183 cancelled after retaining raw logs.
+Current change: replace unbounded adb wait with SHA-pinned emulator runner (300s boot limit,
+visible startup diagnostics,2GiB RAM/1GiB disposable data partition, supported software GPU).
+No application/runtime/API changes; previous native APK remains exact. Remote Android is pending.
 Read docs/reports/android-consumer-integration-20261020.md and guides/BINARY-CONSUMER-ANDROID.md.
 No new feature batch. No package publication/tags. User-approved direct linear main push only after gates.
 
@@ -34,11 +39,11 @@ needed for docked suite, restored0 and verified; accessibility0. AVD config was 
 not changed. No physical-device/native input settings modified. C cleanup alreadyPASS5.288GiB;
 don't repeat. All dev commands prefix ignored D dev-environment.ps1; normal D caches remain active.
 
-Exact restart: validate docs/frozen/selftests, inspect/stage intended changes, local commit; run
-python tooling/verification/final_gates.py on clean exact commit; all6 must pass before authorized
-main push. Then verify CI, ios-build, all4 CodeQL and Android packaged adapter exact commit.
-Retain raw failures. If remote CI fails fix cause and repeat exact clean gates. Final report should
-include commands/APK/sample, ten-minute walk, evidence/matrix, limitations and exact Git/CI status.
+Exact restart: validate the CI-only startup correction and docs, commit locally; rerun all six
+clean exact final_gates.py gates, then authorized linear main push. Confirm all jobs and all4
+CodeQL on that exact commit, including Android packaged adapter27 tests. Raw stalled log:
+desktop/android-ci-emulator-stall.log. Computer control remains OFF; do not repeat native work.
+Final report includes commands/APK/sample, walkthrough, evidence/matrix, limitations and Git/CI.
 
 Gate correction after local commit b9d2322: first5 exact gates PASS, mutation clone omitted new
 sample projects and failed compilation (not an assertion kill). Added both project trees to

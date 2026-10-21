@@ -458,3 +458,21 @@ request37.0 explicitly; app/runtime configuration remains unchanged. Raw hosted 
 `desktop/ci-bootstrap-*.log` and read-only SDK package listing
 `desktop/android-sdk-available-channels.log` preserve the evidence. Obsolete runs are cancelled
 where still active; final gates/CI must repeat on the corrected exact commit.
+
+
+## Hosted emulator startup correction — 21 October 2026
+
+Exact clean29299b0 passes all six local gates, Windows full integration/consumer verification,
+quality, docs, iOS and all four CodeQL. Android's independent Linux consumer builds, but the
+manual emulator step hangs at unbounded adb wait-for-device before its bounded boot loop.
+The emulator's redirected log was never printed; its exit cause is unknown. That is BLOCKED,
+not a failed application test or native PASS. The obsolete run39481249183 was cancelled after
+15 minutes and its raw job log retained at desktop/android-ci-emulator-stall.log.
+
+Use SHA-pinned established android-emulator-runner v2.38.0 instead of maintaining a second
+startup/wait implementation. Actual action source inspected: string platform37.0/image37.1,
+300-second boot deadline, startup output in job log, targeted emulator cleanup. The disposable
+Pixel7 AVD has explicit2GiB RAM/1GiB data partition and software GPU, with hw.keyboard=no and
+visible virtual keyboard. Upload raw consumer/adapter evidence even on failure. This is hosted
+build tooling only; no library runtime dependency or APK/source geometry changes. A successful
+boot and all27 actual adapter checks are still required on the new exact commit.
