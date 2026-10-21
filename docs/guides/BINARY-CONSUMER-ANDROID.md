@@ -173,3 +173,10 @@ Raw startup, preflight, instrumentation and failure diagnostics are uploaded eve
 Thirteen driver self-tests cover setup races, wrong identities, deadline failure and misleading
 results. Local manual preference changes must still record/restore their prior value; the CI
 AVD is newly created and removed with its hosted job. Computer control is unnecessary for CI.
+
+
+The disposable hosted fixture uses6GiB guest RAM and offline Wi-Fi/mobile data after readiness
+to separate editor checks from Play Store first-boot provisioning pressure. Its pre-test memory
+and failures are retained. This does not establish a minimum device requirement: the separate
+local native/adapter configuration used2GiB. No OOM priority override or application assertion
+retry is used. Actual device memory/keyboard/IME qualification always names its configuration.

@@ -99,7 +99,7 @@ jobs:
           export ANDROID_AVD_HOME="$RUNNER_TEMP/composedoc-ci-avds"
           mkdir -p "$ANDROID_AVD_HOME"
           echo no | avdmanager create avd --name composedoc_ci --device pixel_7 --package 'system-images;android-37.1;google_apis_playstore_ps16k;x86_64'
-          printf 'hw.cpu.ncore=2\nhw.ramSize=4096\ndisk.dataPartition.size=2048M\nhw.keyboard=no\n' >> "$ANDROID_AVD_HOME/composedoc_ci.avd/config.ini"
+          printf 'hw.cpu.ncore=2\nhw.ramSize=6144\ndisk.dataPartition.size=2048M\nhw.keyboard=no\n' >> "$ANDROID_AVD_HOME/composedoc_ci.avd/config.ini"
           sudo chmod a+rw /dev/kvm
           adb start-server
           nohup "$ANDROID_HOME/emulator/emulator" -avd composedoc_ci -port 5580 -no-window -no-audio -no-snapshot -no-boot-anim -gpu software -feature -Vulkan > emulator.log 2>&1 &
@@ -110,6 +110,10 @@ jobs:
       - name: Verify the independently packaged APK
         shell: bash
         run: |
+          # This offline editor does not need first-boot Play Store network provisioning.
+          adb -s emulator-5580 shell svc wifi disable
+          adb -s emulator-5580 shell svc data disable
+          adb -s emulator-5580 shell dumpsys meminfo > pre-test-memory.txt
           adb -s emulator-5580 shell settings put secure show_ime_with_hard_keyboard 1
           python tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/consumer/android-ci/results.json --output-dir tests/local-evidence/android/ci
       - name: Stop only the disposable emulator
@@ -131,6 +135,7 @@ jobs:
             tests/local-evidence/android/ci
             tests/local-evidence/android/preflight
             emulator.log
+            pre-test-memory.txt
           if-no-files-found: warn
   ios:
     name: ios-build

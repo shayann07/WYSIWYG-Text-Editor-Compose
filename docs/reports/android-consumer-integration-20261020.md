@@ -540,3 +540,20 @@ phases share one deadline; a mismatched AVD rejects immediately and cannot recei
 or app mutations. Three fixed-trace self-tests cover delayed registration, a wrong identity and
 an absent device; total driver self-tests13. The AVD directory is explicit under RUNNER_TEMP,
 and nohup keeps only the owned emulator alive between CI steps. No device wipe or normal AVD.
+
+
+## Hosted first-boot memory pressure
+
+The7c91e13 run completed all27 groups. The code-identical6e1ff31 run passed preflight but the
+Android low-memory killer terminated the instrumented process before checks completed:
+111220KiB RSS, oom_score_adj700, min watermark breached. Raw guest log/outputs are retained at
+android/hosted-6e1ff31; its missing result is correctly FAIL despite instrumentation exit0.
+This is not a proven application heap failure or a27-check pass. The report remains incomplete
+until the final exact-commit hosted job executes all27 groups.
+
+Give the newly provisioned CI guest6GiB RAM and disable unused guest Wi-Fi/mobile data after
+owned/unlocked readiness. This is an offline editor test on a disposable AVD; host dependency
+resolution is unaffected. Retain pre-test memory alongside any failure diagnostics. Do not
+adjust process OOM scores, skip checks, retry assertions or weaken the driver. Native2GiB
+local evidence stays separately qualified; the CI fixture is not a minimum-device requirement.
+No application source, API, font or approved geometry changes.
