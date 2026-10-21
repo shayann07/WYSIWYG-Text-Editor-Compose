@@ -16,6 +16,13 @@ Instrumentation cannot create its credential-encrypted evidence folder, so zero 
 Guest logcat explicitly says User0 not ready/locked; retained under android/hosted-5bf41eb.
 Current correction also requires get-started-user-state0 RUNNING_UNLOCKED (actual AOSP command),
 with a regression proving responsive package/activity services alone are insufficient.
+f759064 fails inside emulator-runner animation settings before our preflight (settings IPC
+Broken pipe). Current CI starts SDK emulator directly, uses the tested owned/user-unlocked
+preflight with300s cap, then sets the test IME preference and runs qualification. No action
+framework calls before readiness; raw emulator/preflight logs retained; owned cleanup always.
+Readiness emits READY, never PASS. Thirteen self-tests also cover delayed ADB registration,
+immediate rejection of a mismatched AVD and bounded absence. Identity and unlocked-service
+readiness share one deadline. AVD is isolated under RUNNER_TEMP; startup uses nohup.
 No application/runtime/API changes; previous native APK remains exact. Remote Android is pending.
 Read docs/reports/android-consumer-integration-20261020.md and guides/BINARY-CONSUMER-ANDROID.md.
 No new feature batch. No package publication/tags. User-approved direct linear main push only after gates.

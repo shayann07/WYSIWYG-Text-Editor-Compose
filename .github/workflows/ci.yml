@@ -92,27 +92,35 @@ jobs:
       - run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
       - name: Build outside-checkout consumers from binary metadata
         run: xvfb-run -a python tooling/verification/consumer_check.py --android --output-dir tests/local-evidence/consumer/android-ci
-      - name: Enable acceleration on the disposable hosted runner
-        run: sudo chmod a+rw /dev/kvm
-      - name: Verify on a bounded disposable emulator
-        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
-        with:
-          api-level: '37.0'
-          system-image-api-level: '37.1'
-          target: google_apis_playstore_ps16k
-          arch: x86_64
-          profile: pixel_7
-          avd-name: composedoc_ci
-          emulator-port: 5580
-          ram-size: 4096M
-          disk-size: 2048M
-          emulator-boot-timeout: 300
-          # API 37's emulator supports software; retain startup output in the job log.
-          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu software -feature -Vulkan
-          pre-emulator-launch-script: sed -i 's/^hw.keyboard=.*/hw.keyboard=no/' "$ANDROID_AVD_HOME/composedoc_ci.avd/config.ini"
-          script: |
-            adb -s emulator-5580 shell settings put secure show_ime_with_hard_keyboard 1
-            python tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/consumer/android-ci/results.json --output-dir tests/local-evidence/android/ci
+      - name: Start the disposable emulator and wait for unlocked services
+        shell: bash
+        run: |
+          sdkmanager 'emulator' 'system-images;android-37.1;google_apis_playstore_ps16k;x86_64'
+          export ANDROID_AVD_HOME="$RUNNER_TEMP/composedoc-ci-avds"
+          mkdir -p "$ANDROID_AVD_HOME"
+          echo no | avdmanager create avd --name composedoc_ci --device pixel_7 --package 'system-images;android-37.1;google_apis_playstore_ps16k;x86_64'
+          printf 'hw.cpu.ncore=2\nhw.ramSize=4096\ndisk.dataPartition.size=2048M\nhw.keyboard=no\n' >> "$ANDROID_AVD_HOME/composedoc_ci.avd/config.ini"
+          sudo chmod a+rw /dev/kvm
+          adb start-server
+          nohup "$ANDROID_HOME/emulator/emulator" -avd composedoc_ci -port 5580 -no-window -no-audio -no-snapshot -no-boot-anim -gpu software -feature -Vulkan > emulator.log 2>&1 &
+          emulator_pid=$!
+          sleep 1
+          if ! kill -0 "$emulator_pid"; then cat emulator.log; exit 1; fi
+          python tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/consumer/android-ci/results.json --wait-only --readiness-timeout 300 --output-dir tests/local-evidence/android/preflight
+      - name: Verify the independently packaged APK
+        shell: bash
+        run: |
+          adb -s emulator-5580 shell settings put secure show_ime_with_hard_keyboard 1
+          python tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/consumer/android-ci/results.json --output-dir tests/local-evidence/android/ci
+      - name: Stop only the disposable emulator
+        if: always()
+        shell: bash
+        run: |
+          if adb -s emulator-5580 get-state >/dev/null 2>&1; then
+            adb -s emulator-5580 emu kill
+          else
+            echo 'Disposable emulator is not running; no device targeted.'
+          fi
       - name: Retain packaged adapter receipts and raw failures
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -121,6 +129,8 @@ jobs:
           path: |
             tests/local-evidence/consumer/android-ci
             tests/local-evidence/android/ci
+            tests/local-evidence/android/preflight
+            emulator.log
           if-no-files-found: warn
   ios:
     name: ios-build

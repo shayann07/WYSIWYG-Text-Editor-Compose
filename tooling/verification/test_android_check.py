@@ -2,7 +2,7 @@
 
 import unittest
 
-from android_check import validate_result, wait_for_services
+from android_check import validate_result, wait_for_services, wait_for_owned_emulator
 
 
 class AndroidEvidenceContract(unittest.TestCase):
@@ -19,6 +19,12 @@ class AndroidEvidenceContract(unittest.TestCase):
             result["groups"] = result["groups"][:size]
             with self.assertRaises(ValueError):
                 validate_result(result, "current")
+
+    def test_readiness_is_never_qualification_pass(self):
+        result = self.valid()
+        result["status"] = "READY"
+        with self.assertRaises(ValueError):
+            validate_result(result, "current")
 
     def test_repeated_child_is_not_a_new_check(self):
         result = self.valid()
@@ -85,6 +91,39 @@ class AndroidServiceReadiness(unittest.TestCase):
     def test_unavailable_service_fails_with_deadline(self):
         with self.assertRaisesRegex(TimeoutError, "services"):
             self.run_trace([RuntimeError("Broken pipe (32)")], timeout=6)
+
+
+class OwnedEmulatorReadiness(unittest.TestCase):
+    def test_device_registers_after_initial_adb_absence(self):
+        now = [0]
+        calls = []
+        def probe(label, *command, timeout):
+            calls.append(label)
+            if len(calls) < 3:
+                raise RuntimeError("device not found")
+            return b"owned-test\nOK\n"
+        def sleep(seconds):
+            now[0] += seconds
+        result = wait_for_owned_emulator(probe, "owned-test", clock=lambda: now[0], sleep=sleep)
+        self.assertEqual(result, {"attempts": 3, "name": "owned-test"})
+
+    def test_wrong_identity_is_not_retried_or_admitted(self):
+        calls = []
+        def probe(label, *command, timeout):
+            calls.append(label)
+            return b"someone-elses-avd\nOK\n"
+        with self.assertRaisesRegex(ValueError, "identity"):
+            wait_for_owned_emulator(probe, "owned-test")
+        self.assertEqual(len(calls), 1)
+
+    def test_absent_device_cannot_wait_indefinitely(self):
+        now = [0]
+        def probe(*command, timeout):
+            raise RuntimeError("device not found")
+        def sleep(seconds):
+            now[0] += seconds
+        with self.assertRaisesRegex(TimeoutError, "register"):
+            wait_for_owned_emulator(probe, "owned-test", clock=lambda: now[0], sleep=sleep, timeout=6)
 
 
 if __name__ == "__main__":

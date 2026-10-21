@@ -509,3 +509,24 @@ cmd activity get-started-user-state0. Actual AOSP ActivityManagerShellCommand an
 confirm this read-only command and state string. A new fixed trace proves that responsive
 package/activity services with a locked user never start installation. Nine driver self-tests
 pass. No app assertions or installation retries, APK/source changes, credentials or permissions.
+
+
+The f759064 hosted attempt fails before the qualification driver: emulator-runner v2.38.0
+changes animation settings immediately after boot flag1, and settings IPC returns Broken pipe.
+Retained raw log desktop/android-ci-user-unlocked.log. No adapter checks execute.
+
+Use direct SDK emulator startup with the now-validated Linux options, followed by the same
+owned-identity/service/user-unlocked preflight with a300-second cap. Only then set the disposable
+IME visibility preference and run the full driver. This avoids framework calls inside an action
+before readiness. adb starts before the emulator; early emulator exit is detected; always retain
+emulator.log, preflight and qualification outputs and stop only emulator5580. The new wait-only
+mode explicitly emits READY and no child checks, never PASS. A tenth driver self-test rejects
+READY as qualification even if a misleading complete group array is supplied. Application
+assertions, install behavior, APK and all125 application source inputs remain unchanged.
+
+
+Direct startup also needs bounded ADB identity registration before querying services. Both
+phases share one deadline; a mismatched AVD rejects immediately and cannot receive diagnostics
+or app mutations. Three fixed-trace self-tests cover delayed registration, a wrong identity and
+an absent device; total driver self-tests13. The AVD directory is explicit under RUNNER_TEMP,
+and nohup keeps only the owned emulator alive between CI steps. No device wipe or normal AVD.

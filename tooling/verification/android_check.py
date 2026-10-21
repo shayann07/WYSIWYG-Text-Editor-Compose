@@ -52,6 +52,23 @@ def packaged_fonts(apk):
     return {name: sha(data) for name, data in expected.items()}
 
 
+def wait_for_owned_emulator(probe, expected_name, *, clock=time.monotonic, sleep=time.sleep, timeout=120):
+    """Read identity while ADB starts; reject a different AVD immediately."""
+    deadline = clock() + timeout
+    attempt = 0
+    while clock() < deadline:
+        attempt += 1
+        try:
+            observed = probe(f"identity-{attempt}", "emu", "avd", "name", timeout=5).decode().splitlines()
+        except (RuntimeError, subprocess.TimeoutExpired):
+            sleep(max(0, min(2, deadline - clock())))
+            continue
+        if not observed or observed[0].strip() != expected_name:
+            raise ValueError("Emulator identity does not match the authorized disposable AVD")
+        return {"attempts": attempt, "name": expected_name}
+    raise TimeoutError("Named disposable emulator did not register with ADB")
+
+
 def wait_for_services(probe, *, clock=time.monotonic, sleep=time.sleep, timeout=120):
     """Boot completion alone does not guarantee responsive package/activity services.
 
@@ -83,12 +100,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--serial", required=True)
     parser.add_argument("--avd-name", required=True)
+    parser.add_argument("--wait-only", action="store_true", help="Readiness only; emits READY, never qualification PASS")
+    parser.add_argument("--readiness-timeout", type=int, default=120)
     selection = parser.add_mutually_exclusive_group(required=True)
     selection.add_argument("--apk", type=Path)
     selection.add_argument("--consumer-receipt", type=Path)
     parser.add_argument("--test-apk", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
+    if not 1 <= args.readiness_timeout <= 300:
+        parser.error("Readiness timeout must be between1 and300 seconds")
     if args.consumer_receipt:
         consumer = json.loads(args.consumer_receipt.read_text(encoding="utf-8"))
         if consumer.get("status") != "PASS":
@@ -135,11 +156,15 @@ def main():
     owned_identified = False
     save()
     try:
-        observed = run("identity", "emu", "avd", "name").decode().splitlines()
-        if not observed or observed[0].strip() != args.avd_name:
-            raise ValueError("Emulator identity does not match the authorized disposable AVD")
+        readiness_deadline = time.monotonic() + args.readiness_timeout
+        receipt["emulatorIdentity"] = wait_for_owned_emulator(run, args.avd_name, timeout=args.readiness_timeout)
         owned_identified = True
-        receipt["serviceReadiness"] = wait_for_services(run)
+        receipt["serviceReadiness"] = wait_for_services(run, timeout=max(0, readiness_deadline - time.monotonic()))
+        if args.wait_only:
+            receipt.update(status="READY", scope="Owned emulator readiness only; no adapter checks executed")
+            save()
+            print("READY owned emulator services/user; no adapter checks executed")
+            return
         receipt["apkSha256"] = sha(args.apk.read_bytes())
         receipt["testApkSha256"] = sha(args.test_apk.read_bytes())
         receipt["packagedFonts"] = packaged_fonts(args.apk)
