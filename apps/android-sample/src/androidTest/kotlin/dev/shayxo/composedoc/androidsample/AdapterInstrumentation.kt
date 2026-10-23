@@ -67,32 +67,25 @@ class AdapterInstrumentation : Instrumentation() {
             .putExtra("qualification-root", root.name)
         activity = startActivitySync(intent) as MainActivity
         waitUntil { main { activity.inputView != null } }
-        if (arguments.getString("focus") == "recovery-close") {
-            recoveryCloseChecks()
-        } else if (arguments.getString("focus") == "rich-layout") {
-            richLayoutChecks(root)
-        } else if (arguments.getString("focus") == "rich-lifecycle") {
-            richLifecycleChecks()
-        } else if (arguments.getString("focus") == "shell") {
-            richShellChecks()
-        } else if (arguments.getString("focus") == "touch") {
-            richTouchChecks(root)
-        } else if (arguments.getString("focus") == "clipboard") {
-            richClipboardChecks()
-        } else if (arguments.getString("focus") == "uri") {
-            richUriChecks(root)
-        } else if (arguments.getString("focus") == "rich-structure") {
-            richStructureChecks(root)
-        } else if (arguments.getString("focus") == "recovery") {
-            richRecoveryChecks(root)
-        } else if (arguments.getString("focus") == "caret") {
-            caretChecks()
-        } else if (arguments.getString("focus") == "connection-probe") {
-            speculativeConnectionCheck()
-        } else if (arguments.getString("focus") == "connection") {
-            closedConnectionCheck()
-        } else if (arguments.getString("focus") == "shaping") {
-            shapingChecks()
+        val cases: Map<String, () -> Unit> = mapOf(
+            "recovery-close" to { recoveryCloseChecks() },
+            "rich-layout" to { richLayoutChecks(root) },
+            "rich-lifecycle" to { richLifecycleChecks() },
+            "outline-ui" to { outlineUiChecks() },
+            "shell" to { richShellChecks() },
+            "touch" to { richTouchChecks(root) },
+            "clipboard" to { richClipboardChecks() },
+            "uri" to { richUriChecks(root) },
+            "rich-structure" to { richStructureChecks(root) },
+            "recovery" to { richRecoveryChecks(root) },
+            "caret" to { caretChecks() },
+            "connection-probe" to { speculativeConnectionCheck() },
+            "connection" to { closedConnectionCheck() },
+            "shaping" to { shapingChecks() },
+        )
+        val focused = cases[arguments.getString("focus")]
+        if (focused != null) {
+            focused()
         } else {
             protocolChecks()
             persistenceChecks(root)
@@ -108,6 +101,7 @@ class AdapterInstrumentation : Instrumentation() {
             richLifecycleChecks()
             richLayoutChecks(root)
             richShellChecks()
+            outlineUiChecks()
             recoveryCloseChecks()
         }
     }
