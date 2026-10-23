@@ -1,5 +1,6 @@
 package dev.shayxo.composedoc.androidsample
 
+import android.view.accessibility.AccessibilityNodeInfo
 import dev.shayxo.composedoc.model.Document
 import dev.shayxo.composedoc.ui.EditorIntent
 import java.io.File
@@ -18,8 +19,9 @@ internal fun AdapterInstrumentation.recoveryCloseChecks() {
         check(activity.owners.recoveryStore.discard(tab.id, oldGeneration))
         main {
             activity.owners.checkpoints.discarded(tab.id, oldGeneration)
-            activity.owners.closeDocument(tab)
         }
+        assertCloseDisclosure()
+        main { activity.owners.closeDocument(tab) }
         waitUntil { main { tab !in activity.owners.tabs } }
         val entries = activity.owners.recoveryStore.entries().filter { it.owner == tab.id }
         check(entries.isNotEmpty()) { "Close reported success after discard with no replacement checkpoint" }
@@ -46,6 +48,30 @@ internal fun AdapterInstrumentation.recoveryCloseChecks() {
     discardInFlight()
     failedAndQuota()
     unfinishedAndTeardown()
+}
+
+private fun AdapterInstrumentation.assertCloseDisclosure() {
+    main { requestCloseTab(activity, activity.owners, activity.inputView) }
+    waitUntil { closeDialogText("Cancel") != null }
+    try {
+        val expected = "Keep recovery & close creates and verifies a private checkpoint before closing. " +
+            "Cancel keeps editing."
+        check(closeDialogText(expected) != null) {
+            "Close must describe pending verification, not claim a discarded checkpoint already protects writing"
+        }
+    } finally {
+        checkNotNull(closeDialogText("Cancel")).performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        waitForIdleSync()
+    }
+}
+
+private fun AdapterInstrumentation.closeDialogText(text: String): AccessibilityNodeInfo? {
+    fun find(node: AccessibilityNodeInfo?): AccessibilityNodeInfo? = when {
+        node == null -> null
+        node.text?.toString()?.equals(text, ignoreCase = true) == true -> node
+        else -> (0 until node.childCount).firstNotNullOfOrNull { find(node.getChild(it)) }
+    }
+    return find(uiAutomation.rootInActiveWindow)
 }
 
 private fun AdapterInstrumentation.draft(text: String) = main {
@@ -151,7 +177,10 @@ private fun AdapterInstrumentation.failedAndQuota() {
 private fun AdapterInstrumentation.unfinishedAndTeardown() {
     group("keep-and-close durably retains accepted content and separate unfinished proposal") {
         val tab = draft("accepted ")
+        waitUntil { main { activity.inputView?.model === tab.model } }
         val expected = main {
+            // This is a synthetic protocol trace: fence real Gboard callbacks before injecting its proposal.
+            activity.inputView!!.retireNativeSession()
             tab.model.dispatch(EditorIntent.NativeText("仮候補", 0, null))
             tab.model.snapshot().visible.text.also { activity.owners.closeDocument(tab) }
         }

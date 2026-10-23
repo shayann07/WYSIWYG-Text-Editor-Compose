@@ -1,5 +1,31 @@
 # Android recovery/close repair — 23 October 2026
 
+Native continuation: owner centered the emulator and coordinated desktop access
+with the Upscaly session. Actual Gboard keys entered `Hello `; touch/selection,
+italic, app Undo/Redo and toolbar swiping were exercised. Actual provider Save As,
+captured generation10 discard (owner-confirmed), close Cancel, unchanged Keep/close,
+owned SIGKILL and explicit restore of generation12 succeeded. The saved and restored
+202-byte documents are byte-identical and the restored tab is dirty/unsaved. Evidence:
+`repair-batch-20261023/native-20261023/` beneath primary-checkout local evidence.
+These results identify APK fcc93ac8, not a later rebuilt APK.
+
+The native session exposed misleading close-dialog wording claiming a completed
+checkpoint after discard. An actual-dialog regression fails before the correction
+and passes afterward; the dialog now describes verification before closing. All
+nine focused recovery groups pass. A synthetic proposal trace retires live Gboard
+before injecting callbacks, so late real-IME finish notifications cannot contaminate
+that synthetic fixture. Its exact accepted/proposal assertions remain unchanged.
+The rebuilt binary consumer, integrated checks and affected native retest are
+tracked in the subsequent receipts/handoff. No core behavior/API changed for this
+wording correction.
+
+The read-only native trace shows direct `commitText` for the six Gboard key presses;
+prediction suggestions are not proof of active preedit. Real composing-formatting
+and conversion IME remain unqualified. Emulator Ctrl+Z toggles host zoom, and Home
+is intercepted by the emulator; the app's actual Undo/Redo buttons were used instead.
+Client reset alone left the helper banner active. The verified session-owned helper
+was explicitly stopped before the other session resumed input.
+
 Branch `codex/android-recovery-close`, based on main e30c984. No new feature,
 dependency, core API, frozen specification or approved desktop geometry change.
 
