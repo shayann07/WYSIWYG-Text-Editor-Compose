@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 1,
+  "asOf": "2026-10-23",
+  "baselineMain": "e30c984f97c992bbbdb95a7eeaa932a0af7d5c22",
+  "repairSource": "9d8f60bf148b10848e91c82e2352832b74cf4cd8",
+  "apkSha256": "fcc93ac8736b929474f0e4521415965659aeb58cdfb5a91dc665813629fc1747",
+  "scope": "Scoped measured status; no normative amendment acceptance, release qualification or issue closure",
+  "evidence": [
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/close-mounted-negative/results.json",
+      "sha256": "2ef16a53b7bab93d16318d9382f610330b704294ca48531072f0f6b5a3fba52b",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Receipt identity; missing on a fresh clone is not a new qualification pass"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/recovery-packaged-final/results.json",
+      "sha256": "99884c9ef25914c4f9554d1c2815acd84e14c6368de8c305579bb05e0c84b188",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Receipt identity; missing on a fresh clone is not a new qualification pass"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/recovery-packaged-63/results.json",
+      "sha256": "b7cba118fe7932e39ff0e61e2c71c5aca6ba5ad2a7c73891a8580fcfcb32e81f",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Receipt identity; missing on a fresh clone is not a new qualification pass"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/recovery-packaged-clipboard/results.json",
+      "sha256": "17113a843b94fe6355bf2fa86cf555104768cad58d55dd965aac2cbfcf8a32d7",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Receipt identity; missing on a fresh clone is not a new qualification pass"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/issue17-final/comparison.json",
+      "sha256": "7561396bb6496b3356815772669588af1b62955bace5b458a98833228d41ee17",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Receipt identity; missing on a fresh clone is not a new qualification pass"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/existing-pr-local-results.json",
+      "sha256": "179951a26c167a0168cd04223ff6070896b19677a73fd183fb16ab9455f6a8db",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Receipt identity; missing on a fresh clone is not a new qualification pass"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/pr32-provenance.json",
+      "sha256": "5acab5c32e136d1c2516f0ce27491333a0f3b8a9205144d8b13934cb6eeda988",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Receipt identity; missing on a fresh clone is not a new qualification pass"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/pr32-version-sources.json",
+      "sha256": "1ee81fffde4e8a21273223acbf2079adf6cc5f1e1145ae5124798e5dfcc776e4",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Receipt identity; missing on a fresh clone is not a new qualification pass"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-capture-blocker.json",
+      "sha256": "48934a0ad84d3b8ac788fe380426ea732b05a2901bc6edaaa973beed1191cd1a",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Receipt identity; missing on a fresh clone is not a new qualification pass"
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "baseline-recovery-close",
+      "status": "FAIL",
+      "scope": "Both production defects reproduced with actual mounted shell/store",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/close-mounted-negative/results.json"
+      ],
+      "remaining": "Unmerged baseline still defective"
+    },
+    {
+      "id": "candidate-recovery-close",
+      "status": "PASS",
+      "scope": "Nine new mounted regressions plus post-close process SIGKILL; exact accepted/unfinished/resource read-back",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/recovery-packaged-63/results.json"
+      ],
+      "remaining": "Owner review and integration; not power-loss"
+    },
+    {
+      "id": "android-rich-writing",
+      "status": "PARTIAL",
+      "scope": "63 mounted groups; synthetic composition/history/structure/IO/geometry",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/recovery-packaged-63/results.json"
+      ],
+      "remaining": "Native connected checklist, multilingual keyboard, lower API, AT speech"
+    },
+    {
+      "id": "binary-consumer",
+      "status": "PASS",
+      "scope": "10 public-API runtime groups outside checkout; Android and peer APKs built from binaries",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/recovery-packaged-final/results.json"
+      ],
+      "remaining": "Not publication"
+    },
+    {
+      "id": "cross-uid-clipboard",
+      "status": "PASS",
+      "scope": "Actual Android transport/grants after publisher death; fixture setup/paste instrumented",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/recovery-packaged-clipboard/results.json"
+      ],
+      "remaining": "Native unrelated-app exchange still unrun"
+    },
+    {
+      "id": "native-rich-writing",
+      "status": "BLOCKED",
+      "scope": "Supported helper initialized, capture outside monitor twice; no document input",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/native-capture-blocker.json"
+      ],
+      "remaining": "Owner center window; native walkthrough then exact save checks"
+    },
+    {
+      "id": "genuine-urdu-arabic-conversion-ime",
+      "status": "NOT RUN",
+      "scope": "Pasted/model traces do not qualify installed IME behavior",
+      "evidence": [],
+      "remaining": "Available keyboard/language and native interaction"
+    },
+    {
+      "id": "talkback-speech",
+      "status": "NOT RUN",
+      "scope": "Actions/focus are not speech evidence",
+      "evidence": [],
+      "remaining": "Audible speech capture with owner-approved service"
+    },
+    {
+      "id": "lower-android-api",
+      "status": "BLOCKED",
+      "scope": "API28 image present but installed emulator37.1.2 fails legacy startup; minSdk24 unchanged",
+      "evidence": [],
+      "remaining": "Compatible emulator/image pair; no SDK or dependency replacement authorized"
+    },
+    {
+      "id": "inherited-model-reproduction",
+      "status": "PASS",
+      "scope": "25 inherited + 16 V6 groups exact deterministic comparison, Node24.20.0/ICU78.3",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/issue17-final/comparison.json"
+      ],
+      "remaining": "Issue15 dependency plus PR30 runtime pin; not native authority"
+    },
+    {
+      "id": "full-G0-G8",
+      "status": "NOT RUN",
+      "scope": "Representative tests do not satisfy complete sealed gates",
+      "evidence": [],
+      "remaining": "Owner-accepted measurable proposals and per-target qualification"
+    },
+    {
+      "id": "semantic-pdf-physical-print-other-platforms",
+      "status": "NOT RUN",
+      "scope": "Not part of this repair batch",
+      "evidence": [],
+      "remaining": "Existing separate qualification backlog"
+    }
+  ]
+}

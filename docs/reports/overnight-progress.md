@@ -1,3 +1,26 @@
+# Recovery, qualification and issue review — 23 October 2026
+
+Primary checkout/main stays clean at e30c984; isolated worktrees are under
+D:\Work\ComposeDoc-repairs. Read [the complete disposition](repair-issue-pr-disposition-20261023.md)
+and android-qualification-ledger-20261023.json. Recovery repair is commit9d8f60b:
+63 mounted checks, two actual owned process interruptions and cross-UID clipboard
+PASS on APK fcc93ac8; final six exact-commit gates must be read from its receipt.
+Native helper initializes but capture fails outside monitor (two retained attempts);
+owner centering requested, no document input sent, computer control OFF.
+
+All12 issues and five existing draft PRs were refreshed/reviewed. New issue branches
+and dependencies are in the disposition. PR31/34 have local contributor-preserving
+follow-ups, not competing PRs; PR33's failed job has explicit LMK logcat evidence.
+No merge/closure/main push/contributor remote update occurred. Proposed amendments
+22/23/24 remain non-authoritative pending owner acceptance. New PRs need exact
+owner-written metadata after code/evidence review, per CONTRIBUTING.md.
+
+Restart: inspect recovery final-gate receipt/source identity and native window
+position; complete only affected checks. Continue on the existing issue branches,
+not main. Do not repeat the historical audit or begin a new feature batch.
+
+---
+
 # Android rich-document writing — active, 22 October 2026
 
 Owner assignment supersedes the completed prior batch stop condition. Read
