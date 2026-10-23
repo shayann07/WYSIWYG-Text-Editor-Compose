@@ -330,10 +330,12 @@ insert/replacement and stale-selection regressions pass; final packaged/native
 qualification must be read from its own receipt, not inferred from Outline's build.
 
 
-The disposable hosted fixture uses6GiB guest RAM and offline Wi-Fi/mobile data after readiness
+The disposable hosted fixture requests6GiB guest RAM and offline Wi-Fi/mobile data after readiness
 to separate editor checks from Play Store first-boot provisioning pressure. Its pre-test memory
 and failures are retained. This does not establish a minimum device requirement: the separate
-local native/adapter configuration used2GiB. No OOM priority override or application assertion
+local native/adapter launch requested2GiB; requested settings are not proof of measured guest RAM.
+One24October Goldfish launch exposed a4096MiB backend despite a2048MiB request; do not infer
+earlier guest sizes from that observation. No OOM priority override or application assertion
 retry is used. Actual device memory/keyboard/IME qualification always names its configuration.
 
 
@@ -342,3 +344,11 @@ keeps its test display awake, dismisses the default non-credential keyguard and 
 selects the image's already installed Gboard LatinIME. Before/failure dumps identify actual
 IME, power and window policy. These disposable-fixture defaults do not change the owner's
 normal AVD or physical-device keyboard, and are not evidence of genuine keyboard interaction.
+
+The [API28 qualification follow-up](../reports/android-api28-qualification-20261024.md)
+records all66 adapter groups, both owned-process interruption witnesses and real
+cross-UID clipboard transport in an isolated Android9 configuration. Longpress
+uses exact publication synchronization with a suppressed-delivery negative;
+keyboard geometry preserves an independent hidden/shown/hidden oracle. These are
+instrumented adapter results, not genuine multilingual keyboard, TalkBack speech
+or blanket minSdk24 qualification. Read the dated artifact identities before reuse.
