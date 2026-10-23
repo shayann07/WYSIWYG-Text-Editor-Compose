@@ -16,12 +16,14 @@ internal fun AdapterInstrumentation.imagePickerFocusChecks() {
         replaceMounted("kept Urdu اردو")
         val owners = activity.owners
         val original = main { owners.current.snapshot() }
+        check(original.committed.units.none { it.image != null })
         val file = File(targetContext.filesDir, "provider-fixtures/${UUID.randomUUID()}")
         check(file.parentFile!!.isDirectory || file.parentFile!!.mkdirs())
         file.writeBytes(testPng(4, 3, Color.BLUE))
         val uri = Uri.parse("content://${targetContext.packageName}.fixture/${file.name}")
         retiredPickerResult(AndroidPickerKind.IMAGE, uri)
-        waitUntil { main { owners.current.snapshot().committed.resources.isNotEmpty() } }
+        // Retained history can leave unused resources; only the committed block completes this operation.
+        waitUntil { main { owners.current.snapshot().committed.units.any { it.image != null } } }
         val inserted = main { owners.current.snapshot() }
         check(inserted.committed.text.replace("\uFFFC", "").replace("\n", "") == original.committed.text)
         check(
