@@ -83,6 +83,30 @@
       "sha256": "a9a4b9e4c56c766a429bd75953d7a6b2fac929554e602f2d6c88db8fed9b3b65",
       "availability": "MACHINE_LOCAL_RECEIPT",
       "meaning": "Identified receipt, not cross-platform/native qualification"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/pr33-rerun-final.json",
+      "sha256": "957d1607b2777938c2f336fa2360cc0f7e3acd8fe61b9f716c180b166aabfb46",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Retained exact attempt or compatibility evidence; not native qualification"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/pr33-attempt4-failed.log",
+      "sha256": "7ada7264b04b1e41b65390cd4c87f1410457464281a508164bc87c80297e159f",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Retained exact attempt or compatibility evidence; not native qualification"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/integrity-runtime-compat-results/comparison.json",
+      "sha256": "e74ff6a17a16f5d4e517df8c119a313954751458740763ae9ed106d8fa06da46",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Retained exact attempt or compatibility evidence; not native qualification"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/integrity-runtime-compat-inputs.json",
+      "sha256": "18d237d7f902b8a43ff0a122f93ccaeb82be5dd78e067d8f68bc79779a73fe7c",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Retained exact attempt or compatibility evidence; not native qualification"
     }
   ],
   "capabilities": [
@@ -192,6 +216,16 @@
         "tests/local-evidence/repair-batch-20261023/recovery-final-verification.json"
       ],
       "remaining": "Owner review; new-PR metadata; hosted PR checks after creation"
+    },
+    {
+      "id": "contributor33-hosted-android",
+      "status": "FAIL",
+      "scope": "Attempts3 and4 at unchanged8a7b2c9; actual LMK app-process kills evidenced. Other hosted jobs pass.",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/pr33-rerun-final.json",
+        "tests/local-evidence/repair-batch-20261023/pr33-attempt4-failed.log"
+      ],
+      "remaining": "Determine source of guest memory pressure with bounded memory/process trace; owner review, no further blind reruns"
     }
   ]
 }

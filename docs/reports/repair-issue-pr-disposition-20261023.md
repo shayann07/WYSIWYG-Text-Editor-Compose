@@ -183,3 +183,28 @@ integrity, protected hashes and all25+16 deterministic comparisons. PASS.
 Receipt: `integrity-runtime-compat-results/comparison.json`; exact patch/input
 identities and the context resolution are retained beside it. No commit, merge
 or contributor-branch update was used for this compatibility test.
+
+### PR33 bounded rerun outcome
+
+Attempt4 completed FAIL on unchanged8a7b2c9, job120531936243. Other hosted
+docs/quality/iOS/build jobs remain successful. The APK verification again had no
+result. Its retained logcat explicitly records lowmemorykiller terminating the
+same app PID3686 at2026-10-23 16:40:23.353, oom_score_adj700, to free177708KiB
+rss, for a min-watermark breach. This separately supports an LMK diagnosis for
+attempt4. The cause of guest memory pressure (application versus system/runner
+load) is not established by that line. No assertion or resource threshold was
+relaxed, and no third rerun was attempted. The full new artifact and failed job
+log are retained in `pr33-attempt4/` and `pr33-attempt4-failed.log`. PR33 remains
+blocked on its required check; its documentation scope is covered, not merged.
+
+### Final owner handoff
+
+All ten new codex/ branches (eight primary work streams plus two contributor
+follow-up patch streams) are pushed normally. Main and all five contributor heads
+remain unchanged; no public PR text, approval, merge or issue closure occurred.
+The eight primary PRs await exact human-written title/body text. Blank fields and
+correct branch/base pairs are in the ignored `owner-pr-metadata.json` evidence
+file. The three normative proposals remain PROPOSED/non-authoritative pending
+explicit owner acceptance. Native capture remains blocked pending window placement;
+no new native IME, image picker, SAF, rotation or TalkBack speech PASS is claimed.
+Computer-control kernel reset completed; only the owned emulator is shut down.
