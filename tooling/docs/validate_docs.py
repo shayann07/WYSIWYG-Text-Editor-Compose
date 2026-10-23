@@ -42,6 +42,9 @@ def main():
     assert resolve('plan-v6.md').read_bytes() == resolve('editor-v6-standalone.md').read_bytes()
     frozen_paths = {original(n).resolve() for n in expected}
     current = [ROOT / 'README.md', ROOT / 'AGENTS.md']
+    # Maintained top-level suite/review navigation is not a frozen experiment README.
+    current += [ROOT / name for name in ('tests/suites/README.md', 'tests/archive/README.md', 'tests/reviews/README.md',
+                                         'tests/reviews/gemini-v5-readiness/README.md') if (ROOT / name).is_file()]
     # Archive indexes and unsealed archived guides are navigation too; relocated originals keep their historical links.
     relocated = {resolve(new).resolve() for new in previous['paths'].values() if new.startswith(('docs/archive/', 'docs/plans/v5.2/'))}
     snapshot_dir = (ROOT / snapshot['directory']).resolve()
