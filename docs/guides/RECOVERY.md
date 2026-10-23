@@ -51,3 +51,38 @@ New canonical documents are private `.astra` v9, reading v1–v8 with documented
 Workspace uses two bounded atomic metadata slots plus a cooperating-process lock. Corrupt newest metadata falls back; corrupt metadata never deletes documents or recovery. Recents and template cleanup do not delete arbitrary source files. View/zoom/window metadata is independent of canonical content and history.
 
 Use `--recovery-dir=D:\YourUnusedTestFolder\recovery` for disposable tests; never fill the real disk or kill unrelated Java processes. See [WRITING.md](WRITING.md) for launch and the connected ten-minute exercise.
+
+## Android recovery repair branches — 24 October 2026
+
+The rules above describe the desktop workspace. Android has separate private
+storage and does not assume that content URIs are filesystem paths. Recovery
+PR35 (`codex/android-recovery-close`, e60f9ee) makes Keep recovery & close create
+and read back a fresh generation for its captured owner/content and separate
+unfinished evidence, even when an earlier unchanged checkpoint was discarded.
+Every bounded close request receives one durable, failed or cancelled outcome;
+failure leaves the document open. A delayed pre-discard write cannot revive the
+discarded generation. Queue emptiness is not proof that content is recoverable.
+
+Actual native Save As, captured-generation discard, cancelled close, unchanged
+Keep/close, owned process kill and fresh explicit restore were exercised on the
+identified initial repair APK. Saved/restored bytes and independently expected
+attributes match. Later source/build receipts are separate; this does not qualify
+every subsequent native control or power-loss durability. Restore/export failures
+must preserve their source records. See the Android integration guide and the
+dated repair disposition for branch identities and outstanding qualifications.
+
+The latest toolbar candidatebdf1e35 / APK01494420 also passes the retained nine
+mounted close/race/failure groups and both actual owned SIGKILL witnesses in the
+66-group packaged campaign. Its interruption receipts independently compare accepted
+text, attributed structure, resources and separate unfinished evidence. They do not
+prove keystrokes after the last completed checkpoint survive, nor force-stop,
+power-loss or genuine composing-IME qualification. Native provider SaveAs/close/Open
+on earlierb6354efa preserves exact document/resource bytes; that scoped result is
+recorded separately from the latest candidate's instrumented recovery checks.
+
+Final test/report follow-up c0202d3 preserves that same runtime01494420. Local and
+hosted66-group checks plus both owned SIGKILL witnesses PASS. Native Open/Copy and
+rotation/font-scale checks preserve exact saved content/resources; they do not
+replace the separate close/durability witnesses. Scheduling is400ms plus queue/IO,
+not a hard loss bound. Wait for a completed checkpoint; new keystrokes after it can
+still be lost. The provider hash remains conflict detection, not atomic CAS.
