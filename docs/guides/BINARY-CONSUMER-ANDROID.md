@@ -261,6 +261,29 @@ AVD is newly created and removed with its hosted job. Computer control is unnece
 
 ## Current repair branches — 24 October 2026
 
+The last actual native session additionally verifies backward endpoint drag[5,2],
+one-way plain transfer to unrelated Android Files' filename field with cancellation,
+and horizontal reading of the recovery-status suffix at font1.3. Exact source bytes/
+history stay unchanged. The fixture is host-injected and undergoes Gboard sentence
+capitalization; this is not genuine text-key/IME qualification. Full keyboard-visible
+compact bounds, reverse unrelated-app transfer and native active-composition/language/
+speech checks remain separate. Both preferences were restored and control/helper ended.
+
+Current final source is c0202d3 on draftPR45. It adds test-only diagnostics for an
+earlier hosted tap failure; runtime01494420 is unchanged. All six exact clean gates
+and latest hosted technical checks PASS. Native Copy after New/Open is verified.
+For emulator rich transfer, Extended Controls -> Settings -> General -> Enable
+clipboard sharing was experimentally isolated: On strips rich metadata; Off allows
+actual cross-process rich text/image paste with exact attributes/resources/UndoRedo.
+Record/restore the preference when qualifying; defaultOn remains a limitation and
+the app's plain fallback status must not be described as rich success. This is not
+authorization to change users' settings or bypass clipboard fences.
+
+Actual current native rotation/font1.3 and Gboard emoji direct commit are recorded
+separately from genuine composing/language/AT qualification. Non-default structured
+native input and remaining manual gestures stay explicitly unqualified. Read the
+latest disposition/ledger; the checkpoint paragraphs below retain earlier scope.
+
 Latest proposed integration source: `codex/android-toolbar-owner-repair`, bdf1e35 / draft PR45,
 based on image PR44 -> Outline PR43 -> recovery PR35. Its separately built runtime
 APK SHA256 is0149442040d4b55f183a01aa86762a07e1c4f39b36b6bad902d32745f30fd099.

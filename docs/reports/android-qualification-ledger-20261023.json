@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "asOf": "2026-10-24",
   "baselineMain": "e30c984f97c992bbbdb95a7eeaa932a0af7d5c22",
-  "repairSource": "bdf1e35b752f69dc381640fb812d9f3de3a8811a",
+  "repairSource": "c0202d3f676c0fafee8e12410ed81612e5e978bb",
   "apkSha256": "0149442040d4b55f183a01aa86762a07e1c4f39b36b6bad902d32745f30fd099",
   "scope": "Scoped branch candidate, not merged main. Native evidence names its own build; no cross-build blanket qualification, normative acceptance, release or issue closure.",
   "evidence": [
@@ -299,6 +299,84 @@
       "sha256": "57ae5d8d4189c1c5982ecb1a80afed7174ded9f2196bf8bdcb26c38dbc263fda",
       "availability": "MACHINE_LOCAL_RECEIPT",
       "meaning": "Exact clean commit/gate or verbatim owner metadata identity; no native qualification inferred"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/toolbar-hit-diagnostics-packaged/results.json",
+      "sha256": "01e369322d576a2ebb06307763918870f5aed9b356f665f6579a4e3a3752f777",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact scoped current result or retained failure; machine-local artifacts are not published or present in a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/toolbar-focused-hit-diagnostics/results.json",
+      "sha256": "780c06b1fcfa281a0e77001b9ba47738594984b75bf287ca244880d77e3a2b78",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact scoped current result or retained failure; machine-local artifacts are not published or present in a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/toolbar-diagnostic-66/results.json",
+      "sha256": "72959ec38a34eeb2bd83f7495f3c3b44af7f894933e89f027318547a0aef5f6b",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact scoped current result or retained failure; machine-local artifacts are not published or present in a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/toolbar-c020-build-binding.json",
+      "sha256": "3b85a6d167d74ff08de14b16267da436b680d2bc2559e95ec01d26efc39a64e7",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact scoped current result or retained failure; machine-local artifacts are not published or present in a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/toolbar-c020-final-verification.json",
+      "sha256": "19f6fd00a9d52cb06bf4f7a8a46a9c92bbad42ce64ebafd91fe01fc8a2271e06",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact scoped current result or retained failure; machine-local artifacts are not published or present in a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/pr45-c020-hosted-checks.json",
+      "sha256": "7b92e2a7b7d48561c86217a2e678a3a3af625cfe9cadd86f39a5ba32baf7038e",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact scoped current result or retained failure; machine-local artifacts are not published or present in a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/pr45-hosted-android-failure.log",
+      "sha256": "50509d5968909d85f9444b4ef950ce010fbfd82c155915d4807b788f7c053269",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact scoped current result or retained failure; machine-local artifacts are not published or present in a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/pr45-hosted-failure-artifact/tests/local-evidence/android/ci/results.json",
+      "sha256": "0f46406dfadb358bc7a94b60ed5befb08400f6914f3af84d39f031b5b11e4af6",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact scoped current result or retained failure; machine-local artifacts are not published or present in a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/pr45-c020-hosted-pass-artifact/tests/local-evidence/android/ci/results.json",
+      "sha256": "ac6236dabe050c47b4a59b6d94df3d0ee97305a9bdc1e25c5bb423849fd8ada2",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact scoped current result or retained failure; machine-local artifacts are not published or present in a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-20261023/c020-native-independent-assertions.json",
+      "sha256": "f80f9acb4587f7632b33685c7a99669b385ef895a93beece241ad5ecce1c9350",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact scoped current result or retained failure; machine-local artifacts are not published or present in a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-20261023/c020-temporary-preferences.json",
+      "sha256": "d18806f28bcb8bdaeb87cbffd3ccae73319b26ff9f84000796572243396153a1",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact scoped current result or retained failure; machine-local artifacts are not published or present in a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-20261023/c020-endpoint-plain-independent-assertions.json",
+      "sha256": "a69486461a4f92a1c31cca6060b73d75776710750fef79facb5346ff0813351b",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Actual final endpoint/one-way plain transfer and status scrolling; visual cancellation and mechanical data oracles are distinguished"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-20261023/c020-endpoint-plain-oracle-first-failure.json",
+      "sha256": "550b216f5d417d26a362c78d812ace46fe0916ba26327dc6a71cc1bef34c1db8",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Retained first private-analysis wrong-field oracle failure, not a production failure or relabeled PASS"
     }
   ],
   "capabilities": [
@@ -323,22 +401,23 @@
     {
       "id": "android-rich-writing",
       "status": "PARTIAL",
-      "scope": "66 mounted groups on packaged01494420, including retained54, nine recovery groups, Outline, picker retirement and actual toolbar owner rebinding; synthetic composition/history/IO/layout",
+      "scope": "All66 mounted groups and both process-kill witnesses PASS locally and hosted at c0202d3. Current native Copy after New/Open, conditional rich transfer, history, rotation/font1.3 and Gboard emoji separately verified.",
       "evidence": [
-        "tests/local-evidence/repair-batch-20261023/toolbar-qualified-66/results.json"
+        "tests/local-evidence/repair-batch-20261023/toolbar-diagnostic-66/results.json",
+        "tests/local-evidence/repair-batch-20261023/pr45-c020-hosted-pass-artifact/tests/local-evidence/android/ci/results.json",
+        "tests/local-evidence/repair-batch-20261023/native-20261023/c020-native-independent-assertions.json"
       ],
-      "remaining": "Final native toolbar/clipboard/rotation/font-scale blocked pending shared controller safety qualification/release; multilingual keyboard, lower API and AT speech remain separate."
+      "remaining": "Full keyboard-visible compact bounds and reverse unrelated-app plain copy remain manual; genuine active composing/Urdu/Arabic/conversion/AT/lower-API qualifications remain separate."
     },
     {
       "id": "binary-consumer",
       "status": "PASS",
-      "scope": "Independent JVM10 and binary-only Android/peer; fresh test-sync project and exact168-input binding to bdf1e35; unchanged library/JVM/peer reused explicitly",
+      "scope": "Independent JVM10 plus binary-only Android/peer. Test-only diagnostics rebuilt outside checkout; unchanged library/JVM/peer reused with hashes; all168 inputs bind to c0202d3, runtimeAPK byte-identical01494420.",
       "evidence": [
-        "tests/local-evidence/repair-batch-20261023/toolbar-final-packaged/results.json",
-        "tests/local-evidence/repair-batch-20261023/toolbar-test-sync-packaged/results.json",
-        "tests/local-evidence/repair-batch-20261023/toolbar-bdf1-build-binding.json"
+        "tests/local-evidence/repair-batch-20261023/toolbar-hit-diagnostics-packaged/results.json",
+        "tests/local-evidence/repair-batch-20261023/toolbar-c020-build-binding.json"
       ],
-      "remaining": "No remote package publication"
+      "remaining": "No remote package publication. App and test artifact hashes remain distinct."
     },
     {
       "id": "cross-uid-clipboard",
@@ -352,14 +431,14 @@
     {
       "id": "native-rich-writing",
       "status": "PARTIAL",
-      "scope": "Build-scoped native recovery onfcc93ac8; Outline/nested opposite-direction lists ond4fab5a4; Gboard direct Hi, picker/validation/resize/replace/history, provider SaveAs/close/Open and Find/Replace onb6354efa. No cross-build blanket PASS.",
+      "scope": "Build-scoped earlier native recovery/Outline/image/provider/Find remain retained. On current01494420: native provider Open, Copy after Open/New, GUI rich transfer to peer with bridgeOff, exact text/attributes/used resource/UndoRedo, portrait-landscape/font1.3 state preservation and actual Gboard emoji. Final native anchor drag creates backward[5,2], one-way plain paste into unrelated Android Files exact space+cd, picker Cancel and font1.3 status scrolling verified.",
       "evidence": [
-        "tests/local-evidence/repair-batch-20261023/native-20261023/native-roundtrip-result.json",
-        "tests/local-evidence/repair-batch-20261023/native-20261023/outline-native-navigated-final.json",
+        "tests/local-evidence/repair-batch-20261023/native-20261023/c020-native-independent-assertions.json",
         "tests/local-evidence/repair-batch-20261023/native-20261023/final-image-native-assertions.json",
-        "tests/local-evidence/repair-batch-20261023/native-20261023/final-provider-find-assertions.json"
+        "tests/local-evidence/repair-batch-20261023/native-20261023/final-provider-find-assertions.json",
+        "tests/local-evidence/repair-batch-20261023/native-20261023/c020-endpoint-plain-independent-assertions.json"
       ],
-      "remaining": "Final01494420 native owner/clipboard/rotation/font-scale blocked by shared controller safety reservation; active composing-formatting, multilingual conversion and AT speech not qualified."
+      "remaining": "English text-key evidence remains earlierb6354efa; current Gboard emoji is direct commit only. Full keyboard-visible compact bounds, reverse unrelated-app copy, active composing-formatting, language/AT/lower API remain open."
     },
     {
       "id": "genuine-urdu-arabic-conversion-ime",
@@ -476,31 +555,33 @@
     {
       "id": "toolbar-owner-repair",
       "status": "PASS",
-      "scope": "Unchanged actual-toolbar regression FAIL old app and PASS repaired app in same headless API37; both owners/history unchanged, exact new-owner text/bold rich content",
+      "scope": "Original actual-toolbar regression fails before/passes after; final native Copy after actual Open and New publishes the current owner, preserving source content/history and other owners.",
       "evidence": [
-        "tests/local-evidence/repair-batch-20261023/native-20261023/toolbar-owner-headless-before/results.json",
-        "tests/local-evidence/repair-batch-20261023/native-20261023/toolbar-owner-headless-fixed/results.json",
-        "tests/local-evidence/repair-batch-20261023/toolbar-qualified-66/results.json"
+        "tests/local-evidence/repair-batch-20261023/toolbar-diagnostic-66/results.json",
+        "tests/local-evidence/repair-batch-20261023/native-20261023/c020-native-independent-assertions.json"
       ],
-      "remaining": "Draft PR45 owner review; native final after-fix Copy remains blocked pending shared controller safety qualification/release."
+      "remaining": "DraftPR45 owner review; does not claim all Android providers or composition/AT qualification."
     },
     {
       "id": "visible-rich-clipboard",
       "status": "FAIL",
-      "scope": "Corrected owner publishes but visible emulator exposes one plain item and no rich MIME; strict failure retained, no fence/assertion relaxed",
+      "scope": "Default enabled emulator host clipboard bridge: actual native rich Copy yields peer Plain paste applied,164 units with documented image placeholder and no resources. Same source with bridgeOff gives137 units and owned image. OriginalOn restored.",
       "evidence": [
-        "tests/local-evidence/repair-batch-20261023/native-20261023/toolbar-owner-visible-diagnostic/results.json"
+        "tests/local-evidence/repair-batch-20261023/native-20261023/c020-native-independent-assertions.json",
+        "tests/local-evidence/repair-batch-20261023/native-20261023/c020-temporary-preferences.json"
       ],
-      "remaining": "Diagnose test-AVD clipboard bridge through observed settings or provide precise manual limitation; headless transport PASS does not erase this failure"
+      "remaining": "Confirmed configuration-dependent metadata loss remains with defaultOn; do not weaken clipboard fences or relabel plain fallback as rich success."
     },
     {
       "id": "toolbar-exact-final-gates",
       "status": "PASS",
-      "scope": "All six clean exact-commit gates on bdf1e35; all20 desktop stages,81 protected hashes,4 implementation mutants, architecture/format/zeroDetekt/API checks.",
+      "scope": "All six clean exact gates on c0202d3:20 desktop stages,81 hashes,4 mutants,check/API/architecture/format/zeroDetekt. Latest hosted Android66+both kills,build,quality,iOS and all CodeQL lanes PASS.",
       "evidence": [
-        "tests/local-evidence/repair-batch-20261023/toolbar-bdf1-final-verification.json"
+        "tests/local-evidence/repair-batch-20261023/toolbar-c020-final-verification.json",
+        "tests/local-evidence/repair-batch-20261023/pr45-c020-hosted-checks.json",
+        "tests/local-evidence/repair-batch-20261023/pr45-c020-hosted-pass-artifact/tests/local-evidence/android/ci/results.json"
       ],
-      "remaining": "Draft PR45 created with exact owner text; hosted technical checks pending and human governance/attestations remain owner actions."
+      "remaining": "DraftPR45 governance FAIL remains missing human sections/attestations. No merge/issue closure."
     },
     {
       "id": "hosted-issue-branch-followups",
@@ -510,6 +591,55 @@
         "tests/local-evidence/repair-batch-20261023/hosted-followup-results.json"
       ],
       "remaining": "PR30 runtime dependency; shared fixture/environment diagnosis for older docs-only branches. No blind reruns or normative acceptance."
+    },
+    {
+      "id": "native-rich-bridge-off",
+      "status": "PASS",
+      "scope": "Actual GUI Copy in01494420 and Paste rich in independent peer4dfb9c4d, with host bridge explicitlyOff:137 raw UTF16 units, all observed inline/paragraph fields,80x50 owned PNG at requested160 width, one Undo and exact byte Redo.",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/native-20261023/c020-native-independent-assertions.json"
+      ],
+      "remaining": "Conditional emulator result, not universal clipboard/physical-device qualification; unused source resource legitimately excluded, source file/history unchanged. Original sharingOn restored."
+    },
+    {
+      "id": "native-rotation-font-scale",
+      "status": "PARTIAL",
+      "scope": "Actual rotation and font1.3 recreation retain source owner/selection/content/history/resources; compact horizontal gesture reveals hidden controls; originalportrait/font1.0 restored. Complete recovery-status suffix reached through an actual horizontal gesture at font1.3.",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/native-20261023/c020-native-independent-assertions.json",
+        "tests/local-evidence/repair-batch-20261023/native-20261023/c020-temporary-preferences.json",
+        "tests/local-evidence/repair-batch-20261023/native-20261023/c020-endpoint-plain-independent-assertions.json"
+      ],
+      "remaining": "Full keyboard-visible compact bounds not qualified; floating Gboard toolbar is not full keyboard coverage."
+    },
+    {
+      "id": "native-gboard-emoji",
+      "status": "PASS",
+      "scope": "Actual installed Gboard grinning-face key commits U+1F600 as two exact UTF16 units through commitText on01494420. No synthetic callback supplied this input.",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/native-20261023/c020-native-independent-assertions.json"
+      ],
+      "remaining": "Direct commit only: not active composition, English text-key, Urdu/Arabic or candidate-conversion qualification."
+    },
+    {
+      "id": "hosted-tap-first-attempt",
+      "status": "FAIL",
+      "scope": "Priorbdf1e35 run40025253551/job120659707919:65/66, strict independent Latin-prefix tap failed without actual selection diagnostics. Not a missing result/LMK diagnosis. Original expected2 unchanged.",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/pr45-hosted-android-failure.log",
+        "tests/local-evidence/repair-batch-20261023/pr45-hosted-failure-artifact/tests/local-evidence/android/ci/results.json"
+      ],
+      "remaining": "Root cause unestablished. Test-only timing/geometry diagnostics and focused entry added; later local3 focused/full66 and hosted66 PASS do not erase or explain this failure."
+    },
+    {
+      "id": "native-endpoint-plain",
+      "status": "PASS",
+      "scope": "Final01494420 actual endpoint drag[0,2]->[5,2], unchanged attributed document/history; actual native Copy to unrelated Android Files real EditText yields space+cd; picker cancelled without saving; status scroll exposes recovery suffix at1.3.",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/native-20261023/c020-endpoint-plain-independent-assertions.json"
+      ],
+      "remaining": "One-way plain interoperability only. Host-injected fixture passed through Gboard sentence capitalization and is not a genuine soft-key input claim. Ctrl+A focus refusal with unknown transient HWND retained; no replay/relaxed fence."
     }
-  ]
+  ],
+  "testApkSha256": "0e8034480de05820f6827db2c5afb11ec570917758b0bf3dc00203e53c8026a7"
 }

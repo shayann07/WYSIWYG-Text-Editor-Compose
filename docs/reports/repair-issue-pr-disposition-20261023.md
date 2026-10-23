@@ -1,6 +1,106 @@
 # Android repair and twelve-issue disposition — 23 October 2026
 
-## Latest continuation — 24 October 2026
+## Current delivered candidate — 24 October 2026
+
+Source `codex/android-toolbar-owner-repair` c0202d3f676c0fafee8e12410ed81612e5e978bb
+is clean and pushed to draft PR45, based on image PR44 -> Outline PR43 -> recovery
+PR35. Main remains e30c984, unchanged; all12 issues remain open. Exact owner public
+PR text is preserved, human attestations unchecked, no merge or contributor rewrite.
+Status/guides live in this separate issue29/PR42 branch. The chronological entries
+below retain earlier failures and pending statements; this section is current.
+
+All six final local gates PASS on clean c0202d3:81 protected hashes, V6, Gradle
+check/api/architecture/format/zeroDetekt, verification contracts, all20 desktop
+workspace stages and four implementation mutants. All latest hosted technical
+checks PASS at that head, including Android66, both owned-process interruption
+witnesses, build/quality/iOS and every CodeQL lane. Governance FAIL requires the
+human's five sections and three truthful attestations. CodeRabbit draft skip is
+not approval. No agent completes those attestations or rewrites the supplied body.
+
+The first hosted toolbar candidatebdf1e35 did fail one strict independent tap check
+(65/66), run40025253551/job120659707919. Its root cause is not established. The
+follow-up changes only test diagnostics/focused entry and this dated report, with
+expectedSelection(2,2), original font oracle, long-press/drag assertions and66-count
+unchanged. Three focused trials and full66 pass locally; the subsequent hosted66
+passes. No application input fix or tolerance relaxation is claimed for that failure.
+The earlier failed log/artifact remains retained, not replaced by the later pass.
+
+Runtime APK remains byte-identical
+0149442040d4b55f183a01aa86762a07e1c4f39b36b6bad902d32745f30fd099.
+Current test APK is0e8034480de05820f6827db2c5afb11ec570917758b0bf3dc00203e53c8026a7.
+All168 compiled source/build/font/test inputs match c0202d3. Independently packaged
+JVM10/library/peer results are reused only after exact hash verification; the changed
+Android test project was freshly built outside the checkout from binary artifacts.
+
+| Final native check | Result and exact scope |
+|---|---|
+| Actual Open -> Copy and New -> Copy | PASS on01494420: correct current owner, source/history/other owners unchanged |
+| Default emulator clipboard sharingOn | FAIL for rich transport: actual peer receives164 plain units and no image; fallback status is explicit |
+| Same native flow with sharingOff | PASS137 raw units, observed attributes/paragraph fields, used80x50 PNG at requested width160, one Undo and exact Undo/Redo bytes; source remains unchanged |
+| Native rotation/font1.3 | PASS source owner/selection/content/history/resources preserved; native compact-row gesture reveals offscreen controls; originalportrait/font1.0 restored |
+| Genuine Gboard input | PASS direct U+1F600 commit, two UTF16 units on01494420; not active composition or English text-key qualification |
+| Endpoint / one-way unrelated-app plain / status scroll | PASS actual backward[5,2], exact unchanged bytes/history, Copy to Android Files EditText exact space+cd, Cancel leaves unsaved source intact, status suffix reachable at font1.3 |
+| Remaining interaction coverage | NOT RUN reverse unrelated-app copy and full keyboard-visible compact bounds; see manual checklist |
+| Urdu/Arabic and conversion IME | NOT RUN: observed Gboard settings show only EnglishUS/QWERTY configured; none installed/changed for a claim |
+| TalkBack speech / lower API | NOT RUN speech; API28 BLOCKED by installed emulator/image startup incompatibility, minSdk24 unchanged |
+
+The final bounded session additionally used actual long-press and endpoint drag
+to change[0,2] to backward[5,2], without changing exact document bytes or Undo/Redo
+counts. Its host-injected fixture passed through Gboard sentence capitalization;
+accepted text was Ab + space + cd (UTF16[65,98,32,99,100]), not a claim that injected
+input qualifies English soft-key typing. Actual native Copy then Paste in unrelated
+com.google.android.documentsui's real filename EditText yielded exactly space+cd.
+Save was never pressed; Back first dismissed input and then cancelled the picker.
+The source remained Untitled, dirty, without a source URI and byte-identical/history
+unchanged. This is one-way plain interoperability, not the unrun reverse direction.
+
+At font1.3, an actual horizontal status-row gesture exposed the complete recovery
+suffix. Original1.0 was read back after restoration. The first private data-analysis
+assertion incorrectly expected cancellation in the receiver's global recovery-summary
+status; it failed and is retained. The shell renders tab.notice, which that receiver
+does not export. The cancellation message is inspected screenshot evidence; exact
+document/history/unsaved-source checks are separate mechanical assertions. No
+production or maintained regression assertion was weakened to disguise this error.
+One Ctrl+A attempt was refused for transient foreground HWND4720950, which was absent
+from the fresh window inventory; its identity/root cause remains unknown. The chord
+was not replayed and no guard was relaxed; subsequent actions used actual controls.
+
+Computer control ended normally and the helper was shut down after this session;
+only the owned emulator was stopped. No more native control is required for source
+or report work. Final receipt: native-20261023/c020-endpoint-plain-independent-assertions.json;
+screenshots25/26/27 show the backward range, unrelated-app paste and scrolled status.
+
+The clipboard experiment isolates the emulator host bridge, not a reason to remove
+rich validation or basis fences. Its original sharingOn preference was restored;
+the conditionalOff PASS does not erase the defaultOn limitation. Only the used image
+resource is required in the fragment; the unused source/history resource remains in
+the unchanged original document. Paragraph values in this native saved fixture are
+defaults; non-default heading/list/spacing integration remains covered by mounted
+and cross-UID checks, plus earlier separately identified native list/Outline evidence.
+
+Independent native assertions compare peer UTF16 to a separately captured native
+model, every observed inline/paragraph field through the public codec, the resource
+against the original owned PNG hash, manual plain image representation, exact
+Undo/Redo bytes and source bytes through rotation/reflow. Native file selection/copy/
+paste/history/rotation were actual controls; ADB launches/font-scale setup/read-only
+snapshots are explicitly setup/diagnostics, not native input proof. Computer control
+ended normally; both preferences restored and only the owned emulator was shut down.
+
+Primary evidence: toolbar-c020-final-verification.json, toolbar-c020-build-binding.json,
+toolbar-hit-diagnostics-packaged/results.json, toolbar-diagnostic-66/results.json,
+pr45-c020-hosted-checks.json, the retained hosted artifacts, and
+native-20261023/c020-native-independent-assertions.json beneath the primary ignored
+repair-batch-20261023 root. Screenshots16–24 show current native results; screenshot19
+shows rich paste with bridgeOff,20/21 show font1.3,24 shows restored sharingOn.
+The measured ledger records hashes and exact scope; local evidence is not published.
+
+The full12-issue/five-contributor-PR matrix below remains applicable. PR37 still
+depends on PR30's runtime pin; PR38's old keyboard timeout and PR41/33's evidenced
+LMK failures remain separate blockers, not erased by PR45's successful hosted run.
+Normative proposals remain PROPOSED; contributor31/34 follow-up adoption, truthful
+attestations, human reviews and any merges/closures are owner actions.
+
+## Earlier continuation — 24 October 2026
 
 Read this current disposition before the historical checkpoints below. Main remains
 e30c984; all12 issues remain open and solely assigned to @shayann07. Draft PRs35–45

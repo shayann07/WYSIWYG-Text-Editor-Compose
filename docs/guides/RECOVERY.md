@@ -79,3 +79,10 @@ prove keystrokes after the last completed checkpoint survive, nor force-stop,
 power-loss or genuine composing-IME qualification. Native provider SaveAs/close/Open
 on earlierb6354efa preserves exact document/resource bytes; that scoped result is
 recorded separately from the latest candidate's instrumented recovery checks.
+
+Final test/report follow-up c0202d3 preserves that same runtime01494420. Local and
+hosted66-group checks plus both owned SIGKILL witnesses PASS. Native Open/Copy and
+rotation/font-scale checks preserve exact saved content/resources; they do not
+replace the separate close/durability witnesses. Scheduling is400ms plus queue/IO,
+not a hard loss bound. Wait for a completed checkpoint; new keystrokes after it can
+still be lost. The provider hash remains conflict detection, not atomic CAS.
