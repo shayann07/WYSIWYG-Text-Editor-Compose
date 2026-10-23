@@ -259,6 +259,47 @@ Nineteen driver/API self-tests cover setup races, wrong identities, deadline fai
 results. Local manual preference changes must still record/restore their prior value; the CI
 AVD is newly created and removed with its hosted job. Computer control is unnecessary for CI.
 
+## Current repair branches — 24 October 2026
+
+Latest proposed integration source: `codex/android-toolbar-owner-repair`, bdf1e35 / draft PR45,
+based on image PR44 -> Outline PR43 -> recovery PR35. Its separately built runtime
+APK SHA256 is0149442040d4b55f183a01aa86762a07e1c4f39b36b6bad902d32745f30fd099.
+All66 mounted groups, both process-interruption witnesses and cross-UID rich
+clipboard pass. Independent JVM10/library publication/peer checks are reused with
+exact input hashes; a fresh binary-only Android/test project verifies the one test
+readiness correction. All168 compilation/resource inputs match the committed tree.
+No workspace implementation, reflection or verificationEngine is used by consumers.
+
+The toolbar fix makes the mounted input-view reference observable so controls
+rebind after New/Open. Core clipboard owner/revision/selection fences stay intact.
+An actual-toolbar regression fails before and passes after in the same headless
+API37 environment. The visible emulator nevertheless exposed a plain-only clipboard
+after rich publication: retain that failure separately. All six clean exact source gates PASS onbdf1e35. Final native owner/transport and
+rotation/font-scale remain blocked pending shared controller qualification/release;
+the instrumented transport result is not native clipboard qualification.
+
+On earlier candidateb6354efa, actual image-picker insertion, invalid-width correction,
+resize/replace/Undo/Redo, provider SaveAs/close/Open and Find/Replace have independent
+exact document/resource checks. Those native results name their build and are not
+silently carried across to the latest APK. See the dated reports on each branch.
+
+These repairs are proposed separately and are not merged into main. Recovery PR35
+requires verified fresh durable coverage before close, including separate unfinished
+evidence; failure keeps writing open. Outline PR43 installs lifecycle/saved-state
+owners on the actual dialog decor and disposes its embedded composition on dismissal.
+Its separately packaged APK passes64 mounted groups, process interruption and
+cross-UID clipboard checks; real Outline navigation also preserves exact content,
+structure and history. Real keyboard commits are distinct from active-composition
+formatting or candidate conversion. TalkBack speech and the lower-API gap remain open.
+
+Native image insertion exposed a further shell issue: Android's picker retires the
+keyboard session while leaving the captured accepted document and selection intact.
+The separate `codex/android-image-picker-repair` branch reacquires command admission
+only after checking the exact owner-scoped committed basis and selection. It never
+refreshes a changed document basis or replays old native callbacks. Mounted positive
+insert/replacement and stale-selection regressions pass; final packaged/native
+qualification must be read from its own receipt, not inferred from Outline's build.
+
 
 The disposable hosted fixture uses6GiB guest RAM and offline Wi-Fi/mobile data after readiness
 to separate editor checks from Play Store first-boot provisioning pressure. Its pre-test memory

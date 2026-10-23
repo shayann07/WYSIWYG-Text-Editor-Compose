@@ -1,8 +1,94 @@
 # Android repair and twelve-issue disposition — 23 October 2026
 
+## Latest continuation — 24 October 2026
+
+Read this current disposition before the historical checkpoints below. Main remains
+e30c984; all12 issues remain open and solely assigned to @shayann07. Draft PRs35–45
+exist with exact owner-supplied public text. No contributor descriptions, branches,
+attestations, approvals, merges or issue closures were changed. Contributor PRs30–34
+remain the primary work for their issues; the table below records their tested SHAs
+and residual scope. Proposed amendments22/23/24 are still non-authoritative.
+
+Recovery sourcee60f9ee/PR35, Outline0dbcc57/PR43 and imageae91306/PR44 are separate
+stacked repairs. Imageae91306 has all six clean exact local gates PASS; all168
+packaged input hashes equal its preceding code commitae6e6a2. Hosted Android,
+build, quality, iOS and CodeQL on PR44 PASS; governance FAIL remains the owner's
+required prose/attestation action. Historical failed invocations remain retained.
+
+Native interaction subsequently reproduced stale toolbar host references after
+New/Open. Separate branch `codex/android-toolbar-owner-repair` atbdf1e35, draft PR45,
+is based on image PR44 and is pushed normally. Making MainActivity.inputView observable Compose state
+rebinds view-dependent controls; core clipboard fences are unchanged. The same
+actual-toolbar regression fails before and passes after in the same headless API37
+environment. This is mounted production-control evidence, not a native PASS.
+
+The latest separately built runtime APK is
+0149442040d4b55f183a01aa86762a07e1c4f39b36b6bad902d32745f30fd099;
+test APKaa153ab69597959ad1e04f5e075c7602ab42b94c995121169adc45ebf4ac8a66.
+All66 adapter groups, both owned-process interruption witnesses and cross-UID rich
+clipboard pass. Independent JVM10/public binaries/peer were reused only after exact
+hash comparison; a fresh binary-only Android/test build contains the final test
+readiness correction. All168 source/build/font/test inputs bind to cleanbdf1e35.
+The first65/66 attempt remains FAIL: it used retained unused resources as image
+readiness. Its correction waits for the actual committed image; exact transaction,
+resource, attribute and stale-selection assertions are unchanged.
+
+Native on earlierb6354efa passes actual picker insertion, invalid width2409 kept
+open with actionable error, correction160, replacement80x50 and exact Undo/Redo;
+provider SaveAs/KeepClose/Open preserves exact bytes/resources; literal Find/Replace
+has independent expected text and one-step exact history. Real Gboard Hi is direct
+commit only. The visible emulator's corrected Copy publishes the right owner but
+exposes only a plain clipboard item: that strict FAIL remains, even though headless
+rich transport passes. Do not combine the different builds into a blanket PASS.
+
+All six clean exact final gates PASS onbdf1e35: all20 desktop stages and all4
+implementation mutants;81 protected hashes; architecture/format/zeroDetekt/API.
+Receipt: toolbar-bdf1-final-verification.json. Branch push and draft PR45 creation
+then completed; exact owner title/body, head/base and draft state were verified.
+The owner's checkpoint prose remains unchanged; this report supplies later results.
+
+Current remaining native work is BLOCKED: the shared controller remains reserved
+by the owner's other session for safety qualification, including a reported capture
+fallback/occlusion issue. No controller is started here and no Stop is bypassed.
+Final native toolbar/rich clipboard and rotation/font-scale/keyboard reachability
+need its qualified release. Computer control here is OFF. The bounded manual
+checklist below can be used on the runnable APK meanwhile. Genuine
+Urdu/Arabic and conversion IME, lower API and TalkBack speech remain NOT RUN/BLOCKED
+as detailed in the measured JSON ledger, not inferred from rendering or focus.
+
+Primary evidence root: `tests/local-evidence/repair-batch-20261023/` in the original
+checkout. Read `toolbar-qualified-66/results.json`, `toolbar-qualified-clipboard/results.json`,
+`toolbar-test-sync-packaged/results.json`, `toolbar-bdf1-build-binding.json`,
+`image-ae913-final-verification.json`, `toolbar-bdf1-final-verification.json`, and the native `final-image-native-assertions.json`
+and `final-provider-find-assertions.json`. Machine-local receipts are intentionally
+not committed. The adjacent versioned ledger records their hashes and evidence level.
+
+The following sections retain earlier chronological checkpoints. Their pending
+metadata/native statements describe those dates, not the current disposition.
+
+### Fresh hosted inventory findings — 24 October
+
+The fresh PR30–44 check inventory retains older failed checks as well as successful
+ones; it does not equate a draft CodeRabbit skip with review approval. Three own
+issue branches have technical failures in addition to human-governance failures:
+
+| PR | Retained failure and exact run/job | Meaning / remaining dependency |
+|---|---|---|
+| 37 | docs-and-frozen-hashes, run39999564720/job120571832925 | All25+16 groups executed and returned PARTIAL under hosted Node24.21.0; the comparator correctly exits2 for a different sealed runtime. PR30's24.20.0 pin remains an integration dependency. No deterministic-result failure is inferred and no environment check is relaxed. |
+| 38 | Android, run39999572267/job120571859871 | A device result exists: the IME activation/caret-reveal group times out waiting for actual Android state. This is not a missing-result or inferred memory-kill failure. It uses the older baseline fixture; newer repair-branch hosted PASS is separate evidence, not an erasure of this failure. |
+| 41 | Android, run39999600212/job120571962386 | No device result; retained logcat explicitly records lowmemorykiller killing appPID4042 at18:10:15.803 with oom_score_adj700 for a min-watermark breach. The source of guest memory pressure remains unknown. |
+
+Raw job logs, downloaded retained artifacts and hashed findings are in
+`hosted-followup-results.json` under the primary evidence root. No blind rerun was
+issued. These failures block merge readiness even where local issue-specific tests
+pass. Their shared fixture/runtime dependencies should be reconciled with the
+recovery branch and PR30 by the owner when integrating; do not copy Android feature
+changes into normative-proposal/documentation branches to manufacture a green run.
+
 Main remains e30c984f97c992bbbdb95a7eeaa932a0af7d5c22, clean and equal to
 origin/main. Work is isolated under `D:\Work\ComposeDoc-repairs`. No main push,
 merge, issue closure, contributor remote change or public review message occurred.
+Owner-supplied draft PR metadata was submitted verbatim in the continuation below.
 All twelve open issues were refreshed and remain solely assigned to @shayann07.
 This is an evidence ledger for the owner's tracker update, not a generated issue
 body or contributor PR description. No human attestation is fabricated.
@@ -44,15 +130,15 @@ separately in the exact repair commit's local receipt; inspect it before pushing
 
 | Issue | Finding and covered work | Tests / branch or existing PR | Remaining scope and owner action | Disposition |
 |---|---|---|---|---|
-| 15 | Imported run17/run19/Gemini closure lacked transitive coverage; additive45-file record,37 imported modules, existing-ledger provenance | six negative tests; docs81; `codex/issue-15-evidence-integrity` 1bbb110 | Human PR text/review; new hash does not prove historical integrity | Implemented/tested; PR metadata pending |
-| 17 | Only16 V6 witnesses routinely ran; all25 inherited now execute and compare complete deterministic records | fresh25+16 PASS; six negative comparison tests; `codex/issue-17-inherited-reproduction` 2dc8aba | Depends15, runtime pin from30; hosted checks after human PR text | Implemented/tested; dependency pending |
+| 15 | Imported run17/run19/Gemini closure lacked transitive coverage; additive45-file record,37 imported modules, existing-ledger provenance | six negative tests; docs81; `codex/issue-15-evidence-integrity` 1bbb110 | DraftPR36; human review/attestation; new hash does not prove historical integrity | Implemented/tested; owner review pending |
+| 17 | Only16 V6 witnesses routinely ran; all25 inherited now execute and compare complete deterministic records | fresh25+16 PASS; six negative comparison tests; `codex/issue-17-inherited-reproduction` 2dc8aba | DraftPR37 depends15/PR36, runtime pin from30; human review/attestation | Implemented/tested; dependency pending |
 | 19 | Node runtime drift versus recorded evidence | existingPR30; npm/lock consistency + real drift-warning failure negative PASS | Human review; not CodeRabbit draft-skip approval | Primary existingPR retained |
 | 20 | Machine-local crash log and Poppler executable path | existingPR31; follow-up `codex/pr31-tool-discovery-followup` d732c22, four tests PASS | Contributor/owner may apply follow-up to31; no competingPR or remote rewrite; Git history deliberately retained | Residual repaired locally; existingPR not fully ready |
 | 21 | Missing archived upstream notices | existingPR32; exact immutable-upstream license and version-header comparisons PASS | Owner/legal review; header correspondence does not attest every archived byte's origin | Primary existingPR retained |
-| 22 | G1 requirement split across adjacent paragraphs | `codex/issue-22-g1-proposal` c331a9c; proposal validator/three tests PASS | Explicit owner acceptance of proposed additive record, human PR metadata | PROPOSED, not authoritative |
+| 22 | G1 requirement split across adjacent paragraphs | `codex/issue-22-g1-proposal` c331a9c; proposal validator/three tests PASS | DraftPR38; explicit owner acceptance of proposed additive record | PROPOSED, not authoritative |
 | 23 | I15/I17 lacked explicit gate references | `codex/issue-23-invariant-map` b15cbef; four tests PASS; I15->G1/G8, I17->G4/G6 | Depends22; explicit owner acceptance; full invariant coverage remains unqualified | PROPOSED, not authoritative |
 | 24 | Environments/traces/measurements and capability matrix absent | `codex/issue-24-capabilities` 13c1d91; five schema/reference negatives PASS; CI validation wired | Depends23; accept thresholds/reference hardware, then execute gates; G0-G8 NOT RUN | PROPOSED, scoped representative outcomes only |
-| 25 | Gemini amendment/report duplicate | existingPR33; exact96677-byte/hash match; failed hosted attempt diagnosed below | Required Android check still failed; human review and bounded CI retry needed | Covered documentation, CI BLOCKED |
+| 25 | Gemini amendment/report duplicate | existingPR33; exact96677-byte/hash match; failed hosted attempt diagnosed below | Required Android check still failed after bounded retry; human review and cause investigation needed | Covered documentation, CI BLOCKED |
 | 26 | Stale active navigation / insufficient link coverage | existingPR34; archive+active negative PASS; suite-index gap reproduced; follow-up `codex/pr34-navigation-followup` fcd959b PASS | Apply follow-up into34 only with owner/contributor agreement; no pinned link text changes | Residual repaired locally; existingPR not fully ready |
 | 28 | Archived recipes appear clean-clone runnable | `codex/issue-28-archive-index` bcd735c; external classified index, docs81 PASS | No rejected experiments revived; dependencies/platform constraints remain explicitly NOT RUN | Navigation correction implemented/tested |
 | 29 | Tracker trails actual rich-writing/recovery and native limitations | This branch `codex/issue-29-status-review`; measured JSON ledger and report | Owner writes tracker/public update; no full roadmap completion or issue closure | Evidence-backed update ready for review |
@@ -100,6 +186,59 @@ for this attempt, not a general explanation for every absent result. Other faile
 attempts are not silently classified. Raw artifact and job metadata are retained.
 
 ## Reproduce and connected walkthrough
+
+### Current candidate: ten-minute disposable writing walkthrough
+
+Install only on the owned test emulator; keep existing app data/recovery records.
+The current source candidate is on the toolbar branch, not main:
+
+```powershell
+D:\DevSetup\Android\Sdk\platform-tools\adb.exe -s emulator-5580 install -r D:\Work\WYSIWYG-Text-Editor-Compose\tests\local-evidence\repair-batch-20261023\delivery\ComposeDoc-android-writing-repair-01494420.apk
+D:\DevSetup\Android\Sdk\platform-tools\adb.exe -s emulator-5580 shell am start -n dev.shayxo.composedoc.androidsample/.MainActivity
+```
+
+1. New: type a short disposable mixed-script paragraph with the actual keyboard.
+   Long-press, drag selection backward, apply Bold/Italic, Undo and Redo. If the
+   installed keyboard composes, format while its candidate is active and inspect
+   settlement/history separately; plain commits do not satisfy this check.
+2. Structure: Heading1, open Outline and navigate its real row. Add an RTL numbered
+   paragraph and an LTR nested child; each keeps its own direction/marker side.
+3. Image: use the real picker for a disposable PNG. Enter2409 width, Apply and verify
+   the dialog retains value/error. Correct to160, replace with another owned PNG,
+   Undo/Redo; cancel another operation and confirm no history/content change.
+4. Clipboard: New/Open another document, select known content and Copy using the
+   actual toolbar. Paste rich into the separate consumer, and plain into an unrelated
+   app. Verify formatting/resources as well as text. The visible plain-only result
+   is currently unresolved; do not count a completed Copy status as rich success.
+5. Find: search a repeated literal, Next/Previous, Replace All, Undo/Redo. Query-only
+   actions must not dirty the document or add history. Matches use exact Unicode.
+6. Save As through Android's provider, close and Open the saved document. Compare
+   exact supported document and owned image resources independently. Cancellation
+   and failed writes must retain work; never overwrite an unrelated user document.
+7. Recovery: wait for a completed receipt. On only an explicitly approved captured
+   disposable generation, discard, Cancel close, then Keep recovery & close unchanged.
+   Relaunch/restore a separate unsaved copy. New arrivals must survive a stale discard.
+   Use an owned process kill, not ordinary reopen, for crash-restoration evidence.
+8. Rotate and show/hide the keyboard; inspect selection, caret reveal and toolbar
+   reachability. On the test AVD only, record font scale, increase it, exercise
+   horizontal controls, then restore it. These remaining native checks are open.
+
+Reproducible packaged checks on the toolbar branch:
+
+```powershell
+python tooling/verification/consumer_check.py --android-peer --output-dir tests/local-evidence/consumer/new-repair-run
+python tooling/verification/android_check.py --help
+python tooling/verification/android_clipboard.py --help
+python tooling/verification/final_gates.py
+```
+
+Use the generated consumer receipt and named owned AVD arguments shown by the two
+drivers' help. New output directories are required; no fresh receipt overwrites a
+failure. The full Android invocation validates66 unique groups and both owned
+process-interruption witnesses; fixture dispatch remains instrumented evidence.
+Run final gates only on a clean committed tree. Genuine language IME, TalkBack
+speech, lower API, desktop composition/Narrator/printing/PDF and expert typography
+stay separate qualifications. This checklist is a procedure, not a record of PASS.
 
 See the recovery branch's integration guide/report for build/install and all
 Android/consumer commands. Launch the identified repaired APK with:
@@ -230,3 +369,27 @@ not an LMK/controller failure. Separate branch codex/android-native-outline-repa
 See its report on that branch. It awaits exact new owner PR metadata and final
 native qualification/gates. Native logs/screenshots and controller feedback retain
 all failures, including transitional frames, with host UTC/device timezone explicit.
+
+
+## Native continuation and additional repairs — 24 October 2026
+
+The owner supplied the ninth exact title/body: draft PR43 now exists, based on
+recovery branch. Its actual H1/Outline/navigation crash trigger passes on final
+APKd4fab5a4; exact state shows no document/structure/history mutation and correct
+heading selection. Hosted Android/build/quality/iOS/CodeQL PASS; governance remains
+FAIL for absent human sections/attestations, which no agent filled. All contributor
+heads and main remain unchanged. The current12 issues still have sole owner
+assignment; no issue was closed and no PR was approved or merged.
+
+Real controls also created an Urdu numbered parent and an indented English child
+with their own right/left marker sides. Native Android image selection then exposed
+an unchanged-target rejection caused by picker session retirement. New focused
+branch codex/android-image-picker-repair atae6e6a2 keeps this separate. Valid mounted
+before-fix FAIL, repaired positive/stale-selection and five URI checks PASS;
+check/api/zero Detekt PASS. Packaged65/final native/exact gates are pending their
+own receipts. Do not carry Outline's native PASS across to these new image actions.
+
+The initial Outline exact local final-gate invocation retained a missing yjs setup
+FAIL; its other five gates passed. A locked npm install and standalone witness
+rerun passed. This is not rewritten into a successful all-six receipt. Final
+repaired-branch gates will run on the exact clean committed source.

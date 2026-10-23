@@ -1,3 +1,182 @@
+# Repair delivery checkpoint — 23 October 2026, 21:16 UTC (24 October PKT)
+
+Main/origin remain clean e30c984. All12 issues remain open, solely @shayann07.
+DraftPRs35–45 now exist with exact owner-supplied title/body text, verified after
+creation; human attestations untouched. No main push, merge, approval, issue closure,
+contributor remote rewrite or package/tag publication. Proposals22/23/24 remain
+PROPOSED, not normative. Read repair-issue-pr-disposition-20261023.md and the adjacent
+measured ledger for all12 issues/five contributor PRs, exact SHAs and residual scope.
+
+LATEST SOURCE: D:/Work/ComposeDoc-repairs/android-toolbar-owner,
+codex/android-toolbar-owner-repair, bdf1e35b752f69dc381640fb812d9f3de3a8811a,
+clean/pushed, draftPR45 base imagePR44/ae91306 -> OutlinePR43 -> recoveryPR35.
+Observable inputView fixes toolbar null/detached-host callbacks after New/Open.
+Core clipboard fences/API/document format/runtime dependencies/desktop geometry
+unchanged. Actual-toolbar mounted regression fails before and passes after in same
+headless API37. Owner metadata saved verbatim in primary ignored toolbar-owner-pr-body.txt.
+PR45 body retains the owner's earlier checkpoint wording; later receipts below
+provide final results without rewriting public human prose.
+
+ALL6 exact clean final gates PASS onbdf1e35:81 frozen hashes, V6 witnesses,
+Gradle check/api/architecture/format/zeroDetekt, verification contract, all20 desktop
+workspace stages including13 owned workspace kills, and4 implementation mutants.
+Receipt toolbar-bdf1-final-verification.json; workspace evidence lives in this source
+worktree tests/local-evidence/desktop/batch-20261024-020725-33464, four mutants in
+mutations-bdf1e35b752f-1792789943741459200. No failed evidence was erased.
+
+FINAL APK0149442040d4b55f183a01aa86762a07e1c4f39b36b6bad902d32745f30fd099;
+testaa153ab69597959ad1e04f5e075c7602ab42b94c995121169adc45ebf4ac8a66.
+Primary evidence root D:/Work/WYSIWYG-Text-Editor-Compose/tests/local-evidence/repair-batch-20261023.
+Stable APK delivery/ComposeDoc-android-writing-repair-01494420.apk. Independent
+JVM10/library/Android/peer consumer PASS. Fresh binary-only test-sync project
+explicitly reuses unchanged JVM/library/peer receipts after hash checks; all168
+source/build/font/test inputs bind to committedbdf1e35 (toolbar-bdf1-build-binding.json).
+toolbar-qualified-66/results.json PASS66 plus BOTH owned SIGKILL/fresh restore
+witnesses; toolbar-qualified-clipboard PASS cross-UID rich transfer/publisher death.
+These use instrumented fixture actions, not genuine native keyboard/clipboard.
+First65/66 FAIL retained: stale unused-resource readiness replaced by actual
+committed-image readiness; transaction/attributes/stale assertions not weakened.
+
+NATIVE SCOPED RESULTS: earlierfcc93ac8 direct Gboard commits, format/history,
+provider save, approved captured-generation discard, Cancel/unchanged Keepclose,
+owned kill and fresh restore with exact attributed bytes. d4fab5a4 actual Outline
+navigation and opposite-direction nested lists PASS after crash repair. b6354efa
+actual image picker, invalid2409 retains dialog/error, correction160, replacement
+80x50 and exactUndoRedo/resources PASS; provider SaveAs/KeepClose/Open exact bytes
+and Find1/2->2/2/ReplaceAll oneUndo/exactRedo PASS. Native Gboard Hi was direct
+commit only. Read native-20261023/final-image-native-assertions.json and
+final-provider-find-assertions.json. Screenshots06/07/10–15 retained.
+
+Native Copy after Open found the toolbar defect. Corrected visible diagnostic
+publishes right owner but exposes one plain item/no rich MIME: FAIL retained;
+headless rich PASS does not override. FINAL01494420 native owner/clipboard,
+selection endpoint/rotation/font-scale/keyboard-reachability remains BLOCKED by
+shared controller safety qualification/reservation. No unsafe controller started.
+Genuine Urdu/Arabic and conversion IME, active composing-formatting, TalkBack
+speech NOT RUN; lower API28 BLOCKED incompatible installed emulator37.1.2, min24
+unchanged. Do not claim source/image/persistence passes qualify those gates.
+
+CONTROL OFF. Other session01a16375-8a86-7d61-b816-36b83c22a5d3 owns controller
+safety work, including reported capture fallback/occlusion defect. Our final-gates
+focus window was explicitly released back after all tests exited. Wait for its
+qualified final pin/release before native input; do not bypass Stop or clear/restart
+the helper. Old dev2/3/4 wrappers are archives. Owned emulator was left headless
+bridge36825, launcherPID5672, serial5580, AVDcomposedoc_slice_20261020/API37.
+Source/report work does not need computer control. Coordinate before starting it.
+
+HOSTED: imagePR44 technical checks PASS/governance FAIL. PR45 source jobs running
+at this checkpoint; governance already FAIL missing human sections/attestations.
+Fresh inventory additionally retains PR37 docs PARTIAL underNode24.21.0 (depends
+on PR30 pin24.20.0), PR38 actual IME-state timeout, PR41 explicit app LMK PID4042.
+PR33 attempts3/4 explicit LMK remain failed, pressure source not established.
+Read hosted-followup-results.json and raw artifacts; no blind retries, no broad
+memory-kill inference. Contributor31/34 tested follow-up branches are proposed
+patches for their existing PRs, not competing PRs or edits to their remotes.
+
+EXACT RESTART: first inspect current git/PR heads and hosted checks. Read this
+entry/disposition/ledger; preserve all evidence and native build boundaries. If safe
+controller becomes available, use only final01494420, real New/Open Copy and
+rich/plain peer/unrelated-app transfer, observed test-AVD clipboard-sharing control
+if present (record/restore), selection/rotation/font-scale/keyboard reachability.
+Do not repeat passed image/provider/history or old audits. End control immediately
+after native work. Otherwise deliver the runnable APK/manual checklist and exact
+blocker; no native PASS. Keep allownPRs draft; owner handles attestations/proposal
+acceptance/contributor follow-up adoption and any merges/closures. No new features.
+
+---
+
+# Native checkpoint — 24 October 2026, 19:47 UTC
+
+Image repair branch ae6e6a27ca112096ad94ea72b499ec60e2db6454 is clean/pushed.
+All six exact clean final gates PASS, including all20 workspace stages and4 mutants.
+Independent consumer10/Android/peer PASS; packaged65 + both owned-process
+interruption witnesses + cross-UID clipboard PASS on APKb6354efaf910e2ed280c2e38beb56c8a9fb581be76f732cb1514be468118712f.
+Receipt image-ae6e-final-verification.json; candidate consumer image-final-packaged;
+APK delivery/ComposeDoc-android-rich-repair-ae6e6a2.apk, all under primary checkout
+ignored tests/local-evidence/repair-batch-20261023. Nine draft PRs35-43 exist; the
+owner's exact metadata is requested asynchronously for the additional image PR,
+base codex/android-native-outline-repair. Do not write public text/attestations.
+
+Native current-build PASS: actual Gboard soft keys Hi (direct commits, no marked
+composition); actual Android picker image insert, invalid2409 retains dialog/value
+with explicit range error, corrected width160, actual picker replacement80x50,
+Undo and Redo. Independent public binary codec checks exact byte equality before
+replacement/after Undo and replacement/Redo, unchanged text units plus structural
+image breaks, exact resource SHA256, one history entry per completed action.
+Native receipt native-20261023/final-image-native-assertions.json and screenshots
+10-15. Gboard tutorial interrupted first correction and it cancelled without any
+mutation; raw receipts retained, not a resize PASS. Second settled attempt applied
+correctly. Pending alt text from cancelled attempt was NOT saved.
+
+Computer control is OFF after normal dev3 end. Current owned visible emulator
+launcher bridge session69845, PID14644, fishtankPID31444, serial5580/API37.
+Main HWND3017200, toolbar3279768; snap Win+Left successfully brought offscreen
+window into captured area (source[-8,0,486,1087]). No owner centering needed.
+Pinned dev3 release0.3.0-dev.3-2026-10-23T19-09-41-317Z,
+build07c49640dfd1b6afca1c5e04d1f9d82a6ef3408c9fb2fc192b586861a6770dba.
+Use current global computer skill and private call-dev3.py, not dev2 client.
+Typing uses2s observe settling; Android keyboard/dialogs reflow after focus.
+Host ctrl+a was refused focus_changed once; later apps was foreground but this
+does not disprove the boundary refusal. No fence relaxed. Direct Unicode type
+and Android double-tap numeric selection worked. One stale token was rejected
+without input. Other session01a16375 has been asked to confirm the next10-minute
+native window before any more inputs. Its service/release must not be swapped.
+
+Resume: remaining provider SaveAs/Open exact image/resource round trip, Find and
+outline on this build, clipboard native exchange, rotation/keyboard/compact at
+increased font scale where possible; alt text still optional native check pending.
+Capture with private capture_native.py; it is strictly read-only. Retain current
+example as disposable test-owned work. Native root qualification/native-rich-final-20261024/documents
+is isolated; two editor tabs, current selection[135,136], Undo6/Redo0, recovery8.
+Do not redo completed recovery discard/close witness or contributor reviews.
+Finish report/ledger/guides, validate and push only own issue branches. Main,
+contributor heads, frozen files and user data remain untouched; no merges/closures.
+
+---
+
+# Active checkpoint — image picker retirement repair, 24 October 2026
+
+Main remains clean e30c984. The owner-supplied Outline metadata created draft PR43
+(base recovery branch); exact title/body and head0dbcc57 were verified. Its hosted
+Android, build, quality, iOS and CodeQL checks PASS. Governance still rejects absent
+human sections/attestations; never invent them. Actual native H1 -> Outline -> row
+navigation now PASS on APKd4fab5a4: same process, text, structure and Undo/Redo;
+selection moves to the heading. RTL parent/right marker and nested English/left
+marker were exercised through real controls and exact paragraph-state checks.
+
+The actual Android Downloads picker exposed another editor defect: an unchanged
+image target was rejected after focus retired the native session. Separate branch
+codex/android-image-picker-repair atae6e6a2 is locally committed. It reacquires
+admission only for the identical owner-scoped committed basis and selection;
+existing operation-generation checks and stale edit rejection remain. Mounted
+before-diagnostic FAIL and final positive/stale-selection PASS retained, five URI
+checks PASS, check/api and zero Detekt PASS. No public API or frozen/raster change.
+
+Current consumer packaging: primary-checkout ignored evidence
+repair-batch-20261023/image-final-packaged; desktop10/outside runtime and Android
+build PASS, peer packaging pending. Full65/process/clipboard, final native picker
+workflow and exact clean final gates onae6e6a2 are pending. Outline's initial local
+final receipt has five PASS and a missing checkout-local yjs dependency FAIL;
+npm ci repaired setup and the standalone witness rerun PASS. Keep that raw FAIL;
+do not relabel it an all-six final_gates PASS.
+
+Computer control is OFF. The coordinated other thread01a16375 owns native input
+for its Cancel check. It replaced shared dev2 with dev3: DO NOT send dev2 commands
+into that service. Obtain its release and exact dev3 skill/build path before
+further input. Stock Sky remains off. Existing emulator is owned serial5580/API37;
+source-mounted image tests ran there without Windows input. No recovery records,
+provider files or user documents were deleted. New image PR awaits owner metadata
+only after the concrete change's verification; existing nine descriptions stay
+untouched. Continue the same batch, not another feature assignment.
+
+Exact next: finish image-final-packaged, run65 plus interruption/clipboard on its
+identified APK, exact clean gates after input release, then native corrected image
+insert/invalid width/correct/replace/UndoRedo/provider/rotation checks. Update ledger,
+guides and final matrix with actual statuses; preserve all raw failures. All issue
+branches/reviews already exist; do not redo them or alter contributor remotes.
+
+---
+
 # Active continuation — custom controller and native repairs, 23 October 2026
 
 Owner explicitly resumed after Escape and authorized the pinned custom direct
