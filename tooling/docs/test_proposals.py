@@ -25,5 +25,16 @@ class ProposalContract(unittest.TestCase):
         bad = dict(self.record, definition='')
         with self.assertRaises(ValueError): validate(bad)
 
+    def test_invariant_coverage_and_known_gate_mapping(self):
+        mapping = json.loads((ROOT / 'docs/proposals/v6-invariant-gates-v1.json').read_text())
+        self.assertEqual('v6-invariant-gates-v1', validate(mapping))
+        for mode in ('missing', 'unknown', 'wrong', 'duplicate'):
+            bad = copy.deepcopy(mapping)
+            if mode == 'missing': del bad['invariants']['I17']
+            if mode == 'unknown': bad['invariants']['I17'] = ['G99']
+            if mode == 'wrong': bad['invariants']['I15'] = ['G6']
+            if mode == 'duplicate': bad['invariants']['I01'] = ['G1', 'G1']
+            with self.subTest(mode=mode), self.assertRaises(ValueError): validate(bad)
+
 
 if __name__ == '__main__': unittest.main()
