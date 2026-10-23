@@ -44,4 +44,5 @@ registerHooks({resolve(specifier, context, next) {
   }
   return next(specifier, context);
 }});
-await import(pathToFileURL(path.join(root, 'tests/reviews/v6-finalization-20261019/verify.mjs')).href);
+const target = process.argv.includes('--inherited') ? 'run-inherited.mjs' : 'verify.mjs';
+await import(pathToFileURL(path.join(root, 'tests/reviews/v6-finalization-20261019', target)).href);
