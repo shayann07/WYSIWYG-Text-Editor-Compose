@@ -4,6 +4,9 @@
   "type": "module",
   "version": "0.0.0",
   "description": "Isolated replication compatibility experiment; no production algorithm selected",
+  "engines": {
+    "node": ">=24.20.0 <25"
+  },
   "dependencies": {
     "yjs": "13.6.33"
   }
