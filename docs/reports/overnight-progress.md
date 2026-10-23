@@ -1,3 +1,30 @@
+# Active combined integration — 24 October 2026
+
+Owner-authorized coordinator batch: combine existing repair/issue branches in
+codex/repair-integration-20261024, isolated checkout integration-20261024. Constructed
+752e03b preserves all original contributor ancestry and tested31/34 follow-ups;
+no contributor remote rewrite or main merge. Only CI/handoff conflicts resolved,
+no application semantics. Coordinator owns review/merge execution.
+
+Focused docs81/transitive37+45/docs14/Poppler4/proposals3/fresh25+16/negative6 PASS.
+Independent binary consumers freshly PASS: JVM10, Android/test/peer outsidecheckout.
+All168 compiledinputs unchanged fromc020 and all three APKs byte-identical; runtime
+01494420, test0e803448, peer4dfb9c4d. Prior native receipts retain their exact scoped
+validity. Combined full gates/Android66/kills/crossUID pending.
+
+LowerAPI28 now boots with existing legacy emulator binary and local DLL search
+paths in a fresh ownedAVD composedoc_integration_api28_20261024/serial5582. First
+unsupported-option failure retained. No downloads/minSdk changes; full mounted
+suite running, startup is not qualification. Source-only quietSwing window is
+coordinated; computer controlOFF. PR45 original hosted tap root cause unresolved.
+
+NEXT: read docs/reports/repair-combined-integration-20261024.md and primary ignored
+tests/local-evidence/integration-20261024 receipts; finish current process sessions,
+run clean exact six gates, evaluate lowerAPI stack traces, then coordinate bounded
+offlineGboard/native checks. Preserve personal attestation/proposal acceptance gates.
+
+---
+
 # Current repair handoff — 2026-10-23 22:08 UTC
 
 SOURCE c0202d3f676c0fafee8e12410ed81612e5e978bb is clean/pushed on
