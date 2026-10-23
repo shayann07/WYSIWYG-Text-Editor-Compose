@@ -120,11 +120,16 @@ class AndroidOwners(val directory: File, blank: Boolean = false) {
             },
         )
     }
-    internal fun closeDocument(entry: AndroidTab) {
+    internal fun closeDocument(entry: AndroidTab, complete: (RecoveryCloseOutcome) -> Unit = {}) {
         val captured = entry.model.snapshot()
         entry.model.captureRecoveryDraft()?.let(::retainDraft)
         checkpoints.changed(entry)
-        checkpoints.flush {
+        checkpoints.keep(listOf(entry)) { outcome ->
+            if (!outcome.durable) {
+                note(entry.model, outcome.reason)
+                complete(outcome)
+                return@keep
+            }
             val index = tabs.indexOfFirst { it === entry }
             if (index >= 0 && entry.model.snapshot().sessionRevision == captured.sessionRevision) {
                 observers.remove(entry.id)?.cancel()
@@ -137,8 +142,10 @@ class AndroidOwners(val directory: File, blank: Boolean = false) {
                 if (tabs.isEmpty()) add(Document(emptyList()))
                 active = active.coerceAtMost(tabs.lastIndex)
                 status = "Tab closed after checkpoint; its recovery remains available"
+                complete(outcome)
             } else {
                 note(entry.model, "Close cancelled: writing changed while checkpointing; draft retained")
+                complete(RecoveryCloseOutcome.cancelled("Writing changed while checkpointing; draft retained"))
             }
         }
     }
