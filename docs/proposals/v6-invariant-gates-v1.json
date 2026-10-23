@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "v6-invariant-gates-v1",
+  "issue": 23,
+  "status": "PROPOSED",
+  "authoritative": false,
+  "ownerAcceptance": null,
+  "supersedesFrozenBytes": false,
+  "references": ["docs/plans/v6/editor-v6-standalone.md", "docs/proposals/v6-g1-clarification-v1.json"],
+  "invariants": {
+    "I01": ["G1"], "I02": ["G1"], "I03": ["G1"], "I04": ["G1", "G2"],
+    "I05": ["G1", "G3"], "I06": ["G1", "G2"], "I07": ["G3"], "I08": ["G3"],
+    "I09": ["G3", "G5"], "I10": ["G3", "G5"], "I11": ["G4"], "I12": ["G2", "G3"],
+    "I13": ["G3", "G5"], "I14": ["G1", "G7"], "I15": ["G1", "G8"],
+    "I16": ["G2", "G3"], "I17": ["G4", "G6"]
+  },
+  "clarifications": {
+    "I14": "G1 establishes serialization/replay prerequisites only; G7 qualifies actual crash durability.",
+    "I15": "G1 checks local storage/edit traversal and serialization counters; G8 measures scaling and latency. An independent counter must fail an intentional whole-document-flattening mutant. Explicit Save/checkpoint serialization is outside normal-local-edit work and must be separately measured, never hidden in its budget.",
+    "I17": "G4 rejects stale geometry/render results keyed to an old semantic revision; G6 requires editable accessibility reads/actions/offscreen navigation on that same revision. Delay each pipeline independently during an edit, then require either coherent read-back or explicit stale rejection. Matching emitted revision numbers alone do not qualify actual AT behavior. This maps to V6-5/N0."
+  },
+  "scope": "Proposed complete invariant-to-gate correspondence, not evidence that those gates pass. No existing invariant meaning is replaced. Owner acceptance required."
+}
