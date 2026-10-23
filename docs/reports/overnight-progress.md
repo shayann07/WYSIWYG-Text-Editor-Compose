@@ -1,3 +1,84 @@
+# Active continuation — custom controller and native repairs, 23 October 2026
+
+Owner explicitly resumed after Escape and authorized the pinned custom direct
+controller in coordination with thread01a16375. Its skill/QA workflow and actual
+buildd9ac2062 were verified. No stopped service was restarted; status was idle.
+Stock Sky stays off. Input windows are announced/released between sessions.
+
+Eight draft PRs35–42 exist with exact owner-supplied metadata and correct bases.
+Human sections/attestations still fail governance and must not be fabricated.
+Recovery PR35 is now e60f9ee, pushed and all six exact clean final gates PASS.
+Its packaged APK1aafa45b passes63, both interruption witnesses and cross-UID
+clipboard headless. Prior visible/background IME/clipboard failures are retained.
+
+Actual custom-controller heading creation worked, then Outline caused an app
+FATAL ViewTreeLifecycleOwner-not-found on the dialog root. Native and maintained
+actual-handler before-fix failures retained. Separate dependent branch
+codex/android-native-outline-repair at0dbcc57 fixes dialog-root lifecycle/saved
+state ownership and disposes composition on dismissal. check/api/zero Detekt,
+focused real-dialog navigation/UndoRedo regression, independent binary consumers,
+64 mounted groups, two process interruptions and cross-UID clipboard PASS.
+APK d4fab5a41a0c1de66585970e103e70d07910d326fb9f48d10c306a5f0a0b0104.
+This branch is pushed; its separate PR awaits the owner's exact new title/body.
+Its final native walkthrough and full exact-commit gates remain pending.
+
+Custom controller feedback is private at
+D:\Work\AntigravityComputerUse\.localdata\external-editor-feedback\composedoc-20261023\feedback.md.
+Click/drag/image delivery succeeded; post-action transition settling improvement
+reported separately from the editor crash. Controller source not edited. Session
+ended normally and status idle/completed before code work. The other session is
+currently coordinating the next native window; do not inject concurrent input.
+
+Resume with identified APK d4fab5a4, repeat Outline crash trigger and finish the
+eligible structured/list/image/find/clipboard/provider/rotation/compact checks.
+Use read-only EvidenceReceiver/file oracles, label native versus injected input.
+Run final gates on0dbcc57 after the native fixes settle, then update reports.
+No main push, merge, issue closure, contributor remote edits or normative proposal
+acceptance. Existing eight public descriptions remain untouched.
+
+---
+
+# Native continuation checkpoint — owner stopped control, 23 October 2026
+
+Owner supplied exact metadata; eight draft PRs35–42 created and attached, with
+requested branch/base dependencies and no edited contributor descriptions or
+checked attestations. Their exact text was verified against the owner's input.
+PR governance rejects missing template sections/human attestations; do not fill
+those on the owner's behalf. PR35's first hosted Android attempt again has an
+explicit LMK logcat record; no blind rerun was requested.
+
+Native window capture now works after owner centering. Initial APK fcc93ac8:
+actual Gboard keys typed Hello + space, app italic/Undo/Redo and toolbar swipes,
+real provider Save As, owner-confirmed generation10 discard, close Cancel,
+unchanged Keep/close -> fresh12, owned SIGKILL and native explicit restore PASS.
+Saved/restored202-byte documents are identical. Read-only callback trace shows
+direct commits, so active composing-formatting is NOT qualified.
+
+A misleading close-dialog claim was independently seen after discard. Fixed
+in local recovery commit e60f9ee, with actual-dialog failing-before/passing-after
+regression. All9 focused recovery groups PASS. A synthetic fixture retires live
+Gboard before injecting its proposal; its exact data assertions are unchanged.
+Fresh binary-only consumer/Android/peer PASS; final rebuilt APK SHA256
+1aafa45b2448438ff067a995d575d69bea725b8d980184de2ca5950adb5b74de.
+Headless63 + two process interruptions + cross-UID clipboard PASS on that APK.
+Visible/background-mounted IME/clipboard failures retained separately; no
+assertions relaxed. Source check/api PASS before the fixture-isolation addition;
+final six clean gates for e60f9ee still required. Do not reuse9d8f60b's exact
+receipt for it. e60f9ee is local, not pushed pending final gates.
+
+Owner physical Escape stopped Computer Use during final native continuation.
+No further Computer Use tools called. Helper exited; emulator remains open for
+owner. Other session01a16375 notified; both controllers require owner resumption.
+Last attempted heading-role menu is unobserved after Stop, not a PASS. Remaining:
+final-build close wording retest, structured/list/image/find/clipboard/provider
+Open/rotation/native language/AT checks where available, full exact gates and
+normal recovery-branch push. No merge/issue closure/main push authorized.
+Evidence: primary checkout tests/local-evidence/repair-batch-20261023, especially
+native-20261023/, native-final-stable/, native-final-headless-63/, and
+native-final-headless-clipboard/. Existing failed receipts remain intact.
+
+---
+
 # Recovery, qualification and issue review — 23 October 2026
 
 Primary checkout/main stays clean at e30c984; isolated worktrees are under

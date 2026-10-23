@@ -208,3 +208,25 @@ file. The three normative proposals remain PROPOSED/non-authoritative pending
 explicit owner acceptance. Native capture remains blocked pending window placement;
 no new native IME, image picker, SAF, rotation or TalkBack speech PASS is claimed.
 Computer-control kernel reset completed; only the owned emulator is shut down.
+
+## Owner-resumed continuation and draft PRs
+
+Owner supplied exact metadata, verified byte-for-byte after draft creation:
+recovery35; issue15->36;17->37 (base15 branch);22->38;23->39 (base22);
+24->40 (base23);28->41;29->42. Existing contributor PR descriptions unchanged.
+Governance reports missing required headings and unchecked human attestations;
+no agent completed or invented those. All proposals remain non-authoritative.
+
+Recovery follow-up e60f9ee is pushed and passes all six exact clean local gates.
+Its identified independently packaged APK1aafa45b passes63 headless checks, two
+interruption witnesses and cross-UID clipboard. Native first-window saved and
+restored Hello-space files match byte-for-byte; independent expected attributes
+also pass (all italic, only trailing space bold). Direct Gboard commits are
+separate from unqualified composing-formatting/conversion IME evidence.
+
+The resumed custom native controller exposed an additional real Outline crash,
+not an LMK/controller failure. Separate branch codex/android-native-outline-repair,
+0dbcc57, now passes64 mounted checks and binary-consumer/process/clipboard checks.
+See its report on that branch. It awaits exact new owner PR metadata and final
+native qualification/gates. Native logs/screenshots and controller feedback retain
+all failures, including transitional frames, with host UTC/device timezone explicit.
