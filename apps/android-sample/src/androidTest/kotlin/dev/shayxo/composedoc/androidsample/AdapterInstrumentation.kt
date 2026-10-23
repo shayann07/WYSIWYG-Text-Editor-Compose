@@ -76,6 +76,7 @@ class AdapterInstrumentation : Instrumentation() {
             "toolbar-owner" to { toolbarOwnerChecks() },
             "shell" to { richShellChecks() },
             "touch" to { richTouchChecks(root) },
+            "mounted-hit" to { mountedHitChecks() },
             "clipboard" to { richClipboardChecks() },
             "uri" to { richUriChecks(root) },
             "rich-structure" to { richStructureChecks(root) },

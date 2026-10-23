@@ -88,3 +88,36 @@ verify rich/plain transport separately, and exercise rotation/keyboard/font-scal
 where available. Genuine Urdu/Arabic/conversion IME, lower API and TalkBack speech
 remain independent gates. End computer control before source work and coordinate
 the shared controller with the other session.
+
+## Subsequent hosted failure and bounded diagnostics
+
+All six clean local final gates passed onbdf1e35, including20 desktop stages and
+four implementation mutants, before normal branch push and draft PR45 creation.
+The owner's exact title/body were submitted unchanged; human attestations remain
+unchecked. Evidence: toolbar-bdf1-final-verification.json and toolbar-pr45-identity.json.
+
+Hosted run40025253551/job120659707919 on that candidate returned all66 device
+results, but65 passed and the independent Latin-prefix tap assertion failed. All
+other hosted technical checks passed, including iOS and every CodeQL lane. This is
+not a missing-result or memory-kill diagnosis. The original assertion did not include
+the actual selected range or delivery-time geometry, so its root cause remains
+unestablished. Raw log and downloaded artifact remain in pr45-hosted-android-failure.log
+and pr45-hosted-failure-artifact under the primary evidence root.
+
+The test now reports the actual selection, down/up delivery times, sent coordinates,
+current view origin/size/focus/attachment, document revision and caret on failure.
+A focused mounted-hit entry runs the same original test in isolation. The expected
+Selection(2,2), independent font measurement, long-press/drag assertions and full
+66-group requirement are unchanged. No production code, timing tolerance, skip,
+clipboard guard or rendering formula is changed to manufacture a pass.
+
+Three bounded focused trials PASS locally; a fresh full66 plus both interruption
+witnesses also PASS. check/apiCheck/zero Detekt PASS. These are diagnostic observations,
+not proof that the earlier hosted failure is fixed. Fresh binary-only Android/test
+packaging explicitly reuses unchanged library/JVM10/peer evidence after source/hash
+checks: toolbar-hit-diagnostics-packaged/results.json. Runtime APK remains byte-identical
+0149442040d4b55f183a01aa86762a07e1c4f39b36b6bad902d32745f30fd099;
+new test APK0e8034480de05820f6827db2c5afb11ec570917758b0bf3dc00203e53c8026a7.
+Receipts: toolbar-focused-hit-diagnostics/results.json and toolbar-diagnostic-66/results.json.
+Clean final gates and the next hosted run must identify this test/report follow-up's
+own commit. A passing later attempt must not erase the original failed receipt.
