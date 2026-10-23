@@ -33,6 +33,35 @@ def validate(record, root=ROOT):
             raise ValueError('I15 storage/performance and I17 rendering/accessibility mapping required')
         if not all(record.get('clarifications', {}).get(key) for key in ('I14', 'I15', 'I17')):
             raise ValueError('Qualification boundaries required')
+    if record.get('issue') == 24:
+        states = {'PASS', 'PARTIAL', 'FAIL', 'BLOCKED', 'NOT RUN'}
+        environments = record.get('environments', [])
+        identities = {item.get('id') for item in environments}
+        if None in identities or len(identities) != len(environments) or not identities:
+            raise ValueError('Environment identities must be unique and explicit')
+        gates = record.get('gates', [])
+        if {item.get('id') for item in gates} != {f'G{n}' for n in range(9)} or len(gates) != 9:
+            raise ValueError('Missing, duplicate or unexpected G0-G8 gate')
+        for item in gates + record.get('capabilities', []):
+            if item.get('status') not in states or not item.get('scope') or not item.get('remaining'):
+                raise ValueError('Explicit scoped status and remaining work required')
+            if item.get('status') in {'PASS', 'PARTIAL', 'FAIL'} and not item.get('evidence'):
+                raise ValueError('Measured/result status needs evidence')
+            if item in gates and not item.get('owner'):
+                raise ValueError('Gate owner required')
+            if item not in gates and item.get('environment') not in identities:
+                raise ValueError('Unknown capability environment')
+        traces = record.get('traceCatalog', [])
+        if len(traces) != 12 or {t.get('id') for t in traces} != {f'G3-{n:02}' for n in range(1, 13)}:
+            raise ValueError('Required G3 trace catalog incomplete/duplicated')
+        if any(t.get('gate') != 'G3' or not t.get('expected') or not t.get('evidence') for t in traces):
+            raise ValueError('Trace expected state and evidence scope required')
+        measures = record.get('measurementProposal', {})
+        if measures.get('status') != 'PROPOSED_NOT_MEASURED' or not all(measures.get(k) for k in
+                ('referenceDeviceAcceptance', 'sampling', 'G1', 'G7', 'G8')):
+            raise ValueError('Proposed thresholds must not pretend to be measured outcomes')
+        if not record.get('environmentIdentityRequired'):
+            raise ValueError('Environment capture contract required')
     return record['id']
 
 

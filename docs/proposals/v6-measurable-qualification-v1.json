@@ -1,0 +1,266 @@
+{
+  "schemaVersion": 1,
+  "id": "v6-measurable-qualification-v1",
+  "issue": 24,
+  "status": "PROPOSED",
+  "authoritative": false,
+  "ownerAcceptance": null,
+  "supersedesFrozenBytes": false,
+  "references": [
+    "docs/plans/v6/editor-v6-standalone.md",
+    "docs/proposals/v6-invariant-gates-v1.json",
+    "docs/guides/BINARY-CONSUMER-ANDROID.md",
+    "docs/reports/android-rich-writing-20261021.md"
+  ],
+  "environmentIdentityRequired": [
+    "sourceCommit",
+    "dirtyDiffHash",
+    "artifactHashes",
+    "osAndBuild",
+    "deviceModel",
+    "cpu",
+    "ramBytes",
+    "apiOrBrowserVersion",
+    "jdkKotlinComposeSkikoAgpGradleVersions",
+    "fontFilesAndHashes",
+    "displayDensityFontScaleRefreshRate",
+    "keyboardImeVersionAndLanguage",
+    "accessibilityServiceVersion",
+    "powerThermalMode",
+    "storageProvider",
+    "testSeedAndTraceRevision"
+  ],
+  "environments": [
+    {
+      "id": "windows-d-dev-20261023",
+      "os": "Windows 11 10.0.26300",
+      "hardware": "Intel Core i5-13420H; 32 GiB RAM",
+      "runtime": "JDK21; Node24.20.0/ICU78.3; pinned Gradle catalogue",
+      "scope": "local automation, no physical print/desktop IME/AT qualification"
+    },
+    {
+      "id": "android37-owned-5580",
+      "os": "Android17 API37 x86_64 16KiB Google emulator",
+      "fingerprint": "google/sdk_gphone16k_x86_64/emu64xa16k:17/CP31.260623.012/16064790:user/dev-keys",
+      "hardware": "owned composedoc_slice_20261020 AVD, 2GiB guest; host above",
+      "ime": "Gboard17.5.6.917159154-preload-x86_64",
+      "scope": "mounted adapter and owned process tests; native walkthrough separate"
+    },
+    {
+      "id": "android24-36",
+      "status": "BLOCKED",
+      "reason": "No compatible lower-API guest qualified; minSdk24 unchanged"
+    },
+    {
+      "id": "ios-web-other-desktop",
+      "status": "NOT RUN",
+      "reason": "No target-specific native environment qualified by this batch"
+    }
+  ],
+  "traceCatalog": [
+    {
+      "id": "G3-01",
+      "gate": "G3",
+      "expected": "epoch/sequence duplicate, stale connection, focus replacement",
+      "evidence": "required exact canonical document/attributes/IDs/selection/history and per-callback notifications; synthetic versus real labelled separately"
+    },
+    {
+      "id": "G3-02",
+      "gate": "G3",
+      "expected": "empty initial candidate deletion; raw UTF16 and reversed selection",
+      "evidence": "required exact canonical document/attributes/IDs/selection/history and per-callback notifications; synthetic versus real labelled separately"
+    },
+    {
+      "id": "G3-03",
+      "gate": "G3",
+      "expected": "candidate ab -> x -> ab attribution; surrogate/grapheme seams",
+      "evidence": "required exact canonical document/attributes/IDs/selection/history and per-callback notifications; synthetic versus real labelled separately"
+    },
+    {
+      "id": "G3-04",
+      "gate": "G3",
+      "expected": "positive/zero partial commit; frozen accepted islands; explicit abort",
+      "evidence": "required exact canonical document/attributes/IDs/selection/history and per-callback notifications; synthetic versus real labelled separately"
+    },
+    {
+      "id": "G3-05",
+      "gate": "G3",
+      "expected": "cross-paragraph join, commit/cancel, exact IDs/properties",
+      "evidence": "required exact canonical document/attributes/IDs/selection/history and per-callback notifications; synthetic versus real labelled separately"
+    },
+    {
+      "id": "G3-06",
+      "gate": "G3",
+      "expected": "format during composition; backward selection; exact attributed Undo/Redo",
+      "evidence": "required exact canonical document/attributes/IDs/selection/history and per-callback notifications; synthetic versus real labelled separately"
+    },
+    {
+      "id": "G3-07",
+      "gate": "G3",
+      "expected": "batch edit, reentry, failure rollback, synchronous query publication",
+      "evidence": "required exact canonical document/attributes/IDs/selection/history and per-callback notifications; synthetic versus real labelled separately"
+    },
+    {
+      "id": "G3-08",
+      "gate": "G3",
+      "expected": "structural object/seam admission and retained unsupported proposal",
+      "evidence": "required exact canonical document/attributes/IDs/selection/history and per-callback notifications; synthetic versus real labelled separately"
+    },
+    {
+      "id": "G3-09",
+      "gate": "G3",
+      "expected": "unknown settlement, watchdog fault, no timeout-as-success",
+      "evidence": "required exact canonical document/attributes/IDs/selection/history and per-callback notifications; synthetic versus real labelled separately"
+    },
+    {
+      "id": "G3-10",
+      "gate": "G3",
+      "expected": "queued toolbar/paste/Undo; stale asynchronous targets",
+      "evidence": "required exact canonical document/attributes/IDs/selection/history and per-callback notifications; synthetic versus real labelled separately"
+    },
+    {
+      "id": "G3-11",
+      "gate": "G3",
+      "expected": "accepted prefix cancellation; no transient phonetic text in ordinary save",
+      "evidence": "required exact canonical document/attributes/IDs/selection/history and per-callback notifications; synthetic versus real labelled separately"
+    },
+    {
+      "id": "G3-12",
+      "gate": "G3",
+      "expected": "Urdu acceptance traces 1-8 plus Arabic/Latin/marks/emoji fixtures",
+      "evidence": "required exact canonical document/attributes/IDs/selection/history and per-callback notifications; synthetic versus real labelled separately"
+    }
+  ],
+  "measurementProposal": {
+    "status": "PROPOSED_NOT_MEASURED",
+    "referenceDeviceAcceptance": "Owner must accept each actual environment identity before qualification. Emulator is not physical Android reference hardware.",
+    "sampling": "Release builds. 30 cold starts separate; 200 warmup edits then 1000 measured edits per workload and 20 fixed seeds. Retain all samples, p50/p95/p99/max and allocations; never drop failures/outliers silently.",
+    "G1": "Counters must show zero whole-document serialization/flattening on ordinary local edits. Compare 1K/100K/1M UTF16 units at fixed edit locality; local traversal delta <=2 tree heights + touched leaves. Record actual data structure deviations, not an invented logarithmic pass.",
+    "G7": "20 warmup open/edit/close cycles, then 100 measured cycles; sample retained post-GC heap every 5 cycles (20 samples). Proposed upper 95% CI of linear growth <=64KiB/cycle AND final-20-cycle median growth <=5% of post-warmup baseline. Report renderer/media separately and live resource/reference counts; no timing-based claim of power-loss durability.",
+    "G8": "Preserve sealed numeric targets: core edit p95<=2ms/p99<=5ms; ordinary paragraph layout p95<=8ms; accepted-to-presented frame p95<=33ms; standard scroll p95<=16.7ms; core+bounded history<=128MiB. 100K-unit paragraph p95<=100ms remains high-risk/unmet. Independent clocks/counters and exact fonts required."
+  },
+  "gates": [
+    {
+      "id": "G0",
+      "owner": "shayann07",
+      "status": "NOT RUN",
+      "scope": "per-environment native capability and real editable accessibility",
+      "evidence": [],
+      "remaining": "Full sealed gate has not been qualified; representative evidence does not satisfy the whole gate."
+    },
+    {
+      "id": "G1",
+      "owner": "shayann07",
+      "status": "NOT RUN",
+      "scope": "complete persistent kernel and independent storage/locality measurements",
+      "evidence": [],
+      "remaining": "Full sealed gate has not been qualified; representative evidence does not satisfy the whole gate."
+    },
+    {
+      "id": "G2",
+      "owner": "shayann07",
+      "status": "NOT RUN",
+      "scope": "command/position/format/history exhaustive and fuzz qualification",
+      "evidence": [],
+      "remaining": "Full sealed gate has not been qualified; representative evidence does not satisfy the whole gate."
+    },
+    {
+      "id": "G3",
+      "owner": "shayann07",
+      "status": "NOT RUN",
+      "scope": "complete production trace catalog, Unicode and invariants",
+      "evidence": [],
+      "remaining": "Full sealed gate has not been qualified; representative evidence does not satisfy the whole gate."
+    },
+    {
+      "id": "G4",
+      "owner": "shayann07",
+      "status": "NOT RUN",
+      "scope": "native rendering/hit/selection and candidate geometry",
+      "evidence": [],
+      "remaining": "Full sealed gate has not been qualified; representative evidence does not satisfy the whole gate."
+    },
+    {
+      "id": "G5",
+      "owner": "shayann07",
+      "status": "NOT RUN",
+      "scope": "real keyboard/IME traces per declared environment",
+      "evidence": [],
+      "remaining": "Full sealed gate has not been qualified; representative evidence does not satisfy the whole gate."
+    },
+    {
+      "id": "G6",
+      "owner": "shayann07",
+      "status": "NOT RUN",
+      "scope": "structured clipboard and editable accessibility revision coherence",
+      "evidence": [],
+      "remaining": "Full sealed gate has not been qualified; representative evidence does not satisfy the whole gate."
+    },
+    {
+      "id": "G7",
+      "owner": "shayann07",
+      "status": "NOT RUN",
+      "scope": "durability/crash boundaries and quantified lifecycle retention",
+      "evidence": [],
+      "remaining": "Full sealed gate has not been qualified; representative evidence does not satisfy the whole gate."
+    },
+    {
+      "id": "G8",
+      "owner": "shayann07",
+      "status": "NOT RUN",
+      "scope": "all correctness gates plus declared release performance matrix",
+      "evidence": [],
+      "remaining": "Full sealed gate has not been qualified; representative evidence does not satisfy the whole gate."
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "android-rich-model",
+      "status": "PARTIAL",
+      "environment": "android37-owned-5580",
+      "scope": "54 inherited mounted groups plus nine recovery-close groups on repaired branch; synthetic callbacks, not real Urdu IME",
+      "evidence": [
+        "docs/reports/android-rich-writing-20261021.md"
+      ],
+      "remaining": "final native walkthrough/lower API/AT speech"
+    },
+    {
+      "id": "android-recovery-old-scheduler",
+      "status": "FAIL",
+      "environment": "android37-owned-5580",
+      "scope": "Independent and mounted baseline reproduce discarded-generation close and overwritten callback",
+      "evidence": [
+        "docs/reports/android-rich-writing-20261021.md"
+      ],
+      "remaining": "Recovery repair is separate branch; baseline must not be marked fixed until integrated"
+    },
+    {
+      "id": "android-lower-api",
+      "status": "BLOCKED",
+      "environment": "android24-36",
+      "scope": "Declared minSdk24, unavailable compatible guest",
+      "evidence": [
+        "docs/reports/android-rich-writing-20261021.md"
+      ],
+      "remaining": "Run compatible disposable lower-API environment"
+    },
+    {
+      "id": "native-talkback-speech",
+      "status": "NOT RUN",
+      "environment": "android37-owned-5580",
+      "scope": "Actions/focus do not prove spoken output",
+      "evidence": [],
+      "remaining": "Actual audible speech evidence"
+    },
+    {
+      "id": "sealed-byte-integrity",
+      "status": "PASS",
+      "environment": "windows-d-dev-20261023",
+      "scope": "Only 48 historical and 33 sealed hashes verified; not product qualification",
+      "evidence": [
+        "tooling/docs/validate_docs.py"
+      ],
+      "remaining": "Continue checking every change"
+    }
+  ]
+}
