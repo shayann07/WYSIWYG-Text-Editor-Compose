@@ -9,6 +9,14 @@ into one definition. Both sets of requirements remain included. It does not clai
 the production kernel satisfies them. Issues 23 and 24 may add separate dependent
 records for invariant mapping and measurable qualification proposals.
 
+Issue 23 supplies `v6-invariant-gates-v1.json`; issue 24 supplies the machine-readable
+`v6-measurable-qualification-v1.json` capability/environment/trace matrix. All G0-G8
+full qualifications remain NOT RUN. Scoped representative results are separate.
+Numeric sampling/leak tolerances are proposals for owner acceptance, not observed
+results. G1 storage heap and latency use the existing G8 core/history budgets;
+counter locality proposals must be reviewed against the chosen data structure.
+Android lower-API, genuine multilingual IME and actual AT speech remain open.
+
 ```sh
 python tooling/docs/validate_proposals.py
 python -m unittest discover -s tooling/docs -p 'test_proposals.py'
