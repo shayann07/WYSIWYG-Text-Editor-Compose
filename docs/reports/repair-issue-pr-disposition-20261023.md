@@ -47,13 +47,13 @@ separately in the exact repair commit's local receipt; inspect it before pushing
 | 15 | Imported run17/run19/Gemini closure lacked transitive coverage; additive45-file record,37 imported modules, existing-ledger provenance | six negative tests; docs81; `codex/issue-15-evidence-integrity` a46d896 | Human PR text/review; new hash does not prove historical integrity | Implemented/tested; PR metadata pending |
 | 17 | Only16 V6 witnesses routinely ran; all25 inherited now execute and compare complete deterministic records | fresh25+16 PASS; six negative comparison tests; `codex/issue-17-inherited-reproduction` 2dc8aba | Depends15, runtime pin from30; hosted checks after human PR text | Implemented/tested; dependency pending |
 | 19 | Node runtime drift versus recorded evidence | existingPR30; npm/lock consistency + real drift-warning failure negative PASS | Human review; not CodeRabbit draft-skip approval | Primary existingPR retained |
-| 20 | Machine-local crash log and Poppler executable path | existingPR31; follow-up `codex/pr31-tool-discovery-followup` 83f3516, four tests PASS | Contributor/owner may apply follow-up to31; no competingPR or remote rewrite; Git history deliberately retained | Residual repaired locally; existingPR not fully ready |
+| 20 | Machine-local crash log and Poppler executable path | existingPR31; follow-up `codex/pr31-tool-discovery-followup` d732c22, four tests PASS | Contributor/owner may apply follow-up to31; no competingPR or remote rewrite; Git history deliberately retained | Residual repaired locally; existingPR not fully ready |
 | 21 | Missing archived upstream notices | existingPR32; exact immutable-upstream license and version-header comparisons PASS | Owner/legal review; header correspondence does not attest every archived byte's origin | Primary existingPR retained |
 | 22 | G1 requirement split across adjacent paragraphs | `codex/issue-22-g1-proposal` c331a9c; proposal validator/three tests PASS | Explicit owner acceptance of proposed additive record, human PR metadata | PROPOSED, not authoritative |
 | 23 | I15/I17 lacked explicit gate references | `codex/issue-23-invariant-map` b15cbef; four tests PASS; I15->G1/G8, I17->G4/G6 | Depends22; explicit owner acceptance; full invariant coverage remains unqualified | PROPOSED, not authoritative |
 | 24 | Environments/traces/measurements and capability matrix absent | `codex/issue-24-capabilities` fdc4616; five schema/reference negatives PASS; CI validation wired | Depends23; accept thresholds/reference hardware, then execute gates; G0-G8 NOT RUN | PROPOSED, scoped representative outcomes only |
 | 25 | Gemini amendment/report duplicate | existingPR33; exact96677-byte/hash match; failed hosted attempt diagnosed below | Required Android check still failed; human review and bounded CI retry needed | Covered documentation, CI BLOCKED |
-| 26 | Stale active navigation / insufficient link coverage | existingPR34; archive+active negative PASS; suite-index gap reproduced; follow-up `codex/pr34-navigation-followup` 41f0079 PASS | Apply follow-up into34 only with owner/contributor agreement; no pinned link text changes | Residual repaired locally; existingPR not fully ready |
+| 26 | Stale active navigation / insufficient link coverage | existingPR34; archive+active negative PASS; suite-index gap reproduced; follow-up `codex/pr34-navigation-followup` fcd959b PASS | Apply follow-up into34 only with owner/contributor agreement; no pinned link text changes | Residual repaired locally; existingPR not fully ready |
 | 28 | Archived recipes appear clean-clone runnable | `codex/issue-28-archive-index` bcd735c; external classified index, docs81 PASS | No rejected experiments revived; dependencies/platform constraints remain explicitly NOT RUN | Navigation correction implemented/tested |
 | 29 | Tracker trails actual rich-writing/recovery and native limitations | This branch `codex/issue-29-status-review`; measured JSON ledger and report | Owner writes tracker/public update; no full roadmap completion or issue closure | Evidence-backed update ready for review |
 
@@ -142,3 +142,36 @@ records; until accepted none changes normative authority. The owner decides whet
 to incorporate31/34 follow-ups and request fresh hosted checks. No merge or issue
 closure is performed here. Native positioning/keyboard/AT/lower-API limitations
 remain explicit; this batch does not qualify the entire roadmap or all platforms.
+
+## Final local checkpoint
+
+All six final gates PASS on clean commit
+9d8f60bf148b10848e91c82e2352832b74cf4cd8. The first invocation's missing
+locked Yjs dependency failure remains retained; the complete second invocation
+passes without changing that commit. Desktop workspace21 stages and four mutants
+pass. A separate binding receipt verifies all166 compilation/resource inputs of
+the pre-commit packaged APK equal this clean commit; the original build receipt
+was not rewritten. Public core API dumps and desktop source are unchanged.
+
+Eight tested issue/follow-up branches were pushed under codex/ names, followed by
+the recovery branch after its gates passed. No PR was created without human text.
+Main and contributor heads remain unchanged. Follow-up commits include their own
+CI regression steps; they are for existing PR31/34, not competing PRs.
+
+A read-only ADB screenshot after automated launch was inspected:
+`tests/local-evidence/repair-batch-20261023/native-launch-diagnostic/screen-after-start.png`.
+It shows the final APK's mixed Urdu/Latin editable sample. This is launch/render
+diagnostic evidence only. Toolbar/status rows extend beyond the viewport; actual
+horizontal-scroll discoverability/reachability remains untested, not dismissed.
+No new native keyboard, SAF, image-picker, rotation or AT result is claimed.
+
+A fresh isolated API28 attempt corrected AVD identity, used an absolute image
+path, removed the emulator-home override and explicitly selected qemu2. Installed
+emulator37.1.2 still exited before registration with Unknown AVD name and missing
+kernel_cmdline.txt. Raw attempt is `lower-api-retry/`; no device was wiped or
+minimum API raised. A compatible lower-API emulator remains required.
+
+One bounded rerun of PR33's failed Android job was requested after preserving
+attempt3's full artifact, job metadata and explicit LMK logcat. Attempt4 uses
+the same contributor SHA. Its outcome is recorded below when available; neither
+a later success nor a missing result erases the original failure.

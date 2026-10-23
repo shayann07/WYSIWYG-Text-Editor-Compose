@@ -59,6 +59,30 @@
       "sha256": "48934a0ad84d3b8ac788fe380426ea732b05a2901bc6edaaa973beed1191cd1a",
       "availability": "MACHINE_LOCAL_RECEIPT",
       "meaning": "Receipt identity; missing on a fresh clone is not a new qualification pass"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/recovery-clean-commit-binding.json",
+      "sha256": "f6879488441a98e797d4c840cec1fe258b6163cefdcf6a7c7b805a776f2dee94",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Identified receipt, not cross-platform/native qualification"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/recovery-final-verification.json",
+      "sha256": "1b6e06251adcc56d671da42d2ec6b0f5b2e9b5217c88f669fe70331315557b1a",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Identified receipt, not cross-platform/native qualification"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/lower-api-retry/result.json",
+      "sha256": "45f634828541c1c49984a288aaa9b1bbfbf6d09bb821e5d7634ca0929cf9310b",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Identified receipt, not cross-platform/native qualification"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-launch-diagnostic/scope.json",
+      "sha256": "a9a4b9e4c56c766a429bd75953d7a6b2fac929554e602f2d6c88db8fed9b3b65",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Identified receipt, not cross-platform/native qualification"
     }
   ],
   "capabilities": [
@@ -159,6 +183,15 @@
       "scope": "Not part of this repair batch",
       "evidence": [],
       "remaining": "Existing separate qualification backlog"
+    },
+    {
+      "id": "repair-exact-final-gates",
+      "status": "PASS",
+      "scope": "All six clean exact-commit local gates at9d8f60b; 81 protected hashes and four implementation mutants",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/recovery-final-verification.json"
+      ],
+      "remaining": "Owner review; new-PR metadata; hosted PR checks after creation"
     }
   ]
 }
