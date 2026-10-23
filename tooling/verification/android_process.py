@@ -33,7 +33,18 @@ def check_restore(result, source_pid):
         raise ValueError("Recovery process witness did not execute the exact expected restoration")
 
 
-def run_witness(run, output):
+def check_ready(ready, close_after_discard):
+    expected_stage = "CLOSE_REPORTED_DURABLE" if close_after_discard else "AFTER_COMPLETED_CHECKPOINT"
+    if ready.get("stage") != expected_stage or type(ready.get("sourcePid")) is not int:
+        raise ValueError("Recovery child never established its completed-checkpoint/later-edit boundary")
+    if close_after_discard and (ready.get("closeReportedSuccess") is not True
+                               or type(ready.get("sequence")) is not int
+                               or type(ready.get("discardedSequence")) is not int
+                               or ready["sequence"] <= ready["discardedSequence"]):
+        raise ValueError("Close did not prove fresh coverage after the captured discard")
+
+
+def run_witness(run, output, close_after_discard=False):
     request = str(uuid.uuid4())
     location = f"files/qualification/kill-{request}"
     process = PACKAGE + ":recoverywitness"
@@ -57,12 +68,11 @@ def run_witness(run, output):
         raise TimeoutError(f"Owned recovery child did not publish {name}; no process qualification PASS")
 
     run("kill-start", "shell", "am", "start", "-f", "0x18000000", "-n", component, "--es", "request", request,
-        "--es", "phase", "prepare")
+        "--es", "phase", "prepare", "--ez", "close-after-discard", str(close_after_discard).lower())
     captured_pid = None
     try:
         ready = poll_receipt("late-ready")
-        if ready.get("stage") != "AFTER_COMPLETED_CHECKPOINT" or not isinstance(ready.get("sourcePid"), int):
-            raise ValueError("Recovery child never established its completed-checkpoint/later-edit boundary")
+        check_ready(ready, close_after_discard)
         captured_pid = validated_pid(run("kill-owned-identity", "shell", "pidof", process), ready["sourcePid"])
         run("kill-owned-child", "shell", "run-as", PACKAGE, "kill", "-9", captured_pid)
         captured_pid = None
@@ -70,13 +80,14 @@ def run_witness(run, output):
             "--es", "phase", "restore")
         result = poll_receipt("restored")
         check_restore(result, ready["sourcePid"])
-        for name in ("expected", "late", "restored"):
+        documents = ("expected", "restored") if close_after_discard else ("expected", "late", "restored")
+        for name in documents:
             raw = run("kill-" + name + "-document", "exec-out", "run-as", PACKAGE, "cat", f"{location}/{name}.astra")
             (output / ("process-" + name + ".astra")).write_bytes(raw)
         expected = (output / "process-expected.astra").read_bytes()
         if expected != (output / "process-restored.astra").read_bytes():
             raise ValueError("Recovered supported document/resource bytes differ from the completed checkpoint")
-        if expected == (output / "process-late.astra").read_bytes():
+        if not close_after_discard and expected == (output / "process-late.astra").read_bytes():
             raise ValueError("The declared after-checkpoint loss window was not actually exercised")
         result.update(scope="One owned SIGKILL and fresh process; synthetic input setup, not power-loss/native IME evidence",
                       checkpointSha256=hashlib.sha256(expected).hexdigest(), cases=1, request=request)

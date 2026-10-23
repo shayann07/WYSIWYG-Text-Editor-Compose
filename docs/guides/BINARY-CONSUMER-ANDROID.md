@@ -1,5 +1,11 @@
 # Binary consumer and Android integration
 
+23 October recovery correction: [the focused repair report](../reports/android-recovery-close-repair-20261023.md)
+records fresh-generation keep/close, per-request outcomes, discard fencing and actual
+post-close process interruption. This work is on an unmerged issue branch; earlier
+main builds retain the reproduced defects. A close is allowed only after captured
+accepted content and required separate unfinished evidence are durably verified.
+
 22 October 2026. The rich-writing implementation extends the original20 October body-text slice.
 Current build, automated/native results and open gates are in
 [the rich-writing report](../reports/android-rich-writing-20261021.md).

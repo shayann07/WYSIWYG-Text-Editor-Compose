@@ -1,3 +1,18 @@
+# Android recovery repair — active, 23 October 2026
+
+Worktree D:\Work\ComposeDoc-repairs\android-recovery-close, branch
+codex/android-recovery-close, base e30c984. Both actual mounted before-fix witnesses
+FAIL retained; repaired 63 groups + two owned process kills + cross-UID clipboard
+PASS on separately packaged APK fcc93ac8. Read
+[the focused report](android-recovery-close-repair-20261023.md). No main/contributor
+remote changes, merges or issue closures. Native capture is blocked by emulator
+window outside captured monitor; owner centering pending, computer control OFF.
+Next: exact clean branch gates, native walkthrough if positioning becomes available,
+then owner-written PR metadata. The separate issue-review/status branch tracks all
+12 issues and five contributor PRs. This is not full native qualification.
+
+---
+
 # Android rich-document writing — active, 22 October 2026
 
 Owner assignment supersedes the completed prior batch stop condition. Read

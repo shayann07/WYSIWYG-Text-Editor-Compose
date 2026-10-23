@@ -17,7 +17,7 @@ from android_process import run_witness
 ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = "dev.shayxo.composedoc.androidsample"
 ASSETS = "assets/dev/shayxo/composedoc/layout/fonts/"
-EXPECTED_GROUPS = 54
+EXPECTED_GROUPS = 63
 
 
 def sha(data):
@@ -187,6 +187,9 @@ def main():
         receipt["deviceArchiveSha256"] = sha(archive)
         validate_result(result, receipt["apkSha256"])
         receipt["processInterruption"] = run_witness(run, output)
+        close_output = output / "after-close-interruption"
+        close_output.mkdir()
+        receipt["afterCloseInterruption"] = run_witness(run, close_output, close_after_discard=True)
         receipt["status"] = "PASS"
     except Exception as failure:
         receipt.update(status="FAIL", error=str(failure))

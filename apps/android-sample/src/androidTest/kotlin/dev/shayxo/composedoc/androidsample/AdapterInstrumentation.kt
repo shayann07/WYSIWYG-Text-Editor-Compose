@@ -67,7 +67,9 @@ class AdapterInstrumentation : Instrumentation() {
             .putExtra("qualification-root", root.name)
         activity = startActivitySync(intent) as MainActivity
         waitUntil { main { activity.inputView != null } }
-        if (arguments.getString("focus") == "rich-layout") {
+        if (arguments.getString("focus") == "recovery-close") {
+            recoveryCloseChecks()
+        } else if (arguments.getString("focus") == "rich-layout") {
             richLayoutChecks(root)
         } else if (arguments.getString("focus") == "rich-lifecycle") {
             richLifecycleChecks()
@@ -106,6 +108,7 @@ class AdapterInstrumentation : Instrumentation() {
             richLifecycleChecks()
             richLayoutChecks(root)
             richShellChecks()
+            recoveryCloseChecks()
         }
     }
     private fun resultFor(fatal: Throwable?): JSONObject {
