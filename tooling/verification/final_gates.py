@@ -59,6 +59,14 @@ def main():
     gate('v6-witnesses', ['node', 'tooling/verification/v6.mjs'])
     gate('gradle-check-api', [gradle, '--no-daemon', '--console=plain', 'check', 'apiCheck'])
     gate('verification-contract', [sys.executable, 'tooling/verification/test_verification.py'])
+    # Part of the existing evidence-contract gate; preserve the six-gate receipt shape.
+    if receipt['gates'][-1]['exitCode'] == 0:
+        code, log = gate('transitive-contract-tests', [sys.executable, '-m', 'unittest', 'discover',
+                                                     '-s', 'tooling/docs', '-p', 'test_*.py'])
+        extra = receipt['gates'].pop()
+        receipt['gates'][-1]['transitiveContractTests'] = extra
+        receipt['gates'][-1]['exitCode'] = code
+        save()
     code, log = gate('workspace-milestone', [sys.executable, 'tooling/verification/verify.py', '--workspace-milestone'])
     evidence = re.search(r'Evidence: (.+)', log)
     if code == 0 and evidence:
