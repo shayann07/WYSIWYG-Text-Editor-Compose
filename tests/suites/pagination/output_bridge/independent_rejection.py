@@ -7,12 +7,15 @@ _repo_sys.path.insert(0, str(_REPO_ROOT / 'tooling/verification'))
 _repo_sys.path.insert(0, str(_REPO_ROOT / 'tooling/docs'))
 from pathlib import Path
 import argparse,hashlib,json,os,shutil,subprocess,sys
+from poppler_tool import probe_pdftoppm
+try:
+ poppler,poppler_version=probe_pdftoppm()
+except RuntimeError as failure:
+ raise SystemExit(str(failure)) from failure
 import pypdf,pymupdf
 p=argparse.ArgumentParser();p.add_argument('--candidate',type=Path,required=True);p.add_argument('--plan',type=Path,required=True);p.add_argument('--output-dir',type=Path,required=True);a=p.parse_args();out=a.output_dir.resolve();out.mkdir(parents=True,exist_ok=False)
 # Poppler is machine-local: POPPLER_PDFTOPPM names the binary, otherwise pdftoppm is resolved from PATH.
-poppler=os.environ.get('POPPLER_PDFTOPPM') or shutil.which('pdftoppm') or sys.exit('pdftoppm not found: install Poppler or set POPPLER_PDFTOPPM')
-poppler=Path(poppler)
-info=poppler.with_name('pdfinfo'+poppler.suffix);version=subprocess.run([str(poppler),'-v'],capture_output=True,text=True);(out/'poppler-version.txt').write_text(version.stdout+version.stderr)
+(out/'poppler-version.txt').write_text(poppler_version)
 render=subprocess.run([str(poppler),'-png','-r','72',str(a.candidate.resolve()),str(out/'page')],capture_output=True,text=True,timeout=45);assert render.returncode==0,render.stderr
 plan=json.loads(a.plan.read_text(encoding='utf-8'));reader=pypdf.PdfReader(a.candidate);mupdf=pymupdf.open(a.candidate);rows=[]
 for page,(one,two) in enumerate(zip(reader.pages,mupdf)):
@@ -22,5 +25,5 @@ for page,(one,two) in enumerate(zip(reader.pages,mupdf)):
  strip=lambda s:s.replace('\n','').replace('\r','')
  rows.append({'page':page+1,'expected':expected,'pypdf':first,'mupdf':second,'pypdfExactExceptGeneratedCRLF':strip(first)==strip(expected),'mupdfExactExceptGeneratedCRLF':strip(second)==strip(expected),'paperPoints':[float(one.mediabox.width),float(one.mediabox.height)]})
 assert len(rows)==plan['pageCount'] and len(list(out.glob('page-*.png')))==len(rows)
-result={'status':'REJECTED_CANDIDATE_INDEPENDENT_CHECKS_EXECUTED','pdfSha256':hashlib.sha256(a.candidate.read_bytes()).hexdigest(),'pypdfVersion':pypdf.__version__,'mupdfVersion':pymupdf.VersionBind,'popplerVersion':(version.stdout+version.stderr).strip(),'pages':rows,'scope':'Three independent codebases; raw text comparisons preserve marks/order/spacing. Not a qualified output; original rejection remains.'}
+result={'status':'REJECTED_CANDIDATE_INDEPENDENT_CHECKS_EXECUTED','pdfSha256':hashlib.sha256(a.candidate.read_bytes()).hexdigest(),'pypdfVersion':pypdf.__version__,'mupdfVersion':pymupdf.VersionBind,'popplerVersion':poppler_version.strip(),'pages':rows,'scope':'Three independent codebases; raw text comparisons preserve marks/order/spacing. Not a qualified output; original rejection remains.'}
 (out/'results.json').write_text(json.dumps(result,ensure_ascii=True,indent=2)+'\n');print(json.dumps({'status':result['status'],'exactText':[(r['pypdfExactExceptGeneratedCRLF'],r['mupdfExactExceptGeneratedCRLF']) for r in rows]}))
