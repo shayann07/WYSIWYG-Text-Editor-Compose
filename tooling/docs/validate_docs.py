@@ -6,11 +6,14 @@ import re
 import subprocess
 from urllib.parse import unquote
 from doc_paths import ROOT, resolve, original, relocation_record
+from evidence_integrity import verify as verify_transitive_evidence
 
 def digest(p):
     return hashlib.sha256(p.read_bytes()).hexdigest()
 
 def main():
+    transitive = verify_transitive_evidence()
+    print(json.dumps({'transitiveEvidence': transitive}, indent=2))
     relocation = relocation_record()
     amendment = json.loads((ROOT / relocation['amendment']).read_text(encoding='utf-8'))
     for entry in amendment['originalManifests']:

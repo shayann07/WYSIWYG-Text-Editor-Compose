@@ -25,6 +25,7 @@ jobs:
           node-version: '24'
       - run: npm ci --ignore-scripts --prefix tests/suites/integration/c0
       - run: python tooling/docs/validate_docs.py
+      - run: python -m unittest discover -s tooling/docs -p 'test_*.py'
       - run: node tooling/verification/v6.mjs
       - run: python -m unittest discover -s tooling/governance -p 'test_*.py'
   quality:
