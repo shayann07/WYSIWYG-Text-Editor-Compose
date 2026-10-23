@@ -63,7 +63,9 @@ open class MainActivity :
     override val savedStateRegistry: SavedStateRegistry get() = saved.savedStateRegistry
     lateinit var owners: AndroidOwners
         private set
-    var inputView: AndroidEditorView? = null
+
+    // Toolbar callbacks must observe host replacement when another document is mounted.
+    var inputView by mutableStateOf<AndroidEditorView?>(null)
         private set
     internal var typography: AndroidTypography? = null
     override fun onCreate(state: Bundle?) {

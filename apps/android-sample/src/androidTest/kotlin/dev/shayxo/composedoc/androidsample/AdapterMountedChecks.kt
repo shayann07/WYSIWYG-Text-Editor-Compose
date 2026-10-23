@@ -65,6 +65,10 @@ private fun AdapterInstrumentation.mountedChecksCase1() {
 }
 
 private fun AdapterInstrumentation.mountedChecksCase2() {
+    mountedHitChecks()
+}
+
+internal fun AdapterInstrumentation.mountedHitChecks() {
     group("instrumented touch hit uses independent Latin prefix advance") {
         replaceMounted("abcd")
         val coordinates = main {
@@ -88,6 +92,7 @@ private fun AdapterInstrumentation.mountedChecksCase2() {
                 0,
             ),
         )
+        val downDeliveredAt = SystemClock.uptimeMillis()
         sendPointerSync(
             MotionEvent.obtain(
                 t,
@@ -98,15 +103,25 @@ private fun AdapterInstrumentation.mountedChecksCase2() {
                 0,
             ),
         )
+        val upDeliveredAt = SystemClock.uptimeMillis()
         waitForIdleSync()
-        check(
-            main { activity.owners.current.snapshot().selection } == Selection(
-                2,
-                2,
-            ),
-        )
+        val actual = main { activity.owners.current.snapshot().selection }
+        check(actual == Selection(2, 2)) {
+            "Expected independent tap caret2; actual=$actual; " +
+                "downDeliveryMs=${downDeliveredAt - t}; upDeliveryMs=${upDeliveredAt - t}; " +
+                "sent=${coordinates.toList()}; ${main { touchHitEnvironment() }}"
+        }
         assertLongPressDrag()
     }
+}
+
+private fun AdapterInstrumentation.touchHitEnvironment(): String {
+    val view = checkNotNull(activity.inputView)
+    val location = IntArray(2)
+    view.getLocationOnScreen(location)
+    return "currentOrigin=${location.toList()}; size=${view.width}x${view.height}; " +
+        "attached=${view.isAttachedToWindow}; focus=${view.hasWindowFocus()}; " +
+        "revision=${activity.owners.current.snapshot().documentRevision}; caret=${view.caretRectangle()}"
 }
 
 private fun AdapterInstrumentation.assertLongPressDrag() {
