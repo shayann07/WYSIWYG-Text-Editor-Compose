@@ -26,6 +26,8 @@ local.properties
 !gradle/wrapper/gradle-wrapper.jar
 *.zip
 *.pyc
+# JVM crash dumps contain machine-local environment details
+hs_err_pid*.log
 # Local editor/OS state and credentials
 /desktop-prototype/local-evidence/
 .vscode/

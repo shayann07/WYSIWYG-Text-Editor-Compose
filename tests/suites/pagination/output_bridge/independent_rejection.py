@@ -6,11 +6,13 @@ _REPO_ROOT = next(p for p in _RepoPath(__file__).resolve().parents if (p / 'sett
 _repo_sys.path.insert(0, str(_REPO_ROOT / 'tooling/verification'))
 _repo_sys.path.insert(0, str(_REPO_ROOT / 'tooling/docs'))
 from pathlib import Path
-import argparse,hashlib,json,subprocess,sys
+import argparse,hashlib,json,os,shutil,subprocess,sys
 import pypdf,pymupdf
 p=argparse.ArgumentParser();p.add_argument('--candidate',type=Path,required=True);p.add_argument('--plan',type=Path,required=True);p.add_argument('--output-dir',type=Path,required=True);a=p.parse_args();out=a.output_dir.resolve();out.mkdir(parents=True,exist_ok=False)
-poppler=Path('C:/Users/shaya/.cache/codex-runtimes/codex-primary-runtime/dependencies/native/poppler/Library/bin/pdftoppm.exe')
-info=poppler.with_name('pdfinfo.exe');version=subprocess.run([str(poppler),'-v'],capture_output=True,text=True);(out/'poppler-version.txt').write_text(version.stdout+version.stderr)
+# Poppler is machine-local: POPPLER_PDFTOPPM names the binary, otherwise pdftoppm is resolved from PATH.
+poppler=os.environ.get('POPPLER_PDFTOPPM') or shutil.which('pdftoppm') or sys.exit('pdftoppm not found: install Poppler or set POPPLER_PDFTOPPM')
+poppler=Path(poppler)
+info=poppler.with_name('pdfinfo'+poppler.suffix);version=subprocess.run([str(poppler),'-v'],capture_output=True,text=True);(out/'poppler-version.txt').write_text(version.stdout+version.stderr)
 render=subprocess.run([str(poppler),'-png','-r','72',str(a.candidate.resolve()),str(out/'page')],capture_output=True,text=True,timeout=45);assert render.returncode==0,render.stderr
 plan=json.loads(a.plan.read_text(encoding='utf-8'));reader=pypdf.PdfReader(a.candidate);mupdf=pymupdf.open(a.candidate);rows=[]
 for page,(one,two) in enumerate(zip(reader.pages,mupdf)):
