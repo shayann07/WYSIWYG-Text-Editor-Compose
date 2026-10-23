@@ -9,6 +9,17 @@ from poppler_tool import probe_pdftoppm
 
 
 class PopplerDiscovery(unittest.TestCase):
+    def test_generated_crash_and_replay_outputs_are_ignored_without_hiding_reports(self):
+        root = Path(__file__).resolve().parents[2]
+        for name in ('hs_err_pid123.log', 'replay_pid123.log',
+                     'apps/android-sample/hs_err_pid123.log', 'apps/android-sample/replay_pid123.log'):
+            with self.subTest(path=name):
+                result = subprocess.run(['git', 'check-ignore', '--no-index', '-q', '--', name], cwd=root)
+                self.assertEqual(0, result.returncode, 'Generated diagnostic must remain machine-local: ' + name)
+        result = subprocess.run(['git', 'check-ignore', '--no-index', '-q', '--',
+                                 'docs/reports/runtime-diagnostic-review.md'], cwd=root)
+        self.assertEqual(1, result.returncode, 'A maintained diagnostic report must remain reviewable')
+
     def test_actual_entrypoint_help_needs_no_optional_tools_or_pdf_parsers(self):
         import sys
         root = Path(__file__).resolve().parents[2]
