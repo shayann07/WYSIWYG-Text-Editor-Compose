@@ -39,7 +39,7 @@ class ProposalContract(unittest.TestCase):
     def test_capability_schema_rejects_unsupported_claims_and_missing_gates(self):
         record = json.loads((ROOT / 'docs/proposals/v6-measurable-qualification-v1.json').read_text())
         validate(record)
-        for mode in ('gate', 'status', 'environment', 'trace', 'threshold', 'evidence'):
+        for mode in ('gate', 'status', 'environment', 'trace', 'threshold', 'evidence', 'missing-reference'):
             bad = copy.deepcopy(record)
             if mode == 'gate': bad['gates'].pop()
             if mode == 'status': bad['capabilities'][0]['status'] = 'GREEN'
@@ -47,6 +47,7 @@ class ProposalContract(unittest.TestCase):
             if mode == 'trace': bad['traceCatalog'][1] = bad['traceCatalog'][0]
             if mode == 'threshold': bad['measurementProposal']['status'] = 'PASS'
             if mode == 'evidence': bad['capabilities'][0]['evidence'] = []
+            if mode == 'missing-reference': bad['capabilities'][0]['evidence'] = ['missing-evidence.json']
             with self.subTest(mode=mode), self.assertRaises(ValueError): validate(bad)
 
 

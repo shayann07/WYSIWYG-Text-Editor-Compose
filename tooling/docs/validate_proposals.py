@@ -51,6 +51,13 @@ def validate(record, root=ROOT):
                 raise ValueError('Gate owner required')
             if item not in gates and item.get('environment') not in identities:
                 raise ValueError('Unknown capability environment')
+            for reference in item.get('evidence', []):
+                path = (root / reference).resolve()
+                if root.resolve() not in path.parents or not path.is_file():
+                    raise ValueError('Missing/escaping capability evidence reference')
+        capabilities = record.get('capabilities', [])
+        if len({item.get('id') for item in capabilities}) != len(capabilities):
+            raise ValueError('Duplicate capability identity')
         traces = record.get('traceCatalog', [])
         if len(traces) != 12 or {t.get('id') for t in traces} != {f'G3-{n:02}' for n in range(1, 13)}:
             raise ValueError('Required G3 trace catalog incomplete/duplicated')
