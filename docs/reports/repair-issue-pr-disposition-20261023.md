@@ -44,14 +44,14 @@ separately in the exact repair commit's local receipt; inspect it before pushing
 
 | Issue | Finding and covered work | Tests / branch or existing PR | Remaining scope and owner action | Disposition |
 |---|---|---|---|---|
-| 15 | Imported run17/run19/Gemini closure lacked transitive coverage; additive45-file record,37 imported modules, existing-ledger provenance | six negative tests; docs81; `codex/issue-15-evidence-integrity` a46d896 | Human PR text/review; new hash does not prove historical integrity | Implemented/tested; PR metadata pending |
+| 15 | Imported run17/run19/Gemini closure lacked transitive coverage; additive45-file record,37 imported modules, existing-ledger provenance | six negative tests; docs81; `codex/issue-15-evidence-integrity` 1bbb110 | Human PR text/review; new hash does not prove historical integrity | Implemented/tested; PR metadata pending |
 | 17 | Only16 V6 witnesses routinely ran; all25 inherited now execute and compare complete deterministic records | fresh25+16 PASS; six negative comparison tests; `codex/issue-17-inherited-reproduction` 2dc8aba | Depends15, runtime pin from30; hosted checks after human PR text | Implemented/tested; dependency pending |
 | 19 | Node runtime drift versus recorded evidence | existingPR30; npm/lock consistency + real drift-warning failure negative PASS | Human review; not CodeRabbit draft-skip approval | Primary existingPR retained |
 | 20 | Machine-local crash log and Poppler executable path | existingPR31; follow-up `codex/pr31-tool-discovery-followup` d732c22, four tests PASS | Contributor/owner may apply follow-up to31; no competingPR or remote rewrite; Git history deliberately retained | Residual repaired locally; existingPR not fully ready |
 | 21 | Missing archived upstream notices | existingPR32; exact immutable-upstream license and version-header comparisons PASS | Owner/legal review; header correspondence does not attest every archived byte's origin | Primary existingPR retained |
 | 22 | G1 requirement split across adjacent paragraphs | `codex/issue-22-g1-proposal` c331a9c; proposal validator/three tests PASS | Explicit owner acceptance of proposed additive record, human PR metadata | PROPOSED, not authoritative |
 | 23 | I15/I17 lacked explicit gate references | `codex/issue-23-invariant-map` b15cbef; four tests PASS; I15->G1/G8, I17->G4/G6 | Depends22; explicit owner acceptance; full invariant coverage remains unqualified | PROPOSED, not authoritative |
-| 24 | Environments/traces/measurements and capability matrix absent | `codex/issue-24-capabilities` fdc4616; five schema/reference negatives PASS; CI validation wired | Depends23; accept thresholds/reference hardware, then execute gates; G0-G8 NOT RUN | PROPOSED, scoped representative outcomes only |
+| 24 | Environments/traces/measurements and capability matrix absent | `codex/issue-24-capabilities` 13c1d91; five schema/reference negatives PASS; CI validation wired | Depends23; accept thresholds/reference hardware, then execute gates; G0-G8 NOT RUN | PROPOSED, scoped representative outcomes only |
 | 25 | Gemini amendment/report duplicate | existingPR33; exact96677-byte/hash match; failed hosted attempt diagnosed below | Required Android check still failed; human review and bounded CI retry needed | Covered documentation, CI BLOCKED |
 | 26 | Stale active navigation / insufficient link coverage | existingPR34; archive+active negative PASS; suite-index gap reproduced; follow-up `codex/pr34-navigation-followup` fcd959b PASS | Apply follow-up into34 only with owner/contributor agreement; no pinned link text changes | Residual repaired locally; existingPR not fully ready |
 | 28 | Archived recipes appear clean-clone runnable | `codex/issue-28-archive-index` bcd735c; external classified index, docs81 PASS | No rejected experiments revived; dependencies/platform constraints remain explicitly NOT RUN | Navigation correction implemented/tested |
@@ -175,3 +175,11 @@ One bounded rerun of PR33's failed Android job was requested after preserving
 attempt3's full artifact, job metadata and explicit LMK logcat. Attempt4 uses
 the same contributor SHA. Its outcome is recorded below when available; neither
 a later success nor a missing result erases the original failure.
+
+Issue15/17 versus contributor30 compatibility was executed in a disposable
+detached checkout: applied30's exact patch onto17 (which includes15), retained
+new CI checks while resolving the Node-pin context overlap, then ran transitive
+integrity, protected hashes and all25+16 deterministic comparisons. PASS.
+Receipt: `integrity-runtime-compat-results/comparison.json`; exact patch/input
+identities and the context resolution are retained beside it. No commit, merge
+or contributor-branch update was used for this compatibility test.
