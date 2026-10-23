@@ -150,7 +150,12 @@ private fun AndroidOwners.imagePicked(request: AndroidPickerRequest, entry: Andr
         ImageDecoder.validate(repository.readBytes(uri.toString(), ImageDecoder.MAX_BYTES))
     }, entry.model) { (id, resource) ->
         if (entry.operation != request.generation || tabs.none { it === entry }) return@work
-        val capture = request.range ?: return@work
+        val requested = request.range ?: return@work
+        // A provider UI retires the native input session. Reacquire admission only for the exact
+        // captured owner, committed revision/identities and selection; never refresh an edited basis.
+        val capture = entry.model.clipboardCapture()?.takeIf {
+            it.basis == requested.basis && it.selection == requested.selection
+        }
         val command = if (request.kind ==
             AndroidPickerKind.REPLACE_IMAGE
         ) {
@@ -158,7 +163,7 @@ private fun AndroidOwners.imagePicked(request: AndroidPickerRequest, entry: Andr
         } else {
             StructureCommand.InsertImage(ImageBlock(id), resource)
         }
-        val applied = entry.model.dispatch(EditorIntent.ApplyStructure(capture, command))
+        val applied = capture != null && entry.model.dispatch(EditorIntent.ApplyStructure(capture, command))
         note(
             entry.model,
             if (applied) {

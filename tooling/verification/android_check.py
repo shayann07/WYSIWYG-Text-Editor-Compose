@@ -17,7 +17,7 @@ from android_process import run_witness
 ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = "dev.shayxo.composedoc.androidsample"
 ASSETS = "assets/dev/shayxo/composedoc/layout/fonts/"
-EXPECTED_GROUPS = 64
+EXPECTED_GROUPS = 65
 
 
 def sha(data):
