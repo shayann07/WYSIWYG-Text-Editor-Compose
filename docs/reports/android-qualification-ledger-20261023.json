@@ -1,0 +1,645 @@
+{
+  "schemaVersion": 1,
+  "asOf": "2026-10-24",
+  "baselineMain": "e30c984f97c992bbbdb95a7eeaa932a0af7d5c22",
+  "repairSource": "c0202d3f676c0fafee8e12410ed81612e5e978bb",
+  "apkSha256": "0149442040d4b55f183a01aa86762a07e1c4f39b36b6bad902d32745f30fd099",
+  "scope": "Scoped branch candidate, not merged main. Native evidence names its own build; no cross-build blanket qualification, normative acceptance, release or issue closure.",
+  "evidence": [
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/close-mounted-negative/results.json",
+      "sha256": "2ef16a53b7bab93d16318d9382f610330b704294ca48531072f0f6b5a3fba52b",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Receipt identity; missing on a fresh clone is not a new qualification pass"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/recovery-packaged-final/results.json",
+      "sha256": "99884c9ef25914c4f9554d1c2815acd84e14c6368de8c305579bb05e0c84b188",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Receipt identity; missing on a fresh clone is not a new qualification pass"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/recovery-packaged-63/results.json",
+      "sha256": "b7cba118fe7932e39ff0e61e2c71c5aca6ba5ad2a7c73891a8580fcfcb32e81f",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Receipt identity; missing on a fresh clone is not a new qualification pass"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/recovery-packaged-clipboard/results.json",
+      "sha256": "17113a843b94fe6355bf2fa86cf555104768cad58d55dd965aac2cbfcf8a32d7",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Receipt identity; missing on a fresh clone is not a new qualification pass"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/issue17-final/comparison.json",
+      "sha256": "7561396bb6496b3356815772669588af1b62955bace5b458a98833228d41ee17",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Receipt identity; missing on a fresh clone is not a new qualification pass"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/existing-pr-local-results.json",
+      "sha256": "179951a26c167a0168cd04223ff6070896b19677a73fd183fb16ab9455f6a8db",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Receipt identity; missing on a fresh clone is not a new qualification pass"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/pr32-provenance.json",
+      "sha256": "5acab5c32e136d1c2516f0ce27491333a0f3b8a9205144d8b13934cb6eeda988",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Receipt identity; missing on a fresh clone is not a new qualification pass"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/pr32-version-sources.json",
+      "sha256": "1ee81fffde4e8a21273223acbf2079adf6cc5f1e1145ae5124798e5dfcc776e4",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Receipt identity; missing on a fresh clone is not a new qualification pass"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-capture-blocker.json",
+      "sha256": "48934a0ad84d3b8ac788fe380426ea732b05a2901bc6edaaa973beed1191cd1a",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Receipt identity; missing on a fresh clone is not a new qualification pass"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/recovery-clean-commit-binding.json",
+      "sha256": "f6879488441a98e797d4c840cec1fe258b6163cefdcf6a7c7b805a776f2dee94",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Identified receipt, not cross-platform/native qualification"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/recovery-final-verification.json",
+      "sha256": "1b6e06251adcc56d671da42d2ec6b0f5b2e9b5217c88f669fe70331315557b1a",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Identified receipt, not cross-platform/native qualification"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/lower-api-retry/result.json",
+      "sha256": "45f634828541c1c49984a288aaa9b1bbfbf6d09bb821e5d7634ca0929cf9310b",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Identified receipt, not cross-platform/native qualification"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-launch-diagnostic/scope.json",
+      "sha256": "a9a4b9e4c56c766a429bd75953d7a6b2fac929554e602f2d6c88db8fed9b3b65",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Identified receipt, not cross-platform/native qualification"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/pr33-rerun-final.json",
+      "sha256": "957d1607b2777938c2f336fa2360cc0f7e3acd8fe61b9f716c180b166aabfb46",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Retained exact attempt or compatibility evidence; not native qualification"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/pr33-attempt4-failed.log",
+      "sha256": "7ada7264b04b1e41b65390cd4c87f1410457464281a508164bc87c80297e159f",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Retained exact attempt or compatibility evidence; not native qualification"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/integrity-runtime-compat-results/comparison.json",
+      "sha256": "e74ff6a17a16f5d4e517df8c119a313954751458740763ae9ed106d8fa06da46",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Retained exact attempt or compatibility evidence; not native qualification"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/integrity-runtime-compat-inputs.json",
+      "sha256": "18d237d7f902b8a43ff0a122f93ccaeb82be5dd78e067d8f68bc79779a73fe7c",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Retained exact attempt or compatibility evidence; not native qualification"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/recovery-e60-final-verification.json",
+      "sha256": "688b23c62f77232a70ae4bac9892d302c93a578be29abcc02a251e7c26a6881f",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact build/scenario receipt; scope and native level are explicit, unavailable on a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/outline-final-packaged/results.json",
+      "sha256": "a02054c404c40749f00213aecb6ed9ea10d4f20ebb9c0c4aca4ebf9f1da0c2d5",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact build/scenario receipt; scope and native level are explicit, unavailable on a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/outline-final-64/results.json",
+      "sha256": "0229de02bc3c35d94089d4748ab7971d49406bce1a6bf06b9adaa4eb449e2829",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact build/scenario receipt; scope and native level are explicit, unavailable on a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/outline-final-clipboard/results.json",
+      "sha256": "38cc0eb44060db8e704569a5d43152405502d3e595aa1736188466d9c0ef8262",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact build/scenario receipt; scope and native level are explicit, unavailable on a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/outline-hosted-checks.json",
+      "sha256": "0bbd3fe278903817c7e26612ffb5e346cacf1efe1813bd9036d988dc90d625cf",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact build/scenario receipt; scope and native level are explicit, unavailable on a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/outline-final-verification-first.json",
+      "sha256": "283a5b55e3e2665a8f4afc01a7a3aab45a62c5f20ab73306f7e8a56bb348c1b1",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact build/scenario receipt; scope and native level are explicit, unavailable on a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-20261023/native-roundtrip-result.json",
+      "sha256": "e3402ebdd241b1302bd04ecde96d80e7e5bcd6657692f26787b7357e7db680c3",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact build/scenario receipt; scope and native level are explicit, unavailable on a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-20261023/hello-independent-description.json",
+      "sha256": "dcb2b0997c38310384ddee988a27cb8f35aebee5de9a72d6d6bffff1e3c89c3a",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact build/scenario receipt; scope and native level are explicit, unavailable on a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-20261023/outline-native-open-final.json",
+      "sha256": "3672c99b78afc973dc9d7fa880c48ecb0e7b0c55584c5da58f9c4d3a246b6a06",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact build/scenario receipt; scope and native level are explicit, unavailable on a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-20261023/outline-native-navigated-final.json",
+      "sha256": "6502eb1fb905f37f9a038802711a9779f21da0f03973345e288cc123144b6193",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact build/scenario receipt; scope and native level are explicit, unavailable on a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-20261023/nested-list-final.json",
+      "sha256": "99cecd12a4e1446b649625153c4ad908586acbe7861e98035c4730344c3393c9",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact build/scenario receipt; scope and native level are explicit, unavailable on a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-20261023/image-rejected-final.json",
+      "sha256": "6f8e538e1a150d41b0d1a47850474ea61dd05f5217f96bfc4e4e808031f10129",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact build/scenario receipt; scope and native level are explicit, unavailable on a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-20261023/image-picker-mounted-before-diagnostic/results.json",
+      "sha256": "a0adc6adf50d666e2a60a6a7b9f3272c5cbe068cdddf14c9fbca53118443daa6",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact build/scenario receipt; scope and native level are explicit, unavailable on a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-20261023/image-picker-mounted-final/results.json",
+      "sha256": "4b2b6a5bbedc6154cde063bdaf4f5c26348634e43477301b18670be3503d737f",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact build/scenario receipt; scope and native level are explicit, unavailable on a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-20261023/image-picker-uri-final/results.json",
+      "sha256": "8d09c91084da6dcc027e5a810c1519ddf652a7cc328a1533a3e8de3fe5aa5e1a",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact build/scenario receipt; scope and native level are explicit, unavailable on a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/image-final-packaged/results.json",
+      "sha256": "6e8ae6b3a551097c3adfba86fbc9511d02c195b6db2d108a827c69edf80eb1d3",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact build/scenario receipt; scope and native level are explicit, unavailable on a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/image-final-65/results.json",
+      "sha256": "bbfd83c547fa55eecc134a202ffcb57da3312e2248fe5be181f582af2a395a08",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact build/scenario receipt; scope and native level are explicit, unavailable on a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/image-final-clipboard/results.json",
+      "sha256": "db3acc47ba99ea205803592b01475da6ec257c9c5f77aed666b8d9d114042ab3",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact build/scenario receipt; scope and native level are explicit, unavailable on a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/toolbar-final-packaged/results.json",
+      "sha256": "f874e89a90a579256af74e4a70de502e1fa5faae127b3cb22cf95ea1d5910f9b",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Build-specific receipt; native and instrumented scope remain distinct; not distributed in a fresh clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/toolbar-test-sync-packaged/results.json",
+      "sha256": "a62a0e9d4275a554792c9c4b84e545c914bbcc7248c3e6a48439cdfb2342111e",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Build-specific receipt; native and instrumented scope remain distinct; not distributed in a fresh clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/toolbar-qualified-66/results.json",
+      "sha256": "5fb581771946266c29bd899db33b3ac77bf5ae0545598972bb559e6bec978d5c",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Build-specific receipt; native and instrumented scope remain distinct; not distributed in a fresh clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/toolbar-qualified-clipboard/results.json",
+      "sha256": "7fe3abc399263491650072310672f5601e5b2e973b50fd56af907c17ad9ff6ec",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Build-specific receipt; native and instrumented scope remain distinct; not distributed in a fresh clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/toolbar-bdf1-build-binding.json",
+      "sha256": "4756865f07eaa441a06039c8d210e579d197a6d5f07ad965a03b9e4784b4d858",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Build-specific receipt; native and instrumented scope remain distinct; not distributed in a fresh clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/image-ae913-final-verification.json",
+      "sha256": "6aed7879cef6a954e842312ca7ae6019e43dd77a142b564fa3831055135ade87",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Build-specific receipt; native and instrumented scope remain distinct; not distributed in a fresh clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-20261023/final-image-native-assertions.json",
+      "sha256": "f056a6c284a77943ef85551b37e7de9ba81f32c3303f713ba35ca7aa44e0c0d1",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Build-specific receipt; native and instrumented scope remain distinct; not distributed in a fresh clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-20261023/final-provider-find-assertions.json",
+      "sha256": "8d4d5ab5a02c9bfd4f73038cc62a53b782d36166e280f8798a458226e1df7530",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Build-specific receipt; native and instrumented scope remain distinct; not distributed in a fresh clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-20261023/toolbar-owner-headless-before/results.json",
+      "sha256": "4100d5c2b226a54f2c5ff7ee8a39203cae31850d82db559ff28b883af0946cc1",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Build-specific receipt; native and instrumented scope remain distinct; not distributed in a fresh clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-20261023/toolbar-owner-headless-fixed/results.json",
+      "sha256": "84536388ff10ce993f916abab4eceda74ad4f87cd7a8e3bd5d422c00fbd57d2f",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Build-specific receipt; native and instrumented scope remain distinct; not distributed in a fresh clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-20261023/toolbar-owner-visible-diagnostic/results.json",
+      "sha256": "bb218a785a26507267aa1b31d54a3cebf722399358ee9e7327588b516a080cdb",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Build-specific receipt; native and instrumented scope remain distinct; not distributed in a fresh clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/hosted-followup-results.json",
+      "sha256": "b872c231d9403fc4fdc3baa0553d404602c77c31dfca37744e3595373ea044be",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Retained hosted failures, not hidden by local passes"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/toolbar-bdf1-final-verification.json",
+      "sha256": "fd070c8b833cf52d944dd56b994383277a9c08afbcd746938dd7bdc578699522",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact clean commit/gate or verbatim owner metadata identity; no native qualification inferred"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/toolbar-pr45-identity.json",
+      "sha256": "57ae5d8d4189c1c5982ecb1a80afed7174ded9f2196bf8bdcb26c38dbc263fda",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact clean commit/gate or verbatim owner metadata identity; no native qualification inferred"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/toolbar-hit-diagnostics-packaged/results.json",
+      "sha256": "01e369322d576a2ebb06307763918870f5aed9b356f665f6579a4e3a3752f777",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact scoped current result or retained failure; machine-local artifacts are not published or present in a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/toolbar-focused-hit-diagnostics/results.json",
+      "sha256": "780c06b1fcfa281a0e77001b9ba47738594984b75bf287ca244880d77e3a2b78",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact scoped current result or retained failure; machine-local artifacts are not published or present in a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/toolbar-diagnostic-66/results.json",
+      "sha256": "72959ec38a34eeb2bd83f7495f3c3b44af7f894933e89f027318547a0aef5f6b",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact scoped current result or retained failure; machine-local artifacts are not published or present in a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/toolbar-c020-build-binding.json",
+      "sha256": "3b85a6d167d74ff08de14b16267da436b680d2bc2559e95ec01d26efc39a64e7",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact scoped current result or retained failure; machine-local artifacts are not published or present in a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/toolbar-c020-final-verification.json",
+      "sha256": "19f6fd00a9d52cb06bf4f7a8a46a9c92bbad42ce64ebafd91fe01fc8a2271e06",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact scoped current result or retained failure; machine-local artifacts are not published or present in a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/pr45-c020-hosted-checks.json",
+      "sha256": "7b92e2a7b7d48561c86217a2e678a3a3af625cfe9cadd86f39a5ba32baf7038e",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact scoped current result or retained failure; machine-local artifacts are not published or present in a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/pr45-hosted-android-failure.log",
+      "sha256": "50509d5968909d85f9444b4ef950ce010fbfd82c155915d4807b788f7c053269",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact scoped current result or retained failure; machine-local artifacts are not published or present in a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/pr45-hosted-failure-artifact/tests/local-evidence/android/ci/results.json",
+      "sha256": "0f46406dfadb358bc7a94b60ed5befb08400f6914f3af84d39f031b5b11e4af6",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact scoped current result or retained failure; machine-local artifacts are not published or present in a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/pr45-c020-hosted-pass-artifact/tests/local-evidence/android/ci/results.json",
+      "sha256": "ac6236dabe050c47b4a59b6d94df3d0ee97305a9bdc1e25c5bb423849fd8ada2",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact scoped current result or retained failure; machine-local artifacts are not published or present in a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-20261023/c020-native-independent-assertions.json",
+      "sha256": "f80f9acb4587f7632b33685c7a99669b385ef895a93beece241ad5ecce1c9350",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact scoped current result or retained failure; machine-local artifacts are not published or present in a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-20261023/c020-temporary-preferences.json",
+      "sha256": "d18806f28bcb8bdaeb87cbffd3ccae73319b26ff9f84000796572243396153a1",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Exact scoped current result or retained failure; machine-local artifacts are not published or present in a clean clone"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-20261023/c020-endpoint-plain-independent-assertions.json",
+      "sha256": "a69486461a4f92a1c31cca6060b73d75776710750fef79facb5346ff0813351b",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Actual final endpoint/one-way plain transfer and status scrolling; visual cancellation and mechanical data oracles are distinguished"
+    },
+    {
+      "path": "tests/local-evidence/repair-batch-20261023/native-20261023/c020-endpoint-plain-oracle-first-failure.json",
+      "sha256": "550b216f5d417d26a362c78d812ace46fe0916ba26327dc6a71cc1bef34c1db8",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Retained first private-analysis wrong-field oracle failure, not a production failure or relabeled PASS"
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "baseline-recovery-close",
+      "status": "FAIL",
+      "scope": "Both production defects reproduced with actual mounted shell/store",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/close-mounted-negative/results.json"
+      ],
+      "remaining": "Unmerged baseline still defective"
+    },
+    {
+      "id": "candidate-recovery-close",
+      "status": "PASS",
+      "scope": "Nine new mounted regressions plus post-close process SIGKILL; exact accepted/unfinished/resource read-back",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/recovery-packaged-63/results.json"
+      ],
+      "remaining": "Owner review and integration; not power-loss"
+    },
+    {
+      "id": "android-rich-writing",
+      "status": "PARTIAL",
+      "scope": "All66 mounted groups and both process-kill witnesses PASS locally and hosted at c0202d3. Current native Copy after New/Open, conditional rich transfer, history, rotation/font1.3 and Gboard emoji separately verified.",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/toolbar-diagnostic-66/results.json",
+        "tests/local-evidence/repair-batch-20261023/pr45-c020-hosted-pass-artifact/tests/local-evidence/android/ci/results.json",
+        "tests/local-evidence/repair-batch-20261023/native-20261023/c020-native-independent-assertions.json"
+      ],
+      "remaining": "Full keyboard-visible compact bounds and reverse unrelated-app plain copy remain manual; genuine active composing/Urdu/Arabic/conversion/AT/lower-API qualifications remain separate."
+    },
+    {
+      "id": "binary-consumer",
+      "status": "PASS",
+      "scope": "Independent JVM10 plus binary-only Android/peer. Test-only diagnostics rebuilt outside checkout; unchanged library/JVM/peer reused with hashes; all168 inputs bind to c0202d3, runtimeAPK byte-identical01494420.",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/toolbar-hit-diagnostics-packaged/results.json",
+        "tests/local-evidence/repair-batch-20261023/toolbar-c020-build-binding.json"
+      ],
+      "remaining": "No remote package publication. App and test artifact hashes remain distinct."
+    },
+    {
+      "id": "cross-uid-clipboard",
+      "status": "PASS",
+      "scope": "System rich transport/grants on01494420 after publisher death and cleanup; fixture setup/paste instrumented in headless owned API37",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/toolbar-qualified-clipboard/results.json"
+      ],
+      "remaining": "Visible emulator strips rich metadata; native unrelated-app exchange remains unqualified"
+    },
+    {
+      "id": "native-rich-writing",
+      "status": "PARTIAL",
+      "scope": "Build-scoped earlier native recovery/Outline/image/provider/Find remain retained. On current01494420: native provider Open, Copy after Open/New, GUI rich transfer to peer with bridgeOff, exact text/attributes/used resource/UndoRedo, portrait-landscape/font1.3 state preservation and actual Gboard emoji. Final native anchor drag creates backward[5,2], one-way plain paste into unrelated Android Files exact space+cd, picker Cancel and font1.3 status scrolling verified.",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/native-20261023/c020-native-independent-assertions.json",
+        "tests/local-evidence/repair-batch-20261023/native-20261023/final-image-native-assertions.json",
+        "tests/local-evidence/repair-batch-20261023/native-20261023/final-provider-find-assertions.json",
+        "tests/local-evidence/repair-batch-20261023/native-20261023/c020-endpoint-plain-independent-assertions.json"
+      ],
+      "remaining": "English text-key evidence remains earlierb6354efa; current Gboard emoji is direct commit only. Full keyboard-visible compact bounds, reverse unrelated-app copy, active composing-formatting, language/AT/lower API remain open."
+    },
+    {
+      "id": "genuine-urdu-arabic-conversion-ime",
+      "status": "NOT RUN",
+      "scope": "Pasted/model traces do not qualify installed IME behavior",
+      "evidence": [],
+      "remaining": "Available keyboard/language and native interaction"
+    },
+    {
+      "id": "talkback-speech",
+      "status": "NOT RUN",
+      "scope": "Actions/focus are not speech evidence",
+      "evidence": [],
+      "remaining": "Audible speech capture with owner-approved service"
+    },
+    {
+      "id": "lower-android-api",
+      "status": "BLOCKED",
+      "scope": "API28 image present but installed emulator37.1.2 fails legacy startup; minSdk24 unchanged",
+      "evidence": [],
+      "remaining": "Compatible emulator/image pair; no SDK or dependency replacement authorized"
+    },
+    {
+      "id": "inherited-model-reproduction",
+      "status": "PASS",
+      "scope": "25 inherited + 16 V6 groups exact deterministic comparison, Node24.20.0/ICU78.3",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/issue17-final/comparison.json"
+      ],
+      "remaining": "Issue15 dependency plus PR30 runtime pin; not native authority"
+    },
+    {
+      "id": "full-G0-G8",
+      "status": "NOT RUN",
+      "scope": "Representative tests do not satisfy complete sealed gates",
+      "evidence": [],
+      "remaining": "Owner-accepted measurable proposals and per-target qualification"
+    },
+    {
+      "id": "semantic-pdf-physical-print-other-platforms",
+      "status": "NOT RUN",
+      "scope": "Not part of this repair batch",
+      "evidence": [],
+      "remaining": "Existing separate qualification backlog"
+    },
+    {
+      "id": "repair-exact-final-gates",
+      "status": "PASS",
+      "scope": "All six clean exact-commit local gates at9d8f60b; 81 protected hashes and four implementation mutants",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/recovery-final-verification.json"
+      ],
+      "remaining": "Historical scoped PASS; image follow-upae91306 also six PASS. Toolbar final gates separately pending. Owner review/attestations remain required."
+    },
+    {
+      "id": "contributor33-hosted-android",
+      "status": "FAIL",
+      "scope": "Attempts3 and4 at unchanged8a7b2c9; actual LMK app-process kills evidenced. Other hosted jobs pass.",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/pr33-rerun-final.json",
+        "tests/local-evidence/repair-batch-20261023/pr33-attempt4-failed.log"
+      ],
+      "remaining": "Determine source of guest memory pressure with bounded memory/process trace; owner review, no further blind reruns"
+    },
+    {
+      "id": "native-outline-repair",
+      "status": "PASS",
+      "scope": "Actual Heading1/Outline/dialog row on d4fab5a4: same process, exact content/structure/history, stable selection to[0,0]. Hosted technical checks also pass; governance fails human requirements.",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/native-20261023/outline-native-open-final.json",
+        "tests/local-evidence/repair-batch-20261023/native-20261023/outline-native-navigated-final.json",
+        "tests/local-evidence/repair-batch-20261023/outline-hosted-checks.json"
+      ],
+      "remaining": "Draft PR43 owner review/attestation; not full accessibility qualification"
+    },
+    {
+      "id": "native-image-picker-baseline",
+      "status": "FAIL",
+      "scope": "Actual Android Downloads image selection on d4fab5a4 refused unchanged target after focus retired session; data preserved.",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/native-20261023/image-rejected-final.json"
+      ],
+      "remaining": "Before-fix failure retained; actual repaired picker/validation/history PASS separately onb6354efa"
+    },
+    {
+      "id": "image-picker-mounted-repair",
+      "status": "PASS",
+      "scope": "Production retirement/result regression fails before, passes insert/replace/stale-selection/UndoRedo after. Five URI checks retain stale edit/cancel/revoked/incomplete-write protection.",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/native-20261023/image-picker-mounted-before-diagnostic/results.json",
+        "tests/local-evidence/repair-batch-20261023/native-20261023/image-picker-mounted-final/results.json",
+        "tests/local-evidence/repair-batch-20261023/native-20261023/image-picker-uri-final/results.json"
+      ],
+      "remaining": "Native picker repair passed onb6354efa; latest01494420 mounted regression also passed, not genuine IME evidence"
+    },
+    {
+      "id": "native-image-picker-repair",
+      "status": "PASS",
+      "scope": "Actual Downloads picker insert, invalid2409 remains open, correction160, replacement80x50, exact Undo/Redo and owned resources onb6354efa only",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/native-20261023/final-image-native-assertions.json"
+      ],
+      "remaining": "No expert typography or cross-platform claim"
+    },
+    {
+      "id": "native-provider-find",
+      "status": "PASS",
+      "scope": "Actual SAF SaveAs/KeepClose/Open preserves exact bytes/resources; Find counts1/2 and2/2, literal ReplaceAll one Undo and exact Redo onb6354efa",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/native-20261023/final-provider-find-assertions.json"
+      ],
+      "remaining": "Not all document-provider implementations; URI race remains documented"
+    },
+    {
+      "id": "toolbar-owner-repair",
+      "status": "PASS",
+      "scope": "Original actual-toolbar regression fails before/passes after; final native Copy after actual Open and New publishes the current owner, preserving source content/history and other owners.",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/toolbar-diagnostic-66/results.json",
+        "tests/local-evidence/repair-batch-20261023/native-20261023/c020-native-independent-assertions.json"
+      ],
+      "remaining": "DraftPR45 owner review; does not claim all Android providers or composition/AT qualification."
+    },
+    {
+      "id": "visible-rich-clipboard",
+      "status": "FAIL",
+      "scope": "Default enabled emulator host clipboard bridge: actual native rich Copy yields peer Plain paste applied,164 units with documented image placeholder and no resources. Same source with bridgeOff gives137 units and owned image. OriginalOn restored.",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/native-20261023/c020-native-independent-assertions.json",
+        "tests/local-evidence/repair-batch-20261023/native-20261023/c020-temporary-preferences.json"
+      ],
+      "remaining": "Confirmed configuration-dependent metadata loss remains with defaultOn; do not weaken clipboard fences or relabel plain fallback as rich success."
+    },
+    {
+      "id": "toolbar-exact-final-gates",
+      "status": "PASS",
+      "scope": "All six clean exact gates on c0202d3:20 desktop stages,81 hashes,4 mutants,check/API/architecture/format/zeroDetekt. Latest hosted Android66+both kills,build,quality,iOS and all CodeQL lanes PASS.",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/toolbar-c020-final-verification.json",
+        "tests/local-evidence/repair-batch-20261023/pr45-c020-hosted-checks.json",
+        "tests/local-evidence/repair-batch-20261023/pr45-c020-hosted-pass-artifact/tests/local-evidence/android/ci/results.json"
+      ],
+      "remaining": "DraftPR45 governance FAIL remains missing human sections/attestations. No merge/issue closure."
+    },
+    {
+      "id": "hosted-issue-branch-followups",
+      "status": "FAIL",
+      "scope": "PR37 environment PARTIAL; PR38 actual IME-state timeout; PR41 explicit LMK. Separate exact run/job identities in receipt.",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/hosted-followup-results.json"
+      ],
+      "remaining": "PR30 runtime dependency; shared fixture/environment diagnosis for older docs-only branches. No blind reruns or normative acceptance."
+    },
+    {
+      "id": "native-rich-bridge-off",
+      "status": "PASS",
+      "scope": "Actual GUI Copy in01494420 and Paste rich in independent peer4dfb9c4d, with host bridge explicitlyOff:137 raw UTF16 units, all observed inline/paragraph fields,80x50 owned PNG at requested160 width, one Undo and exact byte Redo.",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/native-20261023/c020-native-independent-assertions.json"
+      ],
+      "remaining": "Conditional emulator result, not universal clipboard/physical-device qualification; unused source resource legitimately excluded, source file/history unchanged. Original sharingOn restored."
+    },
+    {
+      "id": "native-rotation-font-scale",
+      "status": "PARTIAL",
+      "scope": "Actual rotation and font1.3 recreation retain source owner/selection/content/history/resources; compact horizontal gesture reveals hidden controls; originalportrait/font1.0 restored. Complete recovery-status suffix reached through an actual horizontal gesture at font1.3.",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/native-20261023/c020-native-independent-assertions.json",
+        "tests/local-evidence/repair-batch-20261023/native-20261023/c020-temporary-preferences.json",
+        "tests/local-evidence/repair-batch-20261023/native-20261023/c020-endpoint-plain-independent-assertions.json"
+      ],
+      "remaining": "Full keyboard-visible compact bounds not qualified; floating Gboard toolbar is not full keyboard coverage."
+    },
+    {
+      "id": "native-gboard-emoji",
+      "status": "PASS",
+      "scope": "Actual installed Gboard grinning-face key commits U+1F600 as two exact UTF16 units through commitText on01494420. No synthetic callback supplied this input.",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/native-20261023/c020-native-independent-assertions.json"
+      ],
+      "remaining": "Direct commit only: not active composition, English text-key, Urdu/Arabic or candidate-conversion qualification."
+    },
+    {
+      "id": "hosted-tap-first-attempt",
+      "status": "FAIL",
+      "scope": "Priorbdf1e35 run40025253551/job120659707919:65/66, strict independent Latin-prefix tap failed without actual selection diagnostics. Not a missing result/LMK diagnosis. Original expected2 unchanged.",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/pr45-hosted-android-failure.log",
+        "tests/local-evidence/repair-batch-20261023/pr45-hosted-failure-artifact/tests/local-evidence/android/ci/results.json"
+      ],
+      "remaining": "Root cause unestablished. Test-only timing/geometry diagnostics and focused entry added; later local3 focused/full66 and hosted66 PASS do not erase or explain this failure."
+    },
+    {
+      "id": "native-endpoint-plain",
+      "status": "PASS",
+      "scope": "Final01494420 actual endpoint drag[0,2]->[5,2], unchanged attributed document/history; actual native Copy to unrelated Android Files real EditText yields space+cd; picker cancelled without saving; status scroll exposes recovery suffix at1.3.",
+      "evidence": [
+        "tests/local-evidence/repair-batch-20261023/native-20261023/c020-endpoint-plain-independent-assertions.json"
+      ],
+      "remaining": "One-way plain interoperability only. Host-injected fixture passed through Gboard sentence capitalization and is not a genuine soft-key input claim. Ctrl+A focus refusal with unknown transient HWND retained; no replay/relaxed fence."
+    }
+  ],
+  "testApkSha256": "0e8034480de05820f6827db2c5afb11ec570917758b0bf3dc00203e53c8026a7"
+}
