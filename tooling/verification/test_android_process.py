@@ -1,9 +1,18 @@
 import unittest
 
-from android_process import EXPECTED_TEXT, PROPOSAL, check_restore, receipt_if_ready, validated_pid
+from android_process import EXPECTED_TEXT, PROPOSAL, check_ready, check_restore, receipt_if_ready, validated_pid
 
 
 class AndroidProcessWitnessContract(unittest.TestCase):
+    def test_close_success_requires_fresh_generation_after_captured_discard(self):
+        ready = dict(stage='CLOSE_REPORTED_DURABLE', sourcePid=42, closeReportedSuccess=True,
+                     sequence=8, discardedSequence=7)
+        check_ready(ready, True)
+        for key, value in [('closeReportedSuccess', False), ('sequence', 7), ('sequence', True),
+                           ('discardedSequence', None), ('stage', 'AFTER_COMPLETED_CHECKPOINT')]:
+            with self.subTest(key=key, value=value), self.assertRaises(ValueError):
+                check_ready(dict(ready, **{key: value}), True)
+        check_ready(dict(stage='AFTER_COMPLETED_CHECKPOINT', sourcePid=42), False)
     def test_missing_receipt_is_not_a_malformed_receipt_or_pass(self):
         self.assertIsNone(receipt_if_ready(b"cat: files/receipt.json: No such file or directory\n"))
         self.assertEqual({"stage": "READY"}, receipt_if_ready(b'{"stage":"READY"}'))
