@@ -120,6 +120,32 @@ def process_identity(probe, label):
     return dict(pid=raw, startTicks=fields[19])
 
 
+def instrumentation_parser_capability(probe, result=None):
+    """Probe parsing without a component, so neither invocation can start instrumentation.
+
+    General `am help` is a different service parser; it is not a capability oracle.
+    Raw output and return codes are retained even when the pair is inconclusive.
+    """
+    result = {} if result is None else result
+    unknown = '--composedoc-parser-unknown-20261024'
+    result.update(status='BLOCKED', scope='Parser recognition only; actual attachment still requires PID/birth guards', probes=[])
+    for name, flag in [('recognized', '--no-restart'), ('unknown', unknown)]:
+        observed = probe('attach-parser-'+name, 'shell', 'am', 'instrument', flag,
+                         allowed_codes=(0, 1), with_status=True, timeout=10)
+        row = dict(flag=flag, returncode=observed.returncode,
+                   stdout=observed.stdout.decode('utf-8', 'replace'), stderr=observed.stderr.decode('utf-8', 'replace'))
+        result['probes'].append(row)
+    candidate, control = result['probes']
+    error_lines = lambda row: re.findall(r'^Error:\s*(.*?)\s*$', row['stdout']+'\n'+row['stderr'], re.M)
+    expected_missing = 'Argument expected after "--no-restart"'
+    expected_unknown = 'Unknown option: '+unknown
+    if (candidate['returncode'] not in (0, 1) or control['returncode'] not in (0, 1)
+            or error_lines(candidate) != [expected_missing] or error_lines(control) != [expected_unknown]):
+        raise RuntimeError('Installed instrumentation parser capability is unsupported or ambiguous; no fallback')
+    result['status'] = 'RECOGNIZED_COMPONENT_REQUIRED'
+    return result
+
+
 def prepare_instrumentation_launch(probe, mode, run_id, result=None):
     result = {} if result is None else result
     result['mode'] = mode
@@ -129,9 +155,8 @@ def prepare_instrumentation_launch(probe, mode, run_id, result=None):
     if mode != 'foreground-attach':
         raise ValueError('Unknown instrumentation launch mode')
     result['stage'] = 'preflight'
-    help_text = probe('attach-cli-help', 'shell', 'am', 'help').decode('utf-8', 'replace')
-    if '--no-restart' not in help_text:
-        raise RuntimeError('Installed activity CLI does not advertise --no-restart; no fallback')
+    result['parserCapability'] = {}
+    instrumentation_parser_capability(probe, result['parserCapability'])
     if process_identity(probe, 'before-cold-activity') is not None:
         raise RuntimeError('Foreground treatment requires a genuinely absent target process')
     result['stage'] = 'ordinary-cold-activity'

@@ -7,7 +7,7 @@ import tempfile
 import signal
 from unittest.mock import patch
 
-from android_check import prepare_instrumentation_launch, process_identity, verify_attachment, failure_root_observation, instrument_clock
+from android_check import prepare_instrumentation_launch, process_identity, verify_attachment, failure_root_observation, instrument_clock, instrumentation_parser_capability
 from android_launch_experiment import validate_plan, execute_trials, classify, SafetyStop, run_owned, stop_owned_emulator, startup_lmk, qualification_complete
 
 PLAN = json.loads((Path(__file__).with_name('android_launch_trial_plan.json')).read_text())
@@ -21,6 +21,7 @@ class LaunchProbe:
         self.launch = b'Status: ok\nLaunchState: COLD\n'
         self.score = b'0'
         self.help = b'am instrument --no-restart'
+        self.parser_supported = True
         self.pid_error = b''
 
     def __call__(self, label, *command, **kwargs):
@@ -31,6 +32,11 @@ class LaunchProbe:
             stat = f'{self.pid} (owned android) S ' + '0 '*18 + self.birth+'\n'
             return subprocess.CompletedProcess(command, 0, stat.encode(), b'')
         if label == 'attach-cli-help': return self.help
+        if label.startswith('attach-parser-'):
+            flag = command[-1]
+            error = (f'Error: Argument expected after "{flag}"\n'
+                     if flag == '--no-restart' and self.parser_supported else f'Error: Unknown option: {flag}\n')
+            return subprocess.CompletedProcess(command, 1 if self.parser_supported else 0, b'', error.encode())
         if label == 'ordinary-cold-activity':
             self.pid = '123'
             return self.launch
@@ -68,10 +74,47 @@ class ForegroundAttachment(unittest.TestCase):
         for flag in (False, True):
             probe = LaunchProbe()
             if flag: probe.launch = b'Error: ordinary launch failed\n'
-            else: probe.help = b'old CLI'
+            else: probe.parser_supported = False
             with self.assertRaisesRegex(RuntimeError, 'no fallback|cold Activity launch failed'):
                 prepare_instrumentation_launch(probe, 'foreground-attach', 'owned')
             self.assertEqual(1 if flag else 0, sum(c[0]=='ordinary-cold-activity' for c in probe.calls))
+
+    def test_misleading_captured_general_help_does_not_reject_supported_parser(self):
+        # Beginning of retained c1/installed-activity-cli.stdout from run40083012189.
+        probe = LaunchProbe()
+        probe.help = b'Activity manager (activity) commands:\n  help\n      Print this help text.\n'
+        result = prepare_instrumentation_launch(probe, 'foreground-attach', 'owned')
+        self.assertEqual('RECOGNIZED_COMPONENT_REQUIRED',result['parserCapability']['status'])
+        self.assertFalse(any(c[0]=='attach-cli-help' for c in probe.calls))
+        calls = [c for c in probe.calls if c[0].startswith('attach-parser-')]
+        self.assertEqual(2,len(calls))
+        self.assertTrue(all(c[1][:3] == ('shell','am','instrument') and len(c[1]) == 4 for c in calls))
+        self.assertEqual([1,1],[p['returncode'] for p in result['parserCapability']['probes']])
+
+    def test_ambiguous_or_unavailable_parser_outputs_are_not_recognition(self):
+        variants = [(0,b'',b''), (1,b'',b'Permission denied\n'),
+                    (1,b'',b'Error: Argument expected after "--no-restart"\nError: transport failure\n'),
+                    (2,b'',b'Error: Argument expected after "--no-restart"\n')]
+        for code,stdout,stderr in variants:
+            with self.subTest(code=code,stderr=stderr):
+                calls=[]; record={}
+                def probe(label,*command,**kwargs):
+                    calls.append(command)
+                    if label.endswith('recognized'):return subprocess.CompletedProcess(command,code,stdout,stderr)
+                    return subprocess.CompletedProcess(command,0,b'',b'Error: Unknown option: --composedoc-parser-unknown-20261024\n')
+                with self.assertRaisesRegex(RuntimeError,'unsupported or ambiguous'):
+                    instrumentation_parser_capability(probe,record)
+                self.assertEqual('BLOCKED',record['status'])
+                self.assertEqual(2,len(calls))
+                self.assertEqual(stderr.decode(),record['probes'][0]['stderr'])
+
+    def test_unknown_control_must_reject_its_exact_option(self):
+        record={}
+        def probe(label,*command,**kwargs):
+            return subprocess.CompletedProcess(command,1,b'',b'Error: Argument expected after "--no-restart"\n')
+        with self.assertRaisesRegex(RuntimeError,'unsupported or ambiguous'):
+            instrumentation_parser_capability(probe,record)
+        self.assertEqual('BLOCKED',record['status'])
 
     def test_system_assigned_importance_is_observed_not_forced(self):
         probe = LaunchProbe(); probe.score = b'700'

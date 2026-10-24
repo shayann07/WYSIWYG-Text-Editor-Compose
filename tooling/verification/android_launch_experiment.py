@@ -15,6 +15,7 @@ import time
 import traceback
 import uuid
 from consumer_check import source_inputs
+from android_check import instrumentation_parser_capability
 
 ROOT = Path(__file__).resolve().parents[2]
 PLAN = ROOT/'tooling/verification/android_launch_trial_plan.json'
@@ -272,7 +273,15 @@ def main():
             actual_name = adb_read('owned-identity', 'emu', 'avd', 'name').splitlines()[0].strip()
             if actual_name != name: raise SafetyStop('Owned emulator identity changed')
             help_text = adb_read('installed-activity-cli', 'shell', 'am', 'help')
-            if '--no-restart' not in help_text: raise SafetyStop('Installed CLI lacks required treatment; no fallback')
+            # General service help is retained for context; actual instrument parsing is separate.
+            def parser_probe(label, *command, **kwargs):
+                parsed = subprocess.run([adb, '-s', plan['serial'], *command], capture_output=True,
+                                        timeout=remaining(kwargs['timeout']), env=env)
+                (directory/(label+'.stdout')).write_bytes(parsed.stdout)
+                (directory/(label+'.stderr')).write_bytes(parsed.stderr)
+                return parsed
+            details['parserCapability'] = {}
+            instrumentation_parser_capability(parser_probe, details['parserCapability'])
             details['fingerprint'] = adb_read('fingerprint', 'shell', 'getprop', 'ro.build.fingerprint').strip()
             details['guestMemory'] = adb_read('guest-memory', 'shell', 'cat', '/proc/meminfo')
             total = re.search(r'^MemTotal:\s+(\d+) kB$',details['guestMemory'],re.M)
