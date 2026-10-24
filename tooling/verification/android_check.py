@@ -5,9 +5,11 @@ change, app-data clearing, SDK installation or physical-device targeting occurs.
 """
 
 import argparse
+from datetime import datetime, timezone
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import time
@@ -98,12 +100,105 @@ def wait_for_services(probe, *, clock=time.monotonic, sleep=time.sleep, timeout=
     raise TimeoutError("Android package/activity services did not become stably responsive")
 
 
+def process_identity(probe, label):
+    observed = probe(label+'-pid', 'shell', 'pidof', PACKAGE, allowed_codes=(0, 1), with_status=True)
+    if observed.returncode not in (0, 1) or observed.stderr:
+        raise RuntimeError('Owned PID query failed: '+observed.stderr.decode('utf-8', 'replace'))
+    raw = observed.stdout.decode().strip()
+    if observed.returncode == 1 and not raw:
+        return None
+    if not re.fullmatch(r'[1-9]\d*', raw):
+        raise ValueError('Ambiguous owned process identity: ' + raw)
+    observed = probe(label+'-stat', 'shell', 'cat', '/proc/'+raw+'/stat', with_status=True)
+    if observed.returncode != 0 or observed.stderr:
+        raise RuntimeError('Owned process birth query failed: '+observed.stderr.decode('utf-8', 'replace'))
+    stat = observed.stdout.decode()
+    before, separator, tail = stat.rpartition(')')
+    fields = tail.split()
+    if not separator or before.split(' ', 1)[0] != raw or len(fields) < 20 or not fields[19].isdigit():
+        raise ValueError('Owned process birth identity unavailable')
+    return dict(pid=raw, startTicks=fields[19])
+
+
+def prepare_instrumentation_launch(probe, mode, run_id, result=None):
+    result = {} if result is None else result
+    result['mode'] = mode
+    if mode == 'cold':
+        result['stage'] = 'cold-instrumentation'
+        return result
+    if mode != 'foreground-attach':
+        raise ValueError('Unknown instrumentation launch mode')
+    result['stage'] = 'preflight'
+    help_text = probe('attach-cli-help', 'shell', 'am', 'help').decode('utf-8', 'replace')
+    if '--no-restart' not in help_text:
+        raise RuntimeError('Installed activity CLI does not advertise --no-restart; no fallback')
+    if process_identity(probe, 'before-cold-activity') is not None:
+        raise RuntimeError('Foreground treatment requires a genuinely absent target process')
+    result['stage'] = 'ordinary-cold-activity'
+    launch = probe('ordinary-cold-activity', 'shell', 'am', 'start', '-W', '-n', PACKAGE+'/.MainActivity',
+                   '--ez', 'blank', 'true', '--es', 'qualification-root', 'bootstrap-'+run_id, timeout=120).decode('utf-8', 'replace')
+    result['ordinaryColdActivityOutput'] = launch
+    if not re.search(r'^Status:\s+ok\s*$', launch, re.M):
+        raise RuntimeError('Ordinary cold Activity launch failed; retain it as treatment failure')
+    if not re.search(r'^LaunchState:\s+COLD\s*$', launch, re.M):
+        raise RuntimeError('CLI did not confirm a COLD ordinary Activity launch; treatment cannot be qualified')
+    identity = process_identity(probe, 'before-attach')
+    if identity is None:
+        raise RuntimeError('Ordinary cold Activity launch left no owned process')
+    foreground = probe('before-attach-foreground', 'shell', 'dumpsys', 'activity', 'activities').decode('utf-8', 'replace')
+    if not any('topResumedActivity=' in line and PACKAGE+'/' in line and 'MainActivity' in line for line in foreground.splitlines()):
+        raise RuntimeError('Ordinary Activity is not observed as the resumed foreground target')
+    score = probe('before-attach-importance', 'shell', 'cat', '/proc/'+identity['pid']+'/oom_score_adj').decode().strip()
+    if score != '0':
+        raise RuntimeError('Ordinary foreground launch did not obtain system-assigned foreground importance: '+score)
+    result.update(before=identity, systemAssignedOomAdj=score, stage='ready-for-attach',
+                  bootstrapRoot='bootstrap-'+run_id, qualificationRoot=run_id)
+    return result
+
+
+def verify_attachment(probe, launch):
+    if launch['mode'] == 'foreground-attach':
+        after = process_identity(probe, 'after-instrumentation')
+        launch['after'] = after
+        if after != launch['before']:
+            raise RuntimeError('No-restart attachment changed owned PID/birth identity; no fallback')
+        launch['sameProcessVerified'] = True
+        launch['stage'] = 'same-process-attachment-verified'
+
+
+def failure_root_observation(probe, run_id):
+    if not re.fullmatch(r'[a-zA-Z0-9_-]{1,64}', run_id):
+        raise ValueError('Invalid captured qualification root identity')
+    path = 'files/qualification/'+run_id
+    observed = probe('failure-qualification-root', 'shell', 'run-as', PACKAGE, 'test', '-d', path,
+                     allowed_codes=(0, 1), with_status=True)
+    if observed.stderr or observed.returncode not in (0, 1):
+        return dict(status='UNAVAILABLE', path=path, returncode=observed.returncode,
+                    rawError=observed.stderr.decode('utf-8', 'replace'))
+    return dict(status='AVAILABLE', path=path, state='PRESENT' if observed.returncode == 0 else 'ABSENT')
+
+
+def instrument_clock(probe, label):
+    result = dict(hostUtcStart=datetime.now(timezone.utc).isoformat())
+    try:
+        epoch = probe(label+'-epoch', 'shell', 'date', '+%s.%N', timeout=5).decode().strip()
+        uptime = probe(label+'-uptime', 'shell', 'cat', '/proc/uptime', timeout=5).decode().strip()
+        if not re.fullmatch(r'\d+\.\d+', epoch) or not re.fullmatch(r'\d+(?:\.\d+)?\s+\d+(?:\.\d+)?', uptime):
+            raise ValueError('Device clock output is unavailable or malformed')
+        result.update(status='AVAILABLE', deviceEpoch=epoch, deviceUptime=uptime)
+    except Exception as failure:
+        result.update(status='UNAVAILABLE', rawError=repr(failure))
+    result['hostUtcEnd'] = datetime.now(timezone.utc).isoformat()
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--serial", required=True)
     parser.add_argument("--avd-name", required=True)
     parser.add_argument("--wait-only", action="store_true", help="Readiness only; emits READY, never qualification PASS")
     parser.add_argument("--readiness-timeout", type=int, default=120)
+    parser.add_argument('--instrumentation-launch', choices=('cold', 'foreground-attach'), default='cold')
     selection = parser.add_mutually_exclusive_group(required=True)
     selection.add_argument("--apk", type=Path)
     selection.add_argument("--consumer-receipt", type=Path)
@@ -141,7 +236,7 @@ def main():
     def save():
         (output / "results.json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
 
-    def run(label, *command, timeout=180):
+    def run(label, *command, timeout=180, allowed_codes=(0,), with_status=False):
         try:
             result = subprocess.run([adb, "-s", args.serial, *command], capture_output=True, timeout=timeout)
         except subprocess.TimeoutExpired as failure:
@@ -151,9 +246,9 @@ def main():
             raise
         (output / (label + ".stdout")).write_bytes(result.stdout)
         (output / (label + ".stderr")).write_bytes(result.stderr)
-        if result.returncode:
+        if result.returncode not in allowed_codes:
             raise RuntimeError(label + " failed: " + result.stderr.decode("utf-8", "replace"))
-        return result.stdout
+        return result if with_status else result.stdout
 
     owned_identified = False
     save()
@@ -174,8 +269,17 @@ def main():
         run("install-test", "install", "-r", str(args.test_apk.resolve()))
         run_id = "adapter-" + str(time.time_ns())
         receipt["runId"] = run_id
-        run("instrument", "shell", "am", "instrument", "-w", "-e", "run-id", run_id,
-            PACKAGE + ".test/" + PACKAGE + ".AdapterInstrumentation", timeout=360)
+        launch = dict(mode=args.instrumentation_launch, stage='preparing')
+        receipt['instrumentationLaunch'] = launch
+        prepare_instrumentation_launch(run, args.instrumentation_launch, run_id, launch)
+        instrument_flags = ['--no-restart'] if args.instrumentation_launch == 'foreground-attach' else []
+        window = dict(start=instrument_clock(run, 'instrument-start'))
+        receipt['instrumentationWindow'] = window
+        try:
+            run("instrument", "shell", "am", "instrument", "-w", *instrument_flags, "-e", "run-id", run_id,
+                PACKAGE + ".test/" + PACKAGE + ".AdapterInstrumentation", timeout=360)
+        finally:
+            window['end'] = instrument_clock(run, 'instrument-end')
         # am instrument may exit zero even when the instrumentation reports failure.
         raw = run("device-result", "shell", "run-as", PACKAGE, "cat",
                   "files/qualification/" + run_id + "/results.json")
@@ -185,6 +289,7 @@ def main():
                       "files/qualification/" + run_id, ".")
         (output / "device-files.tar").write_bytes(archive)
         receipt["deviceArchiveSha256"] = sha(archive)
+        verify_attachment(run, launch)
         validate_result(result, receipt["apkSha256"])
         receipt["processInterruption"] = run_witness(run, output)
         close_output = output / "after-close-interruption"
@@ -194,8 +299,14 @@ def main():
     except Exception as failure:
         receipt.update(status="FAIL", error=str(failure))
         if owned_identified:
+            if receipt.get('runId'):
+                try:
+                    receipt['failureRootObservation'] = failure_root_observation(run, receipt['runId'])
+                except Exception as diagnostic_failure:
+                    receipt.setdefault('diagnosticErrors', {})['failure-qualification-root'] = str(diagnostic_failure)
             for label, command in (
                 ("failure-logcat", ("logcat", "-d", "-t", "1500")),
+                ("failure-logcat-epoch", ("logcat", "-d", "-v", "epoch", "-t", "1500")),
                 ("failure-data-space", ("shell", "df", "/data")),
                 ("failure-memory", ("shell", "dumpsys", "meminfo")),
                 ("failure-input-method", ("shell", "dumpsys", "input_method")),

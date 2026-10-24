@@ -145,7 +145,8 @@ class StartupProbe(unittest.TestCase):
                 def timeout(command, **kwargs):
                     calls.append(command)
                     self.assertEqual(3, kwargs['timeout'])
-                    self.assertTrue(command[-1].endswith('cat /proc/uptime\n'))
+                    self.assertIn('@uptime_end\ncat /proc/uptime\n', command[-1])
+                    self.assertTrue(command[-1].endswith('@wall_end\ndate +%s.%N\n'))
                     raise subprocess.TimeoutExpired(command, 3, output=output, stderr=b'')
                 ticks = iter((0, 0, .375))
                 sampler = Sampler(lambda i: read_probe('owned-adb', 'emulator-5580', i, run=timeout),

@@ -19,6 +19,8 @@ INTERVAL = .250
 
 # Fixed test-owned package, not an arbitrary command or user document. No device writes.
 READS = r'''
+echo @wall_start
+date +%s.%N
 echo @uptime_start
 cat /proc/uptime
 echo @memory
@@ -38,7 +40,7 @@ dumpsys activity activities | grep -E 'topResumedActivity|mResumedActivity|mFocu
 echo @phases
 logcat -d -v epoch -s ComposeDocStartup:I
 '''
-END_UPTIME = '\necho @uptime_end\ncat /proc/uptime\n'
+END_UPTIME = '\necho @uptime_end\ncat /proc/uptime\necho @wall_end\ndate +%s.%N\n'
 
 
 def failed_probe(failure):
@@ -72,10 +74,13 @@ def capabilities(result):
     """Keep optional observations unavailable rather than inventing healthy readings."""
     chunks = re.split(r'^@([a-z_]+)\r?\n', result['stdout'], flags=re.M)
     parts = dict(zip(chunks[1::2], chunks[2::2]))
-    names = ('uptime_start', 'memory', 'pressure', 'target', 'foreground', 'phases', 'uptime_end')
+    names = ('wall_start', 'uptime_start', 'memory', 'pressure', 'target', 'foreground', 'phases', 'uptime_end', 'wall_end')
     errors = {name: [] for name in names}
     unknown = []
     for line in result['stderr'].splitlines():
+        if line.lower().startswith('date:'):
+            errors['wall_start'].append(line); errors['wall_end'].append(line)
+            continue
         if '/proc/pressure/memory' in line: field = 'pressure'
         elif '/proc/meminfo' in line: field = 'memory'
         elif '/proc/uptime' in line: field = 'uptime_start'
@@ -99,7 +104,9 @@ def capabilities(result):
         if errors[name] or re.search(r'Permission denied|DUMP TIMEOUT|Can.t find service|No such file', raw, re.I):
             entry['reason'] = 'READ_FAILED'
             continue
-        if name.startswith('uptime_'):
+        if name.startswith('wall_'):
+            if re.fullmatch(r'\d+\.\d+', raw): entry.update(status='AVAILABLE', epoch=raw)
+        elif name.startswith('uptime_'):
             if re.fullmatch(r'\d+(?:\.\d+)?\s+\d+(?:\.\d+)?', raw):
                 entry.update(status='AVAILABLE', seconds=[float(v) for v in raw.split()])
         elif name == 'memory':
@@ -277,7 +284,7 @@ def main():
         observations = ([sampler.baseline] if sampler.baseline else []) + sampler.records
         optional_missing = any(field['requested'] and field['status'] == 'UNAVAILABLE'
                                for row in observations for name, field in row.get('fields', {}).items()
-                               if name in ('pressure', 'target', 'foreground', 'phases'))
+                               if name in ('pressure', 'target', 'foreground', 'phases', 'wall_start', 'wall_end'))
         startup_coverage = coverage(sampler.records, sampler.ending)
         diagnostic_status = ('BLOCKED' if failure or sampler.error else
                              'PARTIAL' if optional_missing or not startup_coverage['startupToMountedObservedInOnePid']

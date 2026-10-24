@@ -1,0 +1,31 @@
+{
+  "planId": "cold-versus-foreground-attach-20261024",
+  "scope": "Bounded comparative test-host experiment; not statistical reliability or universal Android root-cause qualification",
+  "trials": [
+    {"id": "c1", "arm": "C", "launch": "cold"},
+    {"id": "w1", "arm": "W", "launch": "foreground-attach"},
+    {"id": "c2", "arm": "C", "launch": "cold"},
+    {"id": "w2", "arm": "W", "launch": "foreground-attach"}
+  ],
+  "imagePackage": "system-images;android-37.1;google_apis_playstore_ps16k;x86_64",
+  "referenceFingerprint": "google/sdk_gphone16k_x86_64/emu64xa16k:17/CP31.260623.012/16064790:user/dev-keys",
+  "referenceMemTotalKiB": 6067476,
+  "referenceScope": "Exact observed image and kernel MemTotal from retained run40076857612; drift makes the comparison inconclusive without changing resources",
+  "device": "pixel_7",
+  "ramMiB": 6144,
+  "cpuCores": 2,
+  "dataPartitionMiB": 2048,
+  "expectedGroups": 66,
+  "serial": "emulator-5580",
+  "port": 5580,
+  "readinessTimeoutSeconds": 300,
+  "experimentLimitSeconds": 2100,
+  "trialLimitSeconds": 600,
+  "sampling": "Identical existing bounded optional-capability probe in both arms; unavailable PSI and probe timeouts remain explicit",
+  "workload": "One original adapter invocation per trial, both original cold recovery witnesses when adapter checks pass, and one independent cross-UID clipboard invocation; all failure/NOT RUN states retained",
+  "qualification": "Never replace original qualification exit codes or assertions; no fallback or retry",
+  "exitCriteria": "Both adapter/probe and clipboard commands must exit zero without timeout, plus all complete original receipts",
+  "targetBinding": "A control LMK must match one actual target PID/start event, an observed target process after that birth and before its kill, and the captured device instrumentation time window; missing or ambiguous identity is inconclusive",
+  "mechanismFinding": "Both controls must reproduce startup LMK, both treatments must pass the entire declared workload and same-process/ordinary-cold-launch guards; otherwise INCONCLUSIVE",
+  "cleanup": "Stop only the captured owned emulator; delete only its fresh generated AVD after retaining configuration and receipts; abort if ownership or cleanup is uncertain"
+}
