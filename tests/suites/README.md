@@ -23,3 +23,19 @@ Executable suites and capability experiments. Each directory's README records it
 - `codex/run-*`: successive v5 reference-model repair runs. The latest is [run-20261016-20](codex/run-20261016-20/README.md); its 25 groups are re-run by `tests/reviews/v6-finalization-20261019/run-inherited.mjs`.
 
 Files in these runs may be pinned by the v5 manifests or `gemini-input-hashes.json`; do not edit them. Paths and toolchains inside them describe the layout and machines at the time they were recorded; resolve old paths through [relocations.json](../../docs/relocations.json).
+
+## Portable paths and historical evidence
+
+Current commands use paths relative to the repository root. Disposable output and
+recovery directories must be new and unused; an example path is not permission to
+overwrite earlier writing or evidence. Windows environment locations such as
+`%LOCALAPPDATA%` are platform defaults, not a required checkout drive.
+
+Absolute drive paths and `file:///` links in dated reports, recorded assignments,
+hash ledgers and archived reviews identify the original machine or execution.
+They are historical evidence addresses, not portable launch instructions or proof
+that an ignored receipt exists on a fresh clone. Preserve their bytes and identity.
+Use [the relocation record](../../docs/relocations.json) and
+[the path resolver](../../tooling/docs/doc_paths.py) for historical repository paths;
+use current guides for launch commands. An intentional rejected URI in a negative
+test is test input, not an executable path to replace.
