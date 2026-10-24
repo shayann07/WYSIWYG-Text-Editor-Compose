@@ -2,10 +2,93 @@ import unittest
 import threading
 import subprocess
 import base64
-from android_startup_probe import Sampler, observe, failed_probe, coverage, read_probe
+import json
+from pathlib import Path
+import tempfile
+from unittest.mock import patch
+from android_startup_probe import Sampler, observe, failed_probe, coverage, read_probe, capabilities, main
+
+# Captured before-command observation from immutable run40074964304/startup.json
+# SHA1509f9c4dc3a9a952b98f0ac2f0637485919379504e5c21e06bda6205381cef8.
+PSI_DENIED = b'''@uptime_start
+74.90 6.81
+@memory
+MemTotal:        6067476 kB
+MemFree:           84904 kB
+MemAvailable:    4193864 kB
+Buffers:          255096 kB
+Cached:          4028076 kB
+SwapCached:            4 kB
+SwapTotal:       1137644 kB
+SwapFree:        1128256 kB
+Slab:             224924 kB
+SReclaimable:      76520 kB
+SUnreclaim:       148404 kB
+@pressure
+@target
+@foreground
+      topResumedActivity=ActivityRecord{101482470 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}
+@phases
+@uptime_end
+75.77 6.81
+'''
+PSI_ERROR = b'cat: /proc/pressure/memory: Permission denied\n'
 
 
 class StartupProbe(unittest.TestCase):
+    def invoke_cli(self, observation, expected_command_calls, expected_exit, original_exit=0):
+        calls = []
+        def run(command, **kwargs):
+            if command[0] == 'owned-command':
+                calls.append(command)
+                return subprocess.CompletedProcess(command, original_exit)
+            if 'emu' in command:
+                return subprocess.CompletedProcess(command, 0, 'owned-avd\nOK\n', '')
+            return subprocess.CompletedProcess(command, 0, observation, PSI_ERROR)
+        with tempfile.TemporaryDirectory(prefix='composedoc-probe-cli-') as directory:
+            output = Path(directory)/'output'
+            args = ['probe', '--serial', 'emulator-5580', '--avd-name', 'owned-avd',
+                    '--output-dir', str(output), '--', 'owned-command']
+            with patch('sys.argv', args), patch.dict('os.environ', {'ANDROID_HOME': 'owned-sdk'}), \
+                    patch('android_startup_probe.subprocess.run', side_effect=run):
+                self.assertEqual(expected_exit, main())
+            record = json.loads((output/'startup.json').read_text(encoding='utf-8'))
+        self.assertEqual(expected_command_calls, len(calls))
+        return record
+
+    def test_captured_psi_denial_runs_original_command_once_and_reports_partial(self):
+        record = self.invoke_cli(PSI_DENIED, 1, 0)
+        self.assertEqual('PARTIAL', record['status'])
+        self.assertEqual('UNAVAILABLE', record['baseline']['fields']['pressure']['status'])
+        self.assertEqual([PSI_ERROR.decode().strip()], record['baseline']['fields']['pressure']['rawErrors'])
+        self.assertEqual('ABSENT', record['baseline']['fields']['target']['state'])
+        self.assertEqual(0, record['commandExitCode'])
+
+    def test_optional_denial_does_not_change_original_failed_qualification_exit(self):
+        record = self.invoke_cli(PSI_DENIED, 1, 7, original_exit=7)
+        self.assertEqual(7, record['commandExitCode'])
+        self.assertEqual('PARTIAL', record['status'])
+
+    def test_malformed_essential_memory_refuses_original_command(self):
+        malformed = PSI_DENIED.replace(b'MemAvailable:    4193864 kB', b'MemAvailable: corrupted')
+        record = self.invoke_cli(malformed, 0, 2)
+        self.assertEqual('BLOCKED', record['status'])
+        self.assertIsNone(record['commandExitCode'])
+        self.assertEqual('UNAVAILABLE', record['baseline']['fields']['memory']['status'])
+
+    def test_optional_denials_and_absent_target_are_distinguished(self):
+        for field, error in [('target', 'cat: /proc/123/status: Permission denied'),
+                             ('foreground', 'ActivityManager: Permission denied'),
+                             ('phases', 'logcat: Permission denied')]:
+            result = capabilities(dict(returncode=0, stdout=PSI_DENIED.decode(), stderr=error, foregroundRequested=True))
+            self.assertTrue(result['essentialAvailable'])
+            self.assertEqual('UNAVAILABLE', result['fields'][field]['status'])
+            self.assertEqual([error], result['fields'][field]['rawErrors'])
+            if field == 'target': self.assertEqual('UNKNOWN', result['fields'][field]['state'])
+        unknown = capabilities(dict(returncode=0, stdout=PSI_DENIED.decode(), stderr='unattributed transport fault', foregroundRequested=True))
+        self.assertFalse(unknown['essentialAvailable'])
+        self.assertEqual(['unattributed transport fault'], unknown['unattributedErrors'])
+
     def test_qualification_result_is_returned_without_retry_and_sampler_stops(self):
         calls = []
         sampler = Sampler(lambda n: dict(returncode=0, stdout='pid=123', stderr=''), interval=.001)

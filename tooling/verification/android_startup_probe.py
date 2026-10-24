@@ -64,8 +64,86 @@ def read_probe(adb, serial, index, run=None):
         return failed_probe(failure)
     if len(result.stdout) + len(result.stderr) > 8192:
         raise RuntimeError('Single probe output exceeds8192bytes')
-    return dict(returncode=result.returncode, stdout=result.stdout.decode('utf-8', 'replace'),
-                stderr=result.stderr.decode('utf-8', 'replace'), foregroundRequested=index % 4 == 0)
+    return capabilities(dict(returncode=result.returncode, stdout=result.stdout.decode('utf-8', 'replace'),
+                             stderr=result.stderr.decode('utf-8', 'replace'), foregroundRequested=index % 4 == 0))
+
+
+def capabilities(result):
+    """Keep optional observations unavailable rather than inventing healthy readings."""
+    chunks = re.split(r'^@([a-z_]+)\r?\n', result['stdout'], flags=re.M)
+    parts = dict(zip(chunks[1::2], chunks[2::2]))
+    names = ('uptime_start', 'memory', 'pressure', 'target', 'foreground', 'phases', 'uptime_end')
+    errors = {name: [] for name in names}
+    unknown = []
+    for line in result['stderr'].splitlines():
+        if '/proc/pressure/memory' in line: field = 'pressure'
+        elif '/proc/meminfo' in line: field = 'memory'
+        elif '/proc/uptime' in line: field = 'uptime_start'
+        elif re.search(r'/proc/\d+/(?:status|oom_score_adj)', line): field = 'target'
+        elif 'logcat' in line.lower() or 'logd' in line.lower(): field = 'phases'
+        elif 'activity' in line.lower() or 'dumpsys' in line.lower(): field = 'foreground'
+        else:
+            unknown.append(line)
+            continue
+        errors[field].append(line)
+    fields = {}
+    for name in names:
+        raw = parts.get(name, '').strip()
+        requested = name not in ('foreground', 'phases') or result.get('foregroundRequested', False)
+        entry = dict(status='UNAVAILABLE', requested=requested, rawOutput=raw, rawErrors=errors[name])
+        if name == 'target': entry['state'] = 'UNKNOWN'
+        fields[name] = entry
+        if not requested:
+            entry['reason'] = 'NOT_REQUESTED_IN_THIS_SAMPLE'
+            continue
+        if errors[name] or re.search(r'Permission denied|DUMP TIMEOUT|Can.t find service|No such file', raw, re.I):
+            entry['reason'] = 'READ_FAILED'
+            continue
+        if name.startswith('uptime_'):
+            if re.fullmatch(r'\d+(?:\.\d+)?\s+\d+(?:\.\d+)?', raw):
+                entry.update(status='AVAILABLE', seconds=[float(v) for v in raw.split()])
+        elif name == 'memory':
+            pairs = re.findall(r'^(\w+):\s+(\d+) kB$', raw, re.M)
+            values = {key: int(value) for key, value in pairs}
+            if (len(values) == len(pairs) == len(raw.splitlines()) and {'MemTotal', 'MemFree', 'MemAvailable'} <= values.keys()
+                    and values['MemTotal'] > 0 and values['MemFree'] <= values['MemTotal']
+                    and values['MemAvailable'] <= values['MemTotal']):
+                entry.update(status='AVAILABLE', kibibytes=values)
+        elif name == 'pressure':
+            if re.search(r'^some avg10=\d+(?:\.\d+)? avg60=\d+(?:\.\d+)? avg300=\d+(?:\.\d+)? total=\d+$', raw, re.M):
+                entry['status'] = 'AVAILABLE'
+        elif name == 'target':
+            pids = re.findall(r'^pid=(\d+)$', raw, re.M)
+            processes = []
+            for pid, detail in re.findall(r'^pid=(\d+)\n(.*?)(?=^pid=|\Z)', raw, re.M | re.S):
+                score = re.match(r'-?\d+(?:\n|$)', detail)
+                rss = re.search(r'^VmRSS:\s+(\d+) kB$', detail, re.M)
+                state = re.search(r'^State:\s+(.+)$', detail, re.M)
+                if score and rss and state:
+                    processes.append(dict(pid=pid, oomScoreAdj=int(score[0].strip()), rssKiB=int(rss[1]), state=state[1]))
+            if not raw:
+                entry.update(status='AVAILABLE', state='ABSENT', pids=[])
+            elif pids and len(processes) == len(pids):
+                entry.update(status='AVAILABLE', state='PRESENT', pids=pids, processes=processes)
+        elif name == 'foreground':
+            if re.search(r'topResumedActivity=|mResumedActivity|mFocusedRootTask', raw):
+                entry['status'] = 'AVAILABLE'
+        elif name == 'phases' and name in parts:
+            entry.update(status='AVAILABLE', state='EVENTS_OBSERVED' if 'ComposeDocStartup' in raw else 'NO_EVENTS_OBSERVED')
+        if entry['status'] == 'UNAVAILABLE': entry['reason'] = 'MISSING_OR_MALFORMED_OBSERVATION'
+    required = ('uptime_start', 'memory', 'uptime_end')
+    essential = all(fields[name]['status'] == 'AVAILABLE' for name in required)
+    if essential and fields['uptime_end']['seconds'][0] < fields['uptime_start']['seconds'][0]:
+        fields['uptime_end'].update(status='UNAVAILABLE', reason='UPTIME_REVERSED')
+        essential = False
+    return dict(result, fields=fields, unattributedErrors=unknown,
+                essentialAvailable=essential and not unknown and result['returncode'] == 0)
+
+
+def required_available(result):
+    if 'essentialAvailable' in result:
+        return result['essentialAvailable'] and not result.get('probeException')
+    return not (result['returncode'] or result['stderr'] or result.get('probeException'))
 
 
 def coverage(records, ending):
@@ -122,8 +200,8 @@ class Sampler:
                 self.records.append(record)
                 self.bytes += len(encoded)
                 previous = now
-                if result['returncode'] or result['stderr'] or result.get('probeException'):
-                    raise RuntimeError('Read-only probe failed; retain exact return code/stderr')
+                if not required_available(result):
+                    raise RuntimeError('Essential read-only observation failed; retain exact data/errors')
                 self.stop.wait(max(0, self.interval - (self.clock()-now)))
             self.ending = 'QUALIFICATION_EXITED'
         except Exception as failure:
@@ -143,7 +221,7 @@ def observe(sampler, command, baseline_probe=None):
         sampler.baseline = dict(utcStart=utc_start, utcEnd=datetime.now(timezone.utc).isoformat(),
                                 monotonicStart=began, monotonicEnd=ended, commandCostMs=(ended-began)*1000,
                                 scope='Before qualification command; setup cost, no artificial sleep', **result)
-        if result['returncode'] or result['stderr'] or result.get('probeException'):
+        if not required_available(result):
             sampler.error = 'Prelaunch diagnostic unavailable; qualification NOT RUN'
             sampler.ending = 'PROBE_BLOCKED'
             sampler.stop.set()
@@ -196,19 +274,28 @@ def main():
         raise
     finally:
         target_seen = any('pid=' in r.get('stdout', '') for r in sampler.records)
+        observations = ([sampler.baseline] if sampler.baseline else []) + sampler.records
+        optional_missing = any(field['requested'] and field['status'] == 'UNAVAILABLE'
+                               for row in observations for name, field in row.get('fields', {}).items()
+                               if name in ('pressure', 'target', 'foreground', 'phases'))
+        startup_coverage = coverage(sampler.records, sampler.ending)
+        diagnostic_status = ('BLOCKED' if failure or sampler.error else
+                             'PARTIAL' if optional_missing or not startup_coverage['startupToMountedObservedInOnePid']
+                             else 'RECORDED')
         record = dict(schemaVersion=1, scope='Perturbed diagnostic observation, not causal/performance proof',
                       serial=args.serial, avd=args.avd_name, command=command, commandExitCode=code,
                       nominalIntervalMs=250, durationLimitSeconds=DURATION, sampleLimit=MAX_SAMPLES,
                       byteLimit=MAX_BYTES, ending=sampler.ending, probeError=sampler.error,
                       baseline=sampler.baseline,
-                      startupCoverage=coverage(sampler.records, sampler.ending),
+                      startupCoverage=startup_coverage,
                       wrapperError=failure, targetObserved=target_seen, records=sampler.records,
-                      status='RECORDED' if not failure and not sampler.error and target_seen else 'BLOCKED')
+                      status=diagnostic_status)
         encoded = (json.dumps(record, ensure_ascii=False, separators=(',', ':'))+'\n').encode('utf-8')
         if len(encoded) > MAX_BYTES:
             raise RuntimeError('Final diagnostic serialization exceeds its hard output bound')
         (args.output_dir / 'startup.json').write_bytes(encoded)
-    return code if code else (2 if sampler.error or not target_seen else 0)
+    # Optional diagnostic gaps never rewrite the original qualification result.
+    return code if code is not None else 2
 
 
 if __name__ == '__main__':
