@@ -1,5 +1,12 @@
 # Binary consumer and Android integration
 
+24 October landing update: [the current disposition](../reports/repair-issue-pr-disposition-20261023.md)
+and [dated qualification ledger](../reports/android-qualification-ledger-20261024.json)
+supersede older live-status statements. API28 and headless API37 have identified
+66-group and process-interruption evidence; visible rich clipboard remains a
+separate failed configuration. Genuine multilingual composition, TalkBack speech
+and API24 are unqualified. Individual PR checks remain separate from combined CI.
+
 22 October 2026. The rich-writing implementation extends the original20 October body-text slice.
 Current build, automated/native results and open gates are in
 [the rich-writing report](../reports/android-rich-writing-20261021.md).

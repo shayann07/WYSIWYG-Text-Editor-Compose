@@ -36,7 +36,10 @@ class AndroidQualificationLedger(unittest.TestCase):
     def setUp(self):
         self.record = json.loads((ROOT / 'docs/reports/android-qualification-ledger-20261023.json').read_text())
 
-    def test_identified_scoped_results(self): validate(self.record)
+    def test_identified_scoped_results(self):
+        for path in sorted((ROOT / 'docs/reports').glob('android-qualification-ledger-*.json')):
+            with self.subTest(record=path.name):
+                validate(json.loads(path.read_text(encoding='utf-8')))
 
     def test_missing_receipt_unknown_status_and_unidentified_artifact_fail(self):
         for mode in ('receipt', 'status', 'artifact', 'scope'):
