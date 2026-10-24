@@ -1,5 +1,68 @@
 # Android repair and twelve-issue disposition — 23 October 2026
 
+## Landing preparation — 24 October 2026
+
+This section supersedes live-status statements in the chronological entries below;
+their original evidence and failures remain retained. Main is679c988 after the
+coordinator's squash merge of PR30. The clean combined candidate2cd185a independently
+passed six local gates and hosted CI40048200653 (all five jobs); its170 compiled
+inputs and24 receipt hashes were independently audited. This is combined-candidate
+evidence, not a substitute for checks on individual PR heads. Exact combined-ref
+CodeQL was NOT RUN because that workflow has no dispatch trigger.
+
+The owner subsequently authorized additive updates to the same-repository
+contributor branches31/32/34. Their original author commits and public descriptions
+are preserved. PR31 now9ac90d5 incorporates reviewed Poppler discovery/failure and
+crash/replay-ignore checks; PR32 nowb19b2ae corrects the complete ICU NOTICE path;
+PR34 nowed93cf9 includes actual maintained-index broken-link regression coverage.
+PR33 nowe9321ba retains its original index unchanged and incorporates current main.
+Their newly triggered checks/reviews, not the combined run, determine readiness.
+No coder approval, main push, remote merge, issue closure or history rewrite occurred.
+
+| Work stream | Prepared source and remaining gate |
+|---|---|
+| #15 / PR36 | b84a6f9: current Node-pinned main; docs81 and six integrity negatives PASS; prospective coverage, not retroactive historical proof |
+| #17 / PR37 | c080f86: current PR36 base; fresh25 inherited+16 witnesses and six comparator negatives PASS; original hosted exit2 runtime mismatch retained |
+| #19 / PR30 | Coordinator merged to679c988; no issue closure inferred |
+| #20 / PR31 | 9ac90d5: five focused tests and docs81 PASS; own hosted checks/review required; original crash-log deletion does not erase Git history |
+| #21 / PR32 | b19b2ae: original broken root reference FAIL, repaired reference PASS; both license bytes match prior immutable upstream provenance; coordinator verified/resolved NOTICE thread |
+| #22/#23/#24 / PR38–40 | Unchanged PROPOSED, no new normative authority or measured full-gate qualification |
+| #25 / PR33 | e9321ba: unchanged17-line index and docs81 PASS; earlier missing-result/LMK attempts remain retained, fresh Android result independent |
+| #26 / PR34 | ed93cf9: actual broken-link rejection and docs81/177links PASS; historical frozen text unchanged |
+| #28 / PR41 | Current-main refresh with original archive index unchanged; cited experiments retain their original reproduced/platform/dependency/historical classifications |
+| #29 / PR42 | This documentation-only reconciliation; original ledger preserved, newer dated ledger added; does not qualify the whole roadmap |
+| Recovery / PR35 | 55c1745: original recovery commands unchanged; local check/apiCheck and four process-verifier tests PASS; own current hosted63/interruption checks required |
+| Outline / PR43 | 2ec29f4: original focused repair unchanged on current recovery base |
+| Image picker / PR44 | 66220dd: original focused repair unchanged on current Outline base |
+| Toolbar / PR45 | Current chain plus reviewed API28 component7960266; only nine instrumentation/guide/report files beyond original toolbar head; own fresh packaging/checks pending |
+
+### Updated Android qualification boundary
+
+The added [dated ledger](android-qualification-ledger-20261024.json) records the
+independently verified API28 and API37 headless66-group results, both real owned
+SIGKILL/fresh-restore witnesses and cross-UID resource transport/publisher-death
+checks. Runtime APK remains0149442040d4b55f183a01aa86762a07e1c4f39b36b6bad902d32745f30fd099.
+Different diagnostic test APKs and hosted signing/build artifacts have separate
+identities; no byte-identity claim is made between local and hosted APKs. API28 is
+now qualified for those mounted/injected checks on the identified configuration;
+API24 and intermediate versions are NOT RUN. minSdk24 remains unchanged.
+
+The visible API37 strict rich-clipboard run remains FAIL65/66. A later headless
+PASS does not explain or erase it. The original hosted tap-position failure also
+remains unexplained. Native continuation on the same014 app was BLOCKED when the
+offscreen emulator rejected the observed physical point; no field input followed.
+No new genuine Urdu/Arabic/conversion IME, active composition-formatting or TalkBack
+speech result is claimed. All owned SDK emulators and this chat's computer control
+were stopped. No new native session is authorized by this landing preparation.
+
+Original failed logs remain under the ignored primary-checkout
+`tests/local-evidence/repair-batch-20261023/` and `integration-20261024/` roots. The
+audited final packet is `integration-20261024/readiness-2cd185a-final.json`. New
+branch-specific receipts are under `tests/local-evidence/landing-20261024/`.
+Missing machine-local files on a clone are not a PASS. Human governance/independent
+review, contributor landing and proposed-spec acceptance remain explicit owner
+decisions; no agent changes public descriptions or checks personal attestations.
+
 ## Current delivered candidate — 24 October 2026
 
 Source `codex/android-toolbar-owner-repair` c0202d3f676c0fafee8e12410ed81612e5e978bb

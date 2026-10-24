@@ -1,5 +1,12 @@
 # Binary consumer and Android integration
 
+24 October landing update: [the current disposition](../reports/repair-issue-pr-disposition-20261023.md)
+and [dated qualification ledger](../reports/android-qualification-ledger-20261024.json)
+supersede older live-status statements. API28 and headless API37 have identified
+66-group and process-interruption evidence; visible rich clipboard remains a
+separate failed configuration. Genuine multilingual composition, TalkBack speech
+and API24 are unqualified. Individual PR checks remain separate from combined CI.
+
 23 October recovery correction: [the focused repair report](../reports/android-recovery-close-repair-20261023.md)
 records fresh-generation keep/close, per-request outcomes, discard fencing and actual
 post-close process interruption. This work is on an unmerged issue branch; earlier

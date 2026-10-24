@@ -1,5 +1,14 @@
 # Accepted and unfinished local recovery
 
+Android repair landing update — 24 October: [current disposition](../reports/repair-issue-pr-disposition-20261023.md)
+and [dated ledger](../reports/android-qualification-ledger-20261024.json) identify
+the mounted recovery/close and real owned-process interruption results separately.
+Discard invalidates durable coverage; unchanged Keep/close requires a fresh
+verified generation, and every pending close receives an outcome. A completed
+checkpoint protects captured accepted content plus required separate unfinished
+evidence; it does not protect subsequent edits, resume a live IME or prove
+power-loss durability. These branch results do not imply main has merged them.
+
 Current workspace implementation: 20 October 2026. Pages/font/marker continuation: [current batch report](../reports/portable-fonts-markers-pages-20261020.md). Exact executed results and native limitations: [workspace batch report](../reports/v6-local-writing-workspace-batch.md). Prior guide bytes are preserved in [the pre-workspace recovery guide](../archive/recovery-through-v6-desktop-20261019.md); its memory-only claims describe the older build.
 
 Current build202031 passes25 automated owned-process interruption cases and captured-target UI regressions. Recovery Discard now removes its captured row when the write completes, even if another row was selected during IO; persisted record/generation semantics are unchanged. The actual desktop kill/relaunch remains dated192824 evidence:264-unit accepted document, separate282-unit attributed candidate, exact raw quarantine export and fresh saved-result Open. Synthetic composition is labeled; no OS candidate session resumed. Native selected-discard/new-arrival and cleanup remain BLOCKED after two supported targeting attempts failed before delivering dialog input. Exported/saved copies and both original unresolved records are kept. See [the precise diagnosis/manual checklist](../reports/v6-workspace-native-finish-20261019.md); no native discard success is claimed.
