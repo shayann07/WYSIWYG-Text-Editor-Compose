@@ -4,7 +4,7 @@ Read [AGENTS.md](AGENTS.md) first. It is the shared instruction source for every
 agent. The library is multilingual; Urdu/Nastaliq is an early qualification
 workload. The owner's future commercial application is a separate deliverable.
 
-From the repository root (JDK 21, Python 3.12, Node 24):
+From the repository root (JDK 21, Python 3.12, Node 24.20.0 per `.nvmrc`):
 
 ```sh
 python tooling/docs/validate_docs.py
