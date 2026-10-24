@@ -140,8 +140,7 @@ private fun AdapterInstrumentation.assertLongPressDrag() {
             screen[0] + inset + paint.measureText("ab cd") + 0.5f,
         )
     }
-    val trace = MountedTouchTrace(this, "latin-longpress")
-    try {
+    MountedTouchTrace(this, "latin-longpress").use { trace ->
         val down = SystemClock.uptimeMillis()
         sendPointerSync(MotionEvent.obtain(down, down, MotionEvent.ACTION_DOWN, points[0], points[1], 0))
         trace.record("down-returned")
@@ -154,15 +153,12 @@ private fun AdapterInstrumentation.assertLongPressDrag() {
         val after = main { activity.owners.current.snapshot() }
         check(after.selection == Selection(0, 5)) { "Long-press drag stayed at ${after.selection}" }
         check(after.committed.same(before.committed) && after.undoCount == before.undoCount)
-    } finally {
-        trace.close()
     }
 }
 
 private fun AdapterInstrumentation.assertSuppressedLongPressCannotPass() {
     replaceMounted("ab cd")
-    val trace = MountedTouchTrace(this, "suppressed-longpress", suppressDelivery = true)
-    try {
+    MountedTouchTrace(this, "suppressed-longpress", suppressDelivery = true).use { trace ->
         val point = locations("ab cd").first()
         val down = SystemClock.uptimeMillis()
         sendPointerSync(MotionEvent.obtain(down, down, MotionEvent.ACTION_DOWN, point.centerX(), point.centerY(), 0))
@@ -172,8 +168,6 @@ private fun AdapterInstrumentation.assertSuppressedLongPressCannotPass() {
                 failure.message?.startsWith("Timed out awaiting exact selection") == true,
         )
         check(main { activity.owners.current.snapshot().selection } == Selection(0, 0))
-    } finally {
-        trace.close()
     }
 }
 

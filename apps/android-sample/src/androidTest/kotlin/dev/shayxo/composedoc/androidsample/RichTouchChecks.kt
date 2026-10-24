@@ -77,8 +77,7 @@ private fun AdapterInstrumentation.multilingualWords(root: File) {
                 activity.inputView!!.getLocationOnScreen(location)
                 floatArrayOf(first.centerX(), first.centerY())
             }
-            val trace = MountedTouchTrace(this, "word-touch-$index")
-            try {
+            MountedTouchTrace(this, "word-touch-$index").use { trace ->
                 val down = SystemClock.uptimeMillis()
                 sendPointerSync(
                     MotionEvent.obtain(down, down, MotionEvent.ACTION_DOWN, coordinates[0], coordinates[1], 0),
@@ -106,8 +105,6 @@ private fun AdapterInstrumentation.multilingualWords(root: File) {
                         .put("locale", targetContext.resources.configuration.locales[0].toLanguageTag())
                         .put("storedFont", after.committed.units.first().style.font.name),
                 )
-            } finally {
-                trace.close()
             }
         }
         File(root, "word-fixtures.json").writeText(records.toString(2), Charsets.UTF_8)
