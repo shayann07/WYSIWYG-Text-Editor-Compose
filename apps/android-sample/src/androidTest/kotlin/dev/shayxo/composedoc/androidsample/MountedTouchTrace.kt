@@ -82,8 +82,10 @@ internal class MountedTouchTrace(
     }
 
     private fun sameBasis(frame: EditorFrame) = checks.activity.owners.current === owner &&
-        frame.documentRevision == basis.documentRevision && frame.committed.same(basis.committed) &&
-        frame.undoCount == basis.undoCount && frame.redoCount == basis.redoCount
+        frame.documentRevision == basis.documentRevision &&
+        frame.committed.same(basis.committed) &&
+        frame.undoCount == basis.undoCount &&
+        frame.redoCount == basis.redoCount
 
     fun record(stage: String, event: MotionEvent? = null) {
         checks.main {
