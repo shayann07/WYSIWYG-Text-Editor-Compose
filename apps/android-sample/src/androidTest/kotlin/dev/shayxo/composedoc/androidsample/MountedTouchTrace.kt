@@ -108,29 +108,46 @@ internal class MountedTouchTrace(
     }
 
     override fun close() {
+        val failures = mutableListOf<Throwable>()
+        fun attempt(action: () -> Unit) {
+            runCatching(action).exceptionOrNull()?.let(failures::add)
+        }
         try {
-            val cancel = checks.main {
-                held?.let {
-                    MotionEvent.obtain(
-                        it.downTime,
-                        SystemClock.uptimeMillis(),
-                        MotionEvent.ACTION_CANCEL,
-                        it.rawX,
-                        it.rawY,
-                        0,
-                    )
-                }
-            }
-            cancel?.let { checks.sendPointerSync(it) }
+            attempt { cancelGesture() }
+            attempt { record("finished") }
         } finally {
-            record("finished")
-            checks.main {
-                if (window.callback === observer) window.callback = previous
-                if (owner.onStatePublished === observedPublication) owner.onStatePublished = previousPublication
-                held?.recycle()
-                held = null
+            // Diagnostic failure must never prevent restoring the real callbacks or recycling events.
+            attempt { restoreCallbacks() }
+            attempt { File(checks.evidenceRoot, "$label.json").writeText(records.toString(2), Charsets.UTF_8) }
+        }
+        failures.firstOrNull()?.let { first ->
+            failures.drop(1).forEach(first::addSuppressed)
+            throw first
+        }
+    }
+
+    private fun cancelGesture() {
+        val cancel = checks.main {
+            held?.let {
+                MotionEvent.obtain(
+                    it.downTime,
+                    SystemClock.uptimeMillis(),
+                    MotionEvent.ACTION_CANCEL,
+                    it.rawX,
+                    it.rawY,
+                    0,
+                )
             }
-            File(checks.evidenceRoot, "$label.json").writeText(records.toString(2), Charsets.UTF_8)
+        }
+        cancel?.let { checks.sendPointerSync(it) }
+    }
+
+    private fun restoreCallbacks() {
+        checks.main {
+            if (window.callback === observer) window.callback = previous
+            if (owner.onStatePublished === observedPublication) owner.onStatePublished = previousPublication
+            held?.recycle()
+            held = null
         }
     }
 }

@@ -42,6 +42,13 @@ checkout's ignored `tests/local-evidence/integration-20261024/lower-28-full-arti
 The earlier hosted PR45 tap-position failure remains unexplained. The API28 tap
 itself passed; these longpress findings do not establish its cause.
 
+Independent review also identified a cleanup robustness gap in the new diagnostic
+helper. Cleanup now restores callbacks/recycles events unconditionally even when
+recording fails, propagates diagnostic failures with suppressed causes, and uses
+standard resource `use` blocks to preserve an existing primary assertion failure.
+This follow-up changes the test artifact and needs its own focused execution;
+the preceding API28 receipts keep their original test hashes.
+
 ## Measured results
 
 | Check | Result and scope |
