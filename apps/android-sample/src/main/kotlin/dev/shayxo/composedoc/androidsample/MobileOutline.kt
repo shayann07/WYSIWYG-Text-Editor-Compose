@@ -33,6 +33,11 @@ internal fun showOutline(activity: MainActivity, owners: AndroidOwners, input: A
     view.setViewTreeSavedStateRegistryOwner(activity)
     val dialog = AlertDialog.Builder(activity).setTitle("Document outline")
         .setView(view).setNegativeButton("Close", null).create()
+    // Window recomposition resolves owners from the dialog root, not just the embedded ComposeView.
+    checkNotNull(dialog.window).decorView.apply {
+        setViewTreeLifecycleOwner(activity)
+        setViewTreeSavedStateRegistryOwner(activity)
+    }
     view.setContent {
         val state by model.uiState.collectAsState()
         val blocks = state.frame.committed.paragraphs()
@@ -64,7 +69,10 @@ internal fun showOutline(activity: MainActivity, owners: AndroidOwners, input: A
             }
         }
     }
-    dialog.setOnDismissListener { input?.requestFocus() }
+    dialog.setOnDismissListener {
+        view.disposeComposition()
+        input?.requestFocus()
+    }
     dialog.show()
 }
 
