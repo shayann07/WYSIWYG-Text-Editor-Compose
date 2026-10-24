@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference
 class AdapterInstrumentation : Instrumentation() {
     private var arguments = Bundle()
     private val outcomes = JSONArray()
+    internal lateinit var evidenceRoot: File
     internal lateinit var activity: MainActivity
     override fun onCreate(arguments: Bundle?) {
         super.onCreate(arguments)
@@ -42,6 +43,7 @@ class AdapterInstrumentation : Instrumentation() {
         require(id.matches(Regex("[a-zA-Z0-9_-]{1,64}")))
         val root = File(targetContext.filesDir, "qualification/$id")
         check(root.mkdirs())
+        evidenceRoot = root
         var fatal: Throwable? = null
         try {
             runChecks(root)
@@ -77,6 +79,7 @@ class AdapterInstrumentation : Instrumentation() {
             "shell" to { richShellChecks() },
             "touch" to { richTouchChecks(root) },
             "mounted-hit" to { mountedHitChecks() },
+            "mounted-ime" to { mountedKeyboardChecks() },
             "clipboard" to { richClipboardChecks() },
             "uri" to { richUriChecks(root) },
             "rich-structure" to { richStructureChecks(root) },
