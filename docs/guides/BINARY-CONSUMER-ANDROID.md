@@ -352,3 +352,12 @@ uses exact publication synchronization with a suppressed-delivery negative;
 keyboard geometry preserves an independent hidden/shown/hidden oracle. These are
 instrumented adapter results, not genuine multilingual keyboard, TalkBack speech
 or blanket minSdk24 qualification. Read the dated artifact identities before reuse.
+
+The latest [combined repair checkpoint](../reports/repair-combined-integration-20261024.md)
+and [dated capability ledger](../reports/android-qualification-ledger-20261024.json)
+separate API28 binary66/interruption results, API37 headless66/interruption/IPC
+results, the retained visible-emulator clipboard failure, and blocked current
+native-language interaction. The final app remains01494420; test artifacts differ
+by explicitly recorded diagnostic version. Read the exact current-commit final-gate
+receipt before reusing repository verification. No native language/AT qualification
+is implied by the instrumented counts.

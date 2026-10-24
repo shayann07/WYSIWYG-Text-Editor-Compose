@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 1,
+  "asOf": "2026-10-24",
+  "repairSource": "a53dfbaaa10ecb591e376b597fae7b70ed53982a",
+  "androidComponentSource": "4b0471eab9f28eee9942d39aa4cccea6425920e8",
+  "apkSha256": "0149442040d4b55f183a01aa86762a07e1c4f39b36b6bad902d32745f30fd099",
+  "compiledInputCount": 170,
+  "evidence": [
+    {
+      "path": "tests/local-evidence/integration-20261024/packaged-clipboard-final/results.json",
+      "sha256": "26238a007004747da81bf73f8fd4e787f660c6e1f9c45ac42dbebbf8d4f49fc5",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "packaging result; exact artifact/environment scope is in the receipt"
+    },
+    {
+      "path": "tests/local-evidence/integration-20261024/lower-28-packaged-final/results.json",
+      "sha256": "1a6a122e847f5384d3692cb2c4d77874614f6263eb0d9af94701d08bc6d0daae",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "api28 result; exact artifact/environment scope is in the receipt"
+    },
+    {
+      "path": "tests/local-evidence/integration-20261024/api37-headless-final/results.json",
+      "sha256": "c363ba4a2c2d2ecff87df1896b0d1b1717599d3c44cf95efc739a3e6f41800b7",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "api37 result; exact artifact/environment scope is in the receipt"
+    },
+    {
+      "path": "tests/local-evidence/integration-20261024/api37-cleanup-final/results.json",
+      "sha256": "a6820ec5555f73adf77576eca93f36dd20089985411aa5552c241f8ebe89830c",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "visible result; exact artifact/environment scope is in the receipt"
+    },
+    {
+      "path": "tests/local-evidence/integration-20261024/lower-28-clipboard/results.json",
+      "sha256": "8a5919c317ede31c2e7139f97e2b9b6027bba14162e52bf74391f07eb73d0ddb",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "ipc28 result; exact artifact/environment scope is in the receipt"
+    },
+    {
+      "path": "tests/local-evidence/integration-20261024/api37-headless-crossuid/results.json",
+      "sha256": "b3acd83fba9ff3f2227d86c93b2c5d0fbdc05b21e2d11ac393ba0654a532502c",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "ipc37 result; exact artifact/environment scope is in the receipt"
+    },
+    {
+      "path": "tests/local-evidence/integration-20261024/native/native-disposition.json",
+      "sha256": "d26617b27f3417200f978b21f04c265dc529a1e2bcfd2548026cd1b83a7657b5",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "native result; exact artifact/environment scope is in the receipt"
+    },
+    {
+      "path": "tests/local-evidence/integration-20261024/api37-headless-final/clipboard-shape.json",
+      "sha256": "1134defc87857414d4b11ea667be0d1176e4b88d5b7d6e5541064d7b9658a88b",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "shape result; exact artifact/environment scope is in the receipt"
+    },
+    {
+      "path": "tests/local-evidence/integration-20261024/packaged-api28-binary-equality.json",
+      "sha256": "d0dc2644795429155a169c1d5070e955550b7a0e1391b0fca5d761ff3f4a5613",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "equality result; exact artifact/environment scope is in the receipt"
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "independent-artifact-consumer",
+      "status": "PASS",
+      "scope": "Fresh external binary-only Android app/test; unchanged library/JVM10/peer receipts reused with exact hashes;170 compiled inputs.",
+      "remaining": "No remote publication; runtime identity is distinct from each test APK.",
+      "evidence": [
+        "tests/local-evidence/integration-20261024/packaged-clipboard-final/results.json",
+        "tests/local-evidence/integration-20261024/packaged-api28-binary-equality.json"
+      ]
+    },
+    {
+      "id": "api28-mounted-and-interruption",
+      "status": "PASS",
+      "scope": "All66 groups and both owned SIGKILL/fresh-process witnesses on API28; app01494420/test94488ae3. afterCloseInterruption explicitly passes.",
+      "remaining": "Instrumented callbacks, not genuine IME; no power-loss/force-stop claim. Earlier failed fixtures remain retained.",
+      "evidence": [
+        "tests/local-evidence/integration-20261024/lower-28-packaged-final/results.json"
+      ]
+    },
+    {
+      "id": "api37-headless-mounted-and-interruption",
+      "status": "PASS",
+      "scope": "All66 groups plus both owned SIGKILL witnesses; app01494420/test0bfcb1bd; headless/no-audio SwiftShader API37 fixture.",
+      "remaining": "Does not qualify visible host clipboard configuration or native language entry.",
+      "evidence": [
+        "tests/local-evidence/integration-20261024/api37-headless-final/results.json"
+      ]
+    },
+    {
+      "id": "system-rich-clipboard-cross-uid",
+      "status": "PASS",
+      "scope": "Actual read-only URI grants, owned resources/fresh list identities, publisher SIGKILL and cleanup checked on API28 and API37 headless.",
+      "remaining": "Fixture actions are injected. Visible-emulator transport remains a separate failure.",
+      "evidence": [
+        "tests/local-evidence/integration-20261024/lower-28-clipboard/results.json",
+        "tests/local-evidence/integration-20261024/api37-headless-crossuid/results.json",
+        "tests/local-evidence/integration-20261024/api37-headless-final/clipboard-shape.json"
+      ]
+    },
+    {
+      "id": "api37-visible-rich-clipboard",
+      "status": "FAIL",
+      "scope": "Visible API37 run completed65/66; strict two-item transport check failed with app01494420/testce0ac6dd.",
+      "remaining": "Failed run omitted actual item count. Headless PASS is conditional evidence, not direct causal proof of the host bridge.",
+      "evidence": [
+        "tests/local-evidence/integration-20261024/api37-cleanup-final/results.json"
+      ]
+    },
+    {
+      "id": "current-native-walkthrough",
+      "status": "BLOCKED",
+      "scope": "Exact01494420 launched; partly offscreen emulator rejected a real Docs-selector point. Before/after both owner bytes, selection and history unchanged.",
+      "remaining": "Owner must position/resize the owned emulator on the captured monitor; no more window/hotkey attempts this batch.",
+      "evidence": [
+        "tests/local-evidence/integration-20261024/native/native-disposition.json"
+      ]
+    },
+    {
+      "id": "current-native-urdu-arabic-conversion",
+      "status": "BLOCKED",
+      "scope": "No new language keyboard typing or conversion was performed because the native interaction path was blocked.",
+      "remaining": "Offline Gboard layout setup/real preedit/formatting tests remain manual; original preferences were unchanged.",
+      "evidence": []
+    },
+    {
+      "id": "talkback-speech",
+      "status": "NOT RUN",
+      "scope": "Accessibility actions/geometry are exercised within mounted groups; no speech evidence in this continuation.",
+      "remaining": "Owner permission/access and actual audible speech evidence remain required.",
+      "evidence": []
+    },
+    {
+      "id": "minimum-api24",
+      "status": "NOT RUN",
+      "scope": "Declared minSdk24 is unchanged; API28 is the lower observed configuration.",
+      "remaining": "API24 and intermediate versions are not qualified by API28/37 success.",
+      "evidence": []
+    },
+    {
+      "id": "expert-typography",
+      "status": "NOT RUN",
+      "scope": "Pinned fonts and automated marker/geometry checks are separate from expert language review.",
+      "remaining": "No claim of all-language linguistic or typographic qualification.",
+      "evidence": []
+    }
+  ],
+  "scope": "Measured Android/consumer continuation only; no normative proposal acceptance or full platform qualification"
+}

@@ -1,3 +1,60 @@
+# Current combined repair handoff — 24 October 2026
+
+Read docs/reports/repair-combined-integration-20261024.md and the dated20261024
+qualification ledger first. Integrated coding checkpointa53dfbaa includes current
+main679c988, all originalPR30–45 ancestry, contributor31/34 owner follow-ups,
+NOTICE38fb069, replay-ignore8e9d8be and test-onlyAPI28 component4b0471e.
+Coordinator01a11da9 owns approval/merge execution. This coder has made no main
+push/merge/closure or contributor-remote rewrite. All12 issues remain open. PR30
+was independently merged by coordinator; originalPR32 remains pending its path
+finding despite the fix being present in this candidate. Proposals stayPROPOSED.
+
+APP0149442040d4b55f183a01aa86762a07e1c4f39b36b6bad902d32745f30fd099 is
+unchanged; final independent test0bfcb1bd9f04c740e80d93c744d88d01a316e8a25e2bdb7518fe8eba6e554dd5,
+peer4dfb9c4d unchanged. All170 compiled inputs bind to external binary builds; no
+workspace/engine copy/reflection/verificationEngine in the consumer. Published
+SNAPSHOT paths/metadata differ; all30 coordinate/classifier library binaries match.
+
+API28 independently packaged014/test94488ae3 PASS all66 and both realownedSIGKILL
+restore witnesses, including discarded-generation→durable-close→termination.
+API37 headless014/test0bfcb1bd PASS66+bothkills; crossUID URI/resource transport and
+publisherSIGKILL PASS on28 and37. Explicit original-failure receipts retained.
+VisibleAPI37 run014/testce0ac6dd FAIL65/66 richclipboardtwo-item check. Headless
+shape shows2items/text+ownedcontentURI; not proof of visible failure's cause.
+Newpublication synchronization retains exactranges/history and a suppressed-event
+2seconddeadline negative. Keyboard oracle retains hidden/shown/hidden screenbounds.
+
+CURRENT NATIVE BLOCKED: exact014 runs, but ownedhostwindow525,-787,473,1053
+rejectsphysicalDocs point. No language setup/input performed; both owners' bytes,
+selection/history unchanged. AltSpace opened newGemini launcher(noinput;closed);
+WinShiftDownnoeffect. No moreplacement/hotkeyattempts in this batch. ControlEnd+
+Shutdown succeeded23:58:18UTC, noGboardpreferences changed. NativeUrdu/Arabic/
+conversion/composing-formatting/TalkBackspeech remain blocked/notrun; older native
+receipts retain their own builds. Manual windowplacement is the next prerequisite.
+
+AllownedAVDs are stopped normally (API28 and37 headless exit0). InitialGoldfish
+SIGSEGV/staleinitrdmapping and nativeGradleOOMs36704/5916 were retained, with
+verifiedownedidleJava cleanup only; no OS/pagefile/globalcache/userprocess change.
+Requested2GiB is not measuredguestRAM: successful37 guestMemTotal4008340KiB,
+backend4096MiB;28 observed1530644KiB. No minimumsupport/deviceRAM inference.
+
+Final-gate receipt tooling/local/final-verification.json is authoritative only
+whenstatusPASS/commit==gitHEAD. Earlier6813760 all6PASS remains historical and
+separate. This documentation checkpoint precedes generating the current receipt.
+NEXT: run/inspect clean exact6gates, preserve receipt, push only verifiedowner
+branches/integration normally, then send coordinator consolidated exactpacket and
+request independent audit/next bounded instruction. Do not start features or
+merge/approve independently. Human attestations, contributor follow-up adoption,
+proposal acceptance, ownPR self-approval constraints remain real gates.
+
+Primary ignored evidence: tests/local-evidence/integration-20261024, including
+packaged-clipboard-final, lower-28-packaged-final (afterCloseInterruption),
+api37-headless-final (afterCloseInterruption), api37-headless-crossuid,
+api37-cleanup-finalFAIL, native/native-disposition.json, live-pr-heads-normalized.
+Stable APK/guardedlaunch script are under delivery/. All prior chronology follows.
+
+---
+
 # Active combined integration — 24 October 2026
 
 Owner-authorized coordinator batch: combine existing repair/issue branches in
