@@ -17,7 +17,7 @@ owner's future full Urdu-first cloud document application is a separate product.
 
 ## Build and run
 
-Prerequisites: JDK 21 (`JAVA_HOME`), Python 3.12 and Node 24. Gradle downloads
+Prerequisites: JDK 21 (`JAVA_HOME`), Python 3.12 and Node 24.20.0 (`.nvmrc`). Gradle downloads
 pinned build dependencies; Python typography probes additionally require the
 packages recorded in the validation guides. Native Windows desktop checks need
 an interactive desktop. Do not label CI headless checks as human/native input.
