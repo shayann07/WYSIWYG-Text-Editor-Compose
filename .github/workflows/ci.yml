@@ -22,7 +22,7 @@ jobs:
           python-version: '3.12'
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
       - run: npm ci --ignore-scripts --prefix tests/suites/integration/c0
       - run: python tooling/docs/validate_docs.py
       - run: python -m unittest discover -s tooling/docs -p 'test_navigation.py'
@@ -63,7 +63,7 @@ jobs:
           python-version: '3.12'
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
       - run: npm ci --ignore-scripts --prefix tests/suites/integration/c0
       - run: python -m pip install -r tooling/verification/requirements.txt
