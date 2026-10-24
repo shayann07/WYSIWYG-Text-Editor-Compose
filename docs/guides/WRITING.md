@@ -4,13 +4,18 @@ Current implementation: 20 October 2026, ComposeDoc's multilingual desktop examp
 
 Pinned candidate fonts now load from the layout jar, so consumer font loading does not require a checkout or a `tests/` working directory. Exact original bytes, hashes and OFL notice are bundled. `TypographyProfile.load(id, fontsDir)` still accepts a strict explicit directory override. Missing/corrupt resources fail validation; stored choices are never rewritten. The existing visible unavailable-font status remains the fallback disclosure, not proof of a physically resolved fallback run.
 
-From `D:\Work\WYSIWYG-Text-Editor-Compose`:
+From the repository root (the directory containing `gradlew.bat`):
 
 ```powershell
 .\apps\desktop-workspace\write-urdu.cmd --workspace-sample
 ```
 
-The new disposable sample is `apps/desktop-workspace/samples/disposable-workspace-v8.astra`; it opens as an independent unsaved copy. Historical v3/v5/v6 samples are preserved. `--sample` still opens the preceding structured exercise. Generate a new sample into an unused path with `python tooling/launch.py --create-workspace-sample=D:\YourTestFolder\sample.astra`.
+The new disposable sample is `apps/desktop-workspace/samples/disposable-workspace-v8.astra`; it opens as an independent unsaved copy. Historical v3/v5/v6 samples are preserved. `--sample` still opens the preceding structured exercise. To generate a new sample, choose an unused output directory. The following repository-relative example refuses an existing directory; choose a different name if it already exists. Keep earlier documents and evidence.
+
+```powershell
+New-Item -ItemType Directory -Path tests/local-evidence/manual-writing -ErrorAction Stop
+python tooling/launch.py --create-workspace-sample=tests/local-evidence/manual-writing/sample.astra
+```
 
 ## Start and resume work
 
@@ -68,7 +73,7 @@ Images: maximum 4 MB encoded each, 8192 per dimension and 16 million decoded pix
 
 ## Automatic local crash recovery
 
-Accepted recovery copies and unfinished input are separate. The default directory is `%LOCALAPPDATA%\AstraEditorPrototype\recovery`; `--recovery-dir=D:\YourTestFolder\recovery` isolates disposable tests. Accepted roots are scheduled every two seconds plus actual disk time. Unfinished capture is scheduled every 700 ms plus queue/encoding/disk time. Only a completed publication receipt protects that generation. Pending/spinners are not durable success.
+Accepted recovery copies and unfinished input are separate. The default Windows directory is `%LOCALAPPDATA%\AstraEditorPrototype\recovery`. From the repository root, `--recovery-dir=tests/local-evidence/manual-writing/recovery` isolates disposable tests in the new output directory above; use a different unused directory for another session. Accepted roots are scheduled every two seconds plus actual disk time. Unfinished capture is scheduled every 700 ms plus queue/encoding/disk time. Only a completed publication receipt protects that generation. Pending/spinners are not durable success.
 
 On restart, Recovery Copies restores accepted content as a separate unsaved document. Unfinished recovery separately offers Inspect, Restore unsaved draft, lossless Export, Later and selected-generation Discard. Quarantine remains inspect/export-only evidence and is never replayed. No active composition or native callback resumes. See [RECOVERY.md](RECOVERY.md) for budgets, lifecycle/failure semantics and exact loss windows.
 
