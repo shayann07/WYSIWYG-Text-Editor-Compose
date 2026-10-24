@@ -802,5 +802,43 @@
   "runtimeDependencyLocks": {
     "tests/suites/integration/c0/package.json": "40dc2c9d40bec7fab0fb05e5078d9bef51201d2116a2ce2a8ab06cee1eb3441f",
     "tests/suites/integration/c0/package-lock.json": "60179a9dc086de19767d79059a64be6aaeeb97befe34a8de13d022f9ea24bb04"
+  },
+  "ledgerKeyPrefixes": {
+    "tests/validation/": {
+      "target": "tests/suites/",
+      "purpose": "Historical source hashes addressed the pre-relocation validation directory relative to tests."
+    },
+    "tests/reviews/reviews/": {
+      "target": "tests/reviews/",
+      "purpose": "Historical review ledger keys already contained reviews while the recording base was tests/reviews."
+    },
+    "tests/research/": {
+      "target": "tests/archive/research/",
+      "purpose": "Historical ledger keys used the pre-archive research directory relative to tests."
+    },
+    "tests/docs/": {
+      "target": "docs/",
+      "purpose": "Historical source hashes addressed root documentation relative to tests."
+    }
+  },
+  "runtimeLoaderPolicy": {
+    "recordedAt": "2026-10-24",
+    "scope": "Current registered production Node loader, separately bound from historical ledger-key aliases; no new historical seal",
+    "loader": "tooling/verification/v6.mjs",
+    "boundFiles": {
+      "tooling/verification/v6.mjs": "3440a453dc1a604fc2af8f6f461916691fbe222248906645033141acad2c0879",
+      ".nvmrc": "5b9d0e73029969ae9000117cb877f17bb9841c1279bfe8024e294acfcf017800"
+    },
+    "prefixes": {
+      "tests/validation/": "tests/suites/",
+      "validation/": "tests/suites/",
+      "tests/docs/": "docs/",
+      "tests/research/": "tests/archive/research/"
+    },
+    "rootCoverage": {
+      "tests/reviews/v6-finalization-20261019/run-inherited.mjs": "RESOLUTION_ONLY; inherited execution belongs to issue17 with its supported launch mode",
+      "tests/reviews/v6-finalization-20261019/verify.mjs": "EXECUTED_16_VIA_UNMODIFIED_PRODUCTION_WRAPPER",
+      "tests/suites/codex/run-20261016-20/verify.mjs": "RESOLUTION_ONLY; raw runner writes historical results and must not be executed in place"
+    }
   }
 }

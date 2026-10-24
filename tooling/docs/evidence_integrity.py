@@ -41,13 +41,16 @@ def inside(root, path):
 
 
 def relocated(root, path):
+    """Resolve historical ledger keys, not live JavaScript import resolution."""
     path = inside(root, path)
     name = path.relative_to(root.resolve()).as_posix()
     record = json.loads((root / 'docs/relocations.json').read_text(encoding='utf-8'))
     prefixes = dict(record['prefixes'])
-    # Embedded reviewers computed these historical prefixes relative to tests/.
-    prefixes.update({'tests/validation/': 'tests/suites/', 'tests/reviews/reviews/': 'tests/reviews/',
-                     'tests/research/': 'tests/archive/research/', 'tests/docs/': 'docs/'})
+    audit = json.loads((root / RECORD).read_text(encoding='utf-8'))
+    for old, entry in audit['ledgerKeyPrefixes'].items():
+        if not entry.get('purpose'):
+            raise ValueError('Undocumented historical ledger-key alias: ' + old)
+        prefixes[old] = entry['target']
     for _ in range(16):
         previous = name
         if name in record['paths']:
@@ -60,6 +63,22 @@ def relocated(root, path):
         if name == previous:
             return inside(root, root / name)
     raise ValueError('Cyclic evidence relocation: ' + name)
+
+
+def runtime_path(root, path, policy=None):
+    """The bound production Node hook applies one prefix mapping, not ledger aliases."""
+    path = inside(root, path)
+    name = path.relative_to(root.resolve()).as_posix()
+    if policy is None:
+        policy = json.loads((root / RECORD).read_text(encoding='utf-8'))['runtimeLoaderPolicy']
+    for old, target in policy['prefixes'].items():
+        if not old.endswith('/') or not target.endswith('/'):
+            raise ValueError('Runtime loader prefix must be an explicit directory')
+        if name == old[:-1]:
+            return inside(root, root / target[:-1])
+        if name.startswith(old):
+            return inside(root, root / (target + name[len(old):]))
+    return path
 
 
 def tokens(text):
@@ -110,7 +129,7 @@ def imports(text):
 
 
 def closure(root, roots):
-    pending = [relocated(root, root / name) for name in roots]
+    pending = [inside(root, root / name) for name in roots]
     files, external = {}, set()
     while pending:
         file = pending.pop()
@@ -123,7 +142,7 @@ def closure(root, roots):
         files[name] = []
         for specifier in dependencies:
             if specifier.startswith('.'):
-                target = relocated(root, file.parent / specifier)
+                target = runtime_path(root, file.parent / specifier)
                 if 'node_modules' in target.parts:
                     external.add('npm:' + target.relative_to(root.resolve()).as_posix())
                     continue
@@ -156,6 +175,10 @@ def verify(root=ROOT):
     record = json.loads((root / RECORD).read_text(encoding='utf-8'))
     if record['version'] != 1 or record['roots'] != ROOTS:
         raise ValueError('Unexpected integrity record version/entry points')
+    policy = record['runtimeLoaderPolicy']
+    for name, expected in policy['boundFiles'].items():
+        if digest(inside(root, root / name)) != expected:
+            raise ValueError('Runtime loader identity changed; review resolution policy: ' + name)
     edges, external = closure(root, record['roots'])
     if edges != record['imports'] or external != record['externalImports']:
         raise ValueError('Imported closure changed without integrity coverage')
