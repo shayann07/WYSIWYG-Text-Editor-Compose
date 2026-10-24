@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "asOf": "2026-10-24",
-  "repairSource": "a53dfbaaa10ecb591e376b597fae7b70ed53982a",
-  "androidComponentSource": "4b0471eab9f28eee9942d39aa4cccea6425920e8",
+  "repairSource": "071dd84547d9d9c147a56e31d452e60ef581fa00",
+  "androidComponentSource": "7960266461f139b6c6d37f49e2d3dce308f37e29",
   "apkSha256": "0149442040d4b55f183a01aa86762a07e1c4f39b36b6bad902d32745f30fd099",
   "compiledInputCount": 170,
   "evidence": [
@@ -59,6 +59,36 @@
       "sha256": "d0dc2644795429155a169c1d5070e955550b7a0e1391b0fca5d761ff3f4a5613",
       "availability": "MACHINE_LOCAL_RECEIPT",
       "meaning": "equality result; exact artifact/environment scope is in the receipt"
+    },
+    {
+      "path": "tests/local-evidence/integration-20261024/packaged-formatter-final/results.json",
+      "sha256": "73ce63c62620248e6ef110b7204e766d1dc5aa28d3c384bde244021eb316fc31",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Fresh source-bound formatting-only test build; unchanged app014; test67f94 was not re-executed locally"
+    },
+    {
+      "path": "tests/local-evidence/integration-20261024/format-bytecode-comparison.json",
+      "sha256": "43f8ae8b2b11aaa206d3cb40a017929f7ca1225db0f4f148f8a66593cdef8723",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Identical javap-c-p instruction listings before/after newline-only correction"
+    },
+    {
+      "path": "tests/local-evidence/integration-20261024/format-canonical-fresh-after.log",
+      "sha256": "ae23a4084471b256471c3917033cb557f71bd0133bbf553f42bb602ef246f4d0",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Fresh no-cache/rerun canonical format, compile and zero-Detekt pass"
+    },
+    {
+      "path": "tests/local-evidence/integration-20261024/format-canonical-second-apply.log",
+      "sha256": "f172ba9ccc83c3fd24f127f848bf53376b977ba35ecddc69d76059e6c89d4909",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Second fresh formatter application leaves source hash unchanged"
+    },
+    {
+      "path": "tests/local-evidence/integration-20261024/ci-085247e-windows.log",
+      "sha256": "274e10146cc158039e3a6d8718a7415fd89c59a85ac9b373c41c030af1ca6907",
+      "availability": "MACHINE_LOCAL_RECEIPT",
+      "meaning": "Retained hostedWindows formatter failure, ANSI stripped; raw download also retained"
     }
   ],
   "capabilities": [
@@ -148,5 +178,13 @@
       "evidence": []
     }
   ],
-  "scope": "Measured Android/consumer continuation only; no normative proposal acceptance or full platform qualification"
+  "scope": "Measured Android/consumer continuation only; no normative proposal acceptance or full platform qualification",
+  "formattingFollowup": {
+    "source": "7960266461f139b6c6d37f49e2d3dce308f37e29",
+    "scope": "Newline-only sameBasis correction; predicates/order and javap instruction listing unchanged. Host formatting disagreement mechanism unestablished.",
+    "testBuildSha256": "67f94dd02709c5aaa4e222859c5a13e8b78d4fcd75635fee5858e51e77e36c95",
+    "localExecution": "NOT RUN for formatting-only rebuild; previous named test artifacts remain the measured local versions",
+    "hosted085": "FAIL Windows formatter; docs/quality/iOS/Android66+bothkills+crossUID PASS",
+    "currentCI": "Must inspect exact final commit run; no inference from local gates"
+  }
 }

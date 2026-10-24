@@ -1,3 +1,24 @@
+# Hosted formatter follow-up — 24 October 2026
+
+Currentcodingcheckpoint071dd845 integrates component7960266: onlysameBasis
+predicate line breaks, with identicaljavap instruction listings and twofresh
+fixedpoint formatter passes. No assertion/config/threshold changed. Earlier085247e
+all6localPASS remains retained, but its hostedWindowsCI formatterFAILED; hosted
+docs/quality/iOS/Android66+bothkills+crossUID passed. Freshlocal085formatcheckalso
+PASS, so cache-onlymechanism isnotproven. Do not erase/relabelfailure.
+
+Freshoutsidebinarybuild APP014 unchanged; formatting-only test67f94dd0 newlybuilt
+(sourcebound170inputs), notrerunlocally solelyforwrapping. Local28/test944 and
+37/headless/test0bf receipts remain exact measuredversions; CInewcommit validates
+correctedsource. Source reports/ledger now distinguish this. NativepointBLOCKED
+unchanged, controlleroff/noSDKprocesses, no newnativeactionsplanned.
+
+NEXT: finishnewcleanexactfinal6gates and hostedCIonce onthecorrectedcommit; preserve
+all085receipts. Pushnormalownrefs onlyafterlocalgates, requestcoordinator audit.
+Original12issues/16PRheads/ownerhumanattestation andproposal gates below stillapply.
+
+---
+
 # Current combined repair handoff — 24 October 2026
 
 Read docs/reports/repair-combined-integration-20261024.md and the dated20261024

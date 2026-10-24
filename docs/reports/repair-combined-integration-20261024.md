@@ -3,13 +3,25 @@
 ## Delivered verification checkpoint
 
 Status: PARTIAL qualification. The combined source is usable; the native language
-walkthrough remains blocked. Android component4b0471eab9f28eee9942d39aa4cccea6425920e8
-is integrated at a53dfbaaa10ecb591e376b597fae7b70ed53982a. The documentation commit
+walkthrough remains blocked. Android component7960266461f139b6c6d37f49e2d3dce308f37e29
+is integrated at071dd84547d9d9c147a56e31d452e60ef581fa00. The documentation commit
 containing this section is identified by Git HEAD. Its final clean six-gate receipt
 is generated afterward at `tooling/local/final-verification.json`; reuse it only
 when `status=PASS` and `commit` equals that exact HEAD. Earlier clean6813760 already
 passed all six gates,20 desktop stages and four implementation mutants; that receipt
 remains a distinct historical checkpoint, not proof of subsequent source changes.
+
+The intervening085247e checkpoint also passed all six local gates, but hosted run
+40045746565 failed its Windows Spotless check. Docs, quality, iOS and Android
+(66 groups, both interruption witnesses and cross-UID clipboard) passed. The
+Windows formatter required each sameBasis predicate on its own line. A fresh
+local no-cache/rerun check passed the original packed form, so a cache-only cause
+is not established. The separate7960266 correction changes only line breaks,
+preserving every predicate/order. Fresh checks and a second formatter application
+leave the canonical form unchanged; complete javap instruction listings are
+identical, excluding line/debug metadata. No rule, suppression or threshold changed.
+The failed hosted run and original local PASS remain retained. Exact new-commit
+CI is required before any readiness decision; an old green local receipt is insufficient.
 
 Current origin/main is679c9886224063ecd5aae1fe8cd5f4f7e140ebd4 after the coordinator's
 verified squash merge of PR30. This coder has made no main push, approval, merge,
@@ -23,8 +35,13 @@ The independently built application APK remains byte-identical:
 `0149442040d4b55f183a01aa86762a07e1c4f39b36b6bad902d32745f30fd099`.
 Stable copy in the primary checkout:
 `tests/local-evidence/integration-20261024/delivery/ComposeDoc-android-writing-repair-01494420.apk`.
-The final test APK is0bfcb1bd9f04c740e80d93c744d88d01a316e8a25e2bdb7518fe8eba6e554dd5;
+The locally executed final diagnostic test APK is0bfcb1bd9f04c740e80d93c744d88d01a316e8a25e2bdb7518fe8eba6e554dd5;
 the independently built peer remains4dfb9c4d1b5cb035f6846d5b2fbd5e0f938da5c8dfc5579a691dde9ac1318f86.
+The formatting follow-up was independently rebuilt with the same014 app and test
+67f94dd02709c5aaa4e222859c5a13e8b78d4fcd75635fee5858e51e77e36c95.
+That new test artifact is not byte-identical and was not rerun locally solely for
+line wrapping; the exact-SHA hosted Android suite executes the corrected source.
+Earlier API28/37 local receipts retain their explicitly identified test versions.
 
 After starting the explicitly owned emulator and installing that APK, launch with:
 
@@ -149,7 +166,7 @@ semantic PDF, expert typography and other platforms/DPI remain separately open.
 
 Recovery35/e60f9ee, Outline43/0dbcc57, picker44/ae91306 and toolbar45/c0202d3
 remain separate original PRs with preserved author text. The combined APK contains
-their repairs. New API28 test-only branch4b0471e is based on45; its landing route or
+their repairs. New API28 test-only branch7960266 is based on45; its landing route or
 owner-written PR metadata remains a coordinator decision. No competing contributor
 PR was created. Contributor branches/descriptions are untouched. Missing truthful
 human attestations, self-approval restrictions, required current-base checks and
