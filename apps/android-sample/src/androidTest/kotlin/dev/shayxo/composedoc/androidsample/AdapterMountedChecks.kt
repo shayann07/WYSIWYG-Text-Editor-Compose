@@ -65,6 +65,10 @@ private fun AdapterInstrumentation.mountedChecksCase1() {
 }
 
 private fun AdapterInstrumentation.mountedChecksCase2() {
+    mountedHitChecks()
+}
+
+internal fun AdapterInstrumentation.mountedHitChecks() {
     group("instrumented touch hit uses independent Latin prefix advance") {
         replaceMounted("abcd")
         val coordinates = main {
@@ -88,6 +92,7 @@ private fun AdapterInstrumentation.mountedChecksCase2() {
                 0,
             ),
         )
+        val downDeliveredAt = SystemClock.uptimeMillis()
         sendPointerSync(
             MotionEvent.obtain(
                 t,
@@ -98,15 +103,26 @@ private fun AdapterInstrumentation.mountedChecksCase2() {
                 0,
             ),
         )
+        val upDeliveredAt = SystemClock.uptimeMillis()
         waitForIdleSync()
-        check(
-            main { activity.owners.current.snapshot().selection } == Selection(
-                2,
-                2,
-            ),
-        )
+        val actual = main { activity.owners.current.snapshot().selection }
+        check(actual == Selection(2, 2)) {
+            "Expected independent tap caret2; actual=$actual; " +
+                "downDeliveryMs=${downDeliveredAt - t}; upDeliveryMs=${upDeliveredAt - t}; " +
+                "sent=${coordinates.toList()}; ${main { touchHitEnvironment() }}"
+        }
+        assertSuppressedLongPressCannotPass()
         assertLongPressDrag()
     }
+}
+
+private fun AdapterInstrumentation.touchHitEnvironment(): String {
+    val view = checkNotNull(activity.inputView)
+    val location = IntArray(2)
+    view.getLocationOnScreen(location)
+    return "currentOrigin=${location.toList()}; size=${view.width}x${view.height}; " +
+        "attached=${view.isAttachedToWindow}; focus=${view.hasWindowFocus()}; " +
+        "revision=${activity.owners.current.snapshot().documentRevision}; caret=${view.caretRectangle()}"
 }
 
 private fun AdapterInstrumentation.assertLongPressDrag() {
@@ -124,21 +140,42 @@ private fun AdapterInstrumentation.assertLongPressDrag() {
             screen[0] + inset + paint.measureText("ab cd") + 0.5f,
         )
     }
-    val down = SystemClock.uptimeMillis()
-    sendPointerSync(MotionEvent.obtain(down, down, MotionEvent.ACTION_DOWN, points[0], points[1], 0))
-    SystemClock.sleep(android.view.ViewConfiguration.getLongPressTimeout().toLong() + 50)
-    waitForIdleSync()
-    check(main { activity.owners.current.snapshot().selection } == Selection(0, 2))
-    val move = SystemClock.uptimeMillis()
-    sendPointerSync(MotionEvent.obtain(down, move, MotionEvent.ACTION_MOVE, points[2], points[1], 0))
-    sendPointerSync(MotionEvent.obtain(down, move + 40, MotionEvent.ACTION_UP, points[2], points[1], 0))
-    waitForIdleSync()
-    val after = main { activity.owners.current.snapshot() }
-    check(after.selection == Selection(0, 5)) { "Long-press drag stayed at ${after.selection}" }
-    check(after.committed.same(before.committed) && after.undoCount == before.undoCount)
+    MountedTouchTrace(this, "latin-longpress").use { trace ->
+        val down = SystemClock.uptimeMillis()
+        sendPointerSync(MotionEvent.obtain(down, down, MotionEvent.ACTION_DOWN, points[0], points[1], 0))
+        trace.record("down-returned")
+        val selected = trace.awaitSelection(Selection(0, 2))
+        check(selected == Selection(0, 2))
+        val move = SystemClock.uptimeMillis()
+        sendPointerSync(MotionEvent.obtain(down, move, MotionEvent.ACTION_MOVE, points[2], points[1], 0))
+        sendPointerSync(MotionEvent.obtain(down, move + 40, MotionEvent.ACTION_UP, points[2], points[1], 0))
+        waitForIdleSync()
+        val after = main { activity.owners.current.snapshot() }
+        check(after.selection == Selection(0, 5)) { "Long-press drag stayed at ${after.selection}" }
+        check(after.committed.same(before.committed) && after.undoCount == before.undoCount)
+    }
+}
+
+private fun AdapterInstrumentation.assertSuppressedLongPressCannotPass() {
+    replaceMounted("ab cd")
+    MountedTouchTrace(this, "suppressed-longpress", suppressDelivery = true).use { trace ->
+        val point = locations("ab cd").first()
+        val down = SystemClock.uptimeMillis()
+        sendPointerSync(MotionEvent.obtain(down, down, MotionEvent.ACTION_DOWN, point.centerX(), point.centerY(), 0))
+        val failure = runCatching { trace.awaitSelection(Selection(0, 2)) }.exceptionOrNull()
+        check(
+            failure is IllegalStateException &&
+                failure.message?.startsWith("Timed out awaiting exact selection") == true,
+        )
+        check(main { activity.owners.current.snapshot().selection } == Selection(0, 0))
+    }
 }
 
 private fun AdapterInstrumentation.mountedChecksCase3() {
+    mountedKeyboardChecks()
+}
+
+internal fun AdapterInstrumentation.mountedKeyboardChecks() {
     group("IME activation and caret reveal respect independent platform keyboard bounds") {
         replaceMounted((1..20).joinToString("\n") { "کتاب العربية English $it" })
         main {
@@ -149,6 +186,7 @@ private fun AdapterInstrumentation.mountedChecksCase3() {
         }
         waitUntil { main { imeBottom() } == 0 }
         waitForIdleSync()
+        val keyboard = MountedKeyboardProbe(this)
         val before = main { activity.inputView!!.height }
         main {
             val v = activity.owners.current
@@ -157,14 +195,36 @@ private fun AdapterInstrumentation.mountedChecksCase3() {
             activity.inputView!!.showKeyboard()
         }
         waitUntil { main { imeBottom() } > 0 }
+        waitUntil { keyboard.additionalOcclusion() > 0 }
         waitUntil { main { caretInsideViewport() } }
         waitUntil { main { caretAboveKeyboard() } }
         check(main { activity.inputView!!.height } > 0) { "No editing viewport above keyboard; prior height=$before" }
+        keyboard.record("shown")
+        main {
+            val view = activity.inputView!!
+            val manager = targetContext.getSystemService(android.content.Context.INPUT_METHOD_SERVICE)
+                as android.view.inputmethod.InputMethodManager
+            manager.hideSoftInputFromWindow(view.windowToken, 0)
+        }
+        waitUntil { main { imeBottom() } == 0 && keyboard.additionalOcclusion() == 0 }
+        keyboard.record("hidden-again")
+        keyboard.write()
         assertClosedConnectionReopens()
     }
 }
-private fun AdapterInstrumentation.imeBottom() = activity.inputView!!.rootWindowInsets
-    ?.getInsets(android.view.WindowInsets.Type.ime())?.bottom ?: 0
+private fun AdapterInstrumentation.imeBottom(): Int {
+    val view = activity.inputView!!
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+        return view.rootWindowInsets?.getInsets(android.view.WindowInsets.Type.ime())?.bottom ?: 0
+    }
+    val display = android.util.DisplayMetrics()
+    activity.windowManager.defaultDisplay.getRealMetrics(display)
+    val visible = android.graphics.Rect()
+    view.getWindowVisibleDisplayFrame(visible)
+    val obscured = display.heightPixels - visible.bottom
+    val navigation = view.rootWindowInsets?.stableInsetBottom ?: 0
+    return if (obscured > navigation) obscured else 0
+}
 private fun AdapterInstrumentation.caretInsideViewport(): Boolean {
     val view = activity.inputView!!
     val caret = view.caretRectangle()
@@ -175,8 +235,12 @@ private fun AdapterInstrumentation.caretAboveKeyboard(): Boolean {
     val caret = view.caretRectangle() ?: return false
     val screen = IntArray(2)
     view.getLocationOnScreen(screen)
-    val keyboardTop = activity.windowManager.currentWindowMetrics.bounds.bottom - imeBottom()
-    return caretInsideViewport() && screen[1] + caret.bottom <= keyboardTop + 1
+    val display = android.util.DisplayMetrics()
+    activity.windowManager.defaultDisplay.getRealMetrics(display)
+    val visible = android.graphics.Rect()
+    view.getWindowVisibleDisplayFrame(visible)
+    val keyboardTop = minOf(display.heightPixels - imeBottom(), visible.bottom)
+    return imeBottom() > 0 && caretInsideViewport() && screen[1] + caret.bottom <= keyboardTop + 1
 }
 
 private fun AdapterInstrumentation.mountedChecksCase4() {
