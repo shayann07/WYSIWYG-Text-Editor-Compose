@@ -1,0 +1,844 @@
+{
+  "version": 1,
+  "recordKind": "ADDITIVE_INTEGRITY_AUDIT",
+  "capturedAt": "2026-10-23",
+  "reviewedGitBaseline": "e30c984f97c992bbbdb95a7eeaa932a0af7d5c22",
+  "historicalBoundary": "Existing ledger correspondence is not a newly issued historical seal; current-only digests cannot prove past integrity.",
+  "roots": [
+    "tests/reviews/v6-finalization-20261019/run-inherited.mjs",
+    "tests/reviews/v6-finalization-20261019/verify.mjs",
+    "tests/suites/codex/run-20261016-20/verify.mjs"
+  ],
+  "imports": {
+    "tests/suites/codex/run-20261016-20/verify.mjs": [
+      "tests/suites/codex/run-20261016-20/test-document.mjs",
+      "tests/suites/codex/run-20261016-20/test-v5.mjs",
+      "tests/suites/codex/run-20261016-20/test-unicode.mjs",
+      "tests/suites/codex/run-20261016-20/test-recovery.mjs",
+      "tests/suites/codex/run-20261016-20/test-measure.mjs",
+      "tests/suites/codex/run-20261016-20/test-document-mutations.mjs",
+      "tests/suites/codex/run-20261016-20/test-integrated.mjs",
+      "tests/suites/codex/run-20261016-20/test-repairs.mjs"
+    ],
+    "tests/suites/codex/run-20261016-20/test-repairs.mjs": [
+      "tests/suites/codex/run-20261016-20/integrated-model.mjs",
+      "tests/suites/codex/run-20261015-17/integrated-model.mjs",
+      "tests/suites/codex/run-20261015-17/structural-model.mjs",
+      "tests/suites/codex/run-20261016-20/structural-model.mjs",
+      "tests/suites/codex/run-20261016-20/awt-contract-model.mjs"
+    ],
+    "tests/suites/codex/run-20261016-20/awt-contract-model.mjs": [],
+    "tests/suites/codex/run-20261016-20/structural-model.mjs": [
+      "tests/suites/codex/run-20261016-20/candidate-b-coordinator.mjs",
+      "tests/suites/codex/run-20261016-20/request-contract.mjs"
+    ],
+    "tests/suites/codex/run-20261016-20/request-contract.mjs": [],
+    "tests/suites/codex/run-20261016-20/candidate-b-coordinator.mjs": [
+      "tests/suites/codex/run-20261016-20/request-contract.mjs"
+    ],
+    "tests/suites/codex/run-20261015-17/structural-model.mjs": [
+      "tests/suites/codex/run-20261015-17/candidate-b-coordinator.mjs",
+      "tests/suites/codex/run-20261015-17/request-contract.mjs"
+    ],
+    "tests/suites/codex/run-20261015-17/request-contract.mjs": [],
+    "tests/suites/codex/run-20261015-17/candidate-b-coordinator.mjs": [
+      "tests/suites/codex/run-20261015-17/request-contract.mjs"
+    ],
+    "tests/suites/codex/run-20261015-17/integrated-model.mjs": [
+      "tests/suites/codex/run-20261015-17/structural-model.mjs",
+      "tests/suites/codex/run-20261015-17/request-contract.mjs"
+    ],
+    "tests/suites/codex/run-20261016-20/integrated-model.mjs": [
+      "tests/suites/codex/run-20261016-20/structural-model.mjs",
+      "tests/suites/codex/run-20261016-20/request-contract.mjs"
+    ],
+    "tests/suites/codex/run-20261016-20/test-integrated.mjs": [
+      "tests/suites/codex/run-20261016-20/integrated-model.mjs",
+      "tests/suites/codex/run-20261016-20/structural-model.mjs"
+    ],
+    "tests/suites/codex/run-20261016-20/test-document-mutations.mjs": [
+      "tests/suites/codex/run-20261016-20/document-model.mjs",
+      "tests/suites/codex/run-20261016-20/test-document.mjs",
+      "tests/suites/codex/run-20261016-20/document-tree.mjs"
+    ],
+    "tests/suites/codex/run-20261016-20/document-tree.mjs": [
+      "tests/suites/codex/run-20261016-20/structural-model.mjs"
+    ],
+    "tests/suites/codex/run-20261016-20/test-document.mjs": [
+      "tests/suites/codex/run-20261016-20/test-integrated.mjs",
+      "tests/suites/codex/run-20261016-20/document-model.mjs",
+      "tests/suites/codex/run-20261016-20/structural-model.mjs",
+      "tests/suites/codex/run-20261016-20/document-tree.mjs",
+      "tests/suites/codex/run-20261016-20/integrated-model.mjs"
+    ],
+    "tests/suites/codex/run-20261016-20/document-model.mjs": [
+      "tests/suites/codex/run-20261016-20/unicode-grapheme.mjs",
+      "tests/suites/codex/run-20261016-20/document-model-base.mjs",
+      "tests/suites/codex/run-20261016-20/integrated-model.mjs",
+      "tests/suites/codex/run-20261016-20/structural-model.mjs",
+      "tests/suites/codex/run-20261016-20/request-contract.mjs",
+      "tests/suites/codex/run-20261016-20/document-tree.mjs"
+    ],
+    "tests/suites/codex/run-20261016-20/document-model-base.mjs": [
+      "tests/suites/codex/run-20261016-20/integrated-model.mjs",
+      "tests/suites/codex/run-20261016-20/structural-model.mjs",
+      "tests/suites/codex/run-20261016-20/request-contract.mjs",
+      "tests/suites/codex/run-20261016-20/document-tree.mjs"
+    ],
+    "tests/suites/codex/run-20261016-20/unicode-grapheme.mjs": [],
+    "tests/suites/codex/run-20261016-20/test-measure.mjs": [
+      "tests/suites/codex/run-20261016-20/structural-model.mjs",
+      "tests/suites/codex/run-20261016-20/document-tree.mjs"
+    ],
+    "tests/suites/codex/run-20261016-20/test-recovery.mjs": [
+      "tests/suites/codex/run-20261016-20/recovery-model.mjs",
+      "tests/suites/codex/run-20261016-20/canonical-codec.mjs",
+      "tests/suites/codex/run-20261016-20/test-document.mjs",
+      "tests/suites/codex/run-20261016-20/document-model.mjs",
+      "tests/suites/codex/run-20261016-20/structural-model.mjs",
+      "tests/suites/codex/run-20261016-20/integrated-model.mjs",
+      "tests/suites/codex/run-20261016-20/document-tree.mjs"
+    ],
+    "tests/suites/codex/run-20261016-20/canonical-codec.mjs": [
+      "tests/suites/codex/run-20261016-20/document-tree.mjs"
+    ],
+    "tests/suites/codex/run-20261016-20/recovery-model.mjs": [
+      "tests/suites/codex/run-20261016-20/canonical-codec.mjs",
+      "tests/suites/codex/run-20261016-20/document-model.mjs",
+      "tests/suites/codex/run-20261016-20/document-tree.mjs",
+      "tests/suites/codex/run-20261016-20/integrated-model.mjs"
+    ],
+    "tests/suites/codex/run-20261016-20/test-unicode.mjs": [
+      "tests/suites/codex/run-20261016-20/document-model.mjs"
+    ],
+    "tests/suites/codex/run-20261016-20/test-v5.mjs": [
+      "tests/reviews/gemini-v5-readiness/probe-interactions-and-unicode.mjs",
+      "tests/suites/codex/run-20261016-20/document-model.mjs",
+      "tests/suites/codex/run-20261016-20/awt-contract-model.mjs",
+      "tests/suites/codex/run-20261016-20/test-document.mjs",
+      "tests/suites/codex/run-20261016-20/structural-model.mjs",
+      "tests/suites/codex/run-20261016-20/document-tree.mjs"
+    ],
+    "tests/reviews/gemini-v5-readiness/probe-interactions-and-unicode.mjs": [
+      "tests/suites/codex/run-20261015-19/document-model.mjs",
+      "tests/suites/codex/run-20261015-19/integrated-model.mjs",
+      "tests/suites/codex/run-20261015-19/test-document.mjs",
+      "tests/suites/codex/run-20261015-19/test-integrated.mjs",
+      "tests/suites/codex/run-20261015-19/structural-model.mjs",
+      "tests/suites/codex/run-20261015-19/document-tree.mjs",
+      "tests/suites/codex/run-20261015-19/awt-contract-model.mjs",
+      "tests/reviews/gemini-v5-readiness/repaired-document-model.mjs"
+    ],
+    "tests/reviews/gemini-v5-readiness/repaired-document-model.mjs": [
+      "tests/suites/codex/run-20261015-19/document-model.mjs",
+      "tests/suites/codex/run-20261015-19/integrated-model.mjs",
+      "tests/suites/codex/run-20261015-19/structural-model.mjs",
+      "tests/suites/codex/run-20261015-19/request-contract.mjs",
+      "tests/suites/codex/run-20261015-19/document-tree.mjs"
+    ],
+    "tests/suites/codex/run-20261015-19/document-tree.mjs": [
+      "tests/suites/codex/run-20261015-19/structural-model.mjs"
+    ],
+    "tests/suites/codex/run-20261015-19/structural-model.mjs": [
+      "tests/suites/codex/run-20261015-19/candidate-b-coordinator.mjs",
+      "tests/suites/codex/run-20261015-19/request-contract.mjs"
+    ],
+    "tests/suites/codex/run-20261015-19/request-contract.mjs": [],
+    "tests/suites/codex/run-20261015-19/candidate-b-coordinator.mjs": [
+      "tests/suites/codex/run-20261015-19/request-contract.mjs"
+    ],
+    "tests/suites/codex/run-20261015-19/integrated-model.mjs": [
+      "tests/suites/codex/run-20261015-19/structural-model.mjs",
+      "tests/suites/codex/run-20261015-19/request-contract.mjs"
+    ],
+    "tests/suites/codex/run-20261015-19/document-model.mjs": [
+      "tests/suites/codex/run-20261015-19/integrated-model.mjs",
+      "tests/suites/codex/run-20261015-19/structural-model.mjs",
+      "tests/suites/codex/run-20261015-19/request-contract.mjs",
+      "tests/suites/codex/run-20261015-19/document-tree.mjs"
+    ],
+    "tests/suites/codex/run-20261015-19/awt-contract-model.mjs": [],
+    "tests/suites/codex/run-20261015-19/test-integrated.mjs": [
+      "tests/suites/codex/run-20261015-19/integrated-model.mjs",
+      "tests/suites/codex/run-20261015-19/structural-model.mjs"
+    ],
+    "tests/suites/codex/run-20261015-19/test-document.mjs": [
+      "tests/suites/codex/run-20261015-19/test-integrated.mjs",
+      "tests/suites/codex/run-20261015-19/document-model.mjs",
+      "tests/suites/codex/run-20261015-19/structural-model.mjs",
+      "tests/suites/codex/run-20261015-19/document-tree.mjs",
+      "tests/suites/codex/run-20261015-19/integrated-model.mjs"
+    ],
+    "tests/reviews/v6-finalization-20261019/verify.mjs": [
+      "tests/suites/codex/run-20261016-20/document-model.mjs",
+      "tests/suites/codex/run-20261016-20/test-document.mjs",
+      "tests/suites/codex/run-20261016-20/structural-model.mjs"
+    ],
+    "tests/reviews/v6-finalization-20261019/run-inherited.mjs": [
+      "tests/suites/codex/run-20261016-20/test-document.mjs",
+      "tests/suites/codex/run-20261016-20/test-v5.mjs",
+      "tests/suites/codex/run-20261016-20/test-unicode.mjs",
+      "tests/suites/codex/run-20261016-20/test-recovery.mjs",
+      "tests/suites/codex/run-20261016-20/test-measure.mjs",
+      "tests/suites/codex/run-20261016-20/test-document-mutations.mjs",
+      "tests/suites/codex/run-20261016-20/test-integrated.mjs",
+      "tests/suites/codex/run-20261016-20/test-repairs.mjs"
+    ]
+  },
+  "externalImports": [
+    "node:assert/strict",
+    "node:crypto",
+    "node:fs",
+    "node:path",
+    "node:url",
+    "npm:tests/suites/integration/c0/node_modules/yjs/dist/yjs.mjs"
+  ],
+  "externalBoundary": "Node builtins use runtime identity; yjs/transitives use existing package-lock integrity and separate runtime verification.",
+  "ledgerSources": {
+    "docs/archive/specs/v5.0/v5-freeze-manifest.json": "b4e7a7b4e5afa2161d394fc1ff8437279436dc8e35ecd93845a786f736eb6cdc",
+    "docs/plans/v6/v6-freeze-record.json": "b1099f24c2a79a894417c39136455b3316c6d26aa59ca115b50cc08dc184bc18",
+    "tests/suites/codex/run-20261015-18/prior-file-hashes.json": "1b4c44d6e1a2fdfefee43403a764db9d3c15a6b5e17a95fb5844ad0fee06ba1f",
+    "tests/suites/codex/run-20261015-19/results.json": "37dd704a2e00ab3e48fca25862cf81a216d84ed4fe40c2ba4965079cff8625be",
+    "tests/suites/codex/run-20261016-20/results.json": "b0375b5374e585b8affa1767e03f10fd6b98b74e270df51d1b1ae27e8a75f50f",
+    "tests/suites/codex/run-20261016-20/gemini-input-hashes.json": "222e3a4a84788f07f953b7464b8df1e899a3df2c1e832fe8efe07e4052b8279e"
+  },
+  "files": {
+    "tests/reviews/gemini-v5-readiness/README.md": {
+      "sha256": "71f8d26967e26cba711a23a34860021b6953c4d71161fc295cece372213a3a3a",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/gemini-input-hashes.json",
+          "key": "reviews\\gemini-v5-readiness\\README.md",
+          "sha256": "71f8d26967e26cba711a23a34860021b6953c4d71161fc295cece372213a3a3a"
+        }
+      ]
+    },
+    "tests/reviews/gemini-v5-readiness/probe-hierarchical-storage-and-recovery.mjs": {
+      "sha256": "f3757982906cd485a8251c4ff9abbaca632dd358d172b7b81acf1637a9b5d9e6",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/gemini-input-hashes.json",
+          "key": "reviews\\gemini-v5-readiness\\probe-hierarchical-storage-and-recovery.mjs",
+          "sha256": "f3757982906cd485a8251c4ff9abbaca632dd358d172b7b81acf1637a9b5d9e6"
+        }
+      ]
+    },
+    "tests/reviews/gemini-v5-readiness/probe-interactions-and-unicode.mjs": {
+      "sha256": "2e82fdbd2acc2a12b5b105232e8fbf156d23ed902bd48ffe2216d7096c4c34ad",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/gemini-input-hashes.json",
+          "key": "reviews\\gemini-v5-readiness\\probe-interactions-and-unicode.mjs",
+          "sha256": "2e82fdbd2acc2a12b5b105232e8fbf156d23ed902bd48ffe2216d7096c4c34ad"
+        }
+      ]
+    },
+    "tests/reviews/gemini-v5-readiness/probe-shaper-and-performance.cpp": {
+      "sha256": "9957c4df67794b7f3abdb8023a5af16ada6f7b6c1863fb37f5abf07c92e0a8db",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/gemini-input-hashes.json",
+          "key": "reviews\\gemini-v5-readiness\\probe-shaper-and-performance.cpp",
+          "sha256": "9957c4df67794b7f3abdb8023a5af16ada6f7b6c1863fb37f5abf07c92e0a8db"
+        }
+      ]
+    },
+    "tests/reviews/gemini-v5-readiness/probe_chromium_dom.py": {
+      "sha256": "d8fe0c285c7f4fa3bfd829f30bdcd0239ee49bee0ecf849bd24fc8563e1361e2",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/gemini-input-hashes.json",
+          "key": "reviews\\gemini-v5-readiness\\probe_chromium_dom.py",
+          "sha256": "d8fe0c285c7f4fa3bfd829f30bdcd0239ee49bee0ecf849bd24fc8563e1361e2"
+        }
+      ]
+    },
+    "tests/reviews/gemini-v5-readiness/proposed-v5-amendments.md": {
+      "sha256": "0d5102326261b14f20253a816368806d7d1fa0e31dc228e70015b3dbc6add9c4",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/gemini-input-hashes.json",
+          "key": "reviews\\gemini-v5-readiness\\proposed-v5-amendments.md",
+          "sha256": "0d5102326261b14f20253a816368806d7d1fa0e31dc228e70015b3dbc6add9c4"
+        }
+      ]
+    },
+    "tests/reviews/gemini-v5-readiness/repaired-document-model.mjs": {
+      "sha256": "2db957c1718a8c285966119b0aa99a6d69b5a5ede7fa3afd7246e39cdda49a5f",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/gemini-input-hashes.json",
+          "key": "reviews\\gemini-v5-readiness\\repaired-document-model.mjs",
+          "sha256": "2db957c1718a8c285966119b0aa99a6d69b5a5ede7fa3afd7246e39cdda49a5f"
+        }
+      ]
+    },
+    "tests/reviews/gemini-v5-readiness/results.json": {
+      "sha256": "bf80b5918ba01d3ddd821c7b5b599491dd630be0c1e0a0d5d0ce773700f750cb",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/gemini-input-hashes.json",
+          "key": "reviews\\gemini-v5-readiness\\results.json",
+          "sha256": "bf80b5918ba01d3ddd821c7b5b599491dd630be0c1e0a0d5d0ce773700f750cb"
+        }
+      ]
+    },
+    "tests/reviews/gemini-v5-readiness/run-all.mjs": {
+      "sha256": "0bb83a5bc238abf01bc73f86bff495d8f52ece7ffe5a26950925f7aa08bc3dd3",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/gemini-input-hashes.json",
+          "key": "reviews\\gemini-v5-readiness\\run-all.mjs",
+          "sha256": "0bb83a5bc238abf01bc73f86bff495d8f52ece7ffe5a26950925f7aa08bc3dd3"
+        }
+      ]
+    },
+    "tests/reviews/gemini-v5-readiness/v5-freeze-readiness-report.md": {
+      "sha256": "0d5102326261b14f20253a816368806d7d1fa0e31dc228e70015b3dbc6add9c4",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/gemini-input-hashes.json",
+          "key": "reviews\\gemini-v5-readiness\\v5-freeze-readiness-report.md",
+          "sha256": "0d5102326261b14f20253a816368806d7d1fa0e31dc228e70015b3dbc6add9c4"
+        }
+      ]
+    },
+    "tests/reviews/v6-finalization-20261019/run-inherited.mjs": {
+      "sha256": "b1992ac92689092afd9875b59781254af30ed9aadbbeeb495affe16472762f26",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "docs/plans/v6/v6-freeze-record.json",
+          "key": "reviews/v6-finalization-20261019/run-inherited.mjs",
+          "sha256": "b1992ac92689092afd9875b59781254af30ed9aadbbeeb495affe16472762f26"
+        }
+      ]
+    },
+    "tests/reviews/v6-finalization-20261019/verify.mjs": {
+      "sha256": "7744d385f23dee365ffe3cce00ec186a13389195d3cff097adb09ef73ac91969",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "docs/plans/v6/v6-freeze-record.json",
+          "key": "reviews/v6-finalization-20261019/verify.mjs",
+          "sha256": "7744d385f23dee365ffe3cce00ec186a13389195d3cff097adb09ef73ac91969"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261015-17/candidate-b-coordinator.mjs": {
+      "sha256": "2ad62940f6c21b0fa00e2cbea9fa39ae4671cfc4e9f1a2e0738d79fa2e405898",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "tests/suites/codex/run-20261015-18/prior-file-hashes.json",
+          "key": "validation/codex/run-20261015-17/candidate-b-coordinator.mjs",
+          "sha256": "2ad62940f6c21b0fa00e2cbea9fa39ae4671cfc4e9f1a2e0738d79fa2e405898"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261015-17/integrated-model.mjs": {
+      "sha256": "2f10ee843fc5ee119e65416b043a9e2048ac8138b89f3748a56bad8fc78399ca",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "tests/suites/codex/run-20261015-18/prior-file-hashes.json",
+          "key": "validation/codex/run-20261015-17/integrated-model.mjs",
+          "sha256": "2f10ee843fc5ee119e65416b043a9e2048ac8138b89f3748a56bad8fc78399ca"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261015-17/request-contract.mjs": {
+      "sha256": "205ea355e0e9f78095a9ca643bf109894c6f80a8d7c123bb207443d170f2adae",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "tests/suites/codex/run-20261015-18/prior-file-hashes.json",
+          "key": "validation/codex/run-20261015-17/request-contract.mjs",
+          "sha256": "205ea355e0e9f78095a9ca643bf109894c6f80a8d7c123bb207443d170f2adae"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261015-17/structural-model.mjs": {
+      "sha256": "17fbca3b4dc4dd0cd0cb7ba6a9cb035c81b8b680882c0728a48b5f1eef7cfcbe",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "tests/suites/codex/run-20261015-18/prior-file-hashes.json",
+          "key": "validation/codex/run-20261015-17/structural-model.mjs",
+          "sha256": "17fbca3b4dc4dd0cd0cb7ba6a9cb035c81b8b680882c0728a48b5f1eef7cfcbe"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261015-19/awt-contract-model.mjs": {
+      "sha256": "d6a7fdea0465c5e2fc93dbc6fbed9b60ab3b2f6ab36801ca3e2788d8515896fd",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "tests/suites/codex/run-20261015-19/results.json",
+          "key": "awt-contract-model.mjs",
+          "sha256": "d6a7fdea0465c5e2fc93dbc6fbed9b60ab3b2f6ab36801ca3e2788d8515896fd"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261015-19/candidate-b-coordinator.mjs": {
+      "sha256": "2ad62940f6c21b0fa00e2cbea9fa39ae4671cfc4e9f1a2e0738d79fa2e405898",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "tests/suites/codex/run-20261015-19/results.json",
+          "key": "candidate-b-coordinator.mjs",
+          "sha256": "2ad62940f6c21b0fa00e2cbea9fa39ae4671cfc4e9f1a2e0738d79fa2e405898"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261015-19/document-model.mjs": {
+      "sha256": "c702ea4c4adcfca938bf5f458ffb8caf3ae02c60eee19f22268a079e522f6b70",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "tests/suites/codex/run-20261015-19/results.json",
+          "key": "document-model.mjs",
+          "sha256": "c702ea4c4adcfca938bf5f458ffb8caf3ae02c60eee19f22268a079e522f6b70"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261015-19/document-tree.mjs": {
+      "sha256": "5104a51318e6699555fc408b30295fd0c168fc23f2a2eb41f9b54b7666447b78",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "tests/suites/codex/run-20261015-19/results.json",
+          "key": "document-tree.mjs",
+          "sha256": "5104a51318e6699555fc408b30295fd0c168fc23f2a2eb41f9b54b7666447b78"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261015-19/integrated-model.mjs": {
+      "sha256": "e728f31cb539c96dd7cd85269e7ba1774d3d933c9490bb3ae8e0c3dd86ecdda1",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "tests/suites/codex/run-20261015-19/results.json",
+          "key": "integrated-model.mjs",
+          "sha256": "e728f31cb539c96dd7cd85269e7ba1774d3d933c9490bb3ae8e0c3dd86ecdda1"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261015-19/request-contract.mjs": {
+      "sha256": "205ea355e0e9f78095a9ca643bf109894c6f80a8d7c123bb207443d170f2adae",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "tests/suites/codex/run-20261015-19/results.json",
+          "key": "request-contract.mjs",
+          "sha256": "205ea355e0e9f78095a9ca643bf109894c6f80a8d7c123bb207443d170f2adae"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261015-19/structural-model.mjs": {
+      "sha256": "8a93b008994bdfe549c14878df6c1fcab16a23bc98a7f7702fd50f9dd69437b1",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "tests/suites/codex/run-20261015-19/results.json",
+          "key": "structural-model.mjs",
+          "sha256": "8a93b008994bdfe549c14878df6c1fcab16a23bc98a7f7702fd50f9dd69437b1"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261015-19/test-document.mjs": {
+      "sha256": "29aa261d927a4ebd996a234a6bd9f6162c019012917186275811bf8bc269586f",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "tests/suites/codex/run-20261015-19/results.json",
+          "key": "test-document.mjs",
+          "sha256": "29aa261d927a4ebd996a234a6bd9f6162c019012917186275811bf8bc269586f"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261015-19/test-integrated.mjs": {
+      "sha256": "bd0b3afe098469ff3a109806eeb0a85b2f80dbfff8f6e435ed534d6262d837b4",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "tests/suites/codex/run-20261015-19/results.json",
+          "key": "test-integrated.mjs",
+          "sha256": "bd0b3afe098469ff3a109806eeb0a85b2f80dbfff8f6e435ed534d6262d837b4"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261016-20/awt-contract-model.mjs": {
+      "sha256": "f90a5ff974b435211f2aefa388d7421dfebc4ebfda404cc50991220942207e26",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "docs/archive/specs/v5.0/v5-freeze-manifest.json",
+          "key": "validation/codex/run-20261016-20/awt-contract-model.mjs",
+          "sha256": "f90a5ff974b435211f2aefa388d7421dfebc4ebfda404cc50991220942207e26"
+        },
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/results.json",
+          "key": "awt-contract-model.mjs",
+          "sha256": "f90a5ff974b435211f2aefa388d7421dfebc4ebfda404cc50991220942207e26"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261016-20/candidate-b-coordinator.mjs": {
+      "sha256": "2ad62940f6c21b0fa00e2cbea9fa39ae4671cfc4e9f1a2e0738d79fa2e405898",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "docs/archive/specs/v5.0/v5-freeze-manifest.json",
+          "key": "validation/codex/run-20261016-20/candidate-b-coordinator.mjs",
+          "sha256": "2ad62940f6c21b0fa00e2cbea9fa39ae4671cfc4e9f1a2e0738d79fa2e405898"
+        },
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/results.json",
+          "key": "candidate-b-coordinator.mjs",
+          "sha256": "2ad62940f6c21b0fa00e2cbea9fa39ae4671cfc4e9f1a2e0738d79fa2e405898"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261016-20/canonical-codec.mjs": {
+      "sha256": "54c3dc596b5ad33d32832dc600abfc58304a600d3e3e13c404ddf1747a55aa30",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "docs/archive/specs/v5.0/v5-freeze-manifest.json",
+          "key": "validation/codex/run-20261016-20/canonical-codec.mjs",
+          "sha256": "54c3dc596b5ad33d32832dc600abfc58304a600d3e3e13c404ddf1747a55aa30"
+        },
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/results.json",
+          "key": "canonical-codec.mjs",
+          "sha256": "54c3dc596b5ad33d32832dc600abfc58304a600d3e3e13c404ddf1747a55aa30"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261016-20/document-model-base.mjs": {
+      "sha256": "c702ea4c4adcfca938bf5f458ffb8caf3ae02c60eee19f22268a079e522f6b70",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "docs/archive/specs/v5.0/v5-freeze-manifest.json",
+          "key": "validation/codex/run-20261016-20/document-model-base.mjs",
+          "sha256": "c702ea4c4adcfca938bf5f458ffb8caf3ae02c60eee19f22268a079e522f6b70"
+        },
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/results.json",
+          "key": "document-model-base.mjs",
+          "sha256": "c702ea4c4adcfca938bf5f458ffb8caf3ae02c60eee19f22268a079e522f6b70"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261016-20/document-model.mjs": {
+      "sha256": "9e01a4bcb5af95782b5d4fdb2cd26558f04287589e28981267a55cb998787c10",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "docs/archive/specs/v5.0/v5-freeze-manifest.json",
+          "key": "validation/codex/run-20261016-20/document-model.mjs",
+          "sha256": "9e01a4bcb5af95782b5d4fdb2cd26558f04287589e28981267a55cb998787c10"
+        },
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/results.json",
+          "key": "document-model.mjs",
+          "sha256": "9e01a4bcb5af95782b5d4fdb2cd26558f04287589e28981267a55cb998787c10"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261016-20/document-tree.mjs": {
+      "sha256": "5104a51318e6699555fc408b30295fd0c168fc23f2a2eb41f9b54b7666447b78",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "docs/archive/specs/v5.0/v5-freeze-manifest.json",
+          "key": "validation/codex/run-20261016-20/document-tree.mjs",
+          "sha256": "5104a51318e6699555fc408b30295fd0c168fc23f2a2eb41f9b54b7666447b78"
+        },
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/results.json",
+          "key": "document-tree.mjs",
+          "sha256": "5104a51318e6699555fc408b30295fd0c168fc23f2a2eb41f9b54b7666447b78"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261016-20/integrated-model.mjs": {
+      "sha256": "d9184239fd52f973deb595557cd2e506ba3eb4d630e21ac47ad2024b27cbf644",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "docs/archive/specs/v5.0/v5-freeze-manifest.json",
+          "key": "validation/codex/run-20261016-20/integrated-model.mjs",
+          "sha256": "d9184239fd52f973deb595557cd2e506ba3eb4d630e21ac47ad2024b27cbf644"
+        },
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/results.json",
+          "key": "integrated-model.mjs",
+          "sha256": "d9184239fd52f973deb595557cd2e506ba3eb4d630e21ac47ad2024b27cbf644"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261016-20/recovery-model.mjs": {
+      "sha256": "84f359bc3ab9d53b83e286ddcf06377a03962dfb14ed37467e4281db6947005d",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "docs/archive/specs/v5.0/v5-freeze-manifest.json",
+          "key": "validation/codex/run-20261016-20/recovery-model.mjs",
+          "sha256": "84f359bc3ab9d53b83e286ddcf06377a03962dfb14ed37467e4281db6947005d"
+        },
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/results.json",
+          "key": "recovery-model.mjs",
+          "sha256": "84f359bc3ab9d53b83e286ddcf06377a03962dfb14ed37467e4281db6947005d"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261016-20/request-contract.mjs": {
+      "sha256": "205ea355e0e9f78095a9ca643bf109894c6f80a8d7c123bb207443d170f2adae",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "docs/archive/specs/v5.0/v5-freeze-manifest.json",
+          "key": "validation/codex/run-20261016-20/request-contract.mjs",
+          "sha256": "205ea355e0e9f78095a9ca643bf109894c6f80a8d7c123bb207443d170f2adae"
+        },
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/results.json",
+          "key": "request-contract.mjs",
+          "sha256": "205ea355e0e9f78095a9ca643bf109894c6f80a8d7c123bb207443d170f2adae"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261016-20/structural-model.mjs": {
+      "sha256": "aeca8f7c28b3ce023e41e61de850f31cde7a3b6c77c0ccabfe0c9a7e7cdf4e08",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "docs/archive/specs/v5.0/v5-freeze-manifest.json",
+          "key": "validation/codex/run-20261016-20/structural-model.mjs",
+          "sha256": "aeca8f7c28b3ce023e41e61de850f31cde7a3b6c77c0ccabfe0c9a7e7cdf4e08"
+        },
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/results.json",
+          "key": "structural-model.mjs",
+          "sha256": "aeca8f7c28b3ce023e41e61de850f31cde7a3b6c77c0ccabfe0c9a7e7cdf4e08"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261016-20/test-document-mutations.mjs": {
+      "sha256": "3422f629c06d7c7dc1eec4df73eaf6198df37301dbd9617f6678be01f30ac2af",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "docs/archive/specs/v5.0/v5-freeze-manifest.json",
+          "key": "validation/codex/run-20261016-20/test-document-mutations.mjs",
+          "sha256": "3422f629c06d7c7dc1eec4df73eaf6198df37301dbd9617f6678be01f30ac2af"
+        },
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/results.json",
+          "key": "test-document-mutations.mjs",
+          "sha256": "3422f629c06d7c7dc1eec4df73eaf6198df37301dbd9617f6678be01f30ac2af"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261016-20/test-document.mjs": {
+      "sha256": "29aa261d927a4ebd996a234a6bd9f6162c019012917186275811bf8bc269586f",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "docs/archive/specs/v5.0/v5-freeze-manifest.json",
+          "key": "validation/codex/run-20261016-20/test-document.mjs",
+          "sha256": "29aa261d927a4ebd996a234a6bd9f6162c019012917186275811bf8bc269586f"
+        },
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/results.json",
+          "key": "test-document.mjs",
+          "sha256": "29aa261d927a4ebd996a234a6bd9f6162c019012917186275811bf8bc269586f"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261016-20/test-integrated.mjs": {
+      "sha256": "bd0b3afe098469ff3a109806eeb0a85b2f80dbfff8f6e435ed534d6262d837b4",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "docs/archive/specs/v5.0/v5-freeze-manifest.json",
+          "key": "validation/codex/run-20261016-20/test-integrated.mjs",
+          "sha256": "bd0b3afe098469ff3a109806eeb0a85b2f80dbfff8f6e435ed534d6262d837b4"
+        },
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/results.json",
+          "key": "test-integrated.mjs",
+          "sha256": "bd0b3afe098469ff3a109806eeb0a85b2f80dbfff8f6e435ed534d6262d837b4"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261016-20/test-measure.mjs": {
+      "sha256": "64f9c2abde01f13cafe8e67e7a79443dcf71e8a16813cb90564bd7887f700072",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "docs/archive/specs/v5.0/v5-freeze-manifest.json",
+          "key": "validation/codex/run-20261016-20/test-measure.mjs",
+          "sha256": "64f9c2abde01f13cafe8e67e7a79443dcf71e8a16813cb90564bd7887f700072"
+        },
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/results.json",
+          "key": "test-measure.mjs",
+          "sha256": "64f9c2abde01f13cafe8e67e7a79443dcf71e8a16813cb90564bd7887f700072"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261016-20/test-recovery.mjs": {
+      "sha256": "fe7b5f7e9045ff04b1ff3b8a12abe3f4297ae1e78ebc02f7c1ed4a436b8cf98d",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "docs/archive/specs/v5.0/v5-freeze-manifest.json",
+          "key": "validation/codex/run-20261016-20/test-recovery.mjs",
+          "sha256": "fe7b5f7e9045ff04b1ff3b8a12abe3f4297ae1e78ebc02f7c1ed4a436b8cf98d"
+        },
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/results.json",
+          "key": "test-recovery.mjs",
+          "sha256": "fe7b5f7e9045ff04b1ff3b8a12abe3f4297ae1e78ebc02f7c1ed4a436b8cf98d"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261016-20/test-repairs.mjs": {
+      "sha256": "2d452d47069276f897fbd1fafc8dbc3a06c1b922b495c8bd9dd10f1a7b8652fa",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "docs/archive/specs/v5.0/v5-freeze-manifest.json",
+          "key": "validation/codex/run-20261016-20/test-repairs.mjs",
+          "sha256": "2d452d47069276f897fbd1fafc8dbc3a06c1b922b495c8bd9dd10f1a7b8652fa"
+        },
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/results.json",
+          "key": "test-repairs.mjs",
+          "sha256": "2d452d47069276f897fbd1fafc8dbc3a06c1b922b495c8bd9dd10f1a7b8652fa"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261016-20/test-unicode.mjs": {
+      "sha256": "8148c24d8be8ce19893910f2a58d8c7dea114140bb0eb2b3d189bf0db2e29c8c",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "docs/archive/specs/v5.0/v5-freeze-manifest.json",
+          "key": "validation/codex/run-20261016-20/test-unicode.mjs",
+          "sha256": "8148c24d8be8ce19893910f2a58d8c7dea114140bb0eb2b3d189bf0db2e29c8c"
+        },
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/results.json",
+          "key": "test-unicode.mjs",
+          "sha256": "8148c24d8be8ce19893910f2a58d8c7dea114140bb0eb2b3d189bf0db2e29c8c"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261016-20/test-v5.mjs": {
+      "sha256": "d6c7be35764bbaaf199bbc89ca4f1d657e6e32d7a0d4caec046e061e17393118",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "docs/archive/specs/v5.0/v5-freeze-manifest.json",
+          "key": "validation/codex/run-20261016-20/test-v5.mjs",
+          "sha256": "d6c7be35764bbaaf199bbc89ca4f1d657e6e32d7a0d4caec046e061e17393118"
+        },
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/results.json",
+          "key": "test-v5.mjs",
+          "sha256": "d6c7be35764bbaaf199bbc89ca4f1d657e6e32d7a0d4caec046e061e17393118"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261016-20/unicode-grapheme.mjs": {
+      "sha256": "c9ce9ad7d9965d4c9dce64c610ecd950db1197c83d25c88b7baac89e8fe84309",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "docs/archive/specs/v5.0/v5-freeze-manifest.json",
+          "key": "validation/codex/run-20261016-20/unicode-grapheme.mjs",
+          "sha256": "c9ce9ad7d9965d4c9dce64c610ecd950db1197c83d25c88b7baac89e8fe84309"
+        },
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/results.json",
+          "key": "unicode-grapheme.mjs",
+          "sha256": "c9ce9ad7d9965d4c9dce64c610ecd950db1197c83d25c88b7baac89e8fe84309"
+        }
+      ]
+    },
+    "tests/suites/codex/run-20261016-20/verify.mjs": {
+      "sha256": "0ebd4071948ea244b683994f9a4ad79852dda59341485b694be859cf7c30ebaf",
+      "provenance": "MATCHED_EXISTING_LEDGER",
+      "historicalMatches": [
+        {
+          "ledger": "docs/archive/specs/v5.0/v5-freeze-manifest.json",
+          "key": "validation/codex/run-20261016-20/verify.mjs",
+          "sha256": "0ebd4071948ea244b683994f9a4ad79852dda59341485b694be859cf7c30ebaf"
+        },
+        {
+          "ledger": "tests/suites/codex/run-20261016-20/results.json",
+          "key": "verify.mjs",
+          "sha256": "0ebd4071948ea244b683994f9a4ad79852dda59341485b694be859cf7c30ebaf"
+        }
+      ]
+    }
+  },
+  "runtimeDependencyLocks": {
+    "tests/suites/integration/c0/package.json": "40dc2c9d40bec7fab0fb05e5078d9bef51201d2116a2ce2a8ab06cee1eb3441f",
+    "tests/suites/integration/c0/package-lock.json": "60179a9dc086de19767d79059a64be6aaeeb97befe34a8de13d022f9ea24bb04"
+  },
+  "ledgerKeyPrefixes": {
+    "tests/validation/": {
+      "target": "tests/suites/",
+      "purpose": "Historical source hashes addressed the pre-relocation validation directory relative to tests."
+    },
+    "tests/reviews/reviews/": {
+      "target": "tests/reviews/",
+      "purpose": "Historical review ledger keys already contained reviews while the recording base was tests/reviews."
+    },
+    "tests/research/": {
+      "target": "tests/archive/research/",
+      "purpose": "Historical ledger keys used the pre-archive research directory relative to tests."
+    },
+    "tests/docs/": {
+      "target": "docs/",
+      "purpose": "Historical source hashes addressed root documentation relative to tests."
+    }
+  },
+  "runtimeLoaderPolicy": {
+    "recordedAt": "2026-10-24",
+    "scope": "Current registered production Node loader, separately bound from historical ledger-key aliases; no new historical seal",
+    "loader": "tooling/verification/v6.mjs",
+    "boundFiles": {
+      "tooling/verification/v6.mjs": "3440a453dc1a604fc2af8f6f461916691fbe222248906645033141acad2c0879",
+      ".nvmrc": "5b9d0e73029969ae9000117cb877f17bb9841c1279bfe8024e294acfcf017800"
+    },
+    "prefixes": {
+      "tests/validation/": "tests/suites/",
+      "validation/": "tests/suites/",
+      "tests/docs/": "docs/",
+      "tests/research/": "tests/archive/research/"
+    },
+    "rootCoverage": {
+      "tests/reviews/v6-finalization-20261019/run-inherited.mjs": "RESOLUTION_ONLY; inherited execution belongs to issue17 with its supported launch mode",
+      "tests/reviews/v6-finalization-20261019/verify.mjs": "EXECUTED_16_VIA_UNMODIFIED_PRODUCTION_WRAPPER",
+      "tests/suites/codex/run-20261016-20/verify.mjs": "RESOLUTION_ONLY; raw runner writes historical results and must not be executed in place"
+    }
+  }
+}
