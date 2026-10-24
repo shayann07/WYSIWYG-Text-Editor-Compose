@@ -72,6 +72,7 @@ class AdapterInstrumentation : Instrumentation() {
             "rich-layout" to { richLayoutChecks(root) },
             "rich-lifecycle" to { richLifecycleChecks() },
             "outline-ui" to { outlineUiChecks() },
+            "image-picker-focus" to { imagePickerFocusChecks() },
             "shell" to { richShellChecks() },
             "touch" to { richTouchChecks(root) },
             "clipboard" to { richClipboardChecks() },
@@ -102,6 +103,7 @@ class AdapterInstrumentation : Instrumentation() {
             richLayoutChecks(root)
             richShellChecks()
             outlineUiChecks()
+            imagePickerFocusChecks()
             recoveryCloseChecks()
         }
     }
