@@ -6,6 +6,16 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 import {registerHooks, syncBuiltinESMExports} from 'node:module';
 
 const root = path.resolve(import.meta.dirname, '../..');
+// Sealed results were recorded on one runtime; ICU-dependent segmentation is environment-specific elsewhere.
+const sealed = name => JSON.parse(fs.readFileSync(path.join(root, 'tests/reviews/v6-finalization-20261019', name), 'utf8'));
+const corpus = sealed('inherited-results.json').results.find(r => r.name === 'unicodeCorpus')?.detail ?? {};
+const recorded = {node: sealed('results.json').runtime, icu: corpus.icu, unicode: corpus.runtimeUnicode};
+const actual = {node: process.version, icu: process.versions.icu, unicode: process.versions.unicode};
+const drift = Object.keys(recorded).filter(key => recorded[key] && recorded[key] !== actual[key]);
+if (drift.length) {
+  console.warn(`Runtime differs from sealed evidence (${drift.map(key => `${key} ${actual[key]}, sealed ${recorded[key]}`).join('; ')}). ` +
+    'Treat ICU-dependent output as environment-specific, not as a regression; .nvmrc names the evidence runtime.');
+}
 function mapped(value) {
   if (value instanceof URL) value = fileURLToPath(value);
   if (typeof value !== 'string') return value;

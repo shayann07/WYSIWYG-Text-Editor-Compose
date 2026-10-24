@@ -2,7 +2,7 @@
 
 ## Post-clone quickstart
 
-Run from the repository root with JDK 21, Python 3.12 and Node 24:
+Run from the repository root with JDK 21, Python 3.12 and Node 24.20.0 (`.nvmrc`):
 
 ```sh
 python tooling/docs/validate_docs.py
