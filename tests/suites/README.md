@@ -1,6 +1,6 @@
 # Verification suites
 
-Executable suites and capability experiments. Each directory's README records its scope, commands and limits. Run commands from the repository root; `python tooling/verification/verify.py` orchestrates the current checks (see [AGENTS.md](../../AGENTS.md)). Passing synthetic suites does not qualify native IME, accessibility or print fidelity.
+Executable suites and capability experiments. Suite documentation and diagnostic entry points are linked below. Run commands from the repository root; `python tooling/verification/verify.py` orchestrates the current checks (see [AGENTS.md](../../AGENTS.md)). Passing synthetic suites does not qualify native IME, accessibility or print fidelity.
 
 ## Current suites
 
@@ -12,7 +12,7 @@ Executable suites and capability experiments. Each directory's README records it
 | [`integration/s0/`](integration/s0/README.md) | S0 executable schema compatibility experiment |
 | [`pagination/glyph_clusters/`](pagination/glyph_clusters/README.md) | SkShaper glyph/cluster capability and layout parity |
 | [`pagination/gp0/`](pagination/gp0/README.md) | GP0 bounded page/output experiment |
-| `pagination/output_bridge/` | Independent parser/render checks of a rejected output candidate |
+| [`pagination/output_bridge/independent_rejection.py`](pagination/output_bridge/independent_rejection.py) | Diagnostic script for a rejected output candidate; use `--help`, then supply `--candidate`, `--plan` and a new `--output-dir` |
 | [`pagination/pdf_outline/`](pagination/pdf_outline/README.md) | Rejected vector-outline PDF experiment |
 | [`urdu/u0/`](urdu/u0/README.md) | Urdu U0 profile, corpus and pinned fonts |
 | [`web/input/`](web/input/README.md) | M1 Web input/AT compatibility spike |
