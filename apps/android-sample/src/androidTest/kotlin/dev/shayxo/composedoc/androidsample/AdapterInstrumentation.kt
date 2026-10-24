@@ -35,10 +35,12 @@ class AdapterInstrumentation : Instrumentation() {
     internal lateinit var activity: MainActivity
     override fun onCreate(arguments: Bundle?) {
         super.onCreate(arguments)
+        startupPhase("instrumentation-created")
         this.arguments = arguments ?: Bundle()
         start()
     }
     override fun onStart() {
+        startupPhase("instrumentation-started")
         val id = arguments.getString("run-id", "adapter-${System.currentTimeMillis()}")
         require(id.matches(Regex("[a-zA-Z0-9_-]{1,64}")))
         val root = File(targetContext.filesDir, "qualification/$id")
@@ -52,6 +54,7 @@ class AdapterInstrumentation : Instrumentation() {
         }
         val result = resultFor(fatal)
         File(root, "results.json").writeText(result.toString(2), Charsets.UTF_8)
+        startupPhase("results-written")
         val status = result.getString("status")
         val data = Bundle().apply {
             putString(
@@ -67,8 +70,10 @@ class AdapterInstrumentation : Instrumentation() {
         val intent = Intent(targetContext, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK).putExtra("blank", true)
             .putExtra("qualification-root", root.name)
+        startupPhase("before-activity-launch")
         activity = startActivitySync(intent) as MainActivity
         waitUntil { main { activity.inputView != null } }
+        startupPhase("editor-mounted")
         val cases: Map<String, () -> Unit> = mapOf(
             "recovery-close" to { recoveryCloseChecks() },
             "rich-layout" to { richLayoutChecks(root) },
@@ -112,6 +117,12 @@ class AdapterInstrumentation : Instrumentation() {
             toolbarOwnerChecks()
             recoveryCloseChecks()
         }
+    }
+    private fun startupPhase(name: String) {
+        android.util.Log.i(
+            "ComposeDocStartup",
+            "phase=$name elapsedMs=${SystemClock.elapsedRealtime()} pid=${android.os.Process.myPid()}",
+        )
     }
     private fun resultFor(fatal: Throwable?): JSONObject {
         val failed = (0 until outcomes.length()).count { outcomes.getJSONObject(it).getString("status") != "PASS" } +
