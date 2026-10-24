@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "v6-g1-clarification-v1",
+  "issue": 22,
+  "status": "PROPOSED",
+  "authoritative": false,
+  "ownerAcceptance": null,
+  "supersedesFrozenBytes": false,
+  "references": ["docs/plans/v6/editor-v6-standalone.md", "docs/plans/v6/v6-freeze-record.json"],
+  "gate": "G1",
+  "definition": "G1 comprises BOTH the measured-hierarchy paragraph and the following core-test paragraph in Annex B Phase 1. It requires full measured hierarchy, version-wide locator maps, deep nesting, seam join/split counters, physical heap/latency measurements, I01-I06 tests, I14 serialization/replay prerequisites, exhaustive short offset maps, at least 100000 randomized operations, exact attribute/malformed-UTF-16 persistence, schema-invalid rejection and exception rollback including cross-piece graphemes/surrogates. Full I14 crash durability belongs to G7. Storage measurements are not total editor performance qualification.",
+  "preservedMeaning": "This consolidates the two existing G1 paragraphs without authorizing production work or weakening either. Existing qualification sampling across 20 seeds still applies. Numeric measurement proposals are separate issue 24 work; no threshold is represented as measured here.",
+  "acceptanceRequired": "Owner accepts this additive interpretation by an explicit recorded decision. Until then the sealed original remains authority and G1 stays unqualified. Never regenerate the standalone, alias or sealed manifest."
+}
