@@ -177,39 +177,49 @@ private fun AdapterInstrumentation.mountedChecksCase3() {
 
 internal fun AdapterInstrumentation.mountedKeyboardChecks() {
     group("IME activation and caret reveal respect independent platform keyboard bounds") {
-        replaceMounted((1..20).joinToString("\n") { "کتاب العربية English $it" })
-        main {
-            val h = activity.inputView!!
-            val manager = targetContext.getSystemService(android.content.Context.INPUT_METHOD_SERVICE)
-                as android.view.inputmethod.InputMethodManager
-            manager.hideSoftInputFromWindow(h.windowToken, 0)
+        val trace = MountedKeyboardTrace(this)
+        trace.around {
+            replaceMounted((1..20).joinToString("\n") { "کتاب العربية English $it" })
+            main {
+                val h = activity.inputView!!
+                val manager = targetContext.getSystemService(android.content.Context.INPUT_METHOD_SERVICE)
+                    as android.view.inputmethod.InputMethodManager
+                trace.request("initial-hide") { manager.hideSoftInputFromWindow(h.windowToken, 0) }
+            }
+            waitUntil { main { imeBottom() } == 0 }
+            waitForIdleSync()
+            val keyboard = MountedKeyboardProbe(this)
+            trace.baseline(keyboard.baselineCoordinates())
+            val before = main { activity.inputView!!.height }
+            main {
+                val v = activity.owners.current
+                val end = v.snapshot().visible.units.size
+                v.dispatch(EditorIntent.Select(Selection(end, end)))
+                trace.request("show") { activity.inputView!!.showKeyboard() }
+            }
+            waitUntil { main { imeBottom() } > 0 }
+            waitUntil { keyboard.additionalOcclusion() > 0 }
+            waitUntil { main { caretInsideViewport() } }
+            waitUntil { main { caretAboveKeyboard() } }
+            check(
+                main {
+                    activity.inputView!!.height
+                } > 0,
+            ) { "No editing viewport above keyboard; prior height=$before" }
+            trace.record("shown")
+            keyboard.record("shown")
+            main {
+                val view = activity.inputView!!
+                val manager = targetContext.getSystemService(android.content.Context.INPUT_METHOD_SERVICE)
+                    as android.view.inputmethod.InputMethodManager
+                trace.request("final-hide") { manager.hideSoftInputFromWindow(view.windowToken, 0) }
+            }
+            waitUntil { main { imeBottom() } == 0 && keyboard.additionalOcclusion() == 0 }
+            trace.record("hidden-again")
+            keyboard.record("hidden-again")
+            keyboard.write()
+            assertClosedConnectionReopens()
         }
-        waitUntil { main { imeBottom() } == 0 }
-        waitForIdleSync()
-        val keyboard = MountedKeyboardProbe(this)
-        val before = main { activity.inputView!!.height }
-        main {
-            val v = activity.owners.current
-            val end = v.snapshot().visible.units.size
-            v.dispatch(EditorIntent.Select(Selection(end, end)))
-            activity.inputView!!.showKeyboard()
-        }
-        waitUntil { main { imeBottom() } > 0 }
-        waitUntil { keyboard.additionalOcclusion() > 0 }
-        waitUntil { main { caretInsideViewport() } }
-        waitUntil { main { caretAboveKeyboard() } }
-        check(main { activity.inputView!!.height } > 0) { "No editing viewport above keyboard; prior height=$before" }
-        keyboard.record("shown")
-        main {
-            val view = activity.inputView!!
-            val manager = targetContext.getSystemService(android.content.Context.INPUT_METHOD_SERVICE)
-                as android.view.inputmethod.InputMethodManager
-            manager.hideSoftInputFromWindow(view.windowToken, 0)
-        }
-        waitUntil { main { imeBottom() } == 0 && keyboard.additionalOcclusion() == 0 }
-        keyboard.record("hidden-again")
-        keyboard.write()
-        assertClosedConnectionReopens()
     }
 }
 private fun AdapterInstrumentation.imeBottom(): Int {

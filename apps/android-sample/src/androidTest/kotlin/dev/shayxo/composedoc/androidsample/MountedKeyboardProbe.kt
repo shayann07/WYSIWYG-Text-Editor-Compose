@@ -17,6 +17,7 @@ internal class MountedKeyboardProbe(private val checks: AdapterInstrumentation) 
     }
 
     fun additionalOcclusion(): Int = checks.main { baseline.bottom - visibleFrame().bottom }
+    fun baselineCoordinates(): IntArray = intArrayOf(baseline.left, baseline.top, baseline.right, baseline.bottom)
 
     fun record(stage: String) {
         checks.main {
