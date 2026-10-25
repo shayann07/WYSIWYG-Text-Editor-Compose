@@ -96,16 +96,77 @@ jobs:
       - run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
       - name: Build outside-checkout consumers from binary metadata
         run: xvfb-run -a python tooling/verification/consumer_check.py --android-peer --output-dir tests/local-evidence/consumer/android-ci
-      - name: Install the same hosted runtime for all declared trials
+      - name: Validate diagnostic contracts and compiled recorder on the host
+        shell: bash
+        run: |
+          python -m unittest discover -s tooling/verification -p 'test_android*.py'
+          python - <<'PY'
+          import hashlib, json, os, subprocess, tomllib
+          from pathlib import Path
+          receipt = json.loads(Path('tests/local-evidence/consumer/android-ci/results.json').read_text())
+          assert receipt['status'] == 'PASS'
+          project = Path(receipt['android']).resolve()
+          assert not project.is_relative_to(Path.cwd().resolve())
+          classes = project / 'build/tmp/kotlin-classes/debugAndroidTest'
+          version = tomllib.loads(Path('gradle/libs.versions.toml').read_text())['versions']['kotlin']
+          cache = Path(os.environ.get('GRADLE_USER_HOME', str(Path.home()/'.gradle')))
+          jars = list((cache/'caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib'/version).glob(f'*/kotlin-stdlib-{version}.jar'))
+          assert len(jars) == 1 and (classes/'dev/shayxo/composedoc/androidsample/KeyboardTraceRecorderChecks.class').is_file()
+          output = Path('tests/local-evidence/android/keyboard-host'); output.mkdir(parents=True, exist_ok=False)
+          command = [str(Path(os.environ['JAVA_HOME'])/'bin/java'), '-cp', str(classes)+os.pathsep+str(jars[0]), 'dev.shayxo.composedoc.androidsample.KeyboardTraceRecorderChecks']
+          with (output/'stdout.txt').open('wb') as stdout, (output/'stderr.txt').open('wb') as stderr:
+              result = subprocess.run(command, stdout=stdout, stderr=stderr, timeout=30)
+          digest = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+          data = dict(exitCode=result.returncode, command=command, scope='Host recorder regression, not Android qualification', stdlibSha256=digest(jars[0]), classes={p.name:digest(p) for p in (classes/'dev/shayxo/composedoc/androidsample').glob('KeyboardTrace*.class')}, sourceInputs=receipt['sourceInputs'])
+          (output/'result.json').write_text(json.dumps(data, indent=2)+'\n')
+          if result.returncode: raise SystemExit(result.returncode)
+          print((output/'stdout.txt').read_text())
+          PY
+      - name: Start the disposable emulator and wait for unlocked services
         shell: bash
         run: |
           sdkmanager 'emulator' 'system-images;android-37.1;google_apis_playstore_ps16k;x86_64'
+          export ANDROID_AVD_HOME="$RUNNER_TEMP/composedoc-ci-avds"
+          mkdir -p "$ANDROID_AVD_HOME"
+          echo no | avdmanager create avd --name composedoc_ci --device pixel_7 --package 'system-images;android-37.1;google_apis_playstore_ps16k;x86_64'
+          printf 'hw.cpu.ncore=2\nhw.ramSize=6144\ndisk.dataPartition.size=2048M\nhw.keyboard=no\n' >> "$ANDROID_AVD_HOME/composedoc_ci.avd/config.ini"
           sudo chmod a+rw /dev/kvm
           adb start-server
-      - name: Validate experiment orchestration and unchanged adapter contracts
-        run: python -m unittest discover -s tooling/verification -p 'test_android*.py'
-      - name: Execute the fixed cold foreground-attach cold foreground-attach plan
-        run: python tooling/verification/android_launch_experiment.py --consumer-receipt tests/local-evidence/consumer/android-ci/results.json --output-dir tests/local-evidence/android/launch-comparison
+          nohup "$ANDROID_HOME/emulator/emulator" -avd composedoc_ci -port 5580 -no-window -no-audio -no-snapshot -no-boot-anim -gpu software -feature -Vulkan > emulator.log 2>&1 &
+          emulator_pid=$!
+          sleep 1
+          if ! kill -0 "$emulator_pid"; then cat emulator.log; exit 1; fi
+          python tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/consumer/android-ci/results.json --wait-only --readiness-timeout 300 --output-dir tests/local-evidence/android/preflight
+      - name: Verify the independently packaged APK
+        shell: bash
+        run: |
+          # This offline editor does not need first-boot Play Store network provisioning.
+          adb -s emulator-5580 shell svc wifi disable
+          adb -s emulator-5580 shell svc data disable
+          adb -s emulator-5580 shell dumpsys meminfo > pre-test-memory.txt
+          # Credential-unlocked storage is distinct from an interactive, unlocked display.
+          adb -s emulator-5580 shell settings put system screen_off_timeout 1800000
+          adb -s emulator-5580 shell input keyevent KEYCODE_WAKEUP
+          adb -s emulator-5580 shell wm dismiss-keyguard
+          adb -s emulator-5580 shell ime list -s > pre-test-ime-list.txt
+          adb -s emulator-5580 shell ime enable com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME
+          adb -s emulator-5580 shell ime set com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME
+          adb -s emulator-5580 shell settings put secure show_ime_with_hard_keyboard 1
+          adb -s emulator-5580 shell dumpsys input_method > pre-test-input-method.txt
+          adb -s emulator-5580 shell dumpsys power > pre-test-power.txt
+          adb -s emulator-5580 shell dumpsys window policy > pre-test-window-policy.txt
+          python tooling/verification/android_startup_probe.py --serial emulator-5580 --avd-name composedoc_ci --output-dir tests/local-evidence/android/startup-probe -- python tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/consumer/android-ci/results.json --output-dir tests/local-evidence/android/ci
+      - name: Verify cross-UID clipboard after publisher process death
+        run: python tooling/verification/android_clipboard.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/consumer/android-ci/results.json --output-dir tests/local-evidence/android/clipboard-ci
+      - name: Stop only the disposable emulator
+        if: always()
+        shell: bash
+        run: |
+          if adb -s emulator-5580 get-state >/dev/null 2>&1; then
+            adb -s emulator-5580 emu kill
+          else
+            echo 'Disposable emulator is not running; no device targeted.'
+          fi
       - name: Retain packaged adapter receipts and raw failures
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -117,7 +178,7 @@ jobs:
             tests/local-evidence/android/clipboard-ci
             tests/local-evidence/android/preflight
             tests/local-evidence/android/startup-probe
-            tests/local-evidence/android/launch-comparison
+            tests/local-evidence/android/keyboard-host
             emulator.log
             pre-test-*.txt
           if-no-files-found: warn
