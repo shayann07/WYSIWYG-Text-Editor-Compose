@@ -32,6 +32,8 @@ class AdapterInstrumentation : Instrumentation() {
     private var arguments = Bundle()
     private val outcomes = JSONArray()
     internal lateinit var evidenceRoot: File
+    internal var tapFixture: String = ""
+        private set
     internal lateinit var activity: MainActivity
     override fun onCreate(arguments: Bundle?) {
         super.onCreate(arguments)
@@ -46,6 +48,7 @@ class AdapterInstrumentation : Instrumentation() {
         val root = File(targetContext.filesDir, "qualification/$id")
         check(root.mkdirs())
         evidenceRoot = root
+        tapFixture = arguments.getString("tap-fixture", "")
         var fatal: Throwable? = null
         try {
             runChecks(root)

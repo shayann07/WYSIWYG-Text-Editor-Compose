@@ -14,6 +14,7 @@ from pathlib import Path
 import subprocess
 import time
 import zipfile
+from android_tap_fixture import owned_tap_fixture
 from android_process import run_witness
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -294,17 +295,18 @@ def main():
         run("install-test", "install", "-r", str(args.test_apk.resolve()))
         run_id = "adapter-" + str(time.time_ns())
         receipt["runId"] = run_id
-        launch = dict(mode=args.instrumentation_launch, stage='preparing')
-        receipt['instrumentationLaunch'] = launch
-        prepare_instrumentation_launch(run, args.instrumentation_launch, run_id, launch)
-        instrument_flags = ['--no-restart'] if args.instrumentation_launch == 'foreground-attach' else []
-        window = dict(start=instrument_clock(run, 'instrument-start'))
-        receipt['instrumentationWindow'] = window
-        try:
-            run("instrument", "shell", "am", "instrument", "-w", *instrument_flags, "-e", "run-id", run_id,
-                PACKAGE + ".test/" + PACKAGE + ".AdapterInstrumentation", timeout=360)
-        finally:
-            window['end'] = instrument_clock(run, 'instrument-end')
+        with owned_tap_fixture(run, args.test_apk, output, run_id, receipt) as tap_path:
+            launch = dict(mode=args.instrumentation_launch, stage='preparing')
+            receipt['instrumentationLaunch'] = launch
+            prepare_instrumentation_launch(run, args.instrumentation_launch, run_id, launch)
+            instrument_flags = ['--no-restart'] if args.instrumentation_launch == 'foreground-attach' else []
+            window = dict(start=instrument_clock(run, 'instrument-start'))
+            receipt['instrumentationWindow'] = window
+            try:
+                run("instrument", "shell", "am", "instrument", "-w", *instrument_flags, "-e", "run-id", run_id,
+                    "-e", "tap-fixture", tap_path, PACKAGE + ".test/" + PACKAGE + ".AdapterInstrumentation", timeout=360)
+            finally:
+                window['end'] = instrument_clock(run, 'instrument-end')
         # am instrument may exit zero even when the instrumentation reports failure.
         raw = run("device-result", "shell", "run-as", PACKAGE, "cat",
                   "files/qualification/" + run_id + "/results.json")

@@ -50,7 +50,7 @@ internal fun AdapterInstrumentation.systemTap(target: MountedTapTarget, label: S
         check(target.points[0] >= target.origin[0] && target.points[0] < target.origin[0] + target.width)
         check(target.points[1] >= target.origin[1] && target.points[1] < target.origin[1] + target.height)
     }
-    val command = tapCommand(target.points[0], target.points[1], target.display)
+    val command = tapCommand(target.points[0], target.points[1], target.display, tapFixture)
     val input = ParcelFileDescriptor.AutoCloseInputStream(uiAutomation.executeShellCommand(command))
     val executor = Executors.newSingleThreadExecutor()
     try {

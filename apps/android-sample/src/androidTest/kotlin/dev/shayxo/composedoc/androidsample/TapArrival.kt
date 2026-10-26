@@ -19,10 +19,10 @@ internal fun shortTap(arrivals: List<TapArrival>, display: Int, threshold: Int) 
     check(up.delivered - down.down < threshold) { "Stale or long delivered gesture: $arrivals" }
 }
 
-internal fun tapCommand(x: Float, y: Float, display: Int): String {
-    require(x.isFinite() && y.isFinite() && x >= 0 && y >= 0 && display >= 0)
-    return "timeout 5 input touchscreen -d $display tap $x $y; " +
-        "rc=$?; printf '\\nCOMPOSEDOC_TAP_EXIT=%s\\n' \"\$rc\""
+internal fun tapCommand(x: Float, y: Float, display: Int, fixture: String): String {
+    require(x.isFinite() && y.isFinite() && x >= 0 && y >= 0 && x < 1000000 && y < 1000000 && display >= 0)
+    require(fixture.matches(Regex("/data/local/tmp/composedoc-tap-v1-adapter-[0-9]{1,24}/tap[.]sh")))
+    return "/system/bin/sh $fixture $x $y $display"
 }
 
 internal fun tapExit(output: String) {

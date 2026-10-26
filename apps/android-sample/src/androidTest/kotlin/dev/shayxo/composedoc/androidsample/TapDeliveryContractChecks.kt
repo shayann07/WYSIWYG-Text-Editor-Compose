@@ -16,12 +16,26 @@ internal object TapDeliveryContractChecks {
             listOf(down.copy(targetMatches = false), up),
         )
         for (events in invalid) check(runCatching { shortTap(events, 0, 400) }.isFailure)
-        check(tapCommand(122.5f, 741.3125f, 0).startsWith("timeout 5 input touchscreen -d 0 tap 122.5 741.3125;"))
+        check(
+            tapCommand(122.5f, 741.3125f, 0, "/data/local/tmp/composedoc-tap-v1-adapter-123/tap.sh") ==
+                "/system/bin/sh /data/local/tmp/composedoc-tap-v1-adapter-123/tap.sh 122.5 741.3125 0",
+        )
         for (x in listOf(Float.NaN, Float.POSITIVE_INFINITY, -1f)) {
-            check(runCatching { tapCommand(x, 1f, 0) }.isFailure)
-            check(runCatching { tapCommand(1f, x, 0) }.isFailure)
+            check(
+                runCatching {
+                    tapCommand(x, 1f, 0, "/data/local/tmp/composedoc-tap-v1-adapter-123/tap.sh")
+                }.isFailure,
+            )
+            check(
+                runCatching {
+                    tapCommand(1f, x, 0, "/data/local/tmp/composedoc-tap-v1-adapter-123/tap.sh")
+                }.isFailure,
+            )
         }
-        check(runCatching { tapCommand(1f, 1f, -1) }.isFailure)
+        check(runCatching { tapCommand(1f, 1f, -1, "/data/local/tmp/composedoc-tap-v1-adapter-123/tap.sh") }.isFailure)
+        for (id in listOf("../foreign", "adapter-1;rm", "adapter-", "adapter-a")) {
+            check(runCatching { tapCommand(1f, 1f, 0, id) }.isFailure)
+        }
         tapExit("\nCOMPOSEDOC_TAP_EXIT=0\n")
         for (text in listOf("", "\nCOMPOSEDOC_TAP_EXIT=124\n", "Error\nCOMPOSEDOC_TAP_EXIT=0\n")) {
             check(runCatching { tapExit(text) }.isFailure)
