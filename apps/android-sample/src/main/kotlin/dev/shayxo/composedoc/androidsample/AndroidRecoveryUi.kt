@@ -45,7 +45,7 @@ private fun recoveryEntry(activity: MainActivity, owners: AndroidOwners, entry: 
                     .setPositiveButton("Discard") { _, _ ->
                         owners.checkpoints.discard(entry.owner, entry.sequence) { result ->
                             val applied = result.getOrElse {
-                                owners.status = "Discard failed; recovery retained: ${it.message}"
+                                owners.note(owners.current, "Discard failed; recovery retained: ${it.message}")
                                 return@discard
                             }
                             owners.status = if (applied) {

@@ -203,7 +203,7 @@ open class MainActivity :
             .setPositiveButton("Keep recovery & leave") { _, _ ->
                 owners.retainUnfinished()
                 owners.checkpoints.keep(owners.tabs.toList()) { outcome ->
-                    if (outcome.durable) finish() else owners.status = outcome.reason
+                    if (outcome.durable) finish() else owners.note(owners.current, outcome.reason)
                 }
             }.setNeutralButton("Save") { _, _ ->
                 if (!owners.saveBound()) owners.launchPicker(this, AndroidPickerKind.SAVE_AS)

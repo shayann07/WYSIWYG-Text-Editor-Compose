@@ -8,6 +8,7 @@ import java.io.RandomAccessFile
 
 internal fun AdapterInstrumentation.recoveryCloseChecks() {
     group("discard then unchanged keep-and-close requires a new durable generation") {
+        blankAndDiscarded()
         val tab = main {
             activity.owners.add(dev.shayxo.composedoc.model.Document(emptyList()), activate = true).also {
                 it.model.dispatch(EditorIntent.Type("اُردو discarded draft"))
@@ -80,6 +81,7 @@ private fun AdapterInstrumentation.draft(text: String) = main {
 
 private fun AdapterInstrumentation.repeatAndEdit() {
     group("repeated closes receive exactly one durable or cancelled outcome each") {
+        retryRejectedClose()
         val tab = draft("repeated close")
         val results = mutableListOf<RecoveryCloseOutcome>()
         main {
@@ -113,6 +115,7 @@ private fun AdapterInstrumentation.repeatAndEdit() {
 
 private fun AdapterInstrumentation.discardInFlight() {
     group("discard fences an in-flight close and its delayed publication cannot resurrect evidence") {
+        retryFailedDiscard()
         val tab = draft("in flight")
         val results = mutableListOf<RecoveryCloseOutcome>()
         var discarded = false
@@ -134,6 +137,8 @@ private fun AdapterInstrumentation.discardInFlight() {
 
 private fun AdapterInstrumentation.failedAndQuota() {
     group("one owner write failure receives a reason without holding another close and retry succeeds") {
+        retryFailedWrite()
+        independentPackets()
         val bad = draft("failed owner")
         val good = draft("independent owner")
         val directory = File(activity.owners.directory.parentFile, "rich-recovery/${bad.id}")
@@ -168,6 +173,8 @@ private fun AdapterInstrumentation.failedAndQuota() {
             check(tab in activity.owners.tabs)
         }
         check(quota.delete())
+        // A failed close must not consume autosave. No edit or explicit flush rescues this wait.
+        waitUntil { activity.owners.recoveryStore.entries().any { it.owner == tab.id } }
         main { activity.owners.closeDocument(tab) }
         waitUntil { main { tab !in activity.owners.tabs } }
         check(activity.owners.recoveryStore.read(tab.id, tab.sequence).document.text == "quota protected")

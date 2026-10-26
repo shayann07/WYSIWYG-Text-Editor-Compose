@@ -19,12 +19,16 @@ internal data class MobileCheckpoint(
     val capturedAt: Long,
 )
 
+private class RecoveryDiscard(val owner: String, val through: Long)
+
 /** One batch in flight, one latest snapshot per owner pending. Typing cannot grow the write queue. */
 internal class AndroidCheckpoints(private val owners: AndroidOwners, private val store: AndroidRecoveryStore) {
     private val pending = LinkedHashMap<String, MobileCheckpoint>()
     private val last = HashMap<String, Triple<Document, Document?, String>>()
     private val names = HashMap<String, String>()
     private val resolved = HashMap<String, Long>()
+    private val discards = LinkedHashSet<RecoveryDiscard>()
+    private val deferredByDiscard = HashMap<String, MobileCheckpoint>()
     private val successful = HashMap<String, Long>()
     private val retainedDrafts = HashMap<String, RecoveredDraft>()
     private val publishedOwners = HashSet<String>()
@@ -90,11 +94,15 @@ internal class AndroidCheckpoints(private val owners: AndroidOwners, private val
             complete(RecoveryCloseOutcome.cancelled("Recovery controller was disposed; writing was not closed"))
             return
         }
-        val packets = entries.map { tab ->
+        val packets = entries.mapNotNull { tab ->
             changed(tab)
             val frame = tab.model.snapshot()
             val proposal = tab.model.captureRecoveryDraft()?.document
             val evidence = if (proposal != null || frame.waiting) tab.model.recoveryCompositionEvidence() else ""
+            // Never-written empty tabs need no record. A discarded or previously edited tab still does.
+            val untouched = last[tab.id] == null && tab.id !in resolved && discardFence(tab.id) == 0L
+            val empty = proposal == null && evidence.isEmpty() && frame.committed.same(Document(emptyList()))
+            if (untouched && empty) return@mapNotNull null
             MobileCheckpoint(
                 tab.id,
                 ++tab.sequence,
@@ -114,24 +122,54 @@ internal class AndroidCheckpoints(private val owners: AndroidOwners, private val
             } == true
         }
         closes.request(entries, packets, { outcome ->
-            if (outcome.durable) packets.forEach(::published)
+            if (outcome.durable) {
+                packets.forEach(::published)
+            } else {
+                retryUnpublished(packets)
+            }
             complete(outcome)
         }) { work -> io.execute(work) }
     }
+    private fun retryUnpublished(packets: List<MobileCheckpoint>) {
+        if (closed) return
+        retryDelay = RETRY_INTERVAL_MS
+        packets.forEach { packet ->
+            val fence = maxOf(resolved[packet.owner] ?: 0, successful[packet.owner] ?: 0)
+            val ownerPresent = owners.tabs.any { it.id == packet.owner } || packet.owner in retainedDrafts
+            val newerPending = (pending[packet.owner]?.sequence ?: 0) >= packet.sequence
+            if (packet.sequence <= fence || !ownerPresent || newerPending) return@forEach
+            if (packet.sequence <= discardFence(packet.owner)) deferDiscard(packet) else pending[packet.owner] = packet
+        }
+        if (pending.isNotEmpty()) schedule()
+    }
+    private fun deferDiscard(packet: MobileCheckpoint) {
+        if ((deferredByDiscard[packet.owner]?.sequence ?: 0) < packet.sequence) deferredByDiscard[packet.owner] = packet
+    }
     fun discard(owner: String, through: Long, complete: (Result<Boolean>) -> Unit) {
         // Fence pending close outcomes before asynchronous deletion, not after its UI callback.
+        val request = RecoveryDiscard(owner, through)
+        discards += request
+        pending[owner]?.takeIf { it.sequence <= through }?.let {
+            pending.remove(owner)
+            retryUnpublished(listOf(it))
+        }
         closes.discarding(owner, through)
         try {
             io.execute {
                 val result = runCatching { store.discard(owner, through) }
                 owners.main.post {
-                    if (result.getOrDefault(false)) discarded(owner, through)
-                    complete(result)
+                    finishDiscard(request, result, complete)
                 }
             }
         } catch (failure: java.util.concurrent.RejectedExecutionException) {
-            complete(Result.failure(failure))
+            finishDiscard(request, Result.failure(failure), complete)
         }
+    }
+    private fun finishDiscard(request: RecoveryDiscard, result: Result<Boolean>, complete: (Result<Boolean>) -> Unit) {
+        discards.remove(request)
+        if (result.getOrDefault(false)) discarded(request.owner, request.through)
+        deferredByDiscard.remove(request.owner)?.let { retryUnpublished(listOf(it)) }
+        complete(result)
     }
     fun flush() {
         owners.main.removeCallbacks(timer)
@@ -172,6 +210,10 @@ internal class AndroidCheckpoints(private val owners: AndroidOwners, private val
         retryDelay = if (results.any { it.second.isFailure }) RETRY_INTERVAL_MS else CHECKPOINT_INTERVAL_MS
         results.forEach { (packet, result) ->
             if (packet.sequence <= maxOf(resolved[packet.owner] ?: 0, successful[packet.owner] ?: 0)) return@forEach
+            if (packet.sequence <= discardFence(packet.owner)) {
+                retryUnpublished(listOf(packet))
+                return@forEach
+            }
             val tab = owners.tabs.firstOrNull { it.id == packet.owner }
             if (tab == null && packet.owner !in retainedDrafts) return@forEach
             result.fold(onSuccess = { published(packet) }, onFailure = {
@@ -184,21 +226,28 @@ internal class AndroidCheckpoints(private val owners: AndroidOwners, private val
     }
     private fun published(packet: MobileCheckpoint) {
         if (packet.sequence <= maxOf(resolved[packet.owner] ?: 0, successful[packet.owner] ?: 0)) return
-        successful[packet.owner] = packet.sequence
-        if ((pending[packet.owner]?.sequence ?: Long.MAX_VALUE) <= packet.sequence) pending.remove(packet.owner)
-        if (publishedOwners.add(packet.owner)) owners.recoverableCount++
-        retainedDrafts.remove(packet.owner)?.let { owners.unfinished.remove(it) }
-        val tab = owners.tabs.firstOrNull { it.id == packet.owner } ?: return
-        val latency = SystemClock.elapsedRealtime() - packet.capturedAt
-        tab.recovery = "Recovery #${packet.sequence} completed (${latency}ms)" +
-            if (tab.sequence > packet.sequence) "; newer edits pending" else ""
+        if (packet.sequence <= discardFence(packet.owner)) {
+            retryUnpublished(listOf(packet))
+        } else {
+            successful[packet.owner] = packet.sequence
+            if ((pending[packet.owner]?.sequence ?: Long.MAX_VALUE) <= packet.sequence) pending.remove(packet.owner)
+            if (publishedOwners.add(packet.owner)) owners.recoverableCount++
+            retainedDrafts.remove(packet.owner)?.let { owners.unfinished.remove(it) }
+            owners.tabs.firstOrNull { it.id == packet.owner }?.let { tab ->
+                val latency = SystemClock.elapsedRealtime() - packet.capturedAt
+                tab.recovery = "Recovery #${packet.sequence} completed (${latency}ms)" +
+                    if (tab.sequence > packet.sequence) "; newer edits pending" else ""
+            }
+        }
     }
+    private fun discardFence(owner: String) = discards.filter { it.owner == owner }.maxOfOrNull { it.through } ?: 0L
     fun discarded(owner: String, through: Long) {
         closes.discarding(owner, through)
         resolved[owner] = maxOf(resolved[owner] ?: 0, through)
         last.remove(owner)
         names.remove(owner)
         if ((pending[owner]?.sequence ?: Long.MAX_VALUE) <= through) pending.remove(owner)
+        if ((deferredByDiscard[owner]?.sequence ?: Long.MAX_VALUE) <= through) deferredByDiscard.remove(owner)
         retainedDrafts.remove(owner)?.let { owners.unfinished.remove(it) }
         publishedOwners.remove(owner)
         successful.remove(owner)
@@ -213,9 +262,16 @@ internal class AndroidCheckpoints(private val owners: AndroidOwners, private val
     fun close() {
         owners.main.removeCallbacks(timer)
         closes.close()
+        // Cancellation may restore captured packets for the final drain, but must not leave a delayed retry alive.
+        owners.main.removeCallbacks(timer)
+        scheduled = false
         // The executor drains captured immutable work; process death before completion remains a loss window.
-        val remaining = pending.values.toList()
+        // A failed in-flight discard must not consume the last pending snapshot during teardown.
+        // The store's durable discard fence rejects this write if the discard succeeds.
+        val remaining = (pending.values + deferredByDiscard.values).groupBy { it.owner }
+            .values.map { packets -> packets.maxBy { it.sequence } }
         pending.clear()
+        deferredByDiscard.clear()
         if (remaining.isNotEmpty()) {
             runCatching {
                 io.execute {

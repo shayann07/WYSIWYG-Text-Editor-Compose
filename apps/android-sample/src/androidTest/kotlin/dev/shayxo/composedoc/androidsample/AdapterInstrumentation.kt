@@ -49,7 +49,12 @@ class AdapterInstrumentation : Instrumentation() {
         tapFixture = arguments.getString("tap-fixture", "")
         var fatal: Throwable? = null
         try {
-            runChecks(root)
+            if (arguments.getString("focus") == "recovery-retry") {
+                launchEditor(root)
+                recoveryRetryChecks()
+            } else {
+                runChecks(root)
+            }
         } catch (error: Throwable) {
             fatal = error
         }
@@ -66,12 +71,15 @@ class AdapterInstrumentation : Instrumentation() {
         }
         finish(if (status == "PASS") Activity.RESULT_OK else Activity.RESULT_CANCELED, data)
     }
-    private fun runChecks(root: File) {
+    private fun launchEditor(root: File) {
         val intent = Intent(targetContext, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK).putExtra("blank", true)
             .putExtra("qualification-root", root.name)
         activity = startActivitySync(intent) as MainActivity
         waitUntil { main { activity.inputView != null } }
+    }
+    private fun runChecks(root: File) {
+        launchEditor(root)
         if (arguments.getString("focus") == "recovery-close") {
             recoveryCloseChecks()
         } else if (arguments.getString("focus") == "rich-layout") {

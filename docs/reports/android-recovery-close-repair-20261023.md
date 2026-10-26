@@ -103,3 +103,30 @@ leave the tab and writing open. See the integration guide for the complete workf
 
 Owner-written PR metadata and review remain required. No main push, merge, issue
 closure, contributor-branch rewrite or publication is authorized by this repair.
+
+## Close retry and discard follow-up — 27 October 2026
+
+Independent review found that an unsuccessful close could consume a previously
+scheduled automatic recovery snapshot. On an owner-authorized Samsung API36,
+the unmodified controller failed both the write-failure and busy-admission tests:
+without another edit or close attempt, no copy appeared within 15 seconds. The raw
+before results are in `tests/local-evidence/landing-20261026-resume/` in the
+primary checkout. An attempted after run stopped before the editor mounted; it is
+retained as a harness failure, not a recovery test result.
+
+The follow-up retries eligible immutable snapshots after failed or cancelled close,
+while fencing discarded generations and retaining newer pending content. Discard
+in progress defers a retry; failed deletion restores it, and a successful deletion
+prevents resurrection. A pristine empty tab does not create a recovery record;
+discarded or nonempty documents still require a verified copy. Independent packet
+writes continue if one owner fails, while the combined close still refuses success.
+Recovery and leave errors are placed in the visible tab notice. The tap fixture's
+host test writes explicit LF bytes on Windows.
+
+Five focused mounted controller/store tests PASS on a disposable Android API28
+emulator, using app SHA256 `50b482370346aec025aa6bd0477f5f2221e02e0f825d823adceef38d5c617300`
+and test APK SHA256 `225bfd113dc1a12d8e318610fc47f329ac33384d084e72253d47545182252547`.
+The receipt is `landing-20261026-resume/recovery-api28-focused/receipt.json` in
+the primary checkout. This tests instrumented events, not real IME or TalkBack.
+Debug/test compilation, zero Detekt, and local check/apiCheck passed; full packaged
+consumer, process interruption and exact-commit gates remain pending this candidate.

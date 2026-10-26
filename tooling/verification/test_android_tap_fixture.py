@@ -84,18 +84,18 @@ class ActualRuntimeExec(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix='tap-script-') as tmp:
             root = Path(tmp); self.assertNotIn(' ', str(root))
             fake = root/'input.sh'; mode = root/'mode'; calls = root/'calls'
-            fake.write_text(
+            fake.write_bytes((
                 'if [ "$#" -eq 0 ]; then\n'
                 ' printf "tap <x> <y>\\n"\n'
                 f' if [ "$(cat {mode.as_posix()})" = display ]; then printf -- "-d display\\n"; fi\n'
                 ' exit 0\nfi\n'
                 f'printf "%s\\n" "$*" >> {calls.as_posix()}\n'
-                'exit 0\n', encoding='utf-8')
+                'exit 0\n').encode('utf-8'))
             deployed = root/'tap.sh'
             # Only Android executable locations are replaced; the packaged script's parsing/branching is executed.
             text = SCRIPT.read_text(encoding='utf-8').replace('/system/bin/input', f'{shell.as_posix()} {fake.as_posix()}')
             text = text.replace('/system/bin/sh', shell.as_posix())
-            deployed.write_text(text, encoding='utf-8')
+            deployed.write_bytes(text.encode('utf-8'))
             def invoke(*args):
                 return subprocess.run([str(shell), str(deployed), *args], capture_output=True, timeout=10)
             mode.write_text('default')

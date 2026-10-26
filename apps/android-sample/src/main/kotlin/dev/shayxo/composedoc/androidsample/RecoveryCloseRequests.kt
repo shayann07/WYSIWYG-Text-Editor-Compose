@@ -40,7 +40,9 @@ internal class RecoveryCloseRequests(private val owners: AndroidOwners, private 
         try {
             enqueue(
                 Runnable {
-                    val result = runCatching { packets.forEach(::publishAndVerify) }
+                    // A failed owner's write must not prevent independent captured owners from being protected.
+                    val failures = packets.mapNotNull { runCatching { publishAndVerify(it) }.exceptionOrNull() }
+                    val result = if (failures.isEmpty()) Result.success(Unit) else Result.failure(failures.first())
                     owners.main.post { completed(request, result) }
                 },
             )
