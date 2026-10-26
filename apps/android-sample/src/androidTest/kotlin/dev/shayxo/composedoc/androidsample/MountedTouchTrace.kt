@@ -17,6 +17,7 @@ internal class MountedTouchTrace(
     private val checks: AdapterInstrumentation,
     private val label: String,
     private val suppressDelivery: Boolean = false,
+    private val tapTarget: MountedTapTarget? = null,
 ) : AutoCloseable {
     private val records = JSONArray()
     private val view = checks.main { checkNotNull(checks.activity.inputView) }
@@ -33,8 +34,21 @@ internal class MountedTouchTrace(
         if (frame.selection == expected || !sameBasis(frame)) publication.countDown()
     }
     private var held: MotionEvent? = null
+    private val arrivals = mutableListOf<TapArrival>()
     private val observer = object : Window.Callback by previous {
         override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+            if (arrivals.size < 16) {
+                arrivals.add(
+                    TapArrival(
+                        event.actionMasked,
+                        SystemClock.uptimeMillis(),
+                        event.downTime,
+                        event.eventTime,
+                        checkNotNull(view.display).displayId,
+                        tapTarget?.matches(checks) ?: true,
+                    ),
+                )
+            }
             held?.recycle()
             held = if (event.actionMasked in listOf(MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL)) {
                 null
@@ -81,6 +95,22 @@ internal class MountedTouchTrace(
         return actual
     }
 
+    fun assertShortTap() {
+        checks.main {
+            check(sameBasis(owner.snapshot()) && view.model === owner && view.isAttachedToWindow)
+            shortTap(arrivals.toList(), checkNotNull(view.display).displayId, ViewConfiguration.getLongPressTimeout())
+        }
+    }
+
+    fun assertStaleDown() {
+        checks.main {
+            val down = arrivals.first()
+            check(down.action == MotionEvent.ACTION_DOWN)
+            check(down.targetMatches) { "Captured stale-tap target changed before DOWN delivery" }
+            check(down.delivered - down.down > ViewConfiguration.getLongPressTimeout())
+        }
+    }
+
     private fun sameBasis(frame: EditorFrame) = checks.activity.owners.current === owner &&
         frame.documentRevision == basis.documentRevision &&
         frame.committed.same(basis.committed) &&
@@ -92,6 +122,11 @@ internal class MountedTouchTrace(
             val frame = checks.activity.owners.current.snapshot()
             val origin = IntArray(2).also(view::getLocationOnScreen)
             val value = JSONObject().put("stage", stage).put("uptime", SystemClock.uptimeMillis())
+                .put("ownerIdentity", System.identityHashCode(owner))
+                .put("currentOwnerIdentity", System.identityHashCode(checks.activity.owners.current))
+                .put("tapTargetOrigin", tapTarget?.let { JSONArray(it.origin) })
+                .put("tapTargetWidth", tapTarget?.width).put("tapTargetHeight", tapTarget?.height)
+                .put("tapTargetMatches", tapTarget?.matches(checks))
                 .put("longPressTimeout", ViewConfiguration.getLongPressTimeout())
                 .put("tapTimeout", ViewConfiguration.getTapTimeout())
                 .put("origin", JSONArray(origin.toList())).put("width", view.width).put("height", view.height)
@@ -102,6 +137,7 @@ internal class MountedTouchTrace(
                 .put("nativeEvents", JSONArray(checks.activity.owners.nativeEvents.takeLast(8)))
             event?.let {
                 value.put("action", it.actionMasked).put("downTime", it.downTime).put("eventTime", it.eventTime)
+                    .put("windowDisplayId", checkNotNull(view.display).displayId)
                     .put("source", it.source).put("flags", it.flags).put("x", it.x).put("y", it.y)
                     .put("rawX", it.rawX).put("rawY", it.rawY)
             }

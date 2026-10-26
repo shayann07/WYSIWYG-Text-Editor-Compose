@@ -71,48 +71,51 @@ private fun AdapterInstrumentation.mountedChecksCase2() {
 internal fun AdapterInstrumentation.mountedHitChecks() {
     group("instrumented touch hit uses independent Latin prefix advance") {
         replaceMounted("abcd")
-        val coordinates = main {
-            val v = activity.inputView!!
-            val screen = IntArray(2)
-            v.getLocationOnScreen(screen)
-            val inset = 16f * targetContext.resources.displayMetrics.density
-            floatArrayOf(
-                screen[0] + inset + referencePaint().measureText("ab") + 0.5f,
-                screen[1] + inset + referencePaint().fontSpacing / 2,
-            )
-        }
-        val t = SystemClock.uptimeMillis()
-        sendPointerSync(
-            MotionEvent.obtain(
-                t,
-                t,
-                MotionEvent.ACTION_DOWN,
-                coordinates[0],
-                coordinates[1],
-                0,
-            ),
-        )
-        val downDeliveredAt = SystemClock.uptimeMillis()
-        sendPointerSync(
-            MotionEvent.obtain(
-                t,
-                t + 40,
-                MotionEvent.ACTION_UP,
-                coordinates[0],
-                coordinates[1],
-                0,
-            ),
-        )
-        val upDeliveredAt = SystemClock.uptimeMillis()
-        waitForIdleSync()
-        val actual = main { activity.owners.current.snapshot().selection }
-        check(actual == Selection(2, 2)) {
-            "Expected independent tap caret2; actual=$actual; " +
-                "downDeliveryMs=${downDeliveredAt - t}; upDeliveryMs=${upDeliveredAt - t}; " +
-                "sent=${coordinates.toList()}; ${main { touchHitEnvironment() }}"
+        staleTapWitness(independentTapTarget())
+        replaceMounted("abcd")
+        val target = independentTapTarget()
+        val before = main { activity.owners.current.snapshot() }
+        MountedTouchTrace(this, "latin-short-tap", tapTarget = target).use { trace ->
+            // Same predeclared outer delay as the old path. The shell creates fresh event timestamps afterward.
+            SystemClock.sleep(android.view.ViewConfiguration.getLongPressTimeout().toLong() + 200)
+            systemTap(target, "latin-short-tap")
+            trace.awaitSelection(Selection(2, 2))
+            trace.assertShortTap()
+            val actual = main { activity.owners.current.snapshot() }
+            check(actual.selection == Selection(2, 2)) {
+                "Expected independent tap caret2; actual=${actual.selection}; ${main { touchHitEnvironment() }}"
+            }
+            check(actual.committed.same(before.committed) && actual.undoCount == before.undoCount)
         }
         assertSuppressedLongPressCannotPass()
         assertLongPressDrag()
+    }
+}
+
+/** Independent Paint prefix oracle, recomputed after each reset rather than reused across reflow. */
+private fun AdapterInstrumentation.independentTapTarget(): MountedTapTarget = main {
+    val view = checkNotNull(activity.inputView)
+    val screen = IntArray(2).also(view::getLocationOnScreen)
+    val inset = 16f * targetContext.resources.displayMetrics.density
+    val paint = referencePaint()
+    MountedTapTarget(
+        activity,
+        view,
+        floatArrayOf(screen[0] + inset + paint.measureText("ab") + 0.5f, screen[1] + inset + paint.fontSpacing / 2),
+    )
+}
+
+/** Deliberately reproduce the stale timestamp of the old blocking injector; never retune after observing it. */
+private fun AdapterInstrumentation.staleTapWitness(target: MountedTapTarget) {
+    MountedTouchTrace(this, "latin-stale-tap", tapTarget = target).use { trace ->
+        val down = SystemClock.uptimeMillis()
+        SystemClock.sleep(android.view.ViewConfiguration.getLongPressTimeout().toLong() + 200)
+        sendPointerSync(MotionEvent.obtain(down, down, MotionEvent.ACTION_DOWN, target.points[0], target.points[1], 0))
+        trace.awaitSelection(Selection(0, 4))
+        trace.assertStaleDown()
+        sendPointerSync(
+            MotionEvent.obtain(down, down + 40, MotionEvent.ACTION_UP, target.points[0], target.points[1], 0),
+        )
     }
 }
 
