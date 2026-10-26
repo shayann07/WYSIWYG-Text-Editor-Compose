@@ -56,7 +56,7 @@ def main():
 
     save()
     gate('docs-and-frozen-hashes', [sys.executable, 'tooling/docs/validate_docs.py'])
-    gate('v6-witnesses', ['node', 'tooling/verification/v6.mjs'])
+    gate('v6-witnesses', [sys.executable, 'tooling/verification/reproduce_inherited.py'])
     gate('gradle-check-api', [gradle, '--no-daemon', '--console=plain', 'check', 'apiCheck'])
     gate('verification-contract', [sys.executable, 'tooling/verification/test_verification.py'])
     # Part of the existing evidence-contract gate; preserve the six-gate receipt shape.
