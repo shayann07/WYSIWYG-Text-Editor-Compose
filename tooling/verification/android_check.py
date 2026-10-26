@@ -8,6 +8,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import time
@@ -99,6 +100,29 @@ def wait_for_services(probe, *, clock=time.monotonic, sleep=time.sleep, timeout=
     raise TimeoutError("Android package/activity services did not become stably responsive")
 
 
+def wait_for_install_broadcasts(run):
+    """Finish Android 17 installation broadcasts before a cold instrumentation start.
+
+    Package installation returns before its broadcasts finish. On fresh API37
+    images those receivers overlap first-boot work and instrumentation attach.
+    Use Android's queue barrier, not a sleep, process-priority change or retry.
+    This establishes only queue readiness; it never qualifies editor behavior.
+    """
+    api_raw = run("install-platform-api", "shell", "getprop", "ro.build.version.sdk", timeout=5).strip()
+    if not re.fullmatch(rb"[0-9]{1,3}", api_raw):
+        raise ValueError("Cannot identify installed Android API for broadcast readiness")
+    api = int(api_raw)
+    if api < 37:
+        return {"status": "NOT_APPLICABLE", "api": api}
+    started = time.monotonic()
+    raw = run("install-broadcast-idle", "shell", "am", "wait-for-broadcast-idle", timeout=90)
+    lines = raw.decode("utf-8", "strict").strip().splitlines()
+    if not lines or lines[-1].strip() != "All broadcast queues are idle!":
+        raise ValueError("Android did not confirm installation broadcast queues are idle")
+    return {"status": "READY", "api": api, "elapsedSeconds": time.monotonic() - started,
+            "scope": "Installation broadcast queues only; not memory or editor qualification"}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--serial", required=True)
@@ -173,6 +197,8 @@ def main():
         receipt["packagedFonts"] = packaged_fonts(args.apk)
         run("install", "install", "-r", str(args.apk.resolve()))
         run("install-test", "install", "-r", str(args.test_apk.resolve()))
+        receipt["installBroadcastReadiness"] = wait_for_install_broadcasts(run)
+        save()
         run_id = "adapter-" + str(time.time_ns())
         receipt["runId"] = run_id
         with owned_tap_fixture(run, args.test_apk, output, run_id, receipt) as tap_path:
