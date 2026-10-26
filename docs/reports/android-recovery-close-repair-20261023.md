@@ -130,3 +130,16 @@ The receipt is `landing-20261026-resume/recovery-api28-focused/receipt.json` in
 the primary checkout. This tests instrumented events, not real IME or TalkBack.
 Debug/test compilation, zero Detekt, and local check/apiCheck passed; full packaged
 consumer, process interruption and exact-commit gates remain pending this candidate.
+
+The first complete packaged API28 run exposed three failed groups: an API30-only
+keyboard-insets call, an AtomicFile fault fixture that API28 could rename aside,
+and an Arabic long-press selection that had not arrived by a fixed sleep. The
+raw failure remains in `landing-20261026-resume/recovery-f768-api28-full/`.
+Test-only compatibility changes use pre-30 visible bounds, nonempty base and
+backup obstacles, and the existing event/publication trace with the same exact
+selection expectation. The first focused attempt mistakenly targeted the toolbar
+group and is retained. After correcting the target, mounted, recovery and touch
+focused groups all passed on API28; see
+`landing-20261026-resume/recovery-api28-backport-focused-2/receipt.json`.
+These are instrumented checks; the full suite and interruption witnesses must
+still pass on the final candidate.

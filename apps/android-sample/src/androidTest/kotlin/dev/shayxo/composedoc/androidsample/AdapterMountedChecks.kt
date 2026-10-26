@@ -200,8 +200,19 @@ private fun AdapterInstrumentation.mountedChecksCase3() {
         assertClosedConnectionReopens()
     }
 }
-private fun AdapterInstrumentation.imeBottom() = activity.inputView!!.rootWindowInsets
-    ?.getInsets(android.view.WindowInsets.Type.ime())?.bottom ?: 0
+private fun AdapterInstrumentation.imeBottom(): Int {
+    val view = activity.inputView!!
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+        return view.rootWindowInsets?.getInsets(android.view.WindowInsets.Type.ime())?.bottom ?: 0
+    }
+    val display = android.util.DisplayMetrics()
+    activity.windowManager.defaultDisplay.getRealMetrics(display)
+    val visible = android.graphics.Rect()
+    view.getWindowVisibleDisplayFrame(visible)
+    val obscured = display.heightPixels - visible.bottom
+    val navigation = view.rootWindowInsets?.stableInsetBottom ?: 0
+    return if (obscured > navigation) obscured else 0
+}
 private fun AdapterInstrumentation.caretInsideViewport(): Boolean {
     val view = activity.inputView!!
     val caret = view.caretRectangle()
@@ -212,8 +223,12 @@ private fun AdapterInstrumentation.caretAboveKeyboard(): Boolean {
     val caret = view.caretRectangle() ?: return false
     val screen = IntArray(2)
     view.getLocationOnScreen(screen)
-    val keyboardTop = activity.windowManager.currentWindowMetrics.bounds.bottom - imeBottom()
-    return caretInsideViewport() && screen[1] + caret.bottom <= keyboardTop + 1
+    val display = android.util.DisplayMetrics()
+    activity.windowManager.defaultDisplay.getRealMetrics(display)
+    val visible = android.graphics.Rect()
+    view.getWindowVisibleDisplayFrame(visible)
+    val keyboardTop = minOf(display.heightPixels - imeBottom(), visible.bottom)
+    return imeBottom() > 0 && caretInsideViewport() && screen[1] + caret.bottom <= keyboardTop + 1
 }
 
 private fun AdapterInstrumentation.mountedChecksCase4() {

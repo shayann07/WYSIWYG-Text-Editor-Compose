@@ -66,7 +66,7 @@ private fun AdapterInstrumentation.multilingualWords(root: File) {
             "ไทย", "中国", "日本語", "한글쓰기", "👩🏽‍💻",
         )
         val records = JSONArray()
-        words.forEach { word ->
+        words.forEachIndexed { index, word ->
             val text = "$word,example.org 12.5"
             replaceMounted(text)
             val expected = main { activity.owners.current.snapshot() }
@@ -77,31 +77,35 @@ private fun AdapterInstrumentation.multilingualWords(root: File) {
                 activity.inputView!!.getLocationOnScreen(location)
                 floatArrayOf(first.centerX(), first.centerY())
             }
-            val down = SystemClock.uptimeMillis()
-            sendPointerSync(MotionEvent.obtain(down, down, MotionEvent.ACTION_DOWN, coordinates[0], coordinates[1], 0))
-            SystemClock.sleep(android.view.ViewConfiguration.getLongPressTimeout().toLong() + 80)
-            val selection = main { activity.owners.current.snapshot().selection }
-            sendPointerSync(
-                MotionEvent.obtain(
-                    down,
-                    SystemClock.uptimeMillis(),
-                    MotionEvent.ACTION_CANCEL,
-                    coordinates[0],
-                    coordinates[1],
-                    0,
-                ),
-            )
-            check(selection == Selection(0, word.length)) { "$word selected $selection instead of0:${word.length}" }
-            val after = main { activity.owners.current.snapshot() }
-            check(after.committed.same(expected.committed) && after.undoCount == expected.undoCount)
-            check(selection.start in Graphemes.stops(text) && selection.end in Graphemes.stops(text))
-            records.put(
-                JSONObject().put("textUtf16", JSONArray(text.map { it.code }))
-                    .put("expectedWordUtf16", JSONArray(word.map { it.code }))
-                    .put("actualSelection", JSONArray(listOf(selection.anchor, selection.focus)))
-                    .put("locale", targetContext.resources.configuration.locales[0].toLanguageTag())
-                    .put("storedFont", after.committed.units.first().style.font.name),
-            )
+            MountedTouchTrace(this, "word-touch-$index").use { trace ->
+                val down = SystemClock.uptimeMillis()
+                sendPointerSync(
+                    MotionEvent.obtain(down, down, MotionEvent.ACTION_DOWN, coordinates[0], coordinates[1], 0),
+                )
+                trace.record("down-returned")
+                val selection = trace.awaitSelection(Selection(0, word.length))
+                sendPointerSync(
+                    MotionEvent.obtain(
+                        down,
+                        SystemClock.uptimeMillis(),
+                        MotionEvent.ACTION_CANCEL,
+                        coordinates[0],
+                        coordinates[1],
+                        0,
+                    ),
+                )
+                check(selection == Selection(0, word.length)) { "$word selected $selection instead of0:${word.length}" }
+                val after = main { activity.owners.current.snapshot() }
+                check(after.committed.same(expected.committed) && after.undoCount == expected.undoCount)
+                check(selection.start in Graphemes.stops(text) && selection.end in Graphemes.stops(text))
+                records.put(
+                    JSONObject().put("textUtf16", JSONArray(text.map { it.code }))
+                        .put("expectedWordUtf16", JSONArray(word.map { it.code }))
+                        .put("actualSelection", JSONArray(listOf(selection.anchor, selection.focus)))
+                        .put("locale", targetContext.resources.configuration.locales[0].toLanguageTag())
+                        .put("storedFont", after.committed.units.first().style.font.name),
+                )
+            }
         }
         File(root, "word-fixtures.json").writeText(records.toString(2), Charsets.UTF_8)
     }

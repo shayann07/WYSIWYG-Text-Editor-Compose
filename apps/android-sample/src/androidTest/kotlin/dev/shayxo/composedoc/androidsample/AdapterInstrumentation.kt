@@ -49,11 +49,16 @@ class AdapterInstrumentation : Instrumentation() {
         tapFixture = arguments.getString("tap-fixture", "")
         var fatal: Throwable? = null
         try {
-            if (arguments.getString("focus") == "recovery-retry") {
-                launchEditor(root)
-                recoveryRetryChecks()
-            } else {
-                runChecks(root)
+            when (arguments.getString("focus")) {
+                "recovery-retry" -> {
+                    launchEditor(root)
+                    recoveryRetryChecks()
+                }
+                "mounted" -> {
+                    launchEditor(root)
+                    mountedChecks()
+                }
+                else -> runChecks(root)
             }
         } catch (error: Throwable) {
             fatal = error
