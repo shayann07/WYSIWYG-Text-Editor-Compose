@@ -133,11 +133,11 @@ def startup_lmk(receipt, raw_log, instrument_output, startup):
         if start <= begin <= finish <= end:
             observed.extend((pid,begin,finish) for pid in fields['target'].get('pids',[]))
     births = {(stamp,pid) for stamp,pid in re.findall(
-        r'^([0-9]+\.[0-9]+)\s+[^\n]*ActivityManager: Start proc ([0-9]+):dev\.shayxo\.composedoc\.androidsample/',raw_log,re.M)
+        r'^[ \t]*([0-9]+\.[0-9]+)\s+[^\n]*ActivityManager: Start proc ([0-9]+):dev\.shayxo\.composedoc\.androidsample/',raw_log,re.M)
         if start <= Decimal(stamp) <= end and any(p==pid and Decimal(stamp)<=begin for p,begin,finish in observed)}
     if len(births) != 1: return False
     birth, pid = next(iter(births))
-    kills = re.findall(r"^([0-9]+\.[0-9]+)\s+[^\n]*lowmemorykiller: Kill 'dev\.shayxo\.composedoc\.androidsample' \(([0-9]+)\),[^\n]*oom_score_adj 700\b",raw_log,re.M)
+    kills = re.findall(r"^[ \t]*([0-9]+\.[0-9]+)\s+[^\n]*lowmemorykiller: Kill 'dev\.shayxo\.composedoc\.androidsample' \(([0-9]+)\),[^\n]*oom_score_adj 700\b",raw_log,re.M)
     return any(killed == pid and start <= Decimal(birth) <= Decimal(stamp) <= end
                and any(p==pid and Decimal(birth)<=begin<=finish<=Decimal(stamp) for p,begin,finish in observed)
                for stamp,killed in kills)

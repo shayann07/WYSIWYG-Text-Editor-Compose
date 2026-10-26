@@ -297,4 +297,50 @@ class OwnedCleanup(unittest.TestCase):
         self.assertFalse(any(command[-1]=='kill' for command in calls))
 
 
+
+class EpochWhitespace(unittest.TestCase):
+    # Exact two log lines retained from run40258857644 at a92d375, PID4245.
+    # Original full failure-logcat-epoch.stdout is retained; these are not generated expected events.
+    LOG = "\n".join([
+        "         1792981716.189   627   657 I ActivityManager: Start proc 4245:dev.shayxo.composedoc.androidsample/u0a229 for added application dev.shayxo.composedoc.androidsample",
+        "         1792981716.808   263   263 I lowmemorykiller: Kill 'dev.shayxo.composedoc.androidsample' (4245), uid 10229, oom_score_adj 700 to free 115652kB rss, 57068kB anon rss, 0kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: min watermark is breached even after kill",
+    ])
+
+    def basis(self):
+        receipt = dict(status='FAIL', failureRootObservation=dict(status='AVAILABLE', state='ABSENT'),
+            instrumentationWindow=dict(start=dict(status='AVAILABLE', deviceEpoch='1792981714.169093684'),
+                end=dict(status='AVAILABLE', deviceEpoch='1792981717.327966698')))
+        sample = dict(records=[dict(fields=dict(target=dict(status='AVAILABLE', pids=['4245']),
+            wall_start=dict(status='AVAILABLE', epoch='1792981716.221087330'),
+            wall_end=dict(status='AVAILABLE', epoch='1792981716.354335741')))])
+        return receipt, sample
+
+    def test_exact_nine_space_logcat_epoch_binds_original_failed_run(self):
+        receipt, sample = self.basis()
+        self.assertTrue(startup_lmk(receipt, self.LOG, 'Process crashed.', sample))
+        self.assertEqual('FAIL', receipt['status'])
+        self.assertNotIn('instrumented', receipt)
+
+    def test_padding_does_not_weaken_pid_or_unique_birth_requirements(self):
+        receipt, sample = self.basis()
+        for raw in [self.LOG.replace('Start proc 4245:', 'Start proc 4246:'),
+                    self.LOG.replace('(4245)', '(4246)'),
+                    self.LOG+'\n'+self.LOG.splitlines()[0].replace('1716.189', '1716.190')]:
+            self.assertFalse(startup_lmk(receipt, raw, 'Process crashed.', sample))
+
+    def test_padding_does_not_admit_out_of_window_or_unobserved_pid(self):
+        receipt, sample = self.basis()
+        for raw in [self.LOG.replace('1716.189', '1713.189'), self.LOG.replace('1716.808', '1718.808'),
+                    self.LOG.replace('1716.808', '1716.200')]:
+            self.assertFalse(startup_lmk(receipt, raw, 'Process crashed.', sample))
+        sample['records'][0]['fields']['target']['pids'] = ['9999']
+        self.assertFalse(startup_lmk(receipt, self.LOG, 'Process crashed.', sample))
+
+    def test_only_horizontal_padding_is_accepted_not_embedded_messages(self):
+        receipt, sample = self.basis()
+        self.assertTrue(startup_lmk(receipt, self.LOG.replace('         ', '\t'), 'Process crashed.', sample))
+        self.assertFalse(startup_lmk(receipt, self.LOG.replace('         ', 'prefix '), 'Process crashed.', sample))
+        self.assertFalse(startup_lmk(receipt, self.LOG.replace('oom_score_adj 700', 'oom_score_adj 0'), 'Process crashed.', sample))
+
+
 if __name__ == '__main__': unittest.main()
