@@ -19,7 +19,7 @@ from android_tap_fixture import owned_tap_fixture
 ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = "dev.shayxo.composedoc.androidsample"
 ASSETS = "assets/dev/shayxo/composedoc/layout/fonts/"
-EXPECTED_GROUPS = 63
+EXPECTED_GROUPS = 64
 
 
 def sha(data):
