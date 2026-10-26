@@ -2,8 +2,11 @@ package dev.shayxo.composedoc.androidsample
 
 import android.graphics.Bitmap
 import android.graphics.RectF
+import android.os.Handler
+import android.os.Looper
 import android.text.Spanned
 import android.text.style.TtsSpan
+import android.view.PixelCopy
 import dev.shayxo.composedoc.data.ImageDecoder
 import dev.shayxo.composedoc.domain.StructureCommand
 import dev.shayxo.composedoc.model.ImageBlock
@@ -81,6 +84,9 @@ private fun AdapterInstrumentation.markerCase(root: File, case: MarkerCase): JSO
     resetRichMounted(text)
     applyMarkerCase(case, text.length)
     waitForIdleSync()
+    // Compose may publish geometry after an unrelated decor frame commits. Fence the
+    // requested document revision first, then capture its subsequent committed frame.
+    waitUntil { main { activity.inputView?.caretRectangle() != null } }
     awaitRenderedFrame()
     val reference = locations(text).first()
     val view = main { activity.inputView!! }
@@ -92,7 +98,10 @@ private fun AdapterInstrumentation.markerCase(root: File, case: MarkerCase): JSO
             (location[0] + view.width).toFloat(),
             reference.bottom,
         )
-    val bitmap = checkNotNull(uiAutomation.takeScreenshot())
+    val raster = committedWindowRaster()
+    val bitmap = raster.bitmap
+    canvas.offset(-raster.screenX.toFloat(), -raster.screenY.toFloat())
+    reference.offset(-raster.screenX.toFloat(), -raster.screenY.toFloat())
     try {
         File(root, "observed-${case.font.name}-${case.size}-${case.direction}-${case.kind}.png")
             .outputStream().use { check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)) }
@@ -114,8 +123,48 @@ private fun AdapterInstrumentation.markerCase(root: File, case: MarkerCase): JSO
         }
         return JSONObject().put("font", case.font.name).put("size", case.size).put("direction", case.direction.name)
             .put("kind", case.kind.name).put("markerInk", ink.toString()).put("inlineInk", inline.toString())
+            .put("capture", raster.method).put("windowScreenX", raster.screenX).put("windowScreenY", raster.screenY)
     } finally {
         bitmap.recycle()
+    }
+}
+
+private data class WindowRaster(val bitmap: Bitmap, val screenX: Int, val screenY: Int, val method: String)
+
+private fun AdapterInstrumentation.committedWindowRaster(): WindowRaster {
+    if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) {
+        return WindowRaster(checkNotNull(uiAutomation.takeScreenshot()), 0, 0, "display-screenshot")
+    }
+    val raster = main {
+        val decor = activity.window.decorView
+        val origin = IntArray(2).also(decor::getLocationOnScreen)
+        WindowRaster(
+            Bitmap.createBitmap(decor.width, decor.height, Bitmap.Config.ARGB_8888),
+            origin[0],
+            origin[1],
+            "window-pixel-copy",
+        )
+    }
+    val copied = CountDownLatch(1)
+    var result = PixelCopy.ERROR_UNKNOWN
+    try {
+        // A committed buffer need not yet be visible on the display. Copy that window
+        // buffer directly, rather than racing SurfaceFlinger's display presentation.
+        PixelCopy.request(
+            activity.window,
+            raster.bitmap,
+            { code ->
+                result = code
+                copied.countDown()
+            },
+            Handler(Looper.getMainLooper()),
+        )
+        check(copied.await(5, TimeUnit.SECONDS)) { "No Android window pixel-copy result" }
+        check(result == PixelCopy.SUCCESS) { "Android window pixel-copy failed: $result" }
+        return raster
+    } catch (error: Throwable) {
+        raster.bitmap.recycle()
+        throw error
     }
 }
 
