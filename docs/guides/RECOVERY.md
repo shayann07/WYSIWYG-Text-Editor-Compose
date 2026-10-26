@@ -50,4 +50,4 @@ New canonical documents are private `.astra` v9, reading v1–v8 with documented
 
 Workspace uses two bounded atomic metadata slots plus a cooperating-process lock. Corrupt newest metadata falls back; corrupt metadata never deletes documents or recovery. Recents and template cleanup do not delete arbitrary source files. View/zoom/window metadata is independent of canonical content and history.
 
-Use `--recovery-dir=D:\YourUnusedTestFolder\recovery` for disposable tests; never fill the real disk or kill unrelated Java processes. See [WRITING.md](WRITING.md) for launch and the connected ten-minute exercise.
+Use a new, unused recovery directory for each disposable test session. From the repository root, `--recovery-dir=tests/local-evidence/manual-writing/recovery` uses the isolated output directory created in [WRITING.md](WRITING.md); choose another directory if it already exists. Preserve previous documents, records and evidence. Never fill the real disk or kill unrelated Java processes. The writing guide includes launch instructions and the connected ten-minute exercise.

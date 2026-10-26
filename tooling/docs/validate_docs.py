@@ -42,7 +42,13 @@ def main():
     assert resolve('plan-v6.md').read_bytes() == resolve('editor-v6-standalone.md').read_bytes()
     frozen_paths = {original(n).resolve() for n in expected}
     current = [ROOT / 'README.md', ROOT / 'AGENTS.md']
-    current += [p for p in (ROOT / 'docs').rglob('*.md') if 'archive' not in p.parts and p.resolve() not in frozen_paths and 'v5.2' not in p.parts]
+    # Maintained top-level suite/review navigation is not a frozen experiment README.
+    current += [ROOT / name for name in ('tests/suites/README.md', 'tests/archive/README.md', 'tests/reviews/README.md',
+                                         'tests/reviews/gemini-v5-readiness/README.md') if (ROOT / name).is_file()]
+    # Archive indexes and unsealed archived guides are navigation too; relocated originals keep their historical links.
+    relocated = {resolve(new).resolve() for new in previous['paths'].values() if new.startswith(('docs/archive/', 'docs/plans/v5.2/'))}
+    snapshot_dir = (ROOT / snapshot['directory']).resolve()
+    current += [p for p in (ROOT / 'docs').rglob('*.md') if p.resolve() not in frozen_paths | relocated and snapshot_dir not in p.resolve().parents and 'v5.2' not in p.parts]
     # Ignored local-evidence receipts exist only on the machine that produced them;
     # every other link must reach a file that a fresh clone also has.
     local_evidence = [(ROOT / d).resolve() for d in ('tests/local-evidence', 'apps/desktop-workspace/local-evidence')]

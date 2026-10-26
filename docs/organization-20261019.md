@@ -20,8 +20,8 @@ The exact standalone already sent to Argon is preserved at `archive/review-packa
 
 Ten frozen v5/v5.1 documents/manifests remain at root; existing test tooling and published baselines require those original paths and bytes. The [frozen index](archive/frozen/README.md) makes them discoverable from docs. Source-adjacent READMEs and executable evidence stay with the code/probe they describe. No generated binaries, user documents, `.astra` samples, code modules or test fixtures were moved or deleted.
 
-`planning/doc_paths.py` resolves the recorded old names for generators. V6 generation writes into `docs/plans/v6/`; its new manifest uses actual relocated paths. The historical v5.2 generator also resolves paths, but was not run to overwrite that preserved package. Archived publishers are historical tools, not instructions to regenerate root clutter.
+`tooling/docs/doc_paths.py` resolves the recorded old names for generators. V6 generation writes into `docs/plans/v6/`; its new manifest uses actual relocated paths. The historical v5.2 generator also resolves paths, but was not run to overwrite that preserved package. Archived publishers are historical tools, not instructions to regenerate root clutter.
 
 ## Validation scope
 
-Run `python planning/validate_docs.py` to check all 48 protected hashes, preserved v5.2 artifacts, exact Argon input, generated v6 identity and local navigation links. This is document/build-identity validation, not a rerun of editor qualification. Old archived documents can contain historical dead paths; use the relocation map and current indexes.
+Run `python tooling/docs/validate_docs.py` to check all 48 protected hashes, preserved v5.2 artifacts, exact Argon input, generated v6 identity and local navigation links. This is document/build-identity validation, not a rerun of editor qualification. Old archived documents can contain historical dead paths; use the relocation map and current indexes.
