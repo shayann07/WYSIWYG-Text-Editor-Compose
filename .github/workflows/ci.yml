@@ -96,6 +96,28 @@ jobs:
       - run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
       - name: Build outside-checkout consumers from binary metadata
         run: xvfb-run -a python tooling/verification/consumer_check.py --android-peer --output-dir tests/local-evidence/consumer/android-ci
+      - name: Retain the exact application and test packages for reproduction
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib, json, shutil
+          from pathlib import Path
+          output = Path('tests/local-evidence/consumer/android-ci')
+          receipt = json.loads((output/'results.json').read_text())
+          assert receipt['status'] == 'PASS'
+          artifacts = dict(receipt['androidArtifacts'], **receipt['androidPeer']['artifacts'])
+          destination = output/'apks'; destination.mkdir(exist_ok=False)
+          retained = {}
+          for name, digest in artifacts.items():
+              source = Path(name)
+              assert hashlib.sha256(source.read_bytes()).hexdigest() == digest
+              kind = 'test' if 'androidTest' in name else ('peer' if 'android-peer' in name else 'app')
+              assert kind not in retained
+              shutil.copyfile(source, destination/(kind+'.apk'))
+              retained[kind] = dict(sha256=digest, original=name)
+          assert set(retained) == {'app', 'test', 'peer'}
+          (destination/'identity.json').write_text(json.dumps(retained, indent=2)+'\n')
+          PY
       - name: Validate diagnostic contracts and compiled recorder on the host
         shell: bash
         run: |

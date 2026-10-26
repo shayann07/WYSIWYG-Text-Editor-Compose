@@ -1,8 +1,56 @@
 """Reject misleading instrumentation success, stale APKs and incomplete receipts."""
 
 import unittest
+import subprocess
 
-from android_check import EXPECTED_GROUPS, validate_result, wait_for_services, wait_for_owned_emulator
+from android_check import EXPECTED_GROUPS, validate_result, wait_for_services, wait_for_owned_emulator, wait_for_install_broadcasts
+
+
+class InstallBroadcastReadiness(unittest.TestCase):
+    def probe(self, api=b"37\n", output=b"All broadcast queues are idle!\r\n"):
+        calls = []
+        def run(label, *args, timeout):
+            calls.append((label, args, timeout))
+            if label == "install-platform-api":
+                return api
+            if isinstance(output, Exception):
+                raise output
+            return output
+        return run, calls
+
+    def test_android17_waits_for_actual_completion_once(self):
+        run, calls = self.probe(output=b"Waiting for queues...\nAll broadcast queues are idle!\n")
+        result = wait_for_install_broadcasts(run)
+        self.assertEqual(result['status'], 'READY')
+        self.assertEqual(calls[-1], ('install-broadcast-idle', ('shell', 'am', 'wait-for-broadcast-idle'), 90))
+        self.assertEqual(len(calls), 2)
+
+    def test_zero_exit_empty_error_or_embedded_marker_cannot_pass(self):
+        for output in (b'', b'Error: unknown command', b'Not All broadcast queues are idle!',
+                       b'All broadcast queues are idle!\nError: failed'):
+            run, calls = self.probe(output=output)
+            with self.assertRaises(ValueError):
+                wait_for_install_broadcasts(run)
+            self.assertEqual(len(calls), 2)
+
+    def test_timeout_and_transport_failure_are_not_retried(self):
+        for failure in (subprocess.TimeoutExpired('adb', 90), RuntimeError('transport failed')):
+            run, calls = self.probe(output=failure)
+            with self.assertRaises(type(failure)):
+                wait_for_install_broadcasts(run)
+            self.assertEqual(len(calls), 2)
+
+    def test_older_api_keeps_existing_behavior(self):
+        run, calls = self.probe(api=b'28')
+        self.assertEqual(wait_for_install_broadcasts(run), {'status': 'NOT_APPLICABLE', 'api': 28})
+        self.assertEqual(len(calls), 1)
+
+    def test_unidentified_platform_cannot_skip_barrier(self):
+        for api in (b'', b'Error: 37', b'37\n0'):
+            run, calls = self.probe(api=api)
+            with self.assertRaises(ValueError):
+                wait_for_install_broadcasts(run)
+            self.assertEqual(len(calls), 1)
 
 
 class AndroidEvidenceContract(unittest.TestCase):
