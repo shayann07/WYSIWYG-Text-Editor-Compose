@@ -1,3 +1,24 @@
+# Recovery PR harness correction — 26 October 2026
+
+Existing codex/android-recovery-close refreshed additively with main540ace. The
+bounded test-only backport keeps63 original group names/count and both recovery
+interruption witnesses; no production/core/API/dependency/geometry changes.
+Read [the qualification report](android-recovery-harness-20261026.md).
+
+Current checks: focused Android test compilation/zeroDetekt/formatting/architecture
+and25 host regressions PASS; full check/API/AndroidAPI PASS (354tasks). Docs81
+protected hashes PASS; the compiled tap contract also passes locally.
+Next: finish local gates, commit the exact source, build an independent consumer,
+run clean-commit gates, then normal fast-forward push of existing PR35 for fresh
+qualification. No merge, issue closure, new branch or PR metadata change here.
+
+The separate66-group API28 supplementary packet atd4 passed both process kills,
+cross-UID clipboard and actual short-window gesture evidence. It does not qualify
+this PR head or replace API37.1's retained pre-startup memory-kill failure. Native
+IME/AT/visual coverage remains separate. Computer control and emulators are off.
+
+---
+
 # Android recovery repair — active, 23 October 2026
 
 Worktree D:\Work\ComposeDoc-repairs\android-recovery-close, branch

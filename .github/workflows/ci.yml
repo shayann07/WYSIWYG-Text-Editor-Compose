@@ -94,6 +94,8 @@ jobs:
       - run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
       - name: Build outside-checkout consumers from binary metadata
         run: xvfb-run -a python tooling/verification/consumer_check.py --android-peer --output-dir tests/local-evidence/consumer/android-ci
+      - name: Verify Android harness and owned fixture contracts
+        run: python -m unittest discover -s tooling/verification -p 'test_android*.py'
       - name: Start the disposable emulator and wait for unlocked services
         shell: bash
         run: |

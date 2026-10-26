@@ -13,6 +13,7 @@ import subprocess
 import time
 import zipfile
 from android_process import run_witness
+from android_tap_fixture import owned_tap_fixture
 
 ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = "dev.shayxo.composedoc.androidsample"
@@ -141,7 +142,7 @@ def main():
     def save():
         (output / "results.json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
 
-    def run(label, *command, timeout=180):
+    def run(label, *command, timeout=180, allowed_codes=(0,), with_status=False):
         try:
             result = subprocess.run([adb, "-s", args.serial, *command], capture_output=True, timeout=timeout)
         except subprocess.TimeoutExpired as failure:
@@ -151,9 +152,9 @@ def main():
             raise
         (output / (label + ".stdout")).write_bytes(result.stdout)
         (output / (label + ".stderr")).write_bytes(result.stderr)
-        if result.returncode:
+        if result.returncode not in allowed_codes:
             raise RuntimeError(label + " failed: " + result.stderr.decode("utf-8", "replace"))
-        return result.stdout
+        return result if with_status else result.stdout
 
     owned_identified = False
     save()
@@ -174,8 +175,9 @@ def main():
         run("install-test", "install", "-r", str(args.test_apk.resolve()))
         run_id = "adapter-" + str(time.time_ns())
         receipt["runId"] = run_id
-        run("instrument", "shell", "am", "instrument", "-w", "-e", "run-id", run_id,
-            PACKAGE + ".test/" + PACKAGE + ".AdapterInstrumentation", timeout=360)
+        with owned_tap_fixture(run, args.test_apk, output, run_id, receipt) as tap_path:
+            run("instrument", "shell", "am", "instrument", "-w", "-e", "run-id", run_id, "-e", "tap-fixture", tap_path,
+                PACKAGE + ".test/" + PACKAGE + ".AdapterInstrumentation", timeout=360)
         # am instrument may exit zero even when the instrumentation reports failure.
         raw = run("device-result", "shell", "run-as", PACKAGE, "cat",
                   "files/qualification/" + run_id + "/results.json")

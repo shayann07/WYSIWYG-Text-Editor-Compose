@@ -65,48 +65,68 @@ private fun AdapterInstrumentation.mountedChecksCase1() {
 }
 
 private fun AdapterInstrumentation.mountedChecksCase2() {
+    mountedHitChecks()
+}
+
+internal fun AdapterInstrumentation.mountedHitChecks() {
     group("instrumented touch hit uses independent Latin prefix advance") {
+        TapDeliveryContractChecks.main(emptyArray())
         replaceMounted("abcd")
-        val coordinates = main {
-            val v = activity.inputView!!
-            val screen = IntArray(2)
-            v.getLocationOnScreen(screen)
-            val inset = 16f * targetContext.resources.displayMetrics.density
-            floatArrayOf(
-                screen[0] + inset + referencePaint().measureText("ab") + 0.5f,
-                screen[1] + inset + referencePaint().fontSpacing / 2,
-            )
+        staleTapWitness(independentTapTarget())
+        replaceMounted("abcd")
+        val target = independentTapTarget()
+        val before = main { activity.owners.current.snapshot() }
+        MountedTouchTrace(this, "latin-short-tap", tapTarget = target).use { trace ->
+            // Same predeclared outer delay as the old path. The shell creates fresh event timestamps afterward.
+            SystemClock.sleep(android.view.ViewConfiguration.getLongPressTimeout().toLong() + 200)
+            systemTap(target, "latin-short-tap")
+            trace.awaitSelection(Selection(2, 2))
+            trace.assertShortTap()
+            val actual = main { activity.owners.current.snapshot() }
+            check(actual.selection == Selection(2, 2)) {
+                "Expected independent tap caret2; actual=${actual.selection}; ${main { touchHitEnvironment() }}"
+            }
+            check(actual.committed.same(before.committed) && actual.undoCount == before.undoCount)
         }
-        val t = SystemClock.uptimeMillis()
-        sendPointerSync(
-            MotionEvent.obtain(
-                t,
-                t,
-                MotionEvent.ACTION_DOWN,
-                coordinates[0],
-                coordinates[1],
-                0,
-            ),
-        )
-        sendPointerSync(
-            MotionEvent.obtain(
-                t,
-                t + 40,
-                MotionEvent.ACTION_UP,
-                coordinates[0],
-                coordinates[1],
-                0,
-            ),
-        )
-        waitForIdleSync()
-        check(
-            main { activity.owners.current.snapshot().selection } == Selection(
-                2,
-                2,
-            ),
-        )
+        assertSuppressedLongPressCannotPass()
         assertLongPressDrag()
     }
+}
+
+/** Independent Paint prefix oracle, recomputed after each reset rather than reused across reflow. */
+private fun AdapterInstrumentation.independentTapTarget(): MountedTapTarget = main {
+    val view = checkNotNull(activity.inputView)
+    val screen = IntArray(2).also(view::getLocationOnScreen)
+    val inset = 16f * targetContext.resources.displayMetrics.density
+    val paint = referencePaint()
+    MountedTapTarget(
+        activity,
+        view,
+        floatArrayOf(screen[0] + inset + paint.measureText("ab") + 0.5f, screen[1] + inset + paint.fontSpacing / 2),
+    )
+}
+
+/** Deliberately reproduce the stale timestamp of the old blocking injector; never retune after observing it. */
+private fun AdapterInstrumentation.staleTapWitness(target: MountedTapTarget) {
+    MountedTouchTrace(this, "latin-stale-tap", tapTarget = target).use { trace ->
+        val down = SystemClock.uptimeMillis()
+        SystemClock.sleep(android.view.ViewConfiguration.getLongPressTimeout().toLong() + 200)
+        sendPointerSync(MotionEvent.obtain(down, down, MotionEvent.ACTION_DOWN, target.points[0], target.points[1], 0))
+        trace.awaitSelection(Selection(0, 4))
+        trace.assertStaleDown()
+        sendPointerSync(
+            MotionEvent.obtain(down, down + 40, MotionEvent.ACTION_UP, target.points[0], target.points[1], 0),
+        )
+    }
+}
+
+private fun AdapterInstrumentation.touchHitEnvironment(): String {
+    val view = checkNotNull(activity.inputView)
+    val location = IntArray(2)
+    view.getLocationOnScreen(location)
+    return "currentOrigin=${location.toList()}; size=${view.width}x${view.height}; " +
+        "attached=${view.isAttachedToWindow}; focus=${view.hasWindowFocus()}; " +
+        "revision=${activity.owners.current.snapshot().documentRevision}; caret=${view.caretRectangle()}"
 }
 
 private fun AdapterInstrumentation.assertLongPressDrag() {
@@ -124,18 +144,35 @@ private fun AdapterInstrumentation.assertLongPressDrag() {
             screen[0] + inset + paint.measureText("ab cd") + 0.5f,
         )
     }
-    val down = SystemClock.uptimeMillis()
-    sendPointerSync(MotionEvent.obtain(down, down, MotionEvent.ACTION_DOWN, points[0], points[1], 0))
-    SystemClock.sleep(android.view.ViewConfiguration.getLongPressTimeout().toLong() + 50)
-    waitForIdleSync()
-    check(main { activity.owners.current.snapshot().selection } == Selection(0, 2))
-    val move = SystemClock.uptimeMillis()
-    sendPointerSync(MotionEvent.obtain(down, move, MotionEvent.ACTION_MOVE, points[2], points[1], 0))
-    sendPointerSync(MotionEvent.obtain(down, move + 40, MotionEvent.ACTION_UP, points[2], points[1], 0))
-    waitForIdleSync()
-    val after = main { activity.owners.current.snapshot() }
-    check(after.selection == Selection(0, 5)) { "Long-press drag stayed at ${after.selection}" }
-    check(after.committed.same(before.committed) && after.undoCount == before.undoCount)
+    MountedTouchTrace(this, "latin-longpress").use { trace ->
+        val down = SystemClock.uptimeMillis()
+        sendPointerSync(MotionEvent.obtain(down, down, MotionEvent.ACTION_DOWN, points[0], points[1], 0))
+        trace.record("down-returned")
+        val selected = trace.awaitSelection(Selection(0, 2))
+        check(selected == Selection(0, 2))
+        val move = SystemClock.uptimeMillis()
+        sendPointerSync(MotionEvent.obtain(down, move, MotionEvent.ACTION_MOVE, points[2], points[1], 0))
+        sendPointerSync(MotionEvent.obtain(down, move + 40, MotionEvent.ACTION_UP, points[2], points[1], 0))
+        waitForIdleSync()
+        val after = main { activity.owners.current.snapshot() }
+        check(after.selection == Selection(0, 5)) { "Long-press drag stayed at ${after.selection}" }
+        check(after.committed.same(before.committed) && after.undoCount == before.undoCount)
+    }
+}
+
+private fun AdapterInstrumentation.assertSuppressedLongPressCannotPass() {
+    replaceMounted("ab cd")
+    MountedTouchTrace(this, "suppressed-longpress", suppressDelivery = true).use { trace ->
+        val point = locations("ab cd").first()
+        val down = SystemClock.uptimeMillis()
+        sendPointerSync(MotionEvent.obtain(down, down, MotionEvent.ACTION_DOWN, point.centerX(), point.centerY(), 0))
+        val failure = runCatching { trace.awaitSelection(Selection(0, 2)) }.exceptionOrNull()
+        check(
+            failure is IllegalStateException &&
+                failure.message?.startsWith("Timed out awaiting exact selection") == true,
+        )
+        check(main { activity.owners.current.snapshot().selection } == Selection(0, 0))
+    }
 }
 
 private fun AdapterInstrumentation.mountedChecksCase3() {

@@ -18,7 +18,7 @@ def source_inputs():
     for folder in ("core", "build-logic", "gradle", "apps/android-sample", "apps/independent-consumer"):
         for path in (ROOT / folder).rglob("*"):
             if (path.is_file() and not any(x in path.relative_to(ROOT).parts for x in ("build", ".gradle"))
-                    and path.suffix in (".kt", ".kts", ".toml", ".properties", ".xml", ".jar")):
+                    and path.suffix in (".kt", ".kts", ".toml", ".properties", ".xml", ".jar", ".sh")):
                 paths.add(path)
     paths.update(ROOT / p for p in ("settings.gradle.kts", "build.gradle.kts", "gradle.properties",
                                     "gradlew", "gradlew.bat", "tests/suites/urdu/u0/fonts.json"))
