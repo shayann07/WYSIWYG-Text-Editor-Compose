@@ -111,7 +111,7 @@ scheduled automatic recovery snapshot. On an owner-authorized Samsung API36,
 the unmodified controller failed both the write-failure and busy-admission tests:
 without another edit or close attempt, no copy appeared within 15 seconds. The raw
 before results are in `tests/local-evidence/landing-20261026-resume/` in the
-primary checkout. An attempted after run stopped before the editor mounted; it is
+primary checkout. An attempted follow-up run stopped before the editor mounted; it is
 retained as a harness failure, not a recovery test result.
 
 The follow-up retries eligible immutable snapshots after failed or cancelled close,
@@ -136,7 +136,7 @@ keyboard-insets call, an AtomicFile fault fixture that API28 could rename aside,
 and an Arabic long-press selection that had not arrived by a fixed sleep. The
 raw failure remains in `landing-20261026-resume/recovery-f768-api28-full/`.
 Test-only compatibility changes use pre-30 visible bounds, nonempty base and
-backup obstacles, and the existing event/publication trace with the same exact
+backup obstacles, and the existing event/publication trace with the same
 selection expectation. The first focused attempt mistakenly targeted the toolbar
 group and is retained. After correcting the target, mounted, recovery and touch
 focused groups all passed on API28; see

@@ -161,18 +161,19 @@ private fun AdapterInstrumentation.failedAndQuota() {
         check(activity.owners.recoveryStore.read(bad.id, bad.sequence).document.text == "failed owner")
     }
     group("quota exhaustion refuses close with actionable outcome then allows a fresh retry") {
+        quotaCleanupContract()
         val tab = draft("quota protected")
         val quota = File(activity.owners.directory.parentFile, "rich-recovery/test-owned-quota.bin")
-        RandomAccessFile(quota, "rw").use { it.setLength(TEST_QUOTA_BYTES) }
         var result: RecoveryCloseOutcome? = null
-        main { activity.owners.closeDocument(tab) { result = it } }
-        waitUntil { main { result != null } }
-        main {
-            check(result?.state == RecoveryCloseOutcome.State.FAILED)
-            check(result?.reason?.contains("storage full") == true || result?.reason?.contains("quota") == true)
-            check(tab in activity.owners.tabs)
+        withQuotaObstacle(quota) {
+            main { activity.owners.closeDocument(tab) { result = it } }
+            waitUntil { main { result != null } }
+            main {
+                check(result?.state == RecoveryCloseOutcome.State.FAILED)
+                check(result?.reason?.contains("storage full") == true || result?.reason?.contains("quota") == true)
+                check(tab in activity.owners.tabs)
+            }
         }
-        check(quota.delete())
         // A failed close must not consume autosave. No edit or explicit flush rescues this wait.
         waitUntil { activity.owners.recoveryStore.entries().any { it.owner == tab.id } }
         main { activity.owners.closeDocument(tab) }
@@ -208,6 +209,45 @@ private fun AdapterInstrumentation.unfinishedAndTeardown() {
         waitForIdleSync()
         main { check(results.size == 2 && tab in activity.owners.tabs) }
     }
+}
+
+private fun AdapterInstrumentation.quotaCleanupContract() {
+    val quota = File(evidenceRoot, "quota-cleanup-contract.bin")
+    val original = IllegalStateException("Test-owned primary failure")
+    val normalFailure = runCatching { withQuotaObstacle(quota) { throw original } }.exceptionOrNull()
+    check(normalFailure === original && !quota.exists() && original.suppressed.isEmpty())
+    val obstructed = IllegalStateException("Test-owned failure with cleanup obstacle")
+    val child = File(quota, "retained-obstacle")
+    val cleanupFailure = runCatching {
+        withQuotaObstacle(quota) {
+            check(quota.delete() && quota.mkdir())
+            child.writeText("Test-owned evidence")
+            throw obstructed
+        }
+    }.exceptionOrNull()
+    check(cleanupFailure === obstructed && obstructed.suppressed.size == 1)
+    check(child.readText() == "Test-owned evidence")
+    check(child.delete() && quota.delete())
+}
+
+private fun withQuotaObstacle(quota: File, action: () -> Unit) {
+    var primary: Throwable? = null
+    var cleanup: Throwable? = null
+    try {
+        RandomAccessFile(quota, "rw").use { it.setLength(TEST_QUOTA_BYTES) }
+        action()
+    } catch (failure: Throwable) {
+        primary = failure
+    } finally {
+        cleanup = runCatching {
+            check(!quota.exists() || quota.delete()) { "Cannot remove the test-owned quota obstacle" }
+        }.exceptionOrNull()
+    }
+    primary?.let { failure ->
+        cleanup?.let(failure::addSuppressed)
+        throw failure
+    }
+    cleanup?.let { throw it }
 }
 
 private const val TEST_QUOTA_BYTES = 64L * 1024 * 1024
