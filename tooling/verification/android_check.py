@@ -168,18 +168,34 @@ def main():
     def save():
         (output / "results.json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
 
-    def run(label, *command, timeout=180, allowed_codes=(0,), with_status=False):
+    def run(label, *command, timeout=180, allowed_codes=(0,), with_status=False, defer_evidence_errors=False):
+        evidence_errors = []
+
+        def retain(suffix, raw):
+            try:
+                (output / (label + '.' + suffix)).write_bytes(raw)
+            except OSError as failure:
+                evidence_errors.append(suffix + ': ' + str(failure))
+
         try:
             result = subprocess.run([adb, "-s", args.serial, *command], capture_output=True, timeout=timeout)
         except subprocess.TimeoutExpired as failure:
-            (output / (label + ".stdout")).write_bytes(failure.stdout or b"")
-            (output / (label + ".stderr")).write_bytes(failure.stderr or b"")
-            (output / (label + ".timeout")).write_text(str(failure), encoding="utf-8")
+            retain('stdout', failure.stdout or b'')
+            retain('stderr', failure.stderr or b'')
+            retain('timeout', str(failure).encode('utf-8'))
+            failure.evidence_errors = evidence_errors
             raise
-        (output / (label + ".stdout")).write_bytes(result.stdout)
-        (output / (label + ".stderr")).write_bytes(result.stderr)
+        retain('stdout', result.stdout)
+        retain('stderr', result.stderr)
+        result.evidence_errors = evidence_errors
         if allowed_codes is not None and result.returncode not in allowed_codes:
-            raise RuntimeError(label + " failed: " + result.stderr.decode("utf-8", "replace"))
+            raise RuntimeError(label + " failed (exit " + str(result.returncode) + "): "
+                               + result.stderr.decode("utf-8", "replace")
+                               + ("; evidence retention: " + str(evidence_errors) if evidence_errors else ""))
+        if evidence_errors and not (defer_evidence_errors and with_status):
+            raise RuntimeError(label + ' cannot retain command evidence: ' + str(evidence_errors))
+        # Only the memory observer requests deferred retention errors. It validates
+        # the original outcome first, then fails closed even for a valid response.
         return result if with_status else result.stdout
 
     owned_identified = False
@@ -242,7 +258,10 @@ def main():
                     run(label, *command, timeout=10)
                 except Exception as diagnostic_failure:
                     receipt.setdefault("diagnosticErrors", {})[label] = str(diagnostic_failure)
-        save()
+        try:
+            save()
+        except OSError as receipt_failure:
+            failure.add_note('Cannot persist failure receipt: ' + str(receipt_failure))
         raise
     save()
     print(f"PASS {EXPECTED_GROUPS} instrumented groups and exact packaged fonts; evidence " + str(output))

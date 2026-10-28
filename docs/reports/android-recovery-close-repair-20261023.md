@@ -179,3 +179,19 @@ not a repair of the emulator memory-pressure cause. Native/device execution and
 any new hosted attempt require separate independent disposition. No new Android
 PASS is claimed from these host tests. Physical-device access is currently
 unavailable by owner report; genuine multilingual IME and AT gates remain open.
+
+Independent review also required exercising the actual command wrapper when raw
+evidence writes fail. The new fault-injection regressions fail before correction:
+the wrapper's OSError hid the original timeout or completed exit status. It now
+attempts each evidence write, preserves a timeout as the primary exception, and
+passes completed command status to the observer before judging retention failure.
+A valid command whose evidence cannot be retained still blocks admission. These
+tests inject host filesystem failures; they do not execute Android.
+Failure-receipt write failure also leaves the original timeout primary, with an
+explicit exception note. Both original wrapper failures are retained as before-fix
+host results. Seventeen new host regressions (47 total Android host tests) cover
+the reader and actual runner; this count is separate from mounted Android groups.
+
+An overall PASS from `android_check.py` covers editor groups and recovery witnesses
+only. Its clipboard field stays NOT RUN because `android_clipboard.py` is a
+separate workflow step with a separate cross-process transport receipt.

@@ -58,22 +58,28 @@ def observe_memory(probe, output, label, deadline, *, clock=time.monotonic):
             raise ValueError('Setup deadline exhausted before meminfo command')
         record['timeoutSeconds'] = timeout
         completed = probe(label, *record['command'], timeout=timeout,
-                          allowed_codes=None, with_status=True)
+                          allowed_codes=None, with_status=True, defer_evidence_errors=True)
         stdout, stderr = completed.stdout, completed.stderr
         record['exitCode'] = completed.returncode
+        if getattr(completed, 'evidence_errors', None):
+            record['retentionErrors'] = completed.evidence_errors
         record['values'] = parse_summary(stdout, completed.returncode, stderr)
+        if record.get('retentionErrors'):
+            raise ValueError('Cannot retain memory observation evidence')
         record['status'] = 'RESPONSIVE'
         return record
     except Exception as error:
         if isinstance(error, subprocess.TimeoutExpired):
             stdout, stderr = error.stdout or b'', error.stderr or b''
             record['timedOut'] = True
+            if getattr(error, 'evidence_errors', None):
+                record['retentionErrors'] = error.evidence_errors
         record['error'] = str(error)
         raise MemoryServiceUnavailable(str(error), record) from error
     finally:
         record['elapsedSeconds'] = clock() - started
         observation_failed = 'error' in record
-        retention_errors = []
+        retention_errors = list(record.get('retentionErrors', []))
         for suffix, raw in (('stdout', stdout), ('stderr', stderr)):
             path = output / (label + '.' + suffix)
             try:

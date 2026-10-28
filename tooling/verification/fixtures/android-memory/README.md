@@ -25,3 +25,7 @@ The production runner calls this guard once before installation and once before
 cold instrumentation, within its existing setup deadline. Rejection is BLOCKED,
 exits nonzero and leaves editor/recovery/clipboard NOT RUN. No polling, test retry,
 warm attachment, priority adjustment or instrumentation timeout extension occurs.
+
+A successful `android_check` qualifies its editor groups and recovery witnesses
+only. Clipboard stays NOT RUN in that receipt: the separate `android_clipboard.py`
+workflow step owns cross-process clipboard qualification and its own receipt.
