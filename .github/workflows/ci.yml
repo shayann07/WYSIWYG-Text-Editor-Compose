@@ -139,7 +139,7 @@ jobs:
           # This offline editor does not need first-boot Play Store network provisioning.
           adb -s emulator-5580 shell svc wifi disable
           adb -s emulator-5580 shell svc data disable
-          adb -s emulator-5580 shell dumpsys meminfo > pre-test-memory.txt
+          # android_check records and validates meminfo command outcomes before cold instrumentation.
           # Credential-unlocked storage is distinct from an interactive, unlocked display.
           adb -s emulator-5580 shell settings put system screen_off_timeout 1800000
           adb -s emulator-5580 shell input keyevent KEYCODE_WAKEUP

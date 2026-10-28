@@ -1,0 +1,14 @@
+{
+  "api37-responsive.txt": {
+    "sha256": "439281200d0e11c60185fe387c23fa76ecc4e1f6c1c79cdeae1459832d28312d",
+    "sizeBytes": 23544,
+    "source": "landing-20261024\\pr35-startup-058-artifact\\pre-test-memory.txt",
+    "scope": "Disposable hosted emulator diagnostic; service responsiveness only"
+  },
+  "api37-timeout.txt": {
+    "sha256": "4e813989a263ce6f5800f2295fb642d039e7f206ed11e5c5f29e0b84d1fb7528",
+    "sizeBytes": 118,
+    "source": "landing-20261026-resume\\pr35-3d812-hosted-android\\pre-test-memory.txt",
+    "scope": "Disposable hosted emulator diagnostic; service responsiveness only"
+  }
+}

@@ -15,6 +15,7 @@ import time
 import zipfile
 from android_process import run_witness
 from android_tap_fixture import owned_tap_fixture
+from android_memory_readiness import observe_memory, admitted_instrument, MemoryServiceUnavailable
 
 ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = "dev.shayxo.composedoc.androidsample"
@@ -162,6 +163,7 @@ def main():
     adb = str(Path(sdk) / "platform-tools" / ("adb.exe" if os.name == "nt" else "adb"))
     receipt = {"status": "RUNNING", "serial": args.serial, "avdName": args.avd_name,
                "scope": "Instrumented callbacks, mounted geometry, lifecycle and packaged resources; not real IME or AT"}
+    receipt['qualification'] = dict(editor='NOT RUN', recovery='NOT RUN', clipboard='NOT RUN')
 
     def save():
         (output / "results.json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
@@ -176,7 +178,7 @@ def main():
             raise
         (output / (label + ".stdout")).write_bytes(result.stdout)
         (output / (label + ".stderr")).write_bytes(result.stderr)
-        if result.returncode not in allowed_codes:
+        if allowed_codes is not None and result.returncode not in allowed_codes:
             raise RuntimeError(label + " failed: " + result.stderr.decode("utf-8", "replace"))
         return result if with_status else result.stdout
 
@@ -195,6 +197,7 @@ def main():
         receipt["apkSha256"] = sha(args.apk.read_bytes())
         receipt["testApkSha256"] = sha(args.test_apk.read_bytes())
         receipt["packagedFonts"] = packaged_fonts(args.apk)
+        receipt['memoryBeforeInstall'] = observe_memory(run, output, 'pre-test-memory', readiness_deadline)
         run("install", "install", "-r", str(args.apk.resolve()))
         run("install-test", "install", "-r", str(args.test_apk.resolve()))
         receipt["installBroadcastReadiness"] = wait_for_install_broadcasts(run)
@@ -202,8 +205,9 @@ def main():
         run_id = "adapter-" + str(time.time_ns())
         receipt["runId"] = run_id
         with owned_tap_fixture(run, args.test_apk, output, run_id, receipt) as tap_path:
-            run("instrument", "shell", "am", "instrument", "-w", "-e", "run-id", run_id, "-e", "tap-fixture", tap_path,
-                PACKAGE + ".test/" + PACKAGE + ".AdapterInstrumentation", timeout=360)
+            admitted_instrument(run, output, receipt, readiness_deadline, lambda:
+                run("instrument", "shell", "am", "instrument", "-w", "-e", "run-id", run_id, "-e", "tap-fixture", tap_path,
+                    PACKAGE + ".test/" + PACKAGE + ".AdapterInstrumentation", timeout=360))
         # am instrument may exit zero even when the instrumentation reports failure.
         raw = run("device-result", "shell", "run-as", PACKAGE, "cat",
                   "files/qualification/" + run_id + "/results.json")
@@ -214,13 +218,17 @@ def main():
         (output / "device-files.tar").write_bytes(archive)
         receipt["deviceArchiveSha256"] = sha(archive)
         validate_result(result, receipt["apkSha256"])
+        receipt['qualification']['editor'] = 'PASS'
         receipt["processInterruption"] = run_witness(run, output)
         close_output = output / "after-close-interruption"
         close_output.mkdir()
         receipt["afterCloseInterruption"] = run_witness(run, close_output, close_after_discard=True)
+        receipt['qualification']['recovery'] = 'PASS'
         receipt["status"] = "PASS"
     except Exception as failure:
-        receipt.update(status="FAIL", error=str(failure))
+        receipt.update(status="BLOCKED" if isinstance(failure, MemoryServiceUnavailable) else "FAIL", error=str(failure))
+        if isinstance(failure, MemoryServiceUnavailable):
+            receipt['memoryReadinessFailure'] = failure.record
         if owned_identified:
             for label, command in (
                 ("failure-logcat", ("logcat", "-d", "-t", "1500")),

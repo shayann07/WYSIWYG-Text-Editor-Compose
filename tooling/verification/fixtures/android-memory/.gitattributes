@@ -1,0 +1,2 @@
+# Raw command evidence includes intentional terminal blank lines; compare exact hashes.
+*.txt -text -diff

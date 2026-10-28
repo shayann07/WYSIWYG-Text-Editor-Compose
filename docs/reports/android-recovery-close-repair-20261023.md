@@ -143,3 +143,39 @@ focused groups all passed on API28; see
 `landing-20261026-resume/recovery-api28-backport-focused-2/receipt.json`.
 These are instrumented checks; the full suite and interruption witnesses must
 still pass on the final candidate.
+
+## Hosted failure and bounded readiness admission — 28 October 2026
+
+Candidate `3d812e6a1297be9537d8df8da93add7d6fe33c9a` passed all six local
+exact-commit final gates. Its hosted CI run `40464372511` failed in Android before
+any editor group ran. The retained log explicitly records lowmemorykiller killing
+the test application PID3982 at 07:04:55.064Z, with a minimum-watermark reason.
+The underlying pressure cause remains unresolved. Build, architecture, docs,
+iOS and CodeQL checks passed; they do not override this Android failure.
+
+The pre-test memory dump was only 118 bytes and contained two service timeouts,
+despite returning exit zero. Installation-broadcast idle is a queue barrier;
+later receiver work overlapped instrumentation. Passing older startup runs remain
+valid for their exact inputs and do not establish this candidate passed.
+
+The new host-side admission checks one memory-service response before installation
+and one immediately before cold instrumentation, using the remaining existing
+setup deadline and a 15-second command cap. It rejects timeout markers in either
+stream, incomplete/malformed/duplicate summaries and unsuccessful command status.
+Raw output, command outcome, elapsed time and parsed values are retained. Rejected
+setup exits nonzero as BLOCKED; editor, recovery and clipboard remain NOT RUN.
+Failing diagnostics do not replace the original failure. No RAM threshold, sleep,
+warm attachment, test retry or longer instrumentation deadline is introduced.
+API28 retains its existing behavior; this guard does not qualify its different
+memory-dump format. The original workflow dump is now recorded with command
+metadata inside the Android evidence directory instead of an unchecked shell
+redirection at its parent.
+
+The exact passing and failing raw diagnostics are maintained fixtures with
+provenance. Host regressions exercise the actual runner at both admission points,
+verify no instrumentation or recovery child starts after rejection, and preserve
+the primary failure when later diagnostics fail. This is a detection improvement,
+not a repair of the emulator memory-pressure cause. Native/device execution and
+any new hosted attempt require separate independent disposition. No new Android
+PASS is claimed from these host tests. Physical-device access is currently
+unavailable by owner report; genuine multilingual IME and AT gates remain open.
