@@ -59,6 +59,8 @@ class RecoveryWitnessActivity : MainActivity() {
             !tab.recovery.contains("pending")
         if (!complete) {
             owners.main.postDelayed({ checkpointReady(expected) }, POLL_MS)
+        } else if (intent.getBooleanExtra("close-after-discard", false)) {
+            closeAfterDiscard(expected)
         } else {
             owners.work({
                 val record = owners.recoveryStore.read(tab.id, tab.sequence)
@@ -66,6 +68,26 @@ class RecoveryWitnessActivity : MainActivity() {
                 File(root, "expected.astra").writeBytes(AndroidDocumentCodec.encode(expected))
                 JSONObject().put("owner", tab.id).put("sequence", tab.sequence).put("sourcePid", Process.myPid())
             }) { metadata -> lateUncheckpointedEdit(metadata) }
+        }
+    }
+    private fun closeAfterDiscard(expected: Document) {
+        val tab = owners.tab
+        val discarded = tab.sequence
+        owners.checkpoints.discard(tab.id, discarded) { result ->
+            check(result.getOrThrow())
+            owners.closeDocument(tab) { outcome ->
+                check(outcome.durable && tab !in owners.tabs)
+                val metadata = JSONObject().put("owner", tab.id).put("sequence", tab.sequence)
+                    .put("sourcePid", Process.myPid()).put("discardedSequence", discarded)
+                    .put("stage", "CLOSE_REPORTED_DURABLE").put("closeReportedSuccess", true)
+                owners.work({
+                    val record = owners.recoveryStore.read(tab.id, tab.sequence)
+                    check(tab.sequence > discarded && record.document.same(expected))
+                    check(record.proposal?.text == expected.text + WITNESS_PROPOSAL)
+                    File(root, "expected.astra").writeBytes(AndroidDocumentCodec.encode(expected))
+                    publishReceipt(File(root, "late-ready.json"), metadata)
+                }) {}
+            }
         }
     }
     private fun lateUncheckpointedEdit(metadata: JSONObject) {

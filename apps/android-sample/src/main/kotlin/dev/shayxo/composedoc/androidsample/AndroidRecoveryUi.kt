@@ -43,8 +43,11 @@ private fun recoveryEntry(activity: MainActivity, owners: AndroidOwners, entry: 
                 2 -> AlertDialog.Builder(activity).setTitle("Discard captured recovery generation?")
                     .setMessage("Only ${entry.name} through generation${entry.sequence}. A newer checkpoint survives.")
                     .setPositiveButton("Discard") { _, _ ->
-                        owners.work({ owners.recoveryStore.discard(entry.owner, entry.sequence) }) { applied ->
-                            if (applied) owners.checkpoints.discarded(entry.owner, entry.sequence)
+                        owners.checkpoints.discard(entry.owner, entry.sequence) { result ->
+                            val applied = result.getOrElse {
+                                owners.note(owners.current, "Discard failed; recovery retained: ${it.message}")
+                                return@discard
+                            }
                             owners.status = if (applied) {
                                 "Generation discarded; newer arrivals retained"
                             } else {

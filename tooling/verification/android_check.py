@@ -8,16 +8,19 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import time
 import zipfile
 from android_process import run_witness
+from android_tap_fixture import owned_tap_fixture
+from android_memory_readiness import observe_memory, admitted_instrument, MemoryServiceUnavailable
 
 ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = "dev.shayxo.composedoc.androidsample"
 ASSETS = "assets/dev/shayxo/composedoc/layout/fonts/"
-EXPECTED_GROUPS = 54
+EXPECTED_GROUPS = 63
 
 
 def sha(data):
@@ -98,6 +101,29 @@ def wait_for_services(probe, *, clock=time.monotonic, sleep=time.sleep, timeout=
     raise TimeoutError("Android package/activity services did not become stably responsive")
 
 
+def wait_for_install_broadcasts(run):
+    """Finish Android 17 installation broadcasts before a cold instrumentation start.
+
+    Package installation returns before its broadcasts finish. On fresh API37
+    images those receivers overlap first-boot work and instrumentation attach.
+    Use Android's queue barrier, not a sleep, process-priority change or retry.
+    This establishes only queue readiness; it never qualifies editor behavior.
+    """
+    api_raw = run("install-platform-api", "shell", "getprop", "ro.build.version.sdk", timeout=5).strip()
+    if not re.fullmatch(rb"[0-9]{1,3}", api_raw):
+        raise ValueError("Cannot identify installed Android API for broadcast readiness")
+    api = int(api_raw)
+    if api < 37:
+        return {"status": "NOT_APPLICABLE", "api": api}
+    started = time.monotonic()
+    raw = run("install-broadcast-idle", "shell", "am", "wait-for-broadcast-idle", timeout=90)
+    lines = raw.decode("utf-8", "strict").strip().splitlines()
+    if not lines or lines[-1].strip() != "All broadcast queues are idle!":
+        raise ValueError("Android did not confirm installation broadcast queues are idle")
+    return {"status": "READY", "api": api, "elapsedSeconds": time.monotonic() - started,
+            "scope": "Installation broadcast queues only; not memory or editor qualification"}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--serial", required=True)
@@ -137,23 +163,40 @@ def main():
     adb = str(Path(sdk) / "platform-tools" / ("adb.exe" if os.name == "nt" else "adb"))
     receipt = {"status": "RUNNING", "serial": args.serial, "avdName": args.avd_name,
                "scope": "Instrumented callbacks, mounted geometry, lifecycle and packaged resources; not real IME or AT"}
+    receipt['qualification'] = dict(editor='NOT RUN', recovery='NOT RUN', clipboard='NOT RUN')
 
     def save():
         (output / "results.json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
 
-    def run(label, *command, timeout=180):
+    def run(label, *command, timeout=180, allowed_codes=(0,), with_status=False, defer_evidence_errors=False):
+        evidence_errors = []
+
+        def retain(suffix, raw):
+            try:
+                (output / (label + '.' + suffix)).write_bytes(raw)
+            except OSError as failure:
+                evidence_errors.append(suffix + ': ' + str(failure))
+
         try:
             result = subprocess.run([adb, "-s", args.serial, *command], capture_output=True, timeout=timeout)
         except subprocess.TimeoutExpired as failure:
-            (output / (label + ".stdout")).write_bytes(failure.stdout or b"")
-            (output / (label + ".stderr")).write_bytes(failure.stderr or b"")
-            (output / (label + ".timeout")).write_text(str(failure), encoding="utf-8")
+            retain('stdout', failure.stdout or b'')
+            retain('stderr', failure.stderr or b'')
+            retain('timeout', str(failure).encode('utf-8'))
+            failure.evidence_errors = evidence_errors
             raise
-        (output / (label + ".stdout")).write_bytes(result.stdout)
-        (output / (label + ".stderr")).write_bytes(result.stderr)
-        if result.returncode:
-            raise RuntimeError(label + " failed: " + result.stderr.decode("utf-8", "replace"))
-        return result.stdout
+        retain('stdout', result.stdout)
+        retain('stderr', result.stderr)
+        result.evidence_errors = evidence_errors
+        if allowed_codes is not None and result.returncode not in allowed_codes:
+            raise RuntimeError(label + " failed (exit " + str(result.returncode) + "): "
+                               + result.stderr.decode("utf-8", "replace")
+                               + ("; evidence retention: " + str(evidence_errors) if evidence_errors else ""))
+        if evidence_errors and not (defer_evidence_errors and with_status):
+            raise RuntimeError(label + ' cannot retain command evidence: ' + str(evidence_errors))
+        # Only the memory observer requests deferred retention errors. It validates
+        # the original outcome first, then fails closed even for a valid response.
+        return result if with_status else result.stdout
 
     owned_identified = False
     save()
@@ -170,12 +213,17 @@ def main():
         receipt["apkSha256"] = sha(args.apk.read_bytes())
         receipt["testApkSha256"] = sha(args.test_apk.read_bytes())
         receipt["packagedFonts"] = packaged_fonts(args.apk)
+        receipt['memoryBeforeInstall'] = observe_memory(run, output, 'pre-test-memory', readiness_deadline)
         run("install", "install", "-r", str(args.apk.resolve()))
         run("install-test", "install", "-r", str(args.test_apk.resolve()))
+        receipt["installBroadcastReadiness"] = wait_for_install_broadcasts(run)
+        save()
         run_id = "adapter-" + str(time.time_ns())
         receipt["runId"] = run_id
-        run("instrument", "shell", "am", "instrument", "-w", "-e", "run-id", run_id,
-            PACKAGE + ".test/" + PACKAGE + ".AdapterInstrumentation", timeout=360)
+        with owned_tap_fixture(run, args.test_apk, output, run_id, receipt) as tap_path:
+            admitted_instrument(run, output, receipt, readiness_deadline, lambda:
+                run("instrument", "shell", "am", "instrument", "-w", "-e", "run-id", run_id, "-e", "tap-fixture", tap_path,
+                    PACKAGE + ".test/" + PACKAGE + ".AdapterInstrumentation", timeout=360))
         # am instrument may exit zero even when the instrumentation reports failure.
         raw = run("device-result", "shell", "run-as", PACKAGE, "cat",
                   "files/qualification/" + run_id + "/results.json")
@@ -186,10 +234,17 @@ def main():
         (output / "device-files.tar").write_bytes(archive)
         receipt["deviceArchiveSha256"] = sha(archive)
         validate_result(result, receipt["apkSha256"])
+        receipt['qualification']['editor'] = 'PASS'
         receipt["processInterruption"] = run_witness(run, output)
+        close_output = output / "after-close-interruption"
+        close_output.mkdir()
+        receipt["afterCloseInterruption"] = run_witness(run, close_output, close_after_discard=True)
+        receipt['qualification']['recovery'] = 'PASS'
         receipt["status"] = "PASS"
     except Exception as failure:
-        receipt.update(status="FAIL", error=str(failure))
+        receipt.update(status="BLOCKED" if isinstance(failure, MemoryServiceUnavailable) else "FAIL", error=str(failure))
+        if isinstance(failure, MemoryServiceUnavailable):
+            receipt['memoryReadinessFailure'] = failure.record
         if owned_identified:
             for label, command in (
                 ("failure-logcat", ("logcat", "-d", "-t", "1500")),
@@ -203,7 +258,10 @@ def main():
                     run(label, *command, timeout=10)
                 except Exception as diagnostic_failure:
                     receipt.setdefault("diagnosticErrors", {})[label] = str(diagnostic_failure)
-        save()
+        try:
+            save()
+        except OSError as receipt_failure:
+            failure.add_note('Cannot persist failure receipt: ' + str(receipt_failure))
         raise
     save()
     print(f"PASS {EXPECTED_GROUPS} instrumented groups and exact packaged fonts; evidence " + str(output))

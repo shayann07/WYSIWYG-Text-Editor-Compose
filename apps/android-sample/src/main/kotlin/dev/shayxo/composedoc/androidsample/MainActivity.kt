@@ -202,7 +202,9 @@ open class MainActivity :
             .setMessage("Save explicitly, or finish a local recovery checkpoint before leaving. Cancel keeps editing.")
             .setPositiveButton("Keep recovery & leave") { _, _ ->
                 owners.retainUnfinished()
-                owners.checkpoints.flush { finish() }
+                owners.checkpoints.keep(owners.tabs.toList()) { outcome ->
+                    if (outcome.durable) finish() else owners.note(owners.current, outcome.reason)
+                }
             }.setNeutralButton("Save") { _, _ ->
                 if (!owners.saveBound()) owners.launchPicker(this, AndroidPickerKind.SAVE_AS)
             }.setNegativeButton("Cancel", null).show()
