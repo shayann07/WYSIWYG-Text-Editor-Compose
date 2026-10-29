@@ -238,7 +238,11 @@ def main():
         receipt["processInterruption"] = run_witness(run, output)
         close_output = output / "after-close-interruption"
         close_output.mkdir()
-        receipt["afterCloseInterruption"] = run_witness(run, close_output, close_after_discard=True)
+
+        def close_run(label, *command, **kwargs):
+            return run('after-close-' + label, *command, **kwargs)
+
+        receipt["afterCloseInterruption"] = run_witness(close_run, close_output, close_after_discard=True)
         receipt['qualification']['recovery'] = 'PASS'
         receipt["status"] = "PASS"
     except Exception as failure:

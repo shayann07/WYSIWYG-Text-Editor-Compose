@@ -195,3 +195,27 @@ the reader and actual runner; this count is separate from mounted Android groups
 An overall PASS from `android_check.py` covers editor groups and recovery witnesses
 only. Its clipboard field stays NOT RUN because `android_clipboard.py` is a
 separate workflow step with a separate cross-process transport receipt.
+
+## Current hosted outcome and raw-witness routing — 29 October 2026
+
+Exact candidate `c0d56ae40ef819ddf7f92b918dbe5a736f6ec8f8` passed all six local
+final gates, including20 workspace stages and4 implementation mutants. Its one
+authorized hosted run `40746007286` failed closed at the **before-install** memory
+observation: `meminfo` explicitly reported a service timeout. No editor group,
+recovery interruption witness or clipboard check ran. The other four CI jobs and
+all four CodeQL languages passed. This does not establish a memory-pressure cure;
+no automatic retry or new emulator experiment is authorized.
+
+CodeRabbit identified a separate evidence-routing defect: both recovery witnesses
+used the same command-output closure, so the second witness overwrote raw stdout,
+stderr and timeout/cleanup traces from the first, despite separate decoded
+document artifacts. A host regression using the actual runner reproduced the
+overwritten first bytes on both success and second-witness failure. The correction
+prefixes every second-witness command label with `after-close-`, preserving both
+sets of raw streams and timeout/cleanup traces. Decoded witness directories,
+comparisons and qualification assertions are unchanged. The regression injects
+synthetic subprocess outcomes; it is not process-kill or native Android evidence.
+
+This routing change is local implementation only pending independent review. No
+hosted run is dispatched merely to qualify logging, and the hosted service-timeout
+cause remains unresolved. The owner reports no available physical device.
