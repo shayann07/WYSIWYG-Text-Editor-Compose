@@ -1,6 +1,7 @@
 """Actual runner routing with synthetic command outcomes; no device process is run."""
 from contextlib import nullcontext
 import hashlib
+import io
 import json
 from pathlib import Path
 import subprocess
@@ -70,7 +71,10 @@ class WitnessEvidenceRouting(unittest.TestCase):
                         patch.object(android_check, 'wait_for_install_broadcasts', return_value={}), \
                         patch.object(android_check, 'owned_tap_fixture', return_value=nullcontext('/fixture')), \
                         patch.object(android_check.subprocess, 'run', side_effect=adb), \
-                        patch.object(android_check, 'run_witness', side_effect=witness):
+                        patch.object(android_check, 'run_witness', side_effect=witness), \
+                        patch('sys.stdout', new_callable=io.StringIO):
+                    # main's success message belongs to mocked host outcomes here;
+                    # keep it out of raw test logs so it cannot resemble a device PASS.
                     if fail_second:
                         with self.assertRaises(subprocess.TimeoutExpired):
                             android_check.main()
