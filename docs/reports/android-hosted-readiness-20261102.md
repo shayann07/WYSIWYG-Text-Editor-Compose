@@ -126,3 +126,28 @@ that correctly failed kernel admission. It now tests that invalid-stderr case
 separately from a valid response plus disk failure. The raw failed run remains.
 This is not a device-suite result. Further hosted execution requires independent
 exact-head review; no success is claimed until the actual workload runs.
+
+
+## Reviewed candidate passed; ordinary CI adoption prepared
+
+Single trial41424643601 at diagnosticf2dd10a passed63 unique instrumented groups,
+both owned-process interruption witnesses and separate cross-UID rich clipboard.
+It reused the exact c0 failed-run app/test/peer binaries, not new candidate builds.
+The kernel observations completed in0.330s and0.202s. The coordinator independently
+verified536 non-APK members, group results, checkpoint generations/fresh PIDs,
+clipboard identities/resources/grants, API37/16-KiB identity and helper provenance.
+This supports the tested observer/environment; historical LMK causality and genuine
+keyboard/IME/AT qualification remain unproven. Original failures remain intact.
+
+The coordinator authorized implementing the proven environment in PR35's ordinary
+CI Android job. All existing CI jobs and current-head independent binary builds
+are preserved. Only the Android test host changes to Ubuntu24.04, pinned emulator
+37.2.13/build16740729 and Google APIs37.1 revision9/16-KiB image. The tested loader
+and identity checks are maintained as tooling helpers. Runtime admission precedes
+image transfers, installed bytes are checked against the pinned archive, actual
+guest identity is admitted and owned cleanup is fenced. No diagnostic-only workflow,
+old binary transfer or vendored helper tree is transplanted into ordinary CI.
+
+This is prepared source, not current-head PR qualification. Exact local final gates,
+independent review and the full new-head hosted CI/CodeQL remain required before
+coordinator landing. No merge, issue closure, package publication or tag occurs.

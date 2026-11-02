@@ -76,7 +76,7 @@ jobs:
       - run: python tooling/verification/consumer_check.py --android --output-dir tests/local-evidence/consumer/ci
   android:
     name: android-packaged-adapter
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -118,28 +118,52 @@ jobs:
           PY
       - name: Verify Android harness and owned fixture contracts
         run: python -m unittest discover -s tooling/verification -p 'test_android*.py'
+      - name: Prepare the pinned emulator runtime and image
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence=tests/local-evidence/android/environment
+          mkdir -p "$evidence"
+          echo "ANDROID_AVD_HOME=$RUNNER_TEMP/composedoc-ci-avds" >> "$GITHUB_ENV"
+          curl --fail --silent --show-error --max-time 180 https://dl.google.com/android/repository/emulator-linux_x64-16740729.zip -o "$RUNNER_TEMP/emulator.zip"
+          echo "f41f9e31eb5ca64926603c03265c50bbc0ff4172  $RUNNER_TEMP/emulator.zip" | sha1sum --check
+          unzip -oq "$RUNNER_TEMP/emulator.zip" -d "$ANDROID_HOME"
+          python tooling/verification/android_emulator_runtime.py --sdk "$ANDROID_HOME" --output-dir "$evidence/host-runtime"
+          curl --fail --silent --show-error --max-time 30 https://dl.google.com/android/repository/sys-img/google_apis/sys-img2-3.xml -o "$RUNNER_TEMP/image-catalogue.xml"
+          python tooling/verification/android_emulator_identity.py --metadata "$RUNNER_TEMP/image-catalogue.xml" --output "$evidence/catalogue-identity.json"
+          sdkmanager 'system-images;android-37.1;google_apis_ps16k;x86_64'
+          curl --fail --silent --show-error --max-time 300 https://dl.google.com/android/repository/sys-img/google_apis/x86_64-ps16k-37.1_r09.zip -o "$RUNNER_TEMP/pinned-image.zip"
+          echo "35c0da1cd298f3426a5b48233f59515097446a28  $RUNNER_TEMP/pinned-image.zip" | sha1sum --check
+          image="$ANDROID_HOME/system-images/android-37.1/google_apis_ps16k/x86_64"
+          python tooling/verification/android_emulator_identity.py --metadata "$image/package.xml" --installed --archive "$RUNNER_TEMP/pinned-image.zip" --output "$evidence/installed-image-identity.json"
+          cp "$image/package.xml" "$evidence/image-package.xml"
+          cp "$image/build.prop" "$evidence/image-build.prop"
+          uname -a > "$evidence/host-kernel.txt"
+          cat /etc/os-release > "$evidence/host-os.txt"
       - name: Start the disposable emulator and wait for unlocked services
         shell: bash
         run: |
-          sdkmanager 'emulator' 'system-images;android-37.1;google_apis_playstore_ps16k;x86_64'
-          export ANDROID_AVD_HOME="$RUNNER_TEMP/composedoc-ci-avds"
+          set -euo pipefail
           mkdir -p "$ANDROID_AVD_HOME"
-          echo no | avdmanager create avd --name composedoc_ci --device pixel_7 --package 'system-images;android-37.1;google_apis_playstore_ps16k;x86_64'
+          echo no | avdmanager create avd --name composedoc_ci --device pixel_7 --package 'system-images;android-37.1;google_apis_ps16k;x86_64'
           printf 'hw.cpu.ncore=2\nhw.ramSize=6144\ndisk.dataPartition.size=2048M\nhw.keyboard=no\n' >> "$ANDROID_AVD_HOME/composedoc_ci.avd/config.ini"
+          cp "$ANDROID_AVD_HOME/composedoc_ci.avd/config.ini" tests/local-evidence/android/environment/avd-config.ini
           sudo chmod a+rw /dev/kvm
           adb start-server
           nohup "$ANDROID_HOME/emulator/emulator" -avd composedoc_ci -port 5580 -no-window -no-audio -no-snapshot -no-boot-anim -gpu software -feature -Vulkan > emulator.log 2>&1 &
           emulator_pid=$!
+          echo "$emulator_pid" > tests/local-evidence/android/environment/owned-emulator.pid
           sleep 1
           if ! kill -0 "$emulator_pid"; then cat emulator.log; exit 1; fi
           python tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/consumer/android-ci/results.json --wait-only --readiness-timeout 300 --output-dir tests/local-evidence/android/preflight
+          python tooling/verification/android_emulator_identity.py --metadata "$ANDROID_HOME/system-images/android-37.1/google_apis_ps16k/x86_64/package.xml" --installed --device --output tests/local-evidence/android/environment/guest-identity.json
       - name: Verify the independently packaged APK
         shell: bash
         run: |
           # This offline editor does not need first-boot Play Store network provisioning.
           adb -s emulator-5580 shell svc wifi disable
           adb -s emulator-5580 shell svc data disable
-            # android_check records one strict kernel meminfo observation; AM readiness is checked separately.
+          # android_check records one strict kernel meminfo observation; AM readiness is checked separately.
           # Credential-unlocked storage is distinct from an interactive, unlocked display.
           adb -s emulator-5580 shell settings put system screen_off_timeout 1800000
           adb -s emulator-5580 shell input keyevent KEYCODE_WAKEUP
@@ -158,7 +182,7 @@ jobs:
         if: always()
         shell: bash
         run: |
-          if adb -s emulator-5580 get-state >/dev/null 2>&1; then
+          if test -f tests/local-evidence/android/environment/owned-emulator.pid && adb -s emulator-5580 emu avd name | grep -qx composedoc_ci; then
             adb -s emulator-5580 emu kill
           else
             echo 'Disposable emulator is not running; no device targeted.'
@@ -173,6 +197,7 @@ jobs:
             tests/local-evidence/android/ci
             tests/local-evidence/android/clipboard-ci
             tests/local-evidence/android/preflight
+            tests/local-evidence/android/environment
             emulator.log
             pre-test-*.txt
           if-no-files-found: warn
