@@ -1,4 +1,4 @@
-"""One-shot service responsiveness admission, never a memory budget or boot-completion claim."""
+"""One bounded kernel observation; never AM responsiveness, RAM sufficiency or boot proof."""
 import json
 from pathlib import Path
 import re
@@ -7,6 +7,28 @@ import time
 
 COMMAND_CAP_SECONDS = 15
 SUMMARY = re.compile(r'^\s*(Total|Free|Used) RAM:\s*([0-9][0-9,]*)K(?:\s|$)', re.MULTILINE)
+KERNEL_FIELDS = ('MemTotal', 'MemFree', 'MemAvailable', 'Buffers', 'Cached', 'SwapTotal', 'SwapFree')
+
+
+def parse_kernel(raw, exit_code, stderr=b''):
+    if exit_code != 0:
+        raise ValueError('Kernel memory command did not succeed')
+    if stderr.strip() or not raw or len(raw) > 65536 or not raw.endswith(b'\n'):
+        raise ValueError('Incomplete or erroneous kernel memory observation')
+    fields = {}
+    for line in raw.decode('utf-8', 'strict').splitlines():
+        match = re.fullmatch(r'([A-Za-z][A-Za-z0-9_()]*):\s+([0-9]+)(?:\s+(kB))?\s*', line)
+        if not match or match[1] in fields or len(match[2]) > 19 or int(match[2]) > 2**63 - 1:
+            raise ValueError('Malformed or duplicate kernel memory field')
+        fields[match[1]] = (int(match[2]), match[3])
+    if any(name not in fields or fields[name][1] != 'kB' for name in KERNEL_FIELDS):
+        raise ValueError('Missing kernel memory fields or invalid units')
+    values = {name: fields[name][0] for name in KERNEL_FIELDS}
+    if (values['MemTotal'] <= 0 or any(values[name] > values['MemTotal'] for name in
+                                     ('MemFree', 'MemAvailable', 'Buffers', 'Cached'))
+            or values['SwapFree'] > values['SwapTotal']):
+        raise ValueError('Inconsistent kernel memory bounds')
+    return {name + 'KiB': value for name, value in values.items()}
 
 
 class MemoryServiceUnavailable(RuntimeError):
@@ -16,6 +38,7 @@ class MemoryServiceUnavailable(RuntimeError):
 
 
 def parse_summary(raw, exit_code, stderr=b''):
+    """Historical global-dump receipt parser; not used to admit new instrumentation."""
     if exit_code != 0:
         raise ValueError('meminfo command did not succeed')
     text = raw.decode('utf-8', 'strict')
@@ -38,8 +61,8 @@ def parse_summary(raw, exit_code, stderr=b''):
 def observe_memory(probe, output, label, deadline, *, clock=time.monotonic):
     """No polling or qualification retry. All command outcomes, including zero-exit timeouts, are retained."""
     output = Path(output)
-    record = dict(status='BLOCKED', scope='Memory-service responsiveness only; not boot completion or sufficient RAM',
-                  command=['shell', 'dumpsys', 'meminfo'], exitCode=None, timedOut=False, elapsedSeconds=0)
+    record = dict(status='BLOCKED', scope='Kernel memory observation only; not service readiness, boot completion or sufficient RAM',
+                  command=['exec-out', 'cat', '/proc/meminfo'], exitCode=None, timedOut=False, elapsedSeconds=0)
     started = clock()
     stdout, stderr = b'', b''
     try:
@@ -63,10 +86,12 @@ def observe_memory(probe, output, label, deadline, *, clock=time.monotonic):
         record['exitCode'] = completed.returncode
         if getattr(completed, 'evidence_errors', None):
             record['retentionErrors'] = completed.evidence_errors
-        record['values'] = parse_summary(stdout, completed.returncode, stderr)
+        record['values'] = parse_kernel(stdout, completed.returncode, stderr)
+        if clock() >= deadline:
+            raise ValueError('Setup deadline exhausted before kernel observation completed')
         if record.get('retentionErrors'):
             raise ValueError('Cannot retain memory observation evidence')
-        record['status'] = 'RESPONSIVE'
+        record['status'] = 'KERNEL_OBSERVED'
         return record
     except Exception as error:
         if isinstance(error, subprocess.TimeoutExpired):

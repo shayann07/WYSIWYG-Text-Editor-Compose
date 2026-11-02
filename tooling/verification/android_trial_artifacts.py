@@ -28,7 +28,7 @@ def verify_harness(root):
     names = {'tooling/verification/' + name for name in
              ['android_check.py', 'android_clipboard.py', 'android_process.py',
               'android_tap_fixture.py', 'android_memory_readiness.py']}
-    if (manifest.get('sourceCommit') != '2d23d55033d0456712428ccb8202f8ae36f2941c'
+    if (manifest.get('sourceCommit') != '60b8df8324f3d7bafbfbf9f3ba7dcfdc65b2226d'
             or set(manifest.get('files', {})) != names):
         raise ValueError('Trial harness source identity or helper set differs')
     for name, digest in manifest['files'].items():

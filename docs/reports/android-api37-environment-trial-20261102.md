@@ -29,12 +29,12 @@ the exact candidate before its single dispatch. No phone or local emulator is us
   no hardware keyboard, no snapshot, software GPU and disabled Vulkan. No warm
   attach, extra delay, process-priority change or assertion/threshold modification.
 - Host runner source: exactly five verbatim helpers from locally reviewed
-  `2d23d55033d0456712428ccb8202f8ae36f2941c`, transparently included under
+  `60b8df8324f3d7bafbfbf9f3ba7dcfdc65b2226d`, transparently included under
   `trial-harness/tooling/verification/`. The source commit/per-file SHA256 manifest
   is verified before use, removing the unavailable remote-checkout dependency.
   A link to this checkout's unchanged pinned test fonts supplies the original
   helper's verification-only font comparison. No editor implementation is copied.
-  The deadline correction passed 50 host regressions. The diagnostic branch is not
+  The deadline and kernel-observer correction passed 54 host regressions. The diagnostic branch is not
   used as a competing editor implementation or public consumer example.
 - Binaries: existing GitHub artifact **12841796990**, run **40746007286**, repository
   ID **1421229803**, PR35 head `c0d56ae40ef819ddf7f92b918dbe5a736f6ec8f8`.
@@ -103,7 +103,7 @@ correction sets `ANDROID_AVD_HOME` through `GITHUB_ENV` using the actual shell's
 `RUNNER_TEMP` in the first step. Retain the original rejection and obtain exact-head
 review before another request; this is not an application qualification retry.
 
-## Actual trial 41419969057 — host loader failure before guest execution
+## Actual trial 41419969057 â€” host loader failure before guest execution
 
 Reviewed correction `cb31689` was dispatched once. Ten host tests, provenance and
 all three exact failed-CI APK transfers passed. The image and emulator archive
@@ -123,3 +123,29 @@ version output are retained. These are CI test-host packages, not library/runtim
 dependencies or a change to the user's OS. This correction awaits exact-head
 review before another controlled request; image, APKs and qualification remain
 unchanged. Host readiness is never reported as Android qualification.
+
+
+## Second trial and approved observer correction
+
+Run41422187986 at db6bd53 passed explicit host-loader admission, package versions,
+installed-image byte identity and guest API37/x86_64/16-KiB identity. It booted and
+passed unlocked-service preflight, then the global memory dump returned the same
+118-byte service timeout before APK installation. All editor, recovery and
+clipboard checks were NOT RUN. Artifact13130407624 and the original failure remain;
+there was no automatic retry. Removing Play Store and changing emulator version
+had not cleared that admission blocker.
+
+Pinned Android17 framework source and retained local CP31 bytecode demonstrate
+that the global diagnostic temporarily disables the app freezer and traverses
+process memory. Exact hosted bytecode and the cause of historical LMK remain
+unproven. The coordinator approved a replacement observation contract: one bounded
+`adb exec-out cat /proc/meminfo`, strict stable-field/units/bounds/UTF-8/completion
+validation, no capacity threshold and no memory-based readiness PASS. Existing
+identity, three service probes, queue barrier and actual cold63/two kills/clipboard
+assertions remain unchanged. The original global parser/fixtures remain tested;
+only explicitly intrusive diagnostics after a primary failure can run a global
+dump. The five helpers are refreshed verbatim from the exact reviewed source in
+the manifest. Fifty-four host regressions pass, with two real-function routing and
+late-response failures retained before correction. Exact-head review is required
+before executing the candidate; this is not retrospective qualification of old
+failed configurations or ordinary CI lane adoption.
