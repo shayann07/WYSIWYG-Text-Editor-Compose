@@ -100,6 +100,23 @@ class AndroidEvidenceContract(unittest.TestCase):
 
 
 class AndroidServiceReadiness(unittest.TestCase):
+    def test_final_response_after_deadline_cannot_establish_readiness(self):
+        now = [0]
+        calls = []
+
+        def probe(label, *command, timeout):
+            calls.append(timeout)
+            now[0] += 1
+            if command[3] == "get-started-user-state":
+                return b"RUNNING_UNLOCKED"
+            if command[2] == "package":
+                return b"package:/system/framework/framework-res.apk"
+            return b"0"
+
+        with self.assertRaisesRegex(TimeoutError, "services"):
+            wait_for_services(probe, clock=lambda: now[0], sleep=lambda seconds: None, timeout=8.5)
+        self.assertLessEqual(calls[-1], 0.5)
+
     def run_trace(self, states, timeout=20):
         now = [0]
         seen = []
@@ -142,6 +159,19 @@ class AndroidServiceReadiness(unittest.TestCase):
 
 
 class OwnedEmulatorReadiness(unittest.TestCase):
+    def test_late_identity_response_cannot_establish_readiness(self):
+        now = [0]
+        calls = []
+
+        def probe(label, *command, timeout):
+            calls.append(timeout)
+            now[0] = 2
+            return b"owned-test\nOK\n"
+
+        with self.assertRaisesRegex(TimeoutError, "register"):
+            wait_for_owned_emulator(probe, "owned-test", clock=lambda: now[0], timeout=1)
+        self.assertEqual(calls, [1])
+
     def test_device_registers_after_initial_adb_absence(self):
         now = [0]
         calls = []

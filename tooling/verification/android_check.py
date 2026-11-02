@@ -63,13 +63,19 @@ def wait_for_owned_emulator(probe, expected_name, *, clock=time.monotonic, sleep
     attempt = 0
     while clock() < deadline:
         attempt += 1
+        remaining = deadline - clock()
+        if remaining <= 0:
+            break
         try:
-            observed = probe(f"identity-{attempt}", "emu", "avd", "name", timeout=5).decode().splitlines()
+            observed = probe(f"identity-{attempt}", "emu", "avd", "name",
+                             timeout=min(5, remaining)).decode().splitlines()
         except (RuntimeError, subprocess.TimeoutExpired):
             sleep(max(0, min(2, deadline - clock())))
             continue
         if not observed or observed[0].strip() != expected_name:
             raise ValueError("Emulator identity does not match the authorized disposable AVD")
+        if clock() >= deadline:
+            break
         return {"attempts": attempt, "name": expected_name}
     raise TimeoutError("Named disposable emulator did not register with ADB")
 
@@ -84,12 +90,23 @@ def wait_for_services(probe, *, clock=time.monotonic, sleep=time.sleep, timeout=
     deadline = clock() + timeout
     stable = 0
     attempt = 0
+
+    def bounded_probe(label, *command):
+        remaining = deadline - clock()
+        if remaining <= 0:
+            raise TimeoutError("Android services readiness deadline exhausted")
+        result = probe(label, *command, timeout=min(5, remaining))
+        # A successful response delivered after the deadline is not admission.
+        if clock() >= deadline:
+            raise TimeoutError("Android services readiness deadline exhausted")
+        return result
+
     while clock() < deadline:
         attempt += 1
         try:
-            package = probe(f"ready-{attempt}-package", "shell", "cmd", "package", "path", "android", timeout=5)
-            activity = probe(f"ready-{attempt}-activity", "shell", "cmd", "activity", "get-current-user", timeout=5)
-            user = probe(f"ready-{attempt}-user", "shell", "cmd", "activity", "get-started-user-state", "0", timeout=5)
+            package = bounded_probe(f"ready-{attempt}-package", "shell", "cmd", "package", "path", "android")
+            activity = bounded_probe(f"ready-{attempt}-activity", "shell", "cmd", "activity", "get-current-user")
+            user = bounded_probe(f"ready-{attempt}-user", "shell", "cmd", "activity", "get-started-user-state", "0")
             ready = (any(line.startswith(b"package:") for line in package.splitlines())
                      and activity.strip() == b"0" and user.strip() == b"RUNNING_UNLOCKED")
         except (RuntimeError, subprocess.TimeoutExpired):
