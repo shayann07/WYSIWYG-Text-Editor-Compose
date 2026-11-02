@@ -70,14 +70,31 @@ jobs:
       - run: python -m pip install -r tooling/verification/requirements.txt
       - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
       - run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
-      - run: .\gradlew.bat --no-daemon check apiCheck
-      - run: python tooling/verification/test_verification.py
-      - run: python tooling/verification/verify.py --workspace-milestone
+      - name: Run all six final gates on the clean tested commit
+        run: python tooling/verification/final_gates.py
+      - name: Retain compact exact-commit final-gate evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: final-gates-${{ github.sha }}
+          path: |
+            tooling/local/final-verification.json
+            tooling/local/final-gate-logs/**/*.log
+            tests/local-evidence/desktop/*/results.json
+            tests/local-evidence/desktop/*/mutation-results.json
+            tests/local-evidence/desktop/*/build/build-identity.json
+            tests/local-evidence/desktop/*/*.log
+          if-no-files-found: error
+          retention-days: 14
       - run: python tooling/verification/consumer_check.py --android --output-dir tests/local-evidence/consumer/ci
-  android:
-    name: android-packaged-adapter
-    runs-on: ubuntu-latest
+  android_build:
+    name: android-binary-consumers
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
+    env:
+      CI_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+    outputs:
+      artifact_id: ${{ steps.binary_artifact.outputs.artifact-id }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -94,28 +111,137 @@ jobs:
       - run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
       - name: Build outside-checkout consumers from binary metadata
         run: xvfb-run -a python tooling/verification/consumer_check.py --android-peer --output-dir tests/local-evidence/consumer/android-ci
+      - name: Retain the exact application and test packages for reproduction
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib, json, shutil
+          from pathlib import Path
+          output = Path('tests/local-evidence/consumer/android-ci')
+          receipt = json.loads((output/'results.json').read_text())
+          assert receipt['status'] == 'PASS'
+          artifacts = dict(receipt['androidArtifacts'], **receipt['androidPeer']['artifacts'])
+          destination = output/'apks'; destination.mkdir(exist_ok=False)
+          retained = {}
+          for name, digest in artifacts.items():
+              source = Path(name)
+              assert hashlib.sha256(source.read_bytes()).hexdigest() == digest
+              kind = 'test' if 'androidTest' in name else ('peer' if 'android-peer' in name else 'app')
+              assert kind not in retained
+              shutil.copyfile(source, destination/(kind+'.apk'))
+              retained[kind] = dict(sha256=digest, original=name)
+          assert set(retained) == {'app', 'test', 'peer'}
+          (destination/'identity.json').write_text(json.dumps(retained, indent=2)+'\n')
+          PY
+      - name: Verify Android harness and owned fixture contracts
+        run: python -m unittest discover -s tooling/verification -p 'test_android*.py'
+      - name: Bind the current build to workflow identity
+        run: python tooling/verification/android_ci_transfer.py pack --directory tests/local-evidence/consumer/android-ci
+      - name: Retain current-workflow binary consumer artifacts
+        id: binary_artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: android-binaries-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
+          path: |
+            tests/local-evidence/consumer/android-ci/results.json
+            tests/local-evidence/consumer/android-ci/provenance.json
+            tests/local-evidence/consumer/android-ci/apks
+            tests/local-evidence/consumer/android-ci/*.log
+          if-no-files-found: error
+          retention-days: 14
+  android:
+    name: android-packaged-adapter
+    needs: android_build
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read
+    env:
+      CI_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Require a successful current-run binary producer
+        env:
+          UPSTREAM_RESULT: ${{ needs.android_build.result }}
+        shell: bash
+        run: |
+          if [ "$UPSTREAM_RESULT" != success ]; then
+            mkdir -p tests/local-evidence/android/transfer
+            printf '{"status":"BLOCKED","upstreamResult":"%s","scope":"No Android checks executed"}\n' "$UPSTREAM_RESULT" > tests/local-evidence/android/transfer/upstream-failure.json
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+      - name: Receive only this run's independently built APKs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ needs.android_build.outputs.artifact_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence=tests/local-evidence/android/transfer
+          mkdir -p "$evidence"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" > "$evidence/artifact-metadata.json"
+          python tooling/verification/android_ci_transfer.py validate-metadata --metadata "$evidence/artifact-metadata.json" --artifact-id "$ARTIFACT_ID"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$RUNNER_TEMP/current-android-binaries.zip"
+          python tooling/verification/android_ci_transfer.py receive --archive "$RUNNER_TEMP/current-android-binaries.zip" --metadata "$evidence/artifact-metadata.json" --artifact-id "$ARTIFACT_ID" --output-dir "$evidence/relocated" --packages-dir "$RUNNER_TEMP/current-composedoc-apks"
+      - name: Prepare the pinned emulator runtime and image
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence=tests/local-evidence/android/environment
+          mkdir -p "$evidence"
+          echo "ANDROID_AVD_HOME=$RUNNER_TEMP/composedoc-ci-avds" >> "$GITHUB_ENV"
+          curl --fail --silent --show-error --max-time 180 https://dl.google.com/android/repository/emulator-linux_x64-16740729.zip -o "$RUNNER_TEMP/emulator.zip"
+          echo "f41f9e31eb5ca64926603c03265c50bbc0ff4172  $RUNNER_TEMP/emulator.zip" | sha1sum --check
+          unzip -oq "$RUNNER_TEMP/emulator.zip" -d "$ANDROID_HOME"
+          python tooling/verification/android_emulator_runtime.py --sdk "$ANDROID_HOME" --output-dir "$evidence/host-runtime"
+          curl --fail --silent --show-error --max-time 30 https://dl.google.com/android/repository/sys-img/google_apis/sys-img2-3.xml -o "$RUNNER_TEMP/image-catalogue.xml"
+          python tooling/verification/android_emulator_identity.py --metadata "$RUNNER_TEMP/image-catalogue.xml" --output "$evidence/catalogue-identity.json"
+          sdkmanager 'system-images;android-37.1;google_apis_ps16k;x86_64'
+          curl --fail --silent --show-error --max-time 300 https://dl.google.com/android/repository/sys-img/google_apis/x86_64-ps16k-37.1_r09.zip -o "$RUNNER_TEMP/pinned-image.zip"
+          echo "35c0da1cd298f3426a5b48233f59515097446a28  $RUNNER_TEMP/pinned-image.zip" | sha1sum --check
+          image="$ANDROID_HOME/system-images/android-37.1/google_apis_ps16k/x86_64"
+          python tooling/verification/android_emulator_identity.py --metadata "$image/package.xml" --installed --archive "$RUNNER_TEMP/pinned-image.zip" --output "$evidence/installed-image-identity.json"
+          cp "$image/package.xml" "$evidence/image-package.xml"
+          cp "$image/build.prop" "$evidence/image-build.prop"
+          uname -a > "$evidence/host-kernel.txt"
+          cat /etc/os-release > "$evidence/host-os.txt"
       - name: Start the disposable emulator and wait for unlocked services
         shell: bash
         run: |
-          sdkmanager 'emulator' 'system-images;android-37.1;google_apis_playstore_ps16k;x86_64'
-          export ANDROID_AVD_HOME="$RUNNER_TEMP/composedoc-ci-avds"
+          set -euo pipefail
           mkdir -p "$ANDROID_AVD_HOME"
-          echo no | avdmanager create avd --name composedoc_ci --device pixel_7 --package 'system-images;android-37.1;google_apis_playstore_ps16k;x86_64'
+          echo no | avdmanager create avd --name composedoc_ci --device pixel_7 --package 'system-images;android-37.1;google_apis_ps16k;x86_64'
           printf 'hw.cpu.ncore=2\nhw.ramSize=6144\ndisk.dataPartition.size=2048M\nhw.keyboard=no\n' >> "$ANDROID_AVD_HOME/composedoc_ci.avd/config.ini"
+          cp "$ANDROID_AVD_HOME/composedoc_ci.avd/config.ini" tests/local-evidence/android/environment/avd-config.ini
           sudo chmod a+rw /dev/kvm
           adb start-server
           nohup "$ANDROID_HOME/emulator/emulator" -avd composedoc_ci -port 5580 -no-window -no-audio -no-snapshot -no-boot-anim -gpu software -feature -Vulkan > emulator.log 2>&1 &
           emulator_pid=$!
+          echo "$emulator_pid" > tests/local-evidence/android/environment/owned-emulator.pid
           sleep 1
           if ! kill -0 "$emulator_pid"; then cat emulator.log; exit 1; fi
-          python tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/consumer/android-ci/results.json --wait-only --readiness-timeout 300 --output-dir tests/local-evidence/android/preflight
+          python tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/android/transfer/relocated/consumer.json --wait-only --readiness-timeout 300 --output-dir tests/local-evidence/android/preflight
+          python tooling/verification/android_emulator_identity.py --metadata "$ANDROID_HOME/system-images/android-37.1/google_apis_ps16k/x86_64/package.xml" --installed --device --output tests/local-evidence/android/environment/guest-identity.json
       - name: Verify the independently packaged APK
         shell: bash
         run: |
           # This offline editor does not need first-boot Play Store network provisioning.
           adb -s emulator-5580 shell svc wifi disable
           adb -s emulator-5580 shell svc data disable
-          adb -s emulator-5580 shell dumpsys meminfo > pre-test-memory.txt
+          # android_check records one strict kernel meminfo observation; AM readiness is checked separately.
           # Credential-unlocked storage is distinct from an interactive, unlocked display.
           adb -s emulator-5580 shell settings put system screen_off_timeout 1800000
           adb -s emulator-5580 shell input keyevent KEYCODE_WAKEUP
@@ -127,14 +253,14 @@ jobs:
           adb -s emulator-5580 shell dumpsys input_method > pre-test-input-method.txt
           adb -s emulator-5580 shell dumpsys power > pre-test-power.txt
           adb -s emulator-5580 shell dumpsys window policy > pre-test-window-policy.txt
-          python tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/consumer/android-ci/results.json --output-dir tests/local-evidence/android/ci
+          python tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/android/transfer/relocated/consumer.json --output-dir tests/local-evidence/android/ci
       - name: Verify cross-UID clipboard after publisher process death
-        run: python tooling/verification/android_clipboard.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/consumer/android-ci/results.json --output-dir tests/local-evidence/android/clipboard-ci
+        run: python tooling/verification/android_clipboard.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/android/transfer/relocated/consumer.json --output-dir tests/local-evidence/android/clipboard-ci
       - name: Stop only the disposable emulator
         if: always()
         shell: bash
         run: |
-          if adb -s emulator-5580 get-state >/dev/null 2>&1; then
+          if test -f tests/local-evidence/android/environment/owned-emulator.pid && adb -s emulator-5580 emu avd name | grep -qx composedoc_ci; then
             adb -s emulator-5580 emu kill
           else
             echo 'Disposable emulator is not running; no device targeted.'
@@ -145,10 +271,11 @@ jobs:
         with:
           name: android-packaged-adapter-${{ github.sha }}
           path: |
-            tests/local-evidence/consumer/android-ci
+            tests/local-evidence/android/transfer
             tests/local-evidence/android/ci
             tests/local-evidence/android/clipboard-ci
             tests/local-evidence/android/preflight
+            tests/local-evidence/android/environment
             emulator.log
             pre-test-*.txt
           if-no-files-found: warn

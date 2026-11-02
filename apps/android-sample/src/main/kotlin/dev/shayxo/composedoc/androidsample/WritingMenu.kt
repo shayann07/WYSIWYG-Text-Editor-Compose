@@ -29,7 +29,10 @@ internal fun showWritingMenu(activity: MainActivity, owners: AndroidOwners, inpu
 internal fun requestCloseTab(activity: MainActivity, owners: AndroidOwners, input: AndroidEditorView?) {
     val captured = owners.tab
     AlertDialog.Builder(activity).setTitle("Close ${captured.name}?")
-        .setMessage("A completed private recovery checkpoint retains this writing. Cancel keeps editing.")
+        .setMessage(
+            "Keep recovery & close creates and verifies a private checkpoint before closing. " +
+                "Cancel keeps editing.",
+        )
         .setPositiveButton("Keep recovery & close") { _, _ ->
             if (input?.model === captured.model) input.retireNativeSession()
             owners.closeDocument(captured)

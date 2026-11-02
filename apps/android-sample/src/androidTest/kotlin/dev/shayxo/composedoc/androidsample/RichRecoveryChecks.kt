@@ -86,12 +86,18 @@ private fun AdapterInstrumentation.recoveryFallback(root: File) {
         store.checkpoint(unrelatedOwner, 1, "independent", second)
         check(store.entries().any { it.owner == unrelatedOwner })
         val blocked = File(directory, "$unrelatedOwner/slot-0.bin")
+        val backup = File(directory, "$unrelatedOwner/slot-0.bin.bak")
         check(blocked.mkdir())
-        File(blocked, "obstacle").writeText("Keep owned failure evidence")
+        check(backup.mkdir())
+        val obstacle = File(blocked, "obstacle").apply { writeText("Keep owned failure evidence") }
+        val backupObstacle = File(backup, "obstacle").apply { writeText("Keep owned backup evidence") }
         check(runCatching { store.checkpoint(unrelatedOwner, 2, "publication", first) }.isFailure)
+        check(obstacle.readText() == "Keep owned failure evidence")
+        check(backupObstacle.readText() == "Keep owned backup evidence")
         check(store.read(unrelatedOwner, 1).document.same(second))
         check(runCatching { store.checkpoint(unrelatedOwner, 2, "different content", second) }.isFailure)
         check(blocked.renameTo(File(directory, "$unrelatedOwner/retained-obstacle")))
+        check(backup.renameTo(File(directory, "$unrelatedOwner/retained-backup-obstacle")))
         check(store.checkpoint(unrelatedOwner, 2, "publication", first))
         check(store.read(unrelatedOwner, 2).document.same(first))
     }

@@ -12,6 +12,111 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import verification as v
+import final_gates
+from contextlib import redirect_stdout, nullcontext
+import io
+
+
+class FinalGateRawEvidence(unittest.TestCase):
+    def test_all_six_successful_workers_still_require_retained_raw_logs(self):
+        for fail_log in (False, True):
+            with self.subTest(fail_log=fail_log), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                receipt = root / 'tooling/local/final-verification.json'
+                calls = []
+                def execute(command, **kwargs):
+                    calls.append(command)
+                    raw = b'owned fixture worker\n'
+                    if 'tooling/verification/verify.py' in command:
+                        raw = ('Evidence: ' + str(root / 'tests/local-evidence/desktop/owned') + '\n').encode()
+                    return subprocess.CompletedProcess(command, 0, raw)
+                def git(*args):
+                    return '' if args[0] == 'status' else 'a' * 40
+                retention = patch.object(Path, 'write_bytes', side_effect=OSError('injected raw-log IO failure')) if fail_log else nullcontext()
+                with patch.object(final_gates, 'ROOT', root), patch.object(final_gates, 'RECEIPT', receipt), \
+                        patch.object(final_gates, 'git', side_effect=git), \
+                        patch.object(final_gates.subprocess, 'run', side_effect=execute), retention, redirect_stdout(io.StringIO()):
+                    self.assertEqual(1 if fail_log else 0, final_gates.main())
+                value = json.loads(receipt.read_text())
+                self.assertEqual(6, len(calls))
+                self.assertTrue(all(g['exitCode'] == 0 for g in value['gates']))
+                self.assertEqual('FAIL' if fail_log else 'PASS', value['status'])
+
+    def test_receipt_failure_keeps_original_timeout_or_nonzero_worker_primary(self):
+        for timed_out in (False, True):
+            with self.subTest(timed_out=timed_out), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                raw = b'original full prefix\n'
+                timeout = subprocess.TimeoutExpired('fixture', 1800, output=raw)
+                original_write = Path.write_text
+                def write(path, text, **kwargs):
+                    if '"exitCode"' in text:
+                        raise OSError('injected receipt failure')
+                    return original_write(path, text, **kwargs)
+                def git(*args):
+                    return '' if args[0] == 'status' else 'a' * 40
+                with patch.object(final_gates, 'ROOT', root), \
+                        patch.object(final_gates, 'RECEIPT', root / 'tooling/local/final-verification.json'), \
+                        patch.object(final_gates, 'git', side_effect=git), \
+                        patch.object(final_gates.subprocess, 'run', side_effect=timeout if timed_out else None,
+                                     return_value=subprocess.CompletedProcess('fixture', 7, raw)), \
+                        patch.object(Path, 'write_text', write), redirect_stdout(io.StringIO()):
+                    with self.assertRaises(subprocess.TimeoutExpired if timed_out else subprocess.CalledProcessError) as caught:
+                        final_gates.main()
+                self.assertEqual(raw, caught.exception.output)
+                self.assertIn('receipt failure', caught.exception.__notes__[0])
+                if timed_out:
+                    self.assertIs(timeout, caught.exception)
+                else:
+                    self.assertEqual(7, caught.exception.returncode)
+
+    def exercise(self, outcome, fail_log=False):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            receipt = root / 'tooling/local/final-verification.json'
+            calls = []
+            def execute(command, **kwargs):
+                calls.append(command)
+                if len(calls) == 1:
+                    if isinstance(outcome, Exception):
+                        raise outcome
+                    return outcome
+                return subprocess.CompletedProcess(command, 0, b'fixture worker output\n')
+            def git(*args):
+                return '' if args[0] == 'status' else 'a' * 40
+            retention = patch.object(Path, 'write_bytes', side_effect=OSError('injected raw-log IO failure')) if fail_log else nullcontext()
+            with patch.object(final_gates, 'ROOT', root), patch.object(final_gates, 'RECEIPT', receipt), \
+                    patch.object(final_gates, 'git', side_effect=git), \
+                    patch.object(final_gates.subprocess, 'run', side_effect=execute), \
+                    retention, \
+                    redirect_stdout(io.StringIO()):
+                self.assertEqual(1, final_gates.main())
+            value = json.loads(receipt.read_text())
+            self.assertEqual('FAIL', value['status'])
+            entry = value['gates'][0]
+            if fail_log:
+                self.assertIn('injected raw-log IO failure', entry['retentionError'])
+                self.assertFalse((root / entry['rawLog']).exists())
+            else:
+                self.assertEqual(b'original full prefix\n' + b'x' * 5000, (root / entry['rawLog']).read_bytes())
+            self.assertEqual(len(calls), 5)  # No workspace evidence: mutations cannot be counted as executed.
+            return entry
+
+    def test_actual_final_runner_retains_full_failed_child_output(self):
+        entry = self.exercise(subprocess.CompletedProcess('fixture', 7, b'original full prefix\n' + b'x' * 5000))
+        self.assertEqual(7, entry['exitCode'])
+
+    def test_actual_final_runner_retains_timeout_prefix_and_failure_status(self):
+        entry = self.exercise(subprocess.TimeoutExpired('fixture', 1800, output=b'original full prefix\n' + b'x' * 5000))
+        self.assertIsNone(entry['exitCode'])
+        self.assertTrue(entry['timedOut'])
+
+    def test_logging_failure_cannot_mask_nonzero_or_timeout_worker_result(self):
+        failed = self.exercise(subprocess.CompletedProcess('fixture', 7, b'original full prefix\n' + b'x' * 5000), fail_log=True)
+        self.assertEqual(7, failed['exitCode'])
+        timeout = self.exercise(subprocess.TimeoutExpired('fixture', 1800, output=b'original full prefix\n' + b'x' * 5000), fail_log=True)
+        self.assertIsNone(timeout['exitCode'])
+        self.assertTrue(timeout['timedOut'])
 
 
 class VerificationContract(unittest.TestCase):

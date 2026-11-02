@@ -31,6 +31,9 @@ import java.util.concurrent.atomic.AtomicReference
 class AdapterInstrumentation : Instrumentation() {
     private var arguments = Bundle()
     private val outcomes = JSONArray()
+    internal lateinit var evidenceRoot: File
+    internal var tapFixture: String = ""
+        private set
     internal lateinit var activity: MainActivity
     override fun onCreate(arguments: Bundle?) {
         super.onCreate(arguments)
@@ -42,9 +45,21 @@ class AdapterInstrumentation : Instrumentation() {
         require(id.matches(Regex("[a-zA-Z0-9_-]{1,64}")))
         val root = File(targetContext.filesDir, "qualification/$id")
         check(root.mkdirs())
+        evidenceRoot = root
+        tapFixture = arguments.getString("tap-fixture", "")
         var fatal: Throwable? = null
         try {
-            runChecks(root)
+            when (arguments.getString("focus")) {
+                "recovery-retry" -> {
+                    launchEditor(root)
+                    recoveryRetryChecks()
+                }
+                "mounted" -> {
+                    launchEditor(root)
+                    mountedChecks()
+                }
+                else -> runChecks(root)
+            }
         } catch (error: Throwable) {
             fatal = error
         }
@@ -61,13 +76,18 @@ class AdapterInstrumentation : Instrumentation() {
         }
         finish(if (status == "PASS") Activity.RESULT_OK else Activity.RESULT_CANCELED, data)
     }
-    private fun runChecks(root: File) {
+    private fun launchEditor(root: File) {
         val intent = Intent(targetContext, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK).putExtra("blank", true)
             .putExtra("qualification-root", root.name)
         activity = startActivitySync(intent) as MainActivity
         waitUntil { main { activity.inputView != null } }
-        if (arguments.getString("focus") == "rich-layout") {
+    }
+    private fun runChecks(root: File) {
+        launchEditor(root)
+        if (arguments.getString("focus") == "recovery-close") {
+            recoveryCloseChecks()
+        } else if (arguments.getString("focus") == "rich-layout") {
             richLayoutChecks(root)
         } else if (arguments.getString("focus") == "rich-lifecycle") {
             richLifecycleChecks()
@@ -106,6 +126,7 @@ class AdapterInstrumentation : Instrumentation() {
             richLifecycleChecks()
             richLayoutChecks(root)
             richShellChecks()
+            recoveryCloseChecks()
         }
     }
     private fun resultFor(fatal: Throwable?): JSONObject {

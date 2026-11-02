@@ -1,3 +1,39 @@
+# Recovery PR harness correction — 26 October 2026
+
+Existing codex/android-recovery-close refreshed additively with main540ace. The
+bounded test-only backport keeps63 original group names/count and both recovery
+interruption witnesses; no production/core/API/dependency/geometry changes.
+Read [the qualification report](android-recovery-harness-20261026.md).
+
+Current checks: focused Android test compilation/zeroDetekt/formatting/architecture
+and25 host regressions PASS; full check/API/AndroidAPI PASS (354tasks). Docs81
+protected hashes PASS; the compiled tap contract also passes locally.
+Next: finish local gates, commit the exact source, build an independent consumer,
+run clean-commit gates, then normal fast-forward push of existing PR35 for fresh
+qualification. No merge, issue closure, new branch or PR metadata change here.
+
+The separate66-group API28 supplementary packet atd4 passed both process kills,
+cross-UID clipboard and actual short-window gesture evidence. It does not qualify
+this PR head or replace API37.1's retained pre-startup memory-kill failure. Native
+IME/AT/visual coverage remains separate. Computer control and emulators are off.
+
+---
+
+# Android recovery repair — active, 23 October 2026
+
+Worktree D:\Work\ComposeDoc-repairs\android-recovery-close, branch
+codex/android-recovery-close, base e30c984. Both actual mounted before-fix witnesses
+FAIL retained; repaired 63 groups + two owned process kills + cross-UID clipboard
+PASS on separately packaged APK fcc93ac8. Read
+[the focused report](android-recovery-close-repair-20261023.md). No main/contributor
+remote changes, merges or issue closures. Native capture is blocked by emulator
+window outside captured monitor; owner centering pending, computer control OFF.
+Next: exact clean branch gates, native walkthrough if positioning becomes available,
+then owner-written PR metadata. The separate issue-review/status branch tracks all
+12 issues and five contributor PRs. This is not full native qualification.
+
+---
+
 # Android rich-document writing — active, 22 October 2026
 
 Owner assignment supersedes the completed prior batch stop condition. Read
