@@ -50,7 +50,7 @@ python -m unittest discover -s tooling/verification -p 'test_android*.py' -v
 python tooling/docs/validate_docs.py
 ```
 
-## Proposed controlled environment correction â€” not executed
+## Proposed controlled environment correction - not executed
 
 Use the official Google APIs image without Play Store provisioning while retaining
 Android 17/API37.1, x86_64 and 16-KiB guest pages. Current official
