@@ -13,6 +13,24 @@ import android_check
 
 
 class WitnessEvidenceRouting(unittest.TestCase):
+    def assert_destinations(self, witnessed, output):
+        self.assertEqual([name for name, _ in witnessed], ['first', 'second'])
+        for (_, actual), expected in zip(witnessed, (output, output / 'after-close-interruption')):
+            self.assertTrue(actual.samefile(expected), f'{actual} is not the expected directory {expected}')
+
+    def test_filesystem_alias_is_accepted_but_an_existing_wrong_directory_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            output = root / 'evidence'
+            (output / 'after-close-interruption').mkdir(parents=True)
+            (output / 'nested').mkdir()
+            alias = output / 'nested' / '..'
+            self.assert_destinations([('first', alias), ('second', alias / 'after-close-interruption')], output)
+            wrong = root / 'other'
+            (wrong / 'after-close-interruption').mkdir(parents=True)
+            with self.assertRaises(AssertionError):
+                self.assert_destinations([('first', wrong), ('second', wrong / 'after-close-interruption')], output)
+
     def test_both_witness_raw_streams_survive_success_and_second_witness_failure(self):
         for fail_second in (False, True):
             with self.subTest(fail_second=fail_second), tempfile.TemporaryDirectory() as directory:
@@ -80,7 +98,7 @@ class WitnessEvidenceRouting(unittest.TestCase):
                             android_check.main()
                     else:
                         android_check.main()
-                self.assertEqual(witnessed, [('first', output), ('second', output / 'after-close-interruption')])
+                self.assert_destinations(witnessed, output)
                 # Independent expected raw bytes: the second witness cannot overwrite the first.
                 self.assertEqual((output / 'kill-start.stdout').read_bytes(), b'first')
                 self.assertEqual((output / 'kill-start.stderr').read_bytes(), b'first-stderr')

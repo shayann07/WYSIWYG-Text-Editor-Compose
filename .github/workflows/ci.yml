@@ -87,10 +87,14 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - run: python tooling/verification/consumer_check.py --android --output-dir tests/local-evidence/consumer/ci
-  android:
-    name: android-packaged-adapter
+  android_build:
+    name: android-binary-consumers
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    env:
+      CI_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+    outputs:
+      artifact_id: ${{ steps.binary_artifact.outputs.artifact-id }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -131,6 +135,56 @@ jobs:
           PY
       - name: Verify Android harness and owned fixture contracts
         run: python -m unittest discover -s tooling/verification -p 'test_android*.py'
+      - name: Bind the current build to workflow identity
+        run: python tooling/verification/android_ci_transfer.py pack --directory tests/local-evidence/consumer/android-ci
+      - name: Retain current-workflow binary consumer artifacts
+        id: binary_artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: android-binaries-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
+          path: |
+            tests/local-evidence/consumer/android-ci/results.json
+            tests/local-evidence/consumer/android-ci/provenance.json
+            tests/local-evidence/consumer/android-ci/apks
+            tests/local-evidence/consumer/android-ci/*.log
+          if-no-files-found: error
+          retention-days: 14
+  android:
+    name: android-packaged-adapter
+    needs: android_build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read
+    env:
+      CI_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+      - name: Receive only this run's independently built APKs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ needs.android_build.outputs.artifact_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence=tests/local-evidence/android/transfer
+          mkdir -p "$evidence"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID" > "$evidence/artifact-metadata.json"
+          python tooling/verification/android_ci_transfer.py validate-metadata --metadata "$evidence/artifact-metadata.json" --artifact-id "$ARTIFACT_ID"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$RUNNER_TEMP/current-android-binaries.zip"
+          python tooling/verification/android_ci_transfer.py receive --archive "$RUNNER_TEMP/current-android-binaries.zip" --metadata "$evidence/artifact-metadata.json" --artifact-id "$ARTIFACT_ID" --output-dir "$evidence/relocated" --packages-dir "$RUNNER_TEMP/current-composedoc-apks"
       - name: Prepare the pinned emulator runtime and image
         shell: bash
         run: |
@@ -168,7 +222,7 @@ jobs:
           echo "$emulator_pid" > tests/local-evidence/android/environment/owned-emulator.pid
           sleep 1
           if ! kill -0 "$emulator_pid"; then cat emulator.log; exit 1; fi
-          python tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/consumer/android-ci/results.json --wait-only --readiness-timeout 300 --output-dir tests/local-evidence/android/preflight
+          python tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/android/transfer/relocated/consumer.json --wait-only --readiness-timeout 300 --output-dir tests/local-evidence/android/preflight
           python tooling/verification/android_emulator_identity.py --metadata "$ANDROID_HOME/system-images/android-37.1/google_apis_ps16k/x86_64/package.xml" --installed --device --output tests/local-evidence/android/environment/guest-identity.json
       - name: Verify the independently packaged APK
         shell: bash
@@ -188,9 +242,9 @@ jobs:
           adb -s emulator-5580 shell dumpsys input_method > pre-test-input-method.txt
           adb -s emulator-5580 shell dumpsys power > pre-test-power.txt
           adb -s emulator-5580 shell dumpsys window policy > pre-test-window-policy.txt
-          python tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/consumer/android-ci/results.json --output-dir tests/local-evidence/android/ci
+          python tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/android/transfer/relocated/consumer.json --output-dir tests/local-evidence/android/ci
       - name: Verify cross-UID clipboard after publisher process death
-        run: python tooling/verification/android_clipboard.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/consumer/android-ci/results.json --output-dir tests/local-evidence/android/clipboard-ci
+        run: python tooling/verification/android_clipboard.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/android/transfer/relocated/consumer.json --output-dir tests/local-evidence/android/clipboard-ci
       - name: Stop only the disposable emulator
         if: always()
         shell: bash
@@ -206,7 +260,7 @@ jobs:
         with:
           name: android-packaged-adapter-${{ github.sha }}
           path: |
-            tests/local-evidence/consumer/android-ci
+            tests/local-evidence/android/transfer
             tests/local-evidence/android/ci
             tests/local-evidence/android/clipboard-ci
             tests/local-evidence/android/preflight

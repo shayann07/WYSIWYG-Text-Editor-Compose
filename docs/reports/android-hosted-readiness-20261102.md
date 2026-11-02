@@ -174,3 +174,41 @@ unchanged. The always-uploaded artifact includes only receipt, raw gate logs and
 immediate workspace/mutation summaries/build identity, not binaries or runtime
 copies. This route still requires exact-head independent review and actual hosted
 completion before any PASS or coordinator landing claim.
+
+
+## Current-head run41430325484: failures retained and bounded corrections
+
+Source PR35 e409745 was tested as merge e914d1b3c6dbad5e95c1023f3ff806de0f29c39d
+on base540ace73. Docs/hashes, architecture/quality, iOS and all CodeQL passed.
+The final-gate receipt is FAIL: five gates, including workspace and implementation
+mutations, passed; Gradle check/API failed its Python witness-routing test because
+Windows spelled the same existing temporary directory runneradmin versus RUNNER~1.
+The new regression reproduces a real filesystem alias through nested/.., accepts
+it through samefile, and rejects a genuinely different existing directory. Witness
+names, separation and every raw-byte assertion remain. This is a test portability
+repair, not removal of a path or ownership check.
+
+The Android instrument command reported Process crashed; a unique app birth at
+10:45:20.868 (PID4414) matches the LMK kill at10:45:21.973, adjustment700, minimum
+watermark breached even after kill. A valid result never arrived. No Java exception
+is shown, but instrumentation onCreate progress is not proven by the retained data.
+All172 compiled input hashes and all compared app16/test6/peer16 DEX, native-library,
+asset, AndroidManifest and resource-table entries match the earlier passing trial.
+There is no evidence for changing editor product code. Consumer compilation already
+uses no-daemon and an in-process Kotlin compiler; no persistent build daemon or
+precise historical memory mechanism is claimed without proof.
+
+The coordinator approved separating only the Android build producer from the
+existing named adapter test job. The producer still builds this workflow's current
+checkout and runs host contracts; the compilation-free test VM needs that producer
+and admits only its immutable artifact. Repository/run/attempt, source head and
+actual checkout merge SHA, original consumer receipt, source inputs and all three
+APK hashes must match before any package is published. Wrong/expired/old-run
+artifacts have no fallback. The original receipt bytes remain and relocation is
+labeled transfer-only. APKs are retained once in the producer artifact, with compact
+transfer/test receipts in the consumer. Same image, emulator, resources, pre-test
+commands, cold63 groups, both process kills and clipboard checks remain fixed.
+This isolation matches a successful test-VM arrangement but is a hypothesis to
+qualify, not proof that compilation caused guest LMK. No sleeps, memory thresholds,
+warm attachment or ordinary failure bypass are introduced. Original failures and
+new binaries remain under the primary checkout's resume-20261102 directory.
