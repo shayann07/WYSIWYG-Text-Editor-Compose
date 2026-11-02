@@ -14,7 +14,6 @@ jobs:
     timeout-minutes: 30
     env:
       IMAGE_PACKAGE: system-images;android-37.1;google_apis_ps16k;x86_64
-      ANDROID_AVD_HOME: ${{ runner.temp }}/composedoc-api37-trial-avds
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -34,6 +33,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir trial-evidence
+          echo "ANDROID_AVD_HOME=$RUNNER_TEMP/composedoc-api37-trial-avds" >> "$GITHUB_ENV"
           python -m unittest discover -s tooling/verification -p 'test_android_trial*.py' -v
           python -c "import sys;sys.path.insert(0,'tooling/verification');from android_trial_artifacts import verify_harness;verify_harness('trial-harness')"
           cp trial-harness/source-manifest.json trial-evidence/host-helper-source-manifest.json

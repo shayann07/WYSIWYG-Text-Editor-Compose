@@ -92,3 +92,13 @@ executed locally. The actual current official image catalogue entry passes the
 same production identity parser. These are preparation checks, not hosted Android
 or real keyboard/IME/AT evidence. Raw preparation logs live in the primary
 checkout's `tests/local-evidence/resume-20261102/`.
+
+## Pre-execution dispatch validation failure
+
+The first authorized request for candidate `546523c` was rejected with HTTP422
+before Actions created a run: `runner.temp` is unavailable in a job-level `env`
+expression. No emulator, setup job or editor test ran. Local YAML parsing and
+`bash -n` had checked syntax, not GitHub's expression-context schema. The minimal
+correction sets `ANDROID_AVD_HOME` through `GITHUB_ENV` using the actual shell's
+`RUNNER_TEMP` in the first step. Retain the original rejection and obtain exact-head
+review before another request; this is not an application qualification retry.
