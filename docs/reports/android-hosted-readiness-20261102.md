@@ -50,7 +50,7 @@ python -m unittest discover -s tooling/verification -p 'test_android*.py' -v
 python tooling/docs/validate_docs.py
 ```
 
-## Proposed controlled environment correction — not executed
+## Proposed controlled environment correction â€” not executed
 
 Use the official Google APIs image without Play Store provisioning while retaining
 Android 17/API37.1, x86_64 and 16-KiB guest pages. Current official
@@ -151,3 +151,26 @@ old binary transfer or vendored helper tree is transplanted into ordinary CI.
 This is prepared source, not current-head PR qualification. Exact local final gates,
 independent review and the full new-head hosted CI/CodeQL remain required before
 coordinator landing. No merge, issue closure, package publication or tag occurs.
+
+
+## Hosted Windows final gates instead of contended local builds
+
+The local runner was not started: measured physical free RAM2.159GiB was below the
+coordinator's8-GiB minimum. No other owner's Java/Gradle processes were stopped;
+the reserved local slot was released. The coordinator authorized using the existing
+Windows build-and-verify job for one clean-checkout `final_gates.py` invocation,
+replacing its three individual check/API, contract and workspace invocations.
+The consumer build after it and all other CI jobs remain. The six-gate receipt
+identifies the actual tested checkout commit, including a PR merge commit when
+Actions uses one; it is not falsely labeled a locally verified source head.
+
+To avoid losing raw output compared with the former direct CI steps, each gate
+now retains its complete combined child stream, path and SHA256 in ignored local
+logs. Partial timeout output is preserved. Raw-log or receipt-write failures fail
+closed while retaining the actual timeout/nonzero result as primary. Two actual
+orchestrator regressions fail before retention; nine verification-contract tests
+pass afterward, including IO-failure outcomes. Existing six-gate acceptance remains
+unchanged. The always-uploaded artifact includes only receipt, raw gate logs and
+immediate workspace/mutation summaries/build identity, not binaries or runtime
+copies. This route still requires exact-head independent review and actual hosted
+completion before any PASS or coordinator landing claim.

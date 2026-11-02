@@ -70,9 +70,22 @@ jobs:
       - run: python -m pip install -r tooling/verification/requirements.txt
       - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
       - run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
-      - run: .\gradlew.bat --no-daemon check apiCheck
-      - run: python tooling/verification/test_verification.py
-      - run: python tooling/verification/verify.py --workspace-milestone
+      - name: Run all six final gates on the clean tested commit
+        run: python tooling/verification/final_gates.py
+      - name: Retain compact exact-commit final-gate evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: final-gates-${{ github.sha }}
+          path: |
+            tooling/local/final-verification.json
+            tooling/local/final-gate-logs/**/*.log
+            tests/local-evidence/desktop/*/results.json
+            tests/local-evidence/desktop/*/mutation-results.json
+            tests/local-evidence/desktop/*/build/build-identity.json
+            tests/local-evidence/desktop/*/*.log
+          if-no-files-found: error
+          retention-days: 14
       - run: python tooling/verification/consumer_check.py --android --output-dir tests/local-evidence/consumer/ci
   android:
     name: android-packaged-adapter

@@ -7,6 +7,7 @@ repository hardening without it.
 
 from datetime import datetime, timezone
 import json
+import hashlib
 import os
 from pathlib import Path
 import re
@@ -32,6 +33,7 @@ def main():
     commit = git('rev-parse', 'HEAD')
     gradle = str(ROOT / ('gradlew.bat' if os.name == 'nt' else 'gradlew'))
     receipt = {'status': 'RUNNING', 'commit': commit, 'startedAt': timestamp(), 'gates': []}
+    logs = RECEIPT.parent / 'final-gate-logs' / (commit[:12] + '-' + str(time.time_ns()))
 
     def save():
         RECEIPT.parent.mkdir(parents=True, exist_ok=True)
@@ -42,15 +44,33 @@ def main():
         entry = {'name': name, 'command': command, 'startedAt': timestamp()}
         receipt['gates'].append(entry)
         save()
+        timeout_failure = None
         try:
             process = subprocess.run(command, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout)
-            log, code = process.stdout.decode('utf-8', 'replace'), process.returncode
-        except subprocess.TimeoutExpired:
-            log, code = 'TIMEOUT', None
-        entry.update(exitCode=code, finishedAt=timestamp(), tail=log.splitlines()[-5:])
-        save()
-        print(('PASS ' if code == 0 else 'FAIL ') + name, flush=True)
-        if code != 0:
+            raw, code = process.stdout, process.returncode
+        except subprocess.TimeoutExpired as failure:
+            raw, code = failure.stdout or b'', None
+            timeout_failure = failure
+        log = raw.decode('utf-8', 'replace')
+        path = logs / (name + '.log')
+        entry.update(exitCode=code, timedOut=code is None, finishedAt=timestamp(), tail=log.splitlines()[-5:],
+                     rawLog=str(path.relative_to(ROOT)), rawLogSha256=hashlib.sha256(raw).hexdigest())
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(raw)
+        except OSError as failure:
+            # Keep the observed worker outcome primary and fail closed on missing evidence.
+            entry['retentionError'] = str(failure)
+        try:
+            save()
+        except OSError as failure:
+            if timeout_failure is not None or code != 0:
+                primary = timeout_failure or subprocess.CalledProcessError(code, command, output=raw)
+                primary.add_note('Cannot retain final-gate receipt: ' + str(failure))
+                raise primary from failure
+            raise
+        print(('PASS ' if code == 0 and 'retentionError' not in entry else 'FAIL ') + name, flush=True)
+        if code != 0 or 'retentionError' in entry:
             print(log[-3000:], flush=True)
         return code, log
 
@@ -72,7 +92,7 @@ def main():
         receipt['gates'].append({'name': 'implementation-mutations', 'exitCode': None, 'skipped': 'workspace-milestone failed'})
     if git('rev-parse', 'HEAD') != commit or git('status', '--porcelain'):
         receipt['error'] = 'Tree changed during verification'
-    passed = 'error' not in receipt and len(receipt['gates']) == 6 and all(g['exitCode'] == 0 for g in receipt['gates'])
+    passed = 'error' not in receipt and len(receipt['gates']) == 6 and all(g['exitCode'] == 0 and 'retentionError' not in g for g in receipt['gates'])
     receipt.update(status='PASS' if passed else 'FAIL', finishedAt=timestamp())
     save()
     print(receipt['status'] + ' final gates for ' + commit, flush=True)
