@@ -267,6 +267,8 @@ def main():
         if isinstance(failure, MemoryServiceUnavailable):
             receipt['memoryReadinessFailure'] = failure.record
         if owned_identified:
+            # Post-failure only: global meminfo is an intrusive freezer/process
+            # traversal. It is not an admission probe or a qualification retry.
             for label, command in (
                 ("failure-logcat", ("logcat", "-d", "-t", "1500")),
                 ("failure-data-space", ("shell", "df", "/data")),

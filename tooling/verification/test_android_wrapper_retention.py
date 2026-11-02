@@ -28,7 +28,7 @@ class ProductionCommandRetention(unittest.TestCase):
                 commands.append(args)
                 if args == ['shell', 'getprop', 'ro.build.version.sdk']:
                     return subprocess.CompletedProcess(command, 0, b'37', b'')
-                if args == ['shell', 'dumpsys', 'meminfo']:
+                if args == ['exec-out', 'cat', '/proc/meminfo']:
                     observations[0] += 1
                     if observations[0] == 1:
                         if isinstance(outcome, Exception):
@@ -83,10 +83,12 @@ class ProductionCommandRetention(unittest.TestCase):
                 self.assertIn('timed out', record['error'])
 
     def test_completed_status_and_primary_cause_survive_raw_retention_failure(self):
-        for raw, code, expected in ((BAD, 0, 'service timeout'), (GOOD, 9, 'did not succeed'),
-                                    (GOOD, 0, 'retain memory observation')):
+        for raw, code, expected, stderr in ((BAD, 0, 'kernel memory', b'raw stderr'),
+                                            (GOOD, 9, 'did not succeed', b'raw stderr'),
+                                            (GOOD, 0, 'kernel memory', b'raw stderr'),
+                                            (GOOD, 0, 'retain memory observation', b'')):
             with self.subTest(code=code, expected=expected):
-                record = self.exercise(subprocess.CompletedProcess('adb', code, raw, b'raw stderr'), ('stdout', 'stderr'))
+                record = self.exercise(subprocess.CompletedProcess('adb', code, raw, stderr), ('stdout', 'stderr'))
                 self.assertEqual(record['exitCode'], code)
                 self.assertFalse(record['timedOut'])
                 self.assertIn(expected, record['error'])

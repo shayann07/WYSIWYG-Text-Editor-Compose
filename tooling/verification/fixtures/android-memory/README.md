@@ -1,5 +1,27 @@
 # Android memory-service responsiveness fixtures
 
+Current observer contract, 2 November 2026: pre-install and pre-instrumentation
+observations read `adb exec-out cat /proc/meminfo` once. A successful bounded,
+strictly parsed kernel observation is KERNEL_OBSERVED, not proof of AM readiness,
+available capacity or boot completion. Existing AM/package/unlocked-user probes
+and the installation broadcast barrier remain separate. The required stable
+fields are MemTotal, MemFree, MemAvailable, Buffers, Cached, SwapTotal and SwapFree,
+all unique nonnegative kB integers with ordinary total/free bounds. Other kernel
+fields are allowed; architecture-specific fields are not required. Empty, denied,
+truncated-required-field, malformed, duplicate, bad-unit, nonzero-exit, stderr or
+late responses block execution. No RAM sufficiency threshold is introduced.
+
+The global Android dump is not passive: Android17 MemBinder disables the app
+freezer around a process-memory traversal. Reference source and a retained local
+image's bytecode confirm that behavior, without proving the exact hosted binary
+or historical LMK cause. Consequently it is no longer an admission observer.
+An explicitly intrusive post-failure diagnostic may still capture it. The original
+118-byte failures remain BLOCKED historical receipts; their parser and negative
+contracts remain tested below, not relabeled as passing kernel observations.
+
+The following paragraphs describe the retained historical global-dump contract,
+not the current pre-install/pre-instrumentation command.
+
 These are exact raw diagnostics from disposable hosted API37 emulators. File
 hashes, sizes and original local evidence paths are in `provenance.json`.
 The repository's `* -text` attribute preserves their original bytes.

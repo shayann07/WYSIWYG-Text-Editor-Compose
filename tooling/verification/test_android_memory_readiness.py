@@ -12,7 +12,8 @@ import android_check
 from android_memory_readiness import admitted_instrument, observe_memory, parse_summary, MemoryServiceUnavailable
 
 FIXTURES = Path(__file__).parent / 'fixtures/android-memory'
-GOOD = (FIXTURES / 'api37-responsive.txt').read_bytes()
+SERVICE_GOOD = (FIXTURES / 'api37-responsive.txt').read_bytes()
+from test_android_kernel_observation import KERNEL as GOOD
 BAD = (FIXTURES / 'api37-timeout.txt').read_bytes()
 
 
@@ -40,33 +41,33 @@ class MemoryReadiness(unittest.TestCase):
             self.assertEqual(len(data), record['sizeBytes'])
             self.assertEqual(hashlib.sha256(data).hexdigest(), record['sha256'])
         self.assertEqual(len(BAD), 118)
-        self.assertEqual(len(GOOD), 23544)
+        self.assertEqual(len(SERVICE_GOOD), 23544)
 
     def test_real_passing_format_and_independent_numeric_expectations(self):
-        self.assertEqual(parse_summary(GOOD, 0), dict(totalKiB=6067476, freeKiB=3631342, usedKiB=2149457))
+        self.assertEqual(parse_summary(SERVICE_GOOD, 0), dict(totalKiB=6067476, freeKiB=3631342, usedKiB=2149457))
         # No amount of free RAM is asserted to establish sufficiency.
         self.assertEqual(parse_summary(b'Total RAM: 1K\nFree RAM: 0K\nUsed RAM: 1K\n', 0)['freeKiB'], 0)
 
     def test_timeout_anywhere_even_after_complete_summary_cannot_pass(self):
-        for raw, stderr in ((BAD, b''), (GOOD + BAD, b''), (BAD + GOOD, b''),
-                            (GOOD, b'DUMP TIMEOUT (10000ms)'), (GOOD, b'timed out')):
+        for raw, stderr in ((BAD, b''), (SERVICE_GOOD + BAD, b''), (BAD + SERVICE_GOOD, b''),
+                            (SERVICE_GOOD, b'DUMP TIMEOUT (10000ms)'), (SERVICE_GOOD, b'timed out')):
             with self.subTest(raw_size=len(raw), stderr=stderr), self.assertRaises(ValueError):
                 parse_summary(raw, 0, stderr)
 
     def test_nonzero_malformed_missing_duplicate_conflicting_summaries_rejected(self):
         with self.assertRaises(ValueError):
-            parse_summary(GOOD, 1)
-        for raw in (b'', b'Total RAM: 1K\nFree RAM: 0K', GOOD + b'\nTotal RAM: 5K\n',
-                    GOOD + b'\nTotal RAM: broken\n', GOOD + GOOD,
+            parse_summary(SERVICE_GOOD, 1)
+        for raw in (b'', b'Total RAM: 1K\nFree RAM: 0K', SERVICE_GOOD + b'\nTotal RAM: 5K\n',
+                    SERVICE_GOOD + b'\nTotal RAM: broken\n', SERVICE_GOOD + SERVICE_GOOD,
                     b'Total RAM: 0K\nFree RAM: 0K\nUsed RAM: 0K\n',
-                    b'Total RAM: 1,00K\nFree RAM: 0K\nUsed RAM: 1K\n', GOOD + b'\xff'):
+                    b'Total RAM: 1,00K\nFree RAM: 0K\nUsed RAM: 1K\n', SERVICE_GOOD + b'\xff'):
             with self.subTest(raw_size=len(raw)), self.assertRaises(ValueError):
                 parse_summary(raw, 0)
 
     def test_single_observation_retains_status_values_raw_and_remaining_budget(self):
-        ticks = iter((10, 10, 12, 14))
+        ticks = iter((10, 10, 12, 14, 14))
         result = observe_memory(self.probe(), self.output, 'memory', 18, clock=lambda: next(ticks))
-        self.assertEqual(result['status'], 'RESPONSIVE')
+        self.assertEqual(result['status'], 'KERNEL_OBSERVED')
         self.assertEqual(result['exitCode'], 0)
         self.assertEqual(result['elapsedSeconds'], 4)
         self.assertEqual(self.calls[0][2]['timeout'], 5)
@@ -128,7 +129,7 @@ class MemoryReadiness(unittest.TestCase):
 
     def test_actual_instrument_admission_never_invokes_callback_after_rejection(self):
         invoked = []
-        for raw, code in ((BAD, 0), (GOOD + BAD, 0), (GOOD, 2), (b'', 0)):
+        for raw, code in ((BAD, 0), (SERVICE_GOOD + BAD, 0), (GOOD, 2), (b'', 0)):
             receipt = {}
             with self.subTest(raw_size=len(raw), code=code), self.assertRaises(MemoryServiceUnavailable):
                 admitted_instrument(self.probe(raw=raw, code=code), self.output, receipt,
@@ -137,10 +138,10 @@ class MemoryReadiness(unittest.TestCase):
         receipt = {}
         admitted_instrument(self.probe(), self.output, receipt, float('inf'), lambda: invoked.append('instrument'))
         self.assertEqual(invoked, ['instrument'])
-        self.assertEqual(receipt['memoryBeforeInstrumentation']['status'], 'RESPONSIVE')
+        self.assertEqual(receipt['memoryBeforeInstrumentation']['status'], 'KERNEL_OBSERVED')
 
     def test_retention_failure_cannot_hide_original_or_admit_instrumentation(self):
-        for raw, expected in ((BAD, 'service timeout'), (GOOD, 'retain memory observation')):
+        for raw, expected in ((BAD, 'kernel memory'), (GOOD, 'retain memory observation')):
             invoked = []
             with patch.object(Path, 'write_bytes', side_effect=OSError('disk full')):
                 with self.assertRaisesRegex(MemoryServiceUnavailable, expected) as caught:
@@ -168,11 +169,13 @@ class ProductionRunnerAdmission(unittest.TestCase):
                     commands.append(args)
                     if args == ['shell', 'getprop', 'ro.build.version.sdk']:
                         raw = b'37\n'
-                    elif args == ['shell', 'dumpsys', 'meminfo']:
+                    elif args == ['exec-out', 'cat', '/proc/meminfo']:
                         observations[0] += 1
                         if observations[0] > reject_observation:
                             raise RuntimeError('failure diagnostic transport unavailable')
                         raw = BAD if observations[0] == reject_observation else GOOD
+                    elif args == ['shell', 'dumpsys', 'meminfo']:
+                        raise RuntimeError('failure diagnostic transport unavailable')
                     else:
                         raw = b''
                     return subprocess.CompletedProcess(command, 0, raw, b'')
@@ -188,13 +191,13 @@ class ProductionRunnerAdmission(unittest.TestCase):
                         patch.object(android_check.subprocess, 'run', side_effect=adb), \
                         patch.object(android_check, 'run_witness') as witness:
                     # main raises; the actual __main__ entry therefore exits nonzero.
-                    with self.assertRaisesRegex(MemoryServiceUnavailable, 'service timeout'):
+                    with self.assertRaisesRegex(MemoryServiceUnavailable, 'kernel memory'):
                         android_check.main()
                     witness.assert_not_called()
                 receipt = json.loads((output / 'results.json').read_text())
                 self.assertEqual(receipt['status'], 'BLOCKED')
                 self.assertEqual(receipt['qualification'], dict(editor='NOT RUN', recovery='NOT RUN', clipboard='NOT RUN'))
-                self.assertIn('service timeout', receipt['error'])
+                self.assertIn('kernel memory', receipt['error'])
                 self.assertIn('failure-memory', receipt['diagnosticErrors'])
                 self.assertFalse(any('instrument' in command for command in commands))
                 label = 'pre-test-memory' if reject_observation == 1 else 'memory-before-instrumentation'

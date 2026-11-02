@@ -88,3 +88,41 @@ checkout contains before/after host logs and the relevant official package metad
 The metadata helper's first console listing failed on a Windows output encoding
 after saving the catalogue record. A bounded ASCII/UTF-8 listing read that existing
 record; no image download or qualification was retried.
+
+## Subsequent observed trials and corrected observer contract
+
+The coordinator separately approved the diagnostic implementation and bounded
+execution. Run41419969057 stopped before boot on absent Ubuntu libpulse. Its
+explicit host correction was reviewed; run41422187986 verified the pinned host,
+installed image bytes, API37/x86_64/16-KiB guest and unlocked-service readiness,
+then encountered the same118-byte global memory-service timeout before install.
+Both failures remain. No editor/recovery/clipboard checks ran in either trial.
+
+Offline inspection found a specific observer-design problem. Android17 reference
+framework94b4c163b7dfe5ce3607f7bb8456f9573f7de57d MemBinder disables the app
+freezer around global process-memory traversal. CachedAppOptimizer takes the AM
+and process locks and, when enabled, unfreezes frozen LRU processes. The retained
+local CP31 services.dex independently confirms these calls. This is not exact
+hosted-binary identity or proof that the dump caused historical LMK. It does show
+why the global dump cannot be described as a passive memory observation.
+
+The coordinator explicitly approved replacing this admission observer with one
+`adb exec-out cat /proc/meminfo` command under the same deadline/15-second cap.
+Kernel fields, units, uniqueness, UTF-8, exit/stderr/completion and ordinary bounds
+are validated; zero free/swap values remain valid. No architecture-specific fields
+or sufficient-RAM threshold are required. The status is KERNEL_OBSERVED, not
+service readiness or qualification PASS. Three responsive AM/package/unlocked
+probes, identity checks, installation queue synchronization and every actual cold
+63-group/recovery/clipboard assertion remain unchanged. The old global parser and
+fixtures remain for historical receipts. Only an explicitly intrusive post-failure
+diagnostic still invokes global meminfo; the actual workflow/runner inventory found
+no other admission invocation.
+
+Two actual-function command-routing/late-response tests fail before the change.
+All54 Python Android host tests pass after it, including negative kernel input and
+original raw-retention/failure-preservation contracts. One intermediate retention
+test supplied a deliberately nonempty stderr to its nominally valid kernel case;
+that correctly failed kernel admission. It now tests that invalid-stderr case
+separately from a valid response plus disk failure. The raw failed run remains.
+This is not a device-suite result. Further hosted execution requires independent
+exact-head review; no success is claimed until the actual workload runs.
