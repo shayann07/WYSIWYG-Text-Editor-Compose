@@ -1,224 +1,108 @@
+# DIAGNOSTIC BRANCH ONLY. Not a replacement for the ordinary CI lane.
 name: ComposeDoc CI
 on:
-  push:
-    branches: [main]
-  pull_request:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: composedoc-api37-environment-trial
+  cancel-in-progress: false
 jobs:
-  docs:
-    name: docs-and-frozen-hashes
-    runs-on: ubuntu-latest
+  android-environment-trial:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      IMAGE_PACKAGE: system-images;android-37.1;google_apis_ps16k;x86_64
+      ANDROID_AVD_HOME: ${{ runner.temp }}/composedoc-api37-trial-avds
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: 2d23d55033d0456712428ccb8202f8ae36f2941c
+          path: harness
           persist-credentials: false
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version-file: .nvmrc
-      - run: npm ci --ignore-scripts --prefix tests/suites/integration/c0
-      - run: python tooling/docs/validate_docs.py
-      - run: python -m unittest discover -s tooling/verification -p 'test_poppler_tool.py'
-      - run: python -m unittest discover -s tooling/docs -p 'test_*.py'
-      - run: python tooling/verification/reproduce_inherited.py
-      - run: python -m unittest discover -s tooling/verification -p 'test_inherited_*.py'
-      - run: python tooling/docs/validate_proposals.py
-      - run: python -m unittest discover -s tooling/governance -p 'test_*.py'
-  quality:
-    name: architecture-and-quality
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: '21'
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: '3.12'
-      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
       - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
-      - run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
-      - run: ./gradlew --no-daemon architectureCheck apiCheck androidApiCheck detekt ktlintCheck
-  build:
-    name: build-and-verify
-    runs-on: windows-latest
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
-        with:
-          distribution: temurin
-          java-version: '21'
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: '3.12'
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version-file: .nvmrc
-      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
-      - run: npm ci --ignore-scripts --prefix tests/suites/integration/c0
-      - run: python -m pip install -r tooling/verification/requirements.txt
-      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
-      - run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
-      - run: .\gradlew.bat --no-daemon check apiCheck
-      - run: python tooling/verification/test_verification.py
-      - run: python tooling/verification/verify.py --workspace-milestone
-      - run: python tooling/verification/consumer_check.py --android --output-dir tests/local-evidence/consumer/ci
-  android:
-    name: android-packaged-adapter
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
-        with:
-          distribution: temurin
-          java-version: '21'
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: '3.12'
-      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
-      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
-      - run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
-      - name: Build outside-checkout consumers from binary metadata
-        run: xvfb-run -a python tooling/verification/consumer_check.py --android-peer --output-dir tests/local-evidence/consumer/android-ci
-      - name: Retain the exact application and test packages for reproduction
+      - name: Verify trial host contracts and transfer the exact failed-CI binaries
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          python - <<'PY'
-          import hashlib, json, shutil
-          from pathlib import Path
-          output = Path('tests/local-evidence/consumer/android-ci')
-          receipt = json.loads((output/'results.json').read_text())
-          assert receipt['status'] == 'PASS'
-          artifacts = dict(receipt['androidArtifacts'], **receipt['androidPeer']['artifacts'])
-          destination = output/'apks'; destination.mkdir(exist_ok=False)
-          retained = {}
-          for name, digest in artifacts.items():
-              source = Path(name)
-              assert hashlib.sha256(source.read_bytes()).hexdigest() == digest
-              kind = 'test' if 'androidTest' in name else ('peer' if 'android-peer' in name else 'app')
-              assert kind not in retained
-              shutil.copyfile(source, destination/(kind+'.apk'))
-              retained[kind] = dict(sha256=digest, original=name)
-          assert set(retained) == {'app', 'test', 'peer'}
-          (destination/'identity.json').write_text(json.dumps(retained, indent=2)+'\n')
-          PY
-      - name: Validate diagnostic contracts and compiled recorder on the host
+          set -euo pipefail
+          mkdir trial-evidence
+          python -m unittest discover -s tooling/verification -p 'test_android_trial*.py' -v
+          gh api repos/shayann07/WYSIWYG-Text-Editor-Compose/actions/artifacts/12841796990 > trial-evidence/artifact-metadata.json
+          python -c "import sys,json;sys.path.insert(0,'tooling/verification');from android_trial_artifacts import validate_metadata;validate_metadata(json.load(open('trial-evidence/artifact-metadata.json')))"
+          gh api repos/shayann07/WYSIWYG-Text-Editor-Compose/actions/artifacts/12841796990/zip > "$RUNNER_TEMP/retained-artifact.zip"
+          python tooling/verification/android_trial_artifacts.py --archive "$RUNNER_TEMP/retained-artifact.zip" --metadata trial-evidence/artifact-metadata.json --output-dir trial-evidence/relocated
+      - name: Install only the reviewed image and emulator versions
         shell: bash
         run: |
-          python -m unittest discover -s tooling/verification -p 'test_android*.py'
-          python - <<'PY'
-          import hashlib, json, os, subprocess, tomllib
-          from pathlib import Path
-          receipt = json.loads(Path('tests/local-evidence/consumer/android-ci/results.json').read_text())
-          assert receipt['status'] == 'PASS'
-          project = Path(receipt['android']).resolve()
-          assert not project.is_relative_to(Path.cwd().resolve())
-          classes = project / 'build/tmp/kotlin-classes/debugAndroidTest'
-          version = tomllib.loads(Path('gradle/libs.versions.toml').read_text())['versions']['kotlin']
-          cache = Path(os.environ.get('GRADLE_USER_HOME', str(Path.home()/'.gradle')))
-          jars = list((cache/'caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib'/version).glob(f'*/kotlin-stdlib-{version}.jar'))
-          assert len(jars) == 1 and (classes/'dev/shayxo/composedoc/androidsample/KeyboardTraceRecorderChecks.class').is_file()
-          output = Path('tests/local-evidence/android/keyboard-host'); output.mkdir(parents=True, exist_ok=False)
-          command = [str(Path(os.environ['JAVA_HOME'])/'bin/java'), '-cp', str(classes)+os.pathsep+str(jars[0]), 'dev.shayxo.composedoc.androidsample.KeyboardTraceRecorderChecks']
-          with (output/'stdout.txt').open('wb') as stdout, (output/'stderr.txt').open('wb') as stderr:
-              result = subprocess.run(command, stdout=stdout, stderr=stderr, timeout=30)
-          digest = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
-          data = dict(exitCode=result.returncode, command=command, scope='Host recorder regression, not Android qualification', stdlibSha256=digest(jars[0]), classes={p.name:digest(p) for p in (classes/'dev/shayxo/composedoc/androidsample').glob('KeyboardTrace*.class')}, sourceInputs=receipt['sourceInputs'])
-          (output/'result.json').write_text(json.dumps(data, indent=2)+'\n')
-          if result.returncode: raise SystemExit(result.returncode)
-          print((output/'stdout.txt').read_text())
-          PY
-      - name: Start the disposable emulator and wait for unlocked services
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 30 https://dl.google.com/android/repository/sys-img/google_apis/sys-img2-3.xml -o "$RUNNER_TEMP/image-catalogue.xml"
+          python tooling/verification/android_trial_identity.py --metadata "$RUNNER_TEMP/image-catalogue.xml" --output trial-evidence/catalogue-identity.json
+          sdkmanager "$IMAGE_PACKAGE"
+          curl --fail --silent --show-error --max-time 180 https://dl.google.com/android/repository/emulator-linux_x64-16740729.zip -o "$RUNNER_TEMP/emulator.zip"
+          echo "f41f9e31eb5ca64926603c03265c50bbc0ff4172  $RUNNER_TEMP/emulator.zip" | sha1sum --check
+          unzip -oq "$RUNNER_TEMP/emulator.zip" -d "$ANDROID_HOME"
+          python tooling/verification/android_trial_identity.py --metadata "$ANDROID_HOME/system-images/android-37.1/google_apis_ps16k/x86_64/package.xml" --installed --output trial-evidence/installed-image-identity.json
+          cp "$ANDROID_HOME/system-images/android-37.1/google_apis_ps16k/x86_64/package.xml" trial-evidence/image-package.xml
+          cp "$ANDROID_HOME/system-images/android-37.1/google_apis_ps16k/x86_64/build.prop" trial-evidence/image-build.prop
+          "$ANDROID_HOME/emulator/emulator" -version > trial-evidence/emulator-version.txt
+          uname -a > trial-evidence/host-kernel.txt
+          cat /etc/os-release > trial-evidence/host-os.txt
+      - name: One fresh owned boot and unchanged cold qualification
         shell: bash
         run: |
-          sdkmanager 'emulator' 'system-images;android-37.1;google_apis_playstore_ps16k;x86_64'
-          export ANDROID_AVD_HOME="$RUNNER_TEMP/composedoc-ci-avds"
+          set -euo pipefail
           mkdir -p "$ANDROID_AVD_HOME"
-          echo no | avdmanager create avd --name composedoc_ci --device pixel_7 --package 'system-images;android-37.1;google_apis_playstore_ps16k;x86_64'
+          echo no | avdmanager create avd --name composedoc_ci --device pixel_7 --package "$IMAGE_PACKAGE"
           printf 'hw.cpu.ncore=2\nhw.ramSize=6144\ndisk.dataPartition.size=2048M\nhw.keyboard=no\n' >> "$ANDROID_AVD_HOME/composedoc_ci.avd/config.ini"
+          cp "$ANDROID_AVD_HOME/composedoc_ci.avd/config.ini" trial-evidence/avd-config.ini
           sudo chmod a+rw /dev/kvm
           adb start-server
-          nohup "$ANDROID_HOME/emulator/emulator" -avd composedoc_ci -port 5580 -no-window -no-audio -no-snapshot -no-boot-anim -gpu software -feature -Vulkan > emulator.log 2>&1 &
+          nohup "$ANDROID_HOME/emulator/emulator" -avd composedoc_ci -port 5580 -no-window -no-audio -no-snapshot -no-boot-anim -gpu software -feature -Vulkan > trial-evidence/emulator.log 2>&1 &
           emulator_pid=$!
+          echo "$emulator_pid" > trial-evidence/owned-emulator.pid
           sleep 1
-          if ! kill -0 "$emulator_pid"; then cat emulator.log; exit 1; fi
-          python tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/consumer/android-ci/results.json --wait-only --readiness-timeout 300 --output-dir tests/local-evidence/android/preflight
-      - name: Verify the independently packaged APK
-        shell: bash
-        run: |
-          # This offline editor does not need first-boot Play Store network provisioning.
+          kill -0 "$emulator_pid"
+          python harness/tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt trial-evidence/relocated/consumer.json --wait-only --readiness-timeout 300 --output-dir trial-evidence/preflight
+          python tooling/verification/android_trial_identity.py --metadata "$ANDROID_HOME/system-images/android-37.1/google_apis_ps16k/x86_64/package.xml" --installed --device --output trial-evidence/guest-identity.json
           adb -s emulator-5580 shell svc wifi disable
           adb -s emulator-5580 shell svc data disable
-          adb -s emulator-5580 shell dumpsys meminfo > pre-test-memory.txt
-          # Credential-unlocked storage is distinct from an interactive, unlocked display.
           adb -s emulator-5580 shell settings put system screen_off_timeout 1800000
           adb -s emulator-5580 shell input keyevent KEYCODE_WAKEUP
           adb -s emulator-5580 shell wm dismiss-keyguard
-          adb -s emulator-5580 shell ime list -s > pre-test-ime-list.txt
+          adb -s emulator-5580 shell ime list -s > trial-evidence/ime-list.txt
           adb -s emulator-5580 shell ime enable com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME
           adb -s emulator-5580 shell ime set com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME
           adb -s emulator-5580 shell settings put secure show_ime_with_hard_keyboard 1
-          adb -s emulator-5580 shell dumpsys input_method > pre-test-input-method.txt
-          adb -s emulator-5580 shell dumpsys power > pre-test-power.txt
-          adb -s emulator-5580 shell dumpsys window policy > pre-test-window-policy.txt
-          python tooling/verification/android_startup_probe.py --serial emulator-5580 --avd-name composedoc_ci --output-dir tests/local-evidence/android/startup-probe -- python tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/consumer/android-ci/results.json --output-dir tests/local-evidence/android/ci
-      - name: Verify cross-UID clipboard after publisher process death
-        run: python tooling/verification/android_clipboard.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt tests/local-evidence/consumer/android-ci/results.json --output-dir tests/local-evidence/android/clipboard-ci
-      - name: Stop only the disposable emulator
+          python harness/tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt trial-evidence/relocated/consumer.json --output-dir trial-evidence/qualification
+          python harness/tooling/verification/android_clipboard.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt trial-evidence/relocated/consumer.json --output-dir trial-evidence/clipboard
+      - name: Stop only the trial-owned emulator
         if: always()
         shell: bash
         run: |
-          if adb -s emulator-5580 get-state >/dev/null 2>&1; then
-            adb -s emulator-5580 emu kill
-          else
-            echo 'Disposable emulator is not running; no device targeted.'
+          if test -f trial-evidence/owned-emulator.pid; then
+            if adb -s emulator-5580 emu avd name | grep -qx composedoc_ci; then
+              adb -s emulator-5580 emu kill
+            else
+              echo 'Owned identity unavailable; do not target another device.'
+            fi
           fi
-      - name: Retain packaged adapter receipts and raw failures
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: android-packaged-adapter-${{ github.sha }}
-          path: |
-            tests/local-evidence/consumer/android-ci
-            tests/local-evidence/android/ci
-            tests/local-evidence/android/clipboard-ci
-            tests/local-evidence/android/preflight
-            tests/local-evidence/android/startup-probe
-            tests/local-evidence/android/keyboard-host
-            emulator.log
-            pre-test-*.txt
-          if-no-files-found: warn
-  ios:
-    name: ios-build
-    runs-on: macos-latest
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
-        with:
-          distribution: temurin
-          java-version: '21'
-      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
-      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
-      - run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
-      # Apple targets are only configured on macOS. Compiling and running the shared
-      # tests on the simulator does not qualify native iOS editing or input.
-      - run: ./gradlew --no-daemon --console=plain compileKotlinIosArm64 compileKotlinIosSimulatorArm64 iosSimulatorArm64Test
+          name: api37-google-apis-environment-trial-${{ github.sha }}
+          path: trial-evidence
+          if-no-files-found: error
+          retention-days: 14
