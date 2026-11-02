@@ -33,6 +33,7 @@ class RuntimeAdmission(unittest.TestCase):
                     scans[0] += 1
                     raw = ('libunknown.so => not found\n' if unknown else 'libpulse.so.0 => not found\n') if scans[0] <= 2 else 'libc.so.6 => /lib/libc.so.6 (0x123)\n'
                 elif args[-1] == '-version':
+                    self.assertIsNone(kwargs.get('env'))
                     raw = 'Android emulator version 37.2.13.0 (build_id 16740729)'
                 return subprocess.CompletedProcess(args, 0, raw, '')
             with patch.object(runtime.subprocess, 'run', side_effect=execute):

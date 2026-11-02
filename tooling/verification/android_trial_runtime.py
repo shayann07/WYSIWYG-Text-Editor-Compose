@@ -60,7 +60,9 @@ def prepare(sdk, output):
         result['missingAfter'] = scan('ldd-after')
         if result['missingAfter']:
             raise ValueError('Emulator runtime still has unresolved libraries')
-        version = command('emulator-version', [targets[0], '-version'], env)
+        # Boot uses the normal inherited environment; discovery-only library paths
+        # must not make this readiness check succeed under different conditions.
+        version = command('emulator-version', [targets[0], '-version'])
         if version.returncode or not re.search(r'Android emulator version 37\.2\.13\.0 \(build_id 16740729\)', version.stdout):
             raise ValueError('Pinned emulator did not execute with its expected version/build')
         result['status'] = 'HOST_RUNTIME_READY_ONLY'
