@@ -46,14 +46,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          curl --fail --silent --show-error --max-time 180 https://dl.google.com/android/repository/emulator-linux_x64-16740729.zip -o "$RUNNER_TEMP/emulator.zip"
+          echo "f41f9e31eb5ca64926603c03265c50bbc0ff4172  $RUNNER_TEMP/emulator.zip" | sha1sum --check
+          unzip -oq "$RUNNER_TEMP/emulator.zip" -d "$ANDROID_HOME"
+          python tooling/verification/android_trial_runtime.py --sdk "$ANDROID_HOME" --output-dir trial-evidence/host-runtime
           curl --fail --silent --show-error --max-time 30 https://dl.google.com/android/repository/sys-img/google_apis/sys-img2-3.xml -o "$RUNNER_TEMP/image-catalogue.xml"
           python tooling/verification/android_trial_identity.py --metadata "$RUNNER_TEMP/image-catalogue.xml" --output trial-evidence/catalogue-identity.json
           sdkmanager "$IMAGE_PACKAGE"
           curl --fail --silent --show-error --max-time 300 https://dl.google.com/android/repository/sys-img/google_apis/x86_64-ps16k-37.1_r09.zip -o "$RUNNER_TEMP/pinned-image.zip"
           echo "35c0da1cd298f3426a5b48233f59515097446a28  $RUNNER_TEMP/pinned-image.zip" | sha1sum --check
-          curl --fail --silent --show-error --max-time 180 https://dl.google.com/android/repository/emulator-linux_x64-16740729.zip -o "$RUNNER_TEMP/emulator.zip"
-          echo "f41f9e31eb5ca64926603c03265c50bbc0ff4172  $RUNNER_TEMP/emulator.zip" | sha1sum --check
-          unzip -oq "$RUNNER_TEMP/emulator.zip" -d "$ANDROID_HOME"
           python tooling/verification/android_trial_identity.py --metadata "$ANDROID_HOME/system-images/android-37.1/google_apis_ps16k/x86_64/package.xml" --installed --archive "$RUNNER_TEMP/pinned-image.zip" --output trial-evidence/installed-image-identity.json
           cp "$ANDROID_HOME/system-images/android-37.1/google_apis_ps16k/x86_64/package.xml" trial-evidence/image-package.xml
           cp "$ANDROID_HOME/system-images/android-37.1/google_apis_ps16k/x86_64/build.prop" trial-evidence/image-build.prop

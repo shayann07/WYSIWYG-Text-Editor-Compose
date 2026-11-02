@@ -102,3 +102,24 @@ expression. No emulator, setup job or editor test ran. Local YAML parsing and
 correction sets `ANDROID_AVD_HOME` through `GITHUB_ENV` using the actual shell's
 `RUNNER_TEMP` in the first step. Retain the original rejection and obtain exact-head
 review before another request; this is not an application qualification retry.
+
+## Actual trial 41419969057 — host loader failure before guest execution
+
+Reviewed correction `cb31689` was dispatched once. Ten host tests, provenance and
+all three exact failed-CI APK transfers passed. The image and emulator archive
+checksums passed, and installed-image byte comparison completed. The version
+command then failed exit127: `libpulse.so.0` was absent from Ubuntu24.04. No guest
+boot, 63-group test, recovery witness or clipboard test ran. The raw job log and
+uploaded artifact13128369710 remain retained. This failure does not resolve the
+older memory-service/LMK question, and no automatic retry occurred.
+
+The coordinator authorized an explicit ephemeral-host correction: inspect both
+actual emulator/QEMU loader dependency trees before any image transfers, install
+`libpulse0` only when one of its known SONAMEs is actually unresolved, record its
+installed version, then recheck both binaries and execute the pinned version.
+All other unresolved dependencies are reported together and rejected, rather
+than installing a speculative package list. Raw before/after `ldd`, package and
+version output are retained. These are CI test-host packages, not library/runtime
+dependencies or a change to the user's OS. This correction awaits exact-head
+review before another controlled request; image, APKs and qualification remain
+unchanged. Host readiness is never reported as Android qualification.
