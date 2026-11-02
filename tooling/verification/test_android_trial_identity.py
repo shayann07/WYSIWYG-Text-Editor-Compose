@@ -1,10 +1,28 @@
 """Identity must match independent declared platform and package expectations."""
 import unittest
+import tempfile
+from pathlib import Path
+import zipfile
 
-from android_trial_identity import device_record, image_record
+from android_trial_identity import device_record, image_record, verify_installed_archive
 
 
 class TrialIdentity(unittest.TestCase):
+    def test_installed_image_must_match_pinned_archive_bytes_not_just_revision(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive = root / 'image.zip'
+            installed = root / 'installed'
+            installed.mkdir()
+            with zipfile.ZipFile(archive, 'w') as bundle:
+                for name, data in [('system.img', b'owned-image'), ('build.prop', b'owned-build'), ('source.properties', b'revision9')]:
+                    bundle.writestr('x86_64/' + name, data)
+                    (installed / name).write_bytes(data)
+            self.assertEqual(3, len(verify_installed_archive(archive, installed)))
+            (installed / 'system.img').write_bytes(b'other-image')
+            with self.assertRaisesRegex(ValueError, 'differs'):
+                verify_installed_archive(archive, installed)
+
     def test_catalogue_archive_revision_and_installed_identity(self):
         xml = b'''<repository><remotePackage path="system-images;android-37.1;google_apis_ps16k;x86_64">
           <revision><major>9</major></revision><archives><archive><complete><size>2178012675</size>

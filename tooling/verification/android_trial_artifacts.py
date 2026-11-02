@@ -22,6 +22,21 @@ DESTINATIONS = {
 }
 
 
+def verify_harness(root):
+    root = Path(root)
+    manifest = json.loads((root / 'source-manifest.json').read_text(encoding='utf-8'))
+    names = {'tooling/verification/' + name for name in
+             ['android_check.py', 'android_clipboard.py', 'android_process.py',
+              'android_tap_fixture.py', 'android_memory_readiness.py']}
+    if (manifest.get('sourceCommit') != '2d23d55033d0456712428ccb8202f8ae36f2941c'
+            or set(manifest.get('files', {})) != names):
+        raise ValueError('Trial harness source identity or helper set differs')
+    for name, digest in manifest['files'].items():
+        if hashlib.sha256((root / name).read_bytes()).hexdigest() != digest:
+            raise ValueError('Vendored host helper differs from reviewed source: ' + name)
+    return manifest
+
+
 def validate_metadata(metadata):
     run = metadata.get('workflow_run', {})
     if (metadata.get('id') != ARTIFACT or metadata.get('expired') is not False

@@ -19,11 +19,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: 2d23d55033d0456712428ccb8202f8ae36f2941c
-          path: harness
-          persist-credentials: false
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
@@ -40,6 +35,9 @@ jobs:
           set -euo pipefail
           mkdir trial-evidence
           python -m unittest discover -s tooling/verification -p 'test_android_trial*.py' -v
+          python -c "import sys;sys.path.insert(0,'tooling/verification');from android_trial_artifacts import verify_harness;verify_harness('trial-harness')"
+          cp trial-harness/source-manifest.json trial-evidence/host-helper-source-manifest.json
+          ln -s "$GITHUB_WORKSPACE/tests" trial-harness/tests
           gh api repos/shayann07/WYSIWYG-Text-Editor-Compose/actions/artifacts/12841796990 > trial-evidence/artifact-metadata.json
           python -c "import sys,json;sys.path.insert(0,'tooling/verification');from android_trial_artifacts import validate_metadata;validate_metadata(json.load(open('trial-evidence/artifact-metadata.json')))"
           gh api repos/shayann07/WYSIWYG-Text-Editor-Compose/actions/artifacts/12841796990/zip > "$RUNNER_TEMP/retained-artifact.zip"
@@ -51,10 +49,12 @@ jobs:
           curl --fail --silent --show-error --max-time 30 https://dl.google.com/android/repository/sys-img/google_apis/sys-img2-3.xml -o "$RUNNER_TEMP/image-catalogue.xml"
           python tooling/verification/android_trial_identity.py --metadata "$RUNNER_TEMP/image-catalogue.xml" --output trial-evidence/catalogue-identity.json
           sdkmanager "$IMAGE_PACKAGE"
+          curl --fail --silent --show-error --max-time 300 https://dl.google.com/android/repository/sys-img/google_apis/x86_64-ps16k-37.1_r09.zip -o "$RUNNER_TEMP/pinned-image.zip"
+          echo "35c0da1cd298f3426a5b48233f59515097446a28  $RUNNER_TEMP/pinned-image.zip" | sha1sum --check
           curl --fail --silent --show-error --max-time 180 https://dl.google.com/android/repository/emulator-linux_x64-16740729.zip -o "$RUNNER_TEMP/emulator.zip"
           echo "f41f9e31eb5ca64926603c03265c50bbc0ff4172  $RUNNER_TEMP/emulator.zip" | sha1sum --check
           unzip -oq "$RUNNER_TEMP/emulator.zip" -d "$ANDROID_HOME"
-          python tooling/verification/android_trial_identity.py --metadata "$ANDROID_HOME/system-images/android-37.1/google_apis_ps16k/x86_64/package.xml" --installed --output trial-evidence/installed-image-identity.json
+          python tooling/verification/android_trial_identity.py --metadata "$ANDROID_HOME/system-images/android-37.1/google_apis_ps16k/x86_64/package.xml" --installed --archive "$RUNNER_TEMP/pinned-image.zip" --output trial-evidence/installed-image-identity.json
           cp "$ANDROID_HOME/system-images/android-37.1/google_apis_ps16k/x86_64/package.xml" trial-evidence/image-package.xml
           cp "$ANDROID_HOME/system-images/android-37.1/google_apis_ps16k/x86_64/build.prop" trial-evidence/image-build.prop
           "$ANDROID_HOME/emulator/emulator" -version > trial-evidence/emulator-version.txt
@@ -75,7 +75,7 @@ jobs:
           echo "$emulator_pid" > trial-evidence/owned-emulator.pid
           sleep 1
           kill -0 "$emulator_pid"
-          python harness/tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt trial-evidence/relocated/consumer.json --wait-only --readiness-timeout 300 --output-dir trial-evidence/preflight
+          python trial-harness/tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt trial-evidence/relocated/consumer.json --wait-only --readiness-timeout 300 --output-dir trial-evidence/preflight
           python tooling/verification/android_trial_identity.py --metadata "$ANDROID_HOME/system-images/android-37.1/google_apis_ps16k/x86_64/package.xml" --installed --device --output trial-evidence/guest-identity.json
           adb -s emulator-5580 shell svc wifi disable
           adb -s emulator-5580 shell svc data disable
@@ -86,8 +86,8 @@ jobs:
           adb -s emulator-5580 shell ime enable com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME
           adb -s emulator-5580 shell ime set com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME
           adb -s emulator-5580 shell settings put secure show_ime_with_hard_keyboard 1
-          python harness/tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt trial-evidence/relocated/consumer.json --output-dir trial-evidence/qualification
-          python harness/tooling/verification/android_clipboard.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt trial-evidence/relocated/consumer.json --output-dir trial-evidence/clipboard
+          python trial-harness/tooling/verification/android_check.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt trial-evidence/relocated/consumer.json --output-dir trial-evidence/qualification
+          python trial-harness/tooling/verification/android_clipboard.py --serial emulator-5580 --avd-name composedoc_ci --consumer-receipt trial-evidence/relocated/consumer.json --output-dir trial-evidence/clipboard
       - name: Stop only the trial-owned emulator
         if: always()
         shell: bash

@@ -11,6 +11,20 @@ import android_trial_artifacts as trial
 
 
 class HostedArtifactRelocation(unittest.TestCase):
+    def test_vendored_harness_manifest_and_changed_helper(self):
+        source = Path(__file__).resolve().parents[2] / 'trial-harness'
+        manifest = trial.verify_harness(source)
+        self.assertEqual(5, len(manifest['files']))
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / 'harness'
+            for name in ['source-manifest.json', *manifest['files']]:
+                file = target / name
+                file.parent.mkdir(parents=True, exist_ok=True)
+                file.write_bytes((source / name).read_bytes())
+            (target / 'tooling/verification/android_check.py').write_bytes(b'changed')
+            with self.assertRaisesRegex(ValueError, 'differs'):
+                trial.verify_harness(target)
+
     def metadata(self):
         return {'id': trial.ARTIFACT, 'expired': False,
                 'workflow_run': {'id': trial.RUN, 'head_sha': trial.SOURCE_HEAD,

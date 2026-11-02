@@ -16,17 +16,26 @@ the exact candidate before its single dispatch. No phone or local emulator is us
 - Image: `system-images;android-37.1;google_apis_ps16k;x86_64`, stable revision 9,
   archive `x86_64-ps16k-37.1_r09.zip`, 2,178,012,675 bytes, published SHA1
   `35c0da1cd298f3426a5b48233f59515097446a28`. Reject changed official catalogue
-  identity before installation and verify installed `package.xml`. SDK Manager
-  validates the published download; retain the actual metadata and build properties.
+  identity before installation and verify installed `package.xml`. After SDK
+  Manager installation, separately download the exact reviewed archive, verify its
+  published checksum, and stream-compare every archive file with installed bytes.
+  This rejects a different live-resolved payload even if its package revision is
+  unchanged. It costs one extra 2.18-GB hosted transfer; neither archive nor SDK is
+  uploaded or downloaded locally. Retain per-file SHA256, metadata and properties.
 - Guest: verify API37, x86_64, 16,384-byte pages, Android17 16-KiB emulator build
   family, and system fingerprint equality with installed image `build.prop`.
   Retain the complete observed guest fingerprint; no pre-run fingerprint is invented.
 - AVD: fresh `composedoc_ci`, Pixel 7, 6144 MiB/two CPUs, 2048M data partition,
   no hardware keyboard, no snapshot, software GPU and disabled Vulkan. No warm
   attach, extra delay, process-priority change or assertion/threshold modification.
-- Host runner source: exact `2d23d55033d0456712428ccb8202f8ae36f2941c`, checked out
-  separately under `harness`. Its deadline correction passed 50 host regressions.
-  The diagnostic branch is not used as a competing editor implementation.
+- Host runner source: exactly five verbatim helpers from locally reviewed
+  `2d23d55033d0456712428ccb8202f8ae36f2941c`, transparently included under
+  `trial-harness/tooling/verification/`. The source commit/per-file SHA256 manifest
+  is verified before use, removing the unavailable remote-checkout dependency.
+  A link to this checkout's unchanged pinned test fonts supplies the original
+  helper's verification-only font comparison. No editor implementation is copied.
+  The deadline correction passed 50 host regressions. The diagnostic branch is not
+  used as a competing editor implementation or public consumer example.
 - Binaries: existing GitHub artifact **12841796990**, run **40746007286**, repository
   ID **1421229803**, PR35 head `c0d56ae40ef819ddf7f92b918dbe5a736f6ec8f8`.
   Artifact metadata was available and unexpired during preparation. Fail closed
@@ -74,9 +83,10 @@ outside this diagnostic branch; rejection requires no production rollback.
 
 ## Local preparation checks
 
-Eight new executable host tests pass: artifact provenance, original receipt and
+Ten new executable host tests pass: artifact provenance, original receipt and
 payload consistency, missing/corrupt bytes, archive path isolation, package/revision/
-checksum drift, guest API/ABI/page-size/fingerprint and executable identity.
+checksum drift, installed-byte mismatch, guest API/ABI/page-size/fingerprint,
+executable identity and verbatim host-helper integrity.
 The candidate workflow parses and each shell block passes `bash -n`; no block was
 executed locally. The actual current official image catalogue entry passes the
 same production identity parser. These are preparation checks, not hosted Android

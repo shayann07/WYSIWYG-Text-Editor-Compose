@@ -1,0 +1,11 @@
+{
+  "scope": "Verbatim host qualification helpers, no editor implementation",
+  "sourceCommit": "2d23d55033d0456712428ccb8202f8ae36f2941c",
+  "files": {
+    "tooling/verification/android_check.py": "6ffb31d23747be691d46826faa2040bf568048e9dd54a3718b3416b3b78ca4fb",
+    "tooling/verification/android_clipboard.py": "86352835b23def5c93cef249819158084112b6bf6e34815032b008ea1b87958f",
+    "tooling/verification/android_process.py": "fd7063e97a775dc25e751c1126d45502012279fe1644291547a4e832ed7d8b78",
+    "tooling/verification/android_tap_fixture.py": "630df66ffc47f8d144dcf3e4d2bd58d7e5d196f1a28730281a5b48b81e346610",
+    "tooling/verification/android_memory_readiness.py": "9d52cd66323076d1c9880ac332086a88d9d56bc7cf692fe8e265035a21707423"
+  }
+}

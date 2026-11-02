@@ -7,10 +7,38 @@ from pathlib import Path
 import re
 import subprocess
 import xml.etree.ElementTree as ET
+import zipfile
 
 PACKAGE = 'system-images;android-37.1;google_apis_ps16k;x86_64'
 ARCHIVE = 'x86_64-ps16k-37.1_r09.zip'
 CHECKSUM = '35c0da1cd298f3426a5b48233f59515097446a28'
+
+
+def verify_installed_archive(archive, installed):
+    """Tie SDK-installed bytes to the separately checksum-verified pinned archive."""
+    checked = {}
+    with zipfile.ZipFile(archive) as bundle:
+        for entry in bundle.infolist():
+            if entry.is_dir():
+                continue
+            relative = Path(entry.filename)
+            if relative.is_absolute() or '..' in relative.parts or relative.parts[0] != 'x86_64':
+                raise ValueError('Unexpected pinned image archive path')
+            target = Path(installed).joinpath(*relative.parts[1:])
+            if not target.is_file() or target.stat().st_size != entry.file_size:
+                raise ValueError('Installed SDK image lacks pinned archive bytes: ' + entry.filename)
+            actual, expected = hashlib.sha256(), hashlib.sha256()
+            with bundle.open(entry) as left, target.open('rb') as right:
+                while chunk := left.read(1024 * 1024):
+                    expected.update(chunk)
+                while chunk := right.read(1024 * 1024):
+                    actual.update(chunk)
+            if expected.digest() != actual.digest():
+                raise ValueError('Installed SDK image differs from pinned archive: ' + entry.filename)
+            checked[entry.filename] = actual.hexdigest()
+    if not {'x86_64/system.img', 'x86_64/build.prop', 'x86_64/source.properties'} <= set(checked):
+        raise ValueError('Pinned image archive lacks required image/build identity')
+    return checked
 
 
 def image_record(raw, installed=False):
@@ -55,11 +83,16 @@ def main():
     parser.add_argument('--metadata', type=Path, required=True)
     parser.add_argument('--installed', action='store_true')
     parser.add_argument('--device', action='store_true')
+    parser.add_argument('--archive', type=Path)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     result = {'status': 'FAIL'}
     try:
         result['image'] = image_record(args.metadata.read_bytes(), args.installed)
+        if args.archive:
+            if not args.installed:
+                raise ValueError('Archive verification requires installed image')
+            result['installedFileSha256'] = verify_installed_archive(args.archive, args.metadata.parent)
         if args.device:
             if not args.installed:
                 raise ValueError('Device identity requires installed image metadata')
